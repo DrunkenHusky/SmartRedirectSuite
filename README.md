@@ -1,6 +1,6 @@
 # SmartRedirect Suite
 
-**SmartRedirect Suite** ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain – mit erweiterten Admin‑Funktionen und intelligenter Regelverwaltung. Typischer Use Case: Migration von **SharePoint On-Premises** zu **SharePoint Online**, wenn sich Domain und Pfadstruktur ändern.
+**SmartRedirect Suite** ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain – mit erweiterten Admin‑Funktionen und intelligenter Regelverwaltung. Typischer Use Case: Migration von **SharePoint On-Premises** zu **SharePoint Online**, wenn sich Domain und Pfadstruktur ändern. Entweder leitest du den Traffic von der alten Domain auf diese Web-App um, oder du schaltest sie direkt unter der alten Domain auf. Die App weist Nutzer darauf hin, dass sie eine alte URL verwenden, und kann sie individuell dazu auffordern, ihre URL auf die neue Adresse zu aktualisieren.
 
 ## Überblick der Key-Features
 
