@@ -1,6 +1,7 @@
 import { Store, SessionData } from 'express-session';
 import fs from 'fs/promises';
 import path from 'path';
+import { randomUUID } from 'crypto';
 
 interface StoredSession {
   data: SessionData;
@@ -85,12 +86,15 @@ export class FileSessionStore extends Store {
           expires: session.cookie?.expires
         };
         
-        // Use atomic write to prevent corruption during concurrent access
-        const tempPath = `${sessionPath}.tmp`;
+        // Use a unique temp file to avoid conflicts during concurrent access
+        const tempPath = `${sessionPath}.${randomUUID()}.tmp`;
         await fs.writeFile(tempPath, JSON.stringify(stored, null, 2));
-        
+
         // Ensure the target directory still exists before rename
         await this.ensureSessionsDir();
+
+        // Remove any existing session file to avoid Windows rename errors
+        await fs.rm(sessionPath, { force: true });
         await fs.rename(tempPath, sessionPath);
         
         callback?.();
