@@ -4,6 +4,7 @@
  */
 
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { 
   Table,
   TableBody,
@@ -62,8 +63,6 @@ export function OptimizedTable<T extends Record<string, any>>({
   
   const [filterConfig, setFilterConfig] = useState<Record<keyof T, string>>({} as Record<keyof T, string>);
   const [globalFilter, setGlobalFilter] = useState('');
-  const [scrollTop, setScrollTop] = useState(0);
-  
   // Debounce search inputs for better performance
   const debouncedGlobalFilter = useDebounce(globalFilter, 300);
   const debouncedFilterConfig = useDebounce(filterConfig, 300);
@@ -120,16 +119,18 @@ export function OptimizedTable<T extends Record<string, any>>({
     });
   }, [data, debouncedGlobalFilter, debouncedFilterConfig, sortConfig, columns, measureRender]);
 
-  // Virtual scrolling calculations
+  // Virtual scrolling using react-virtual
   const containerHeight = maxVisibleRows * itemHeight;
-  const totalHeight = processedData.length * itemHeight;
-  const startIndex = Math.floor(scrollTop / itemHeight);
-  const endIndex = Math.min(
-    startIndex + maxVisibleRows + 5, // Buffer rows
-    processedData.length
-  );
-  const visibleData = processedData.slice(startIndex, endIndex);
-  const offsetY = startIndex * itemHeight;
+  const rowVirtualizer = useVirtualizer({
+    count: processedData.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => itemHeight,
+    overscan: 5,
+  });
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalHeight = rowVirtualizer.getTotalSize();
+  const visibleData = virtualRows.map((v) => processedData[v.index]);
+  const offsetY = virtualRows[0]?.start ?? 0;
 
   // Optimized sort handler
   const handleSort = useCallback((key: keyof T) => {
@@ -145,11 +146,6 @@ export function OptimizedTable<T extends Record<string, any>>({
       ...prev,
       [key]: value,
     }));
-  }, []);
-
-  // Scroll handler for virtual scrolling
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(e.currentTarget.scrollTop);
   }, []);
 
   // Memoized row component for better performance
@@ -229,7 +225,6 @@ export function OptimizedTable<T extends Record<string, any>>({
         ref={containerRef}
         className="border rounded-md overflow-auto"
         style={{ height: containerHeight }}
-        onScroll={handleScroll}
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
           <Table ref={tableRef} className="relative">
@@ -292,9 +287,9 @@ export function OptimizedTable<T extends Record<string, any>>({
                 ) : visibleData.length > 0 ? (
                   visibleData.map((row: T, index: number) => (
                     <TableRowMemo
-                      key={startIndex + index}
+                      key={virtualRows[index].key}
                       row={row}
-                      index={startIndex + index}
+                      index={virtualRows[index].index}
                       columns={columns}
                       {...(onRowClick ? { onClick: onRowClick } : {})}
                     />
