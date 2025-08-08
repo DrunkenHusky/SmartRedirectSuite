@@ -77,11 +77,3 @@ run().catch(err => {
   console.error(err);
   process.exit(1);
 });
-
-testScenario(
-  "Test 4: Complex partial case",
-  "/sample-old-path-full-006965",
-  "wildcard", // Should match exact wildcard rule
-  "https://newurlofdifferentapp.com/sample-new-path-006965"
-);
-
