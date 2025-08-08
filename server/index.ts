@@ -6,6 +6,11 @@ import { setupVite, serveStatic, log } from "./vite";
 import { FileSessionStore } from "./fileSessionStore";
 
 const app = express();
+app.disable('etag');
+app.use('/api', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // Trust proxy settings for production deployment behind reverse proxies
 // This is essential for proper HTTPS detection and secure cookies
