@@ -11,6 +11,7 @@
 ## Überblick
 
 Diese Anleitung beschreibt die Bereitstellung der URL Migration Tool Anwendung auf OpenShift mit persistenter Datenspeicherung und produktionstauglicher Konfiguration.
+Die Anwendung speichert alle Daten ausschließlich im Dateisystem; eine Datenbank wird nicht verwendet.
 
 ## Voraussetzungen
 
@@ -49,6 +50,8 @@ oc adm policy add-scc-to-user anyuid -z url-migration-sa
 ```
 
 ## 2. Persistent Storage konfigurieren
+
+Die Anwendung speichert Konfigurationen, Sitzungen und Uploads ausschließlich im Dateisystem. Eine Datenbank wird nicht benötigt.
 
 ### Persistent Volume Claims erstellen
 
@@ -109,8 +112,9 @@ oc create secret tls url-migration-tls \
 **Unterstützte Umgebungsvariablen:**
 - `NODE_ENV` - Umgebung (development/production)
 - `PORT` - Server-Port (Standard: 5000)
+- `ADMIN_PASSWORD` - Passwort für den Administrationsbereich
 - `SESSION_SECRET` - Geheimer Schlüssel für Sessions
-- `LOCAL_UPLOAD_PATH` - **Einziger konfigurierbarer Pfad** für Logo-Uploads (Standard: ./data/uploads - **innerhalb** des data-Verzeichnisses!)
+- `LOCAL_UPLOAD_PATH` - **einziger konfigurierbarer Pfad** für Logo-Uploads (Standard: ./data/uploads – **innerhalb** des `data`-Verzeichnisses!)
 - `COOKIE_DOMAIN` - Domain für Cookies (nur in Production)
 
 **Nicht unterstützte Variablen** (fest codiert in der Anwendung):
@@ -150,8 +154,8 @@ metadata:
 data:
   NODE_ENV: "production"
   PORT: "5000"
-  # Upload-Pfad (von der Anwendung unterstützt)
-  LOCAL_UPLOAD_PATH: "/app/uploads"
+  # Upload-Pfad (muss innerhalb von /app/data liegen)
+  LOCAL_UPLOAD_PATH: "/app/data/uploads"
   # Cookie-Domain für Production (optional)
   COOKIE_DOMAIN: "url-migration-tool-url-migration-tool.apps.cluster.example.com"
 ```
@@ -400,9 +404,11 @@ spec:
       app: url-migration-tool
   endpoints:
   - port: http
-    path: /api/metrics
+    path: /api/health
     interval: 30s
 ```
+
+> Der ServiceMonitor nutzt den Gesundheitsendpunkt `/api/health`, da die Anwendung keinen separaten Metrik-Endpunkt bereitstellt.
 
 ### Logging-Konfiguration
 ```bash
@@ -450,14 +456,11 @@ spec:
           - name: data-storage
             persistentVolumeClaim:
               claimName: url-migration-data-pvc
-          - name: upload-storage
-            persistentVolumeClaim:
-              claimName: url-migration-uploads-pvc
           - name: backup-storage
             persistentVolumeClaim:
               claimName: backup-pvc  # Zusätzlich zu erstellen
           restartPolicy: OnFailure
-EOF
+  EOF
 
 oc apply -f backup-job.yaml
 ```
@@ -597,8 +600,8 @@ oc exec -it deployment/url-migration-tool -- ls -la /app/
 # Resource-Verbrauch überwachen
 oc top pods -l app=url-migration-tool
 
-# Metriken prüfen
-curl https://$ROUTE_URL/api/metrics
+# Gesundheitsstatus prüfen
+curl https://$ROUTE_URL/api/health
 ```
 
 ## 12. Updates und Wartung
@@ -705,7 +708,7 @@ oc port-forward service/url-migration-tool-service 8080:80
 
 ### Ressourcen-Übersicht
 Nach erfolgreichem Deployment haben Sie folgende Ressourcen:
-- **3 PersistentVolumeClaims** für Daten, Sessions und Uploads
+- **1 PersistentVolumeClaim** für Daten, Sessions und Uploads
 - **1 Deployment** mit 2 Replicas (skalierbar)
 - **1 Service** für interne Kommunikation
 - **1 Route** für externen HTTPS-Zugriff
