@@ -1,5 +1,9 @@
+
+// Test script to verify URL transformation logic
+
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+
 
 // Load sample rules used for testing
 const rulesPath = new URL('./data/rules.json', import.meta.url);
@@ -73,4 +77,11 @@ run().catch(err => {
   console.error(err);
   process.exit(1);
 });
+
+testScenario(
+  "Test 4: Complex partial case",
+  "/sample-old-path-full-006965",
+  "wildcard", // Should match exact wildcard rule
+  "https://newurlofdifferentapp.com/sample-new-path-006965"
+);
 

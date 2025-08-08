@@ -1,17 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
- 
-  insertUrlTrackingSchema, 
-  adminAuthSchema,
+import {
+  insertUrlTrackingSchema,
   exportRequestSchema,
-  importRulesRequestSchema,
   importSettingsRequestSchema,
   insertGeneralSettingsSchema,
   type InsertGeneralSettings,
+  type InsertUrlRule,
 } from "@shared/schema";
-import { urlRuleSchemaWithValidation, updateUrlRuleSchemaWithValidation, importUrlRuleSchemaWithValidation } from "@shared/validation";
+import { urlRuleSchemaWithValidation, updateUrlRuleSchemaWithValidation } from "@shared/validation";
 import { z } from "zod";
 import { LocalFileUploadService } from "./localFileUpload";
 import path from "path";
@@ -180,18 +178,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if session exists, if not return error
         if (!req.session) {
           console.error("Session not available during login");
-          return res.status(500).json({ error: "Session error" });
+          res.status(500).json({ error: "Session error" });
+          return;
         }
 
         // Set session data and force save for file store
         req.session.isAdminAuthenticated = true;
         req.session.adminLoginTime = Date.now();
-        
+
         // For file store, explicitly save the session
         req.session.save((err) => {
           if (err) {
             console.error("Session save error:", err);
-            return res.status(500).json({ error: "Session save error" });
+            res.status(500).json({ error: "Session save error" });
+            return;
           }
           res.json({ success: true, sessionId: req.sessionID });
         });
@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // URL-Regeln verwalten
-  app.get("/api/admin/rules", requireAuth, async (req, res) => {
+  app.get("/api/admin/rules", requireAuth, async (_req, res) => {
     try {
       const rules = await storage.getUrlRules();
       res.json(rules);
@@ -258,17 +258,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/rules", requireAuth, async (req, res) => {
     try {
       const { forceCreate, ...ruleData } = req.body;
-      
+
       // If forceCreate is true, skip validation and create directly
       if (forceCreate) {
-        const rule = await storage.createUrlRule(ruleData, true); // Pass force flag
+        const rule = await storage.createUrlRule({
+          ...ruleData,
+          autoRedirect: ruleData.autoRedirect ?? false,
+        }, true); // Pass force flag
         res.json(rule);
-        return;
+      } else {
+        const validatedData = urlRuleSchemaWithValidation.parse(ruleData);
+        const rule = await storage.createUrlRule({
+          ...validatedData,
+          autoRedirect: ruleData.autoRedirect ?? false,
+        });
+        res.json(rule);
       }
-      
-      const validatedData = urlRuleSchemaWithValidation.parse(ruleData);
-      const rule = await storage.createUrlRule(validatedData);
-      res.json(rule);
     } catch (error) {
       console.error("Create rule error:", error);
       if (error instanceof Error) {
@@ -300,27 +305,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/rules/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const { forceUpdate, ...updateData } = req.body;
+      const { forceUpdate, ...updateData } = req.body as Partial<InsertUrlRule>;
       
       // If forceUpdate is true, skip validation and update directly
       if (forceUpdate) {
         const rule = await storage.updateUrlRule(id, updateData, true); // Pass force flag
-        
+
         if (!rule) {
-          return res.status(404).json({ error: "Rule not found" });
+          res.status(404).json({ error: "Rule not found" });
+          return;
         }
-        
+
         res.json(rule);
         return;
       }
-      
+
       const validatedData = updateUrlRuleSchemaWithValidation.parse(updateData);
-      const rule = await storage.updateUrlRule(id, validatedData);
-      
+      const rule = await storage.updateUrlRule(id, validatedData as Partial<InsertUrlRule>);
+
       if (!rule) {
-        return res.status(404).json({ error: "Rule not found" });
+        res.status(404).json({ error: "Rule not found" });
+        return;
       }
-      
+
       res.json(rule);
     } catch (error) {
       console.error("Update rule error:", error);
@@ -354,11 +361,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteUrlRule(id);
-      
+
       if (!deleted) {
-        return res.status(404).json({ error: "Rule not found" });
+        res.status(404).json({ error: "Rule not found" });
+        return;
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Delete rule error:", error);
@@ -370,20 +378,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/bulk-delete-rules", requireAuth, async (req, res) => {
     try {
       const { ruleIds } = z.object({ ruleIds: z.array(z.string()) }).parse(req.body);
-      
+
       if (ruleIds.length === 0) {
-        return res.status(400).json({ error: "No rule IDs provided" });
+        res.status(400).json({ error: "No rule IDs provided" });
+        return;
       }
 
       console.log(`Bulk delete request: ${ruleIds.length} rules`, ruleIds.slice(0, 5));
-      
+
       // Use atomic bulk delete to prevent race conditions
       const result = await storage.bulkDeleteUrlRules(ruleIds);
-      
+
       console.log(`Bulk delete completed: ${result.deleted} deleted, ${result.notFound} not found`);
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         deletedCount: result.deleted,
         failedCount: 0,
         notFoundCount: result.notFound,
@@ -546,11 +555,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { rules } = req.body;
       if (!Array.isArray(rules)) {
-        return res.status(400).json({ error: "Invalid rules format" });
+        res.status(400).json({ error: "Invalid rules format" });
+        return;
       }
 
       const result = await storage.importUrlRules(rules);
-      
+
       res.json({
         success: result.errors.length === 0,
         imported: result.imported,
@@ -585,7 +595,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { rules } = req.body;
       if (!Array.isArray(rules)) {
-        return res.status(400).json({ error: "Invalid rules format" });
+        res.status(400).json({ error: "Invalid rules format" });
+        return;
       }
 
       // Prepare rules for import (without validation)
@@ -593,7 +604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matcher: rule.matcher,
         targetUrl: rule.targetUrl || "",
         infoText: rule.infoText || "",
-        redirectType: rule.redirectType || "partial"
+        redirectType: rule.redirectType || "partial",
+        autoRedirect: rule.autoRedirect ?? false,
       }));
 
       // Clear existing rules and import new ones
@@ -614,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export settings
-  app.post("/api/admin/export-settings", requireAuth, async (req, res) => {
+  app.post("/api/admin/export-settings", requireAuth, async (_req, res) => {
     try {
       const settings = await storage.getGeneralSettings();
       res.setHeader('Content-Type', 'application/json');
@@ -640,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // General Settings (accessible for UI configuration)
   // Move settings endpoint outside admin middleware since it doesn't need auth
-  app.get("/api/settings", async (req, res) => {
+  app.get("/api/settings", async (_req, res) => {
     try {
       const settings = await storage.getGeneralSettings();
       res.json(settings);
@@ -683,47 +695,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/logo/upload", requireAuth, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
+        res.status(400).json({ error: "No file uploaded" });
+        return;
       }
 
       const fileUrl = localUploadService.getFileUrl(req.file.filename);
       console.log("File uploaded successfully:", fileUrl);
-      
-      res.json({ 
+
+      res.json({
         uploadURL: fileUrl,
         filename: req.file.filename,
         originalName: req.file.originalname
       });
     } catch (error) {
       console.error("Local file upload error:", error);
-      res.status(500).json({ error: "Failed to upload file", details: error.message });
+      res.status(500).json({ error: "Failed to upload file", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
   app.put("/api/admin/logo", requireAuth, async (req, res) => {
     try {
       if (!req.body.logoUrl) {
-        return res.status(400).json({ error: "logoUrl is required" });
+        res.status(400).json({ error: "logoUrl is required" });
+        return;
       }
 
       const logoPath = req.body.logoUrl; // Use the URL directly for local files
-      
+
       console.log("Logo update - received logoUrl:", req.body.logoUrl);
       console.log("Logo update - using logoPath:", logoPath);
-      
+
       // Get current settings to check for existing logo file
       const currentSettings = await storage.getGeneralSettings();
       const oldLogoUrl = currentSettings.headerLogoUrl;
-      
+
       // If there's an old logo file, delete it before setting the new one
       if (oldLogoUrl && oldLogoUrl.startsWith('/uploads/') && oldLogoUrl !== logoPath) {
         const oldFilename = oldLogoUrl.replace('/uploads/', '');
         const oldFileDeleted = localUploadService.deleteFile(oldFilename);
         console.log(`Old logo file deletion attempt for ${oldFilename}:`, oldFileDeleted ? 'success' : 'failed');
       }
-      
+
       console.log("Logo update - current settings has headerLogoUrl:", !!currentSettings.headerLogoUrl);
-      
+
       const updatedSettings = await storage.updateGeneralSettings({
         headerLogoUrl: logoPath,
       } as InsertGeneralSettings);
@@ -742,7 +756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete logo endpoint
-  app.delete("/api/admin/logo", requireAuth, async (req, res) => {
+  app.delete("/api/admin/logo", requireAuth, async (_req, res) => {
     try {
       // Get current settings to find the logo file
       const currentSettings = await storage.getGeneralSettings();
@@ -751,10 +765,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If there's no logo URL, just return success - nothing to delete
       if (!logoUrl) {
         console.log("No logo to delete - headerLogoUrl is already empty");
-        return res.json({
+        res.json({
           success: true,
           message: "Logo already deleted"
         });
+        return;
       }
 
       // Only try to delete the physical file if it's a local upload

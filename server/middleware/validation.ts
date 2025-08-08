@@ -42,13 +42,14 @@ export function validateRequest<T extends ZodSchema>(schema: {
           received: err.input,
         }));
 
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: 'Validation failed',
           code: 'VALIDATION_ERROR',
           details: validationErrors,
           timestamp: new Date().toISOString(),
         });
+        return;
       }
 
       next(error);
@@ -102,19 +103,20 @@ export function validateContentType(allowedTypes: string[]) {
     const contentType = req.get('Content-Type');
     
     if (!contentType) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Content-Type header is required',
         code: 'MISSING_CONTENT_TYPE',
         allowedTypes,
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     const baseType = contentType.split(';')[0].trim();
     
     if (!allowedTypes.includes(baseType)) {
-      return res.status(415).json({
+      res.status(415).json({
         success: false,
         error: 'Unsupported media type',
         code: 'UNSUPPORTED_MEDIA_TYPE',
@@ -122,6 +124,7 @@ export function validateContentType(allowedTypes: string[]) {
         allowedTypes,
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     next();
@@ -148,7 +151,7 @@ export function validateUrlRuleOverlap(existingRules: Array<{ id: string; matche
       const existingMatcher = rule.matcher.toLowerCase().replace(/\/+$/, '');
       
       if (areMatchersOverlapping(normalizedMatcher, existingMatcher)) {
-        return res.status(409).json({
+        res.status(409).json({
           success: false,
           error: 'URL matcher conflicts with existing rule',
           code: 'MATCHER_CONFLICT',
@@ -158,6 +161,7 @@ export function validateUrlRuleOverlap(existingRules: Array<{ id: string; matche
           },
           timestamp: new Date().toISOString(),
         });
+        return;
       }
     }
 
@@ -196,12 +200,13 @@ export function validateFile(options: {
     const { maxSize = 5 * 1024 * 1024, allowedTypes = [], required = false } = options;
 
     if (required && !file) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'File is required',
         code: 'FILE_REQUIRED',
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     if (!file) {
@@ -210,7 +215,7 @@ export function validateFile(options: {
 
     // Check file size
     if (file.size > maxSize) {
-      return res.status(413).json({
+      res.status(413).json({
         success: false,
         error: 'File too large',
         code: 'FILE_TOO_LARGE',
@@ -218,11 +223,12 @@ export function validateFile(options: {
         receivedSize: file.size,
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     // Check file type
     if (allowedTypes.length > 0 && !allowedTypes.includes(file.mimetype)) {
-      return res.status(415).json({
+      res.status(415).json({
         success: false,
         error: 'Unsupported file type',
         code: 'UNSUPPORTED_FILE_TYPE',
@@ -230,6 +236,7 @@ export function validateFile(options: {
         receivedType: file.mimetype,
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     next();
@@ -240,11 +247,11 @@ export function validateFile(options: {
  * Environment-specific validation
  */
 export function validateEnvironment(allowedEnvironments: string[]) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (_req: Request, res: Response, next: NextFunction): void => {
     const environment = process.env.NODE_ENV || 'development';
     
     if (!allowedEnvironments.includes(environment)) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         error: 'Operation not allowed in current environment',
         code: 'ENVIRONMENT_RESTRICTED',
@@ -252,6 +259,7 @@ export function validateEnvironment(allowedEnvironments: string[]) {
         allowedEnvironments,
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     next();
