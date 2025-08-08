@@ -6,7 +6,6 @@
 - **[README.md](./README.md)**: Vollständige Feature-Übersicht und Entwicklungsrichtlinien
 - **[INSTALLATION.md](./INSTALLATION.md)**: Lokale Entwicklungsumgebung einrichten
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Monitoring-Integration
-- **replit.md**: Interne Architektur-Dokumentation für Entwickler
 
 ## Overview
 

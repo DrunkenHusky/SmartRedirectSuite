@@ -69,7 +69,6 @@ Diese Version stellt die erste produktionsreife Version der SmartRedirect Suite 
 ### 🚀 Deployment & DevOps
 
 #### Multi-Platform-Deployment
-- **Replit-Deployment** mit integrierter Workflow-Unterstützung
 - **OpenShift-Deployment** mit Enterprise-Konfiguration
 - **Docker-Container** mit Production-optimiertem Dockerfile
 - **Persistente Storage-Konfiguration** für alle Plattformen

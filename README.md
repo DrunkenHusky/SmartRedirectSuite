@@ -139,7 +139,6 @@ Diese Anwendung verfügt über umfassende Dokumentation für verschiedene Anwend
 | **[OPENSHIFT_DEPLOYMENT.md](./OPENSHIFT_DEPLOYMENT.md)** | OpenShift-spezifisches Deployment mit persistentem Storage | OpenShift-Administratoren |
 
 ### Weiterführende Dokumentation
-- **replit.md**: Interne Projektarchitektur und Entwicklerrichtlinien
 - **sample-rules-import.json**: Beispieldatei für Regel-Import
 - **.env.example**: Beispiel-Umgebungskonfiguration
 
@@ -202,7 +201,6 @@ https://ihre-domain.com/?admin=true
 
 **Beispiele:**
 - Entwicklung: `http://localhost:5000/?admin=true`
-- Produktion: `https://ihre-app.replit.app/?admin=true`
 
 Dieser Parameter umgeht die automatische Weiterleitung und zeigt das normale Admin-Login an.
 
@@ -342,13 +340,6 @@ Die Anwendung verwendet JSON-Dateien im `data/` Verzeichnis:
 npm run build
 npm start
 ```
-
-### Replit Deployment
-Die Anwendung ist für Replit optimiert und kann direkt deployed werden. Für Logo-Uploads sollte ein persistenter Speicher eingerichtet werden und `LOCAL_UPLOAD_PATH` auf den Bucket-Pfad zeigen:
-1. **Deploy** drücken
-2. Im **Object Storage** einen Bucket anlegen
-3. `LOCAL_UPLOAD_PATH` auf den Pfad des Buckets setzen
-4. Anwendung neu deployen
 
 ### Weitere Plattformen
 - **Vercel**: Unterstützt Node.js-Anwendungen; `LOCAL_UPLOAD_PATH` auf persistentes Verzeichnis setzen
