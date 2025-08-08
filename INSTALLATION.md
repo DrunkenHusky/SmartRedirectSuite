@@ -1,4 +1,4 @@
-# 🚀 Schnellstart-Anleitung - URL Migration App
+# 🚀 Schnellstart-Anleitung - SmartRedirect Suite
 
 > **Hinweis**: Diese Schnellstart-Anleitung bietet eine vereinfachte Installation. Für detaillierte Informationen siehe [README.md](./README.md). Für Enterprise-Deployments konsultieren Sie [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
 

@@ -1,4 +1,4 @@
-# URL Migration Tool - Enterprise API Documentation
+# SmartRedirect Suite - Enterprise API Documentation
 
 > **Übersicht**: Diese API-Dokumentation beschreibt alle verfügbaren REST-Endpunkte für die URL-Migration-Anwendung. Für Installation siehe [INSTALLATION.md](./INSTALLATION.md), für vollständige Feature-Informationen [README.md](./README.md).
 
@@ -9,7 +9,7 @@
 
 ## Overview
 
-The URL Migration Tool provides a comprehensive REST API for managing URL transformation rules, tracking migration statistics, and administering the system. This documentation covers all available endpoints with enterprise-grade features including authentication, validation, performance monitoring, and bulk operations.
+The SmartRedirect Suite provides a comprehensive REST API for managing URL transformation rules, tracking migration statistics, and administering the system. This documentation covers all available endpoints with enterprise-grade features including authentication, validation, performance monitoring, and bulk operations.
 
 ## Base URL
 ```
@@ -132,7 +132,7 @@ GET /api/admin/settings
 ```json
 {
   "id": "settings_uuid",
-  "headerTitle": "URL Migration Tool",
+  "headerTitle": "SmartRedirect Suite",
   "headerIcon": "ArrowRightLeft",
   "headerLogoUrl": "/objects/uploads/logo.png",
   "mainTitle": "Outdated Link Detected",
@@ -716,4 +716,4 @@ npm install -g artillery
 artillery quick --count 100 --num 10 http://localhost:5000/api/health
 ```
 
-This comprehensive API documentation provides all the information needed to integrate with and maintain the URL Migration Tool in enterprise environments.
+This comprehensive API documentation provides all the information needed to integrate with and maintain the SmartRedirect Suite in enterprise environments.
