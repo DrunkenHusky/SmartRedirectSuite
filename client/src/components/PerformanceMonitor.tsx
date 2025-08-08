@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Activity, 
   Clock, 
-  Database, 
+  HardDrive,
   Globe, 
   MemoryStick, 
   Zap,
@@ -202,7 +202,7 @@ export function PerformanceMonitor({
                         <span>Memory: {memoryData.usagePercentage.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <Database className="h-3 w-3" />
+                        <HardDrive className="h-3 w-3" />
                         <span>Heap: {formatBytes(memoryData.usedJSHeapSize)}</span>
                       </div>
                     </>

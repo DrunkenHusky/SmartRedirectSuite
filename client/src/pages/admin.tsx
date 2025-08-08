@@ -42,7 +42,8 @@ import {
   BarChart3,
   Settings,
   FileText,
-  Database,
+  List,
+  FileCode,
   LogOut,
   Trash,
   Search,
@@ -997,7 +998,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const handleSelectAllRules = (checked: boolean) => {
     if (checked) {
-      // Only select rules from the current page to avoid selecting all rules in the database
+      // Only select rules from the current page to avoid selecting all rules in storage
       const currentPageRuleIds = paginatedRules.map((rule: UrlRule) => rule.id);
       
       // Clear any existing selections and set only current page rules
@@ -2831,7 +2832,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     size="sm"
                     onClick={() => handleStatsViewChange('browser')}
                   >
-                    <Database className="h-4 w-4 mr-2" />
+                    <List className="h-4 w-4 mr-2" />
                     Alle Einträge
                   </Button>
                 </div>
@@ -3224,7 +3225,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           className="w-full"
                           onClick={() => handleExport('statistics', 'json')}
                         >
-                          <Database className="h-4 w-4 mr-2" />
+                          <FileCode className="h-4 w-4 mr-2" />
                           Als JSON herunterladen
                         </Button>
                       </div>

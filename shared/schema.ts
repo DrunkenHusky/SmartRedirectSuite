@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { pgTable, timestamp, varchar, jsonb, index } from "drizzle-orm/pg-core";
 
 /**
  * Enterprise-grade constants and validation patterns
@@ -264,26 +263,3 @@ export type ImportRulesRequest = z.infer<typeof importRulesRequestSchema>;
 export type ImportSettingsRequest = z.infer<typeof importSettingsRequestSchema>;
 export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
 export type InsertGeneralSettings = z.infer<typeof insertGeneralSettingsSchema>;
-
-// Database Tables for Session Management
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
-// Admin session table for persistent login
-export const adminSessions = pgTable("admin_sessions", {
-  id: varchar("id").primaryKey(),
-  sessionData: jsonb("session_data").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  lastAccessedAt: timestamp("last_accessed_at").defaultNow().notNull(),
-});
-
-export type AdminSession = typeof adminSessions.$inferSelect;
-export type InsertAdminSession = typeof adminSessions.$inferInsert;
