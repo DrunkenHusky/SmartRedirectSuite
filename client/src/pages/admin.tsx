@@ -49,7 +49,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  ArrowLeftRight,
   AlertTriangle,
   Info,
 } from "lucide-react";
@@ -225,10 +224,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [statsView, setStatsView] = useState<'top100' | 'referrers' | 'browser'>(() => {
+  const [statsView, setStatsView] = useState<'top100' | 'browser'>(() => {
     // Only restore stats view if we're explicitly showing admin view
     const showAdmin = localStorage.getItem('showAdminView') === 'true';
-    return showAdmin ? ((localStorage.getItem('adminStatsView') as 'top100' | 'referrers' | 'browser') || 'top100') : 'top100';
+    return showAdmin ? ((localStorage.getItem('adminStatsView') as 'top100' | 'browser') || 'top100') : 'top100';
   });
   const [activeTab, setActiveTab] = useState(() => {
     // Only restore admin tab if we're explicitly showing admin view
@@ -255,7 +254,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   };
 
   // Save stats view to localStorage when it changes
-  const handleStatsViewChange = (newView: 'top100' | 'referrers' | 'browser') => {
+  const handleStatsViewChange = (newView: 'top100' | 'browser') => {
     setStatsView(newView);
     localStorage.setItem('adminStatsView', newView);
   };
@@ -388,26 +387,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  // Top Referrers - all entries (non-paginated)  
-  const { data: referrersPagedData, isLoading: referrersLoading } = useQuery<Array<{ referrer: string; count: number }>>({
-    queryKey: ["/api/admin/stats/referrers", statsFilter],
-    enabled: isAuthenticated && statsView === 'referrers',
-    retry: false,
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (statsFilter !== 'all') {
-        params.append('timeRange', statsFilter);
-      }
-      const url = `/api/admin/stats/referrers${params.toString() ? '?' + params.toString() : ''}`;
-      const response = await fetch(url, { credentials: 'include' });
-      if (response.status === 401 || response.status === 403) {
-        setIsAuthenticated(false);
-        throw new Error('Authentication required');
-      }
-      if (!response.ok) throw new Error('Failed to fetch referrers');
-      return response.json();
-    },
-  });
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
@@ -917,8 +896,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const statsEndIndex = statsStartIndex + trackingEntries.length;
 
   // Add missing variables for UI display
-  const totalReferrers = referrersPagedData?.length || 0;
-  const totalReferrersPages = 1; // Since we're not paginating referrers anymore
   const totalTopUrls = topUrlsData?.length || 0;
   const totalTopUrlsPages = 1; // Since we're not paginating top URLs anymore
 
@@ -2823,14 +2800,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     Top 100
                   </Button>
                   <Button
-                    variant={statsView === 'referrers' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleStatsViewChange('referrers')}
-                  >
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Top 100 Referrer
-                  </Button>
-                  <Button
                     variant={statsView === 'browser' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handleStatsViewChange('browser')}
@@ -2839,9 +2808,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     Alle Einträge
                   </Button>
                 </div>
-
-                {/* Time filter for top100 and referrers */}
-                {(statsView === 'top100' || statsView === 'referrers') && (
+                {/* Time filter for top100 */}
+                {statsView === 'top100' && (
                   <Select value={statsFilter} onValueChange={(value) => setStatsFilter(value as '24h' | '7d' | 'all')}>
                     <SelectTrigger className="w-auto">
                       <SelectValue />
@@ -2870,7 +2838,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 )}
 
                 {/* Search and pagination info for paginated views */}
-                {(statsView === 'top100' || statsView === 'referrers' || statsView === 'browser') && (
+                {(statsView === 'top100' || statsView === 'browser') && (
                   <div className="flex justify-between items-center text-sm text-muted-foreground mt-4">
                     <div>
                       {statsView === 'top100' && (
@@ -2878,13 +2846,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           "Lade URLs..."
                         ) : (
                           `${totalTopUrls} URL${totalTopUrls !== 1 ? 's' : ''} insgesamt`
-                        )
-                      )}
-                      {statsView === 'referrers' && (
-                        referrersLoading ? (
-                          "Lade Referrer..."
-                        ) : (
-                          `${totalReferrers} Referrer insgesamt`
                         )
                       )}
                       {statsView === 'browser' && (
@@ -2900,10 +2861,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">Suche...</span>
                       )}
                     </div>
-                    {!entriesLoading && !top100Loading && !referrersLoading && (
+                    {!entriesLoading && !top100Loading && (
                       <div>
                         {statsView === 'top100' && totalTopUrlsPages > 1 && `Seite ${statsPage} von ${totalTopUrlsPages}`}
-                        {statsView === 'referrers' && totalReferrersPages > 1 && `Seite ${statsPage} von ${totalReferrersPages}`}
                         {statsView === 'browser' && totalStatsPages > 1 && `Seite ${statsPage} von ${totalStatsPages}`}
                       </div>
                     )}
@@ -2956,71 +2916,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         </div>
                                         <span className="text-xs text-muted-foreground">
                                           {((url.count / maxCount) * 100).toFixed(1)}%
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Top 100 Referrers View */}
-              {statsView === 'referrers' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top Referrer</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {referrersLoading ? (
-                      <div className="text-center py-8">Lade Referrer-Statistiken...</div>
-                    ) : !referrersPagedData?.length ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Keine Referrer-Daten vorhanden.
-                      </div>
-                    ) : (
-                      <>
-                        <div className="overflow-hidden">
-                          <table className="w-full">
-                            <thead className="bg-muted/50 border-b">
-                              <tr>
-                                <th className="text-left p-3 font-medium">Rang</th>
-                                <th className="text-left p-3 font-medium">HTTP Referrer</th>
-                                <th className="text-right p-3 font-medium">Aufrufe</th>
-                                <th className="text-left p-3 font-medium">Anteil</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {referrersPagedData.map((referrer: any, index: number) => {
-                                const rank = index + 1;
-                                const maxCount = referrersPagedData[0]?.count || 1;
-                                return (
-                                  <tr key={index} className="border-b hover:bg-muted/50">
-                                    <td className="p-3 text-sm font-medium">#{rank}</td>
-                                    <td className="p-3">
-                                      <code className="text-sm text-foreground break-all">
-                                        {referrer.referrer === 'Direkt' ? (
-                                          <span className="text-muted-foreground">Direkt (kein Referrer)</span>
-                                        ) : (
-                                          referrer.referrer
-                                        )}
-                                      </code>
-                                    </td>
-                                    <td className="p-3 text-right text-sm font-medium">{referrer.count}</td>
-                                    <td className="p-3">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-16">
-                                          <Progress value={(referrer.count / maxCount) * 100} className="h-2" />
-                                        </div>
-                                        <span className="text-xs text-muted-foreground">
-                                          {((referrer.count / maxCount) * 100).toFixed(1)}%
                                         </span>
                                       </div>
                                     </td>
@@ -3100,17 +2995,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {getSortIcon('path')}
                                   </Button>
                                 </th>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('httpReferrer')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    HTTP Referer
-                                    {getSortIcon('httpReferrer')}
-                                  </Button>
-                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3131,9 +3015,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </td>
                                   <td className="p-3">
                                     <code className="text-sm text-foreground">{entry.path}</code>
-                                  </td>
-                                  <td className="p-3 text-xs text-muted-foreground max-w-xs truncate">
-                                    {entry.httpReferrer || 'Direkt'}
                                   </td>
                                 </tr>
                               ))}

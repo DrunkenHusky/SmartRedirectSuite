@@ -107,8 +107,7 @@ Content-Type: application/json
   "newUrl": "https://newsite.com/articles/article-1",
   "path": "/news/article-1",
   "userAgent": "Mozilla/5.0...",
-  "referrer": "https://google.com",
-  "httpReferrer": "https://google.com"
+  "timestamp": "2025-01-06T17:30:00.000Z"
 }
 ```
 
@@ -116,8 +115,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "trackingId": "tracking_uuid",
-  "timestamp": "2025-01-06T17:30:00.000Z"
+  "trackingId": "tracking_uuid"
 }
 ```
 
@@ -364,9 +362,7 @@ GET /api/admin/stats/entries
       "newUrl": "https://newsite.com/articles/article-1",
       "path": "/news/article-1",
       "timestamp": "2025-01-06T17:30:00.000Z",
-      "userAgent": "Mozilla/5.0...",
-      "referrer": "https://google.com",
-      "httpReferrer": "https://google.com"
+      "userAgent": "Mozilla/5.0..."
     }
   ],
   "pagination": {
@@ -483,7 +479,7 @@ Content-Type: application/json
 Content-Type: text/csv
 Content-Disposition: attachment; filename="url-statistics-20250106.csv"
 
-Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,HTTP-Referrer
+Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Referrer
 "https://oldsite.com/news/","https://newsite.com/articles/","/news/","2025-01-06T17:30:00.000Z","Mozilla/5.0...","https://google.com"
 ```
 
@@ -495,8 +491,7 @@ Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,HTTP-Referrer
     "newUrl": "https://newsite.com/articles/",
     "path": "/news/",
     "timestamp": "2025-01-06T17:30:00.000Z",
-    "userAgent": "Mozilla/5.0...",
-    "httpReferrer": "https://google.com"
+    "userAgent": "Mozilla/5.0..."
   }
 ]
 ```

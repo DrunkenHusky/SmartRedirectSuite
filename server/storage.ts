@@ -60,12 +60,6 @@ export interface IStorage {
     totalPages: number;
     currentPage: number;
   }>;
-  getTopReferrersPaginated(page: number, limit: number, timeRange?: '24h' | '7d' | 'all'): Promise<{
-    referrers: Array<{referrer: string, count: number}>;
-    total: number;
-    totalPages: number;
-    currentPage: number;
-  }>;
   
   // General Settings
   getGeneralSettings(): Promise<GeneralSettings>;
@@ -335,37 +329,6 @@ export class FileStorage implements IStorage {
       .slice(0, limit);
   }
 
-  // Helper function to extract base URL from referrer
-  private extractBaseUrl(url: string): string {
-    if (url === 'Direkt' || !url) return url;
-    try {
-      const parsedUrl = new URL(url);
-      return `${parsedUrl.protocol}//${parsedUrl.host}`;
-    } catch {
-      return url; // Return original if URL parsing fails
-    }
-  }
-
-  async getTopReferrers(limit = 100, timeRange?: '24h' | '7d' | 'all'): Promise<Array<{referrer: string, count: number}>> {
-    const trackingData = await this.getTrackingData(timeRange);
-    const referrerCounts = new Map<string, number>();
-    
-    // Filter out root path "/" and count referrer occurrences using base URLs
-    trackingData.forEach(track => {
-      if (track.path !== '/') {
-        const httpReferrer = (track as any).httpReferrer;
-        const fullReferrer = httpReferrer || 'Direkt';
-        const baseReferrer = this.extractBaseUrl(fullReferrer); // Use base URL for aggregation
-        const current = referrerCounts.get(baseReferrer) || 0;
-        referrerCounts.set(baseReferrer, current + 1);
-      }
-    });
-
-    return Array.from(referrerCounts.entries())
-      .map(([referrer, count]) => ({ referrer, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit);
-  }
 
   // Enhanced statistics methods
   async getAllTrackingEntries(): Promise<UrlTracking[]> {
@@ -380,13 +343,11 @@ export class FileStorage implements IStorage {
     
     if (query.trim()) {
       const searchTerm = query.toLowerCase();
-      filteredData = filteredData.filter(entry => 
+      filteredData = filteredData.filter(entry =>
         entry.oldUrl.toLowerCase().includes(searchTerm) ||
         ((entry as any).newUrl && (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
         entry.path.toLowerCase().includes(searchTerm) ||
-        entry.userAgent?.toLowerCase().includes(searchTerm) ||
-        entry.referrer?.toLowerCase().includes(searchTerm) ||
-        (entry as any).httpReferrer?.toLowerCase().includes(searchTerm)
+        entry.userAgent?.toLowerCase().includes(searchTerm)
       );
     }
     
@@ -414,14 +375,6 @@ export class FileStorage implements IStorage {
         case 'userAgent':
           aValue = (a.userAgent || '').toLowerCase();
           bValue = (b.userAgent || '').toLowerCase();
-          break;
-        case 'referrer':
-          aValue = (a.referrer || '').toLowerCase();
-          bValue = (b.referrer || '').toLowerCase();
-          break;
-        case 'httpReferrer':
-          aValue = ((a as any).httpReferrer || '').toLowerCase();
-          bValue = ((b as any).httpReferrer || '').toLowerCase();
           break;
         default:
           aValue = a.timestamp;
@@ -545,33 +498,6 @@ export class FileStorage implements IStorage {
     
     return {
       urls: paginatedUrls,
-      total,
-      totalPages,
-      currentPage: page
-    };
-  }
-
-  async getTopReferrersPaginated(
-    page: number = 1, 
-    limit: number = 50, 
-    timeRange?: '24h' | '7d' | 'all'
-  ): Promise<{
-    referrers: Array<{referrer: string, count: number}>;
-    total: number;
-    totalPages: number;
-    currentPage: number;
-  }> {
-    const allReferrers = await this.getTopReferrers(10000, timeRange); // Get a large number first
-    
-    // Calculate pagination
-    const total = allReferrers.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedReferrers = allReferrers.slice(startIndex, endIndex);
-    
-    return {
-      referrers: paginatedReferrers,
       total,
       totalPages,
       currentPage: page

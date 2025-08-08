@@ -130,13 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/track", async (req, res) => {
     try {
       const trackingData = insertUrlTrackingSchema.parse(req.body);
-      // Add HTTP Referer from request headers
-      const httpReferrer = req.get('Referer') || req.get('Referrer') || undefined;
-      const trackingWithReferer = {
-        ...trackingData,
-        httpReferrer
-      };
-      const tracking = await storage.trackUrlAccess(trackingWithReferer);
+      const tracking = await storage.trackUrlAccess(trackingData);
       res.json(tracking);
     } catch (error) {
       console.error("Tracking error:", error);
@@ -434,19 +428,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Top 100 Referrers
-  app.get("/api/admin/stats/referrers", requireAuth, async (req, res) => {
-    try {
-      const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
-      const topReferrers = await storage.getTopReferrers(100, timeRange);
-      
-      res.json(topReferrers);
-    } catch (error) {
-      console.error("Top referrers stats error:", error);
-      res.status(500).json({ error: "Failed to fetch referrer statistics" });
-    }
-  });
-
   // Comprehensive tracking entries with search and sort
   app.get("/api/admin/stats/entries", requireAuth, async (req, res) => {
     try {
@@ -486,26 +467,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
       const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
-      
+
       const result = await storage.getTopUrlsPaginated(page, limit, timeRange);
       res.json(result);
     } catch (error) {
       console.error("Paginated top URLs error:", error);
       res.status(500).json({ error: "Failed to fetch paginated top URLs" });
-    }
-  });
-
-  app.get("/api/admin/stats/referrers/paginated", requireAuth, async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50;
-      const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
-      
-      const result = await storage.getTopReferrersPaginated(page, limit, timeRange);
-      res.json(result);
-    } catch (error) {
-      console.error("Paginated referrers error:", error);
-      res.status(500).json({ error: "Failed to fetch paginated referrers" });
     }
   });
 
@@ -518,10 +485,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const trackingData = await storage.getTrackingData(exportRequest.timeRange);
         
         if (exportRequest.format === 'csv') {
-          // CSV-Export with ALL fields
-          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Referrer,HTTP-Referrer\n';
-          const csvData = trackingData.map(track => 
-            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${track.referrer || ''}","${(track as any).httpReferrer || ''}"`
+          // CSV-Export without referrer
+          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent\n';
+          const csvData = trackingData.map(track =>
+            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}"`
           ).join('\n');
           
           res.setHeader('Content-Type', 'text/csv');
