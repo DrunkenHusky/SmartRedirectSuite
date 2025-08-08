@@ -1470,7 +1470,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </div>
                           
                           {/* Logo Upload Section */}
-                          <div className="border-t pt-4">
+                          <div className="pt-4">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Logo hochladen
