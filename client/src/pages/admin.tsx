@@ -682,19 +682,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: (result, ruleIds) => {
       const deletedCount = result.deletedCount || 0;
-      const failedCount = result.failedCount || 0;
+      const failedCount = (result.failedCount || 0) + (result.notFoundCount || 0);
       const totalRequested = result.totalRequested || ruleIds.length;
-      
+
       if (failedCount > 0) {
-        toast({ 
-          title: "Teilweise gelöscht", 
-          description: `${deletedCount} von ${totalRequested} Regeln wurden erfolgreich gelöscht. ${failedCount} konnten nicht gelöscht werden.`,
+        toast({
+          title: "Teilweise gelöscht",
+          description: `${deletedCount} von ${totalRequested} ${totalRequested === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht. ${failedCount} konnten nicht gelöscht werden.`,
           variant: "destructive"
         });
       } else {
-        toast({ 
-          title: "Regeln gelöscht", 
-          description: `${deletedCount} ${deletedCount === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht.` 
+        toast({
+          title: "Regeln gelöscht",
+          description: `${deletedCount} ${deletedCount === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht.`
         });
       }
       
