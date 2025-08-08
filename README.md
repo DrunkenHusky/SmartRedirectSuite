@@ -1,6 +1,6 @@
-# URL Migration Application
+# SmartRedirect Suite
 
-**Version 1.0.0** - Eine deutsche Web-Anwendung zur Verwaltung von URL-Migrationen zwischen alter und neuer Domain mit erweiterten Admin-Funktionen und intelligenter Regel-Verwaltung.
+**Version 1.0.0** – SmartRedirect Suite ist eine deutsche Web-Anwendung zur Verwaltung von URL-Migrationen zwischen alter und neuer Domain mit erweiterten Admin-Funktionen und intelligenter Regel-Verwaltung.
 
 ## 📋 Überblick
 
@@ -30,7 +30,7 @@ npm --version
 ```bash
 # Repository klonen (ersetzen Sie <repository-url> mit der tatsächlichen URL)
 git clone <repository-url>
-cd url-migration-app
+cd SmartRedirectSuite
 ```
 
 ### Schritt 2: Dependencies installieren
@@ -173,7 +173,7 @@ Diese Anwendung verfügt über umfassende Dokumentation für verschiedene Anwend
 ## 📁 Projektstruktur
 
 ```
-url-migration-app/
+SmartRedirectSuite/
 ├── client/                 # Frontend (React + TypeScript)
 │   ├── src/
 │   │   ├── components/     # UI-Komponenten

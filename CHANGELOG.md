@@ -9,7 +9,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### 🎉 Erste vollständige Version
 
-Diese Version stellt die erste produktionsreife Version der URL-Migration-Anwendung dar. Alle Kernfunktionen sind implementiert und getestet.
+Diese Version stellt die erste produktionsreife Version der SmartRedirect Suite dar. Alle Kernfunktionen sind implementiert und getestet.
 
 ### ✨ Hauptfunktionen
 
