@@ -1,0 +1,52 @@
+{
+  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts", "**/*.spec.ts"],
+  "compilerOptions": {
+    // Performance optimizations
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
+    "noEmit": true,
+    
+    // Module resolution
+    "module": "ESNext",
+    "target": "ES2020",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    
+    // Type checking (Enterprise-grade strictness)
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "useUnknownInCatchVariables": true,
+    
+    // Library and environment
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    
+    // Path mapping
+    "baseUrl": ".",
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["./client/src/*"],
+      "@shared/*": ["./shared/*"],
+      "@assets/*": ["./attached_assets/*"]
+    },
+    
+    // Advanced options
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": true,
+    "removeComments": true,
+    "resolveJsonModule": true
+  }
+}

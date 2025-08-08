@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+
+# Test and temporary files
+cookies.txt
+test_cookies.txt
+*cookies*.txt
+*.tmp
