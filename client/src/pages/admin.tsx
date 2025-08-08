@@ -2206,7 +2206,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                             <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
                               <p className="font-medium">Wichtiger Hinweis:</p>
-                              <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter ?admin=true erreichen.</p>
+                              <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
                               <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
                             </div>
                           </div>
@@ -3357,7 +3357,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
                   <p className="font-medium">Wichtiger Hinweis:</p>
-                  <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter ?admin=true erreichen.</p>
+                  <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
                   <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
                 </div>
               </div>
