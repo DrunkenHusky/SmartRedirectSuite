@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { bruteForceMiddleware, loginAttemptTracker } from "./middleware/bruteForce";
 import {
   insertUrlTrackingSchema,
   exportRequestSchema,
@@ -162,11 +163,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin-Authentifizierung
-  app.post("/api/admin/login", async (req, res) => {
+  app.post("/api/admin/login", bruteForceMiddleware, async (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress || "unknown";
     try {
       // Simple password extraction without validation first
       const { password } = z.object({ password: z.string() }).parse(req.body);
-      
+
       // Check password match first
       if (password === ADMIN_PASSWORD) {
         // Check if session exists, if not return error
@@ -180,6 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.isAdminAuthenticated = true;
         req.session.adminLoginTime = Date.now();
 
+        // Successful login: reset failed attempts
+        loginAttemptTracker.reset(ip);
+
         // For file store, explicitly save the session
         req.session.save((err) => {
           if (err) {
@@ -190,11 +195,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.json({ success: true, sessionId: req.sessionID });
         });
       } else {
+        // Record failed attempt
+        loginAttemptTracker.recordFailure(ip);
         res.status(401).json({ error: "Falsches Passwort" });
       }
     } catch (error) {
       console.error("Login error:", error);
-      
+      // Record failure for any error during login
+      loginAttemptTracker.recordFailure(ip);
+
       // Always return "wrong password" for any error during login
       // This prevents exposing validation details to users
       res.status(401).json({ error: "Falsches Passwort" });

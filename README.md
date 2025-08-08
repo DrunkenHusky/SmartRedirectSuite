@@ -166,6 +166,13 @@ Die Anwendung läuft anschließend unter `http://localhost:5000`.
 
 ## Administration
 
+### Brute-Force-Schutz
+Der Administrator-Login ist gegen Brute-Force-Angriffe geschützt. Nach fünf
+fehlgeschlagenen Anmeldungen wird die anfragende IP-Adresse für eine Stunde
+gesperrt. Die maximale Anzahl an Versuchen und die Sperrdauer lassen sich in
+`shared/constants.ts` über `LOGIN_MAX_ATTEMPTS` und
+`LOGIN_BLOCK_DURATION_MS` anpassen.
+
 ### Regeln importieren
 Beispiel einer JSON-Datei:
 

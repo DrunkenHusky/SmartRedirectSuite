@@ -22,6 +22,9 @@ export const SECURITY_CONFIG = {
   BCRYPT_ROUNDS: 12,
   SESSION_SECRET_LENGTH: 64,
   CSRF_TOKEN_LENGTH: 32,
+  // Brute-force protection
+  LOGIN_MAX_ATTEMPTS: 5,
+  LOGIN_BLOCK_DURATION_MS: 60 * 60 * 1000, // 1 hour
 } as const;
 
 // File handling
