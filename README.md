@@ -1,52 +1,71 @@
 # SmartRedirect Suite
 
-**SmartRedirect Suite** ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain – mit erweiterten Admin‑Funktionen und intelligenter Regelverwaltung. Typischer Use Case: Migration von **SharePoint On-Premises** zu **SharePoint Online**, wenn sich Domain und Pfadstruktur ändern. Entweder leitest du den Traffic von der alten Domain auf diese Web-App um, oder du schaltest sie direkt unter der alten Domain auf. Die App weist Nutzer darauf hin, dass sie eine alte URL verwenden, und kann sie individuell dazu auffordern, ihre URL auf die neue Adresse zu aktualisieren.
+SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain. Typischer Use Case: Migration von SharePoint On-Premises zu SharePoint Online, wenn sich Domain und Pfadstruktur ändern. Die App weist Nutzer auf veraltete Links hin und kann automatisch auf neue Ziele weiterleiten.
 
-## Überblick der Key-Features
+## Inhaltsverzeichnis
+- [Key Features](#key-features)
+- [Funktionsweise](#funktionsweise)
+  - [Regelmodi](#regelmodi)
+  - [Beispiele](#beispiele)
+- [Einsatzszenarien](#einsatzszenarien)
+- [Schnellstart](#schnellstart)
+  - [Voraussetzungen](#voraussetzungen)
+  - [1. Repository klonen](#1-repository-klonen)
+  - [2. Dependencies installieren](#2-dependencies-installieren)
+  - [3. .env-Datei erstellen](#3-env-datei-erstellen)
+  - [4. Anwendung starten](#4-anwendung-starten)
+- [Administration](#administration)
+  - [Regeln importieren](#regeln-importieren)
+  - [Einstellungen anpassen](#einstellungen-anpassen)
+  - [Statistiken & Monitoring](#statistiken--monitoring)
+- [Validierung & Qualitätssicherung](#validierung--qualitatssicherung)
+- [Datenverwaltung](#datenverwaltung)
+- [Sicherheit](#sicherheit)
+- [Deployment](#deployment)
+- [Entwicklung](#entwicklung)
+- [Support & Beitrag](#support--beitrag)
+- [Änderungshistorie](#anderungshistorie)
 
-- **Zentrale Regelverwaltung**: Unbegrenzt viele Weiterleitungsregeln mit automatischer URL-Erkennung und intelligenter Transformationslogik.
-- **Kontrollierte Migrationen**: Konsistente, nachvollziehbare Domain- und Pfadwechsel; stabiler Nutzerfluss vor, während und nach der Migration.
-- **Produktivität im Alltag**: Multi-Select für effiziente Bulk-Operationen (Desktop) plus Import/Export von Regeln und Einstellungen.
-- **Admin-Panel**: Persistente Session-Authentifizierung, Tab-State-Erhaltung und deutschsprachige, vollständig anpassbare UI.
-- **Qualitätssicherung**: Intelligente Validierung mit präziser URL-Überlappungserkennung.
-- **Transparenz & Analyse**: Umfassende Statistiken und URL-Zugriffs-Tracking.
-- **Mobil-optimiert**: Responsives Design mit gerätespezifischen Funktionen.
+## Key Features
+- Zentrale Regelverwaltung mit automatischer URL-Erkennung
+- Kontrollierte Migrationen und nachvollziehbare Domainwechsel
+- Produktivität: Multi-Select, Import/Export von Regeln
+- Admin-Panel mit persistenter Session und anpassbarer UI
+- Intelligente Validierung mit Überlappungserkennung
+- Umfangreiche Statistiken und URL-Tracking
+- Responsives Design für Desktop und Mobilgeräte
 
-
-## Wie es funktioniert
-
+## Funktionsweise
 Jede Regel definiert:
-- einen **URL-Pfad-Matcher** (ab wann greift die Regel),
-- einen **Modus** (*Teilweise* oder *Vollständig*),
-- sowie Zielwerte (**Base-URL** bzw. **Ziel-URL**).
+- einen **URL-Pfad-Matcher**
+- einen **Modus** (*Teilweise* oder *Vollständig*)
+- Zielwerte (**Base-URL** oder **Ziel-URL**)
 
-**Fallback ohne Regeln:**  
-Wenn keine Regeln hinterlegt sind, erfolgt ein **Domainersatz** gemäss den generellen Einstellungen. Pfad, Parameter und Anker bleiben erhalten.
+**Fallback ohne Regeln:** Bei fehlenden Regeln erfolgt ein Domainersatz gemäß den allgemeinen Einstellungen; Pfad, Parameter und Anker bleiben erhalten.
 
-## Regelmodi
-
+### Regelmodi
 | Modus | Verhalten |
-|---|---|
-| **Teilweise** | Ersetzt nur die Pfadsegmente **ab** dem im URL-Pfad-Matcher definierten Wert. Die **Base-URL** wird aus den generellen Einstellungen übernommen. **Zusätzliche Pfadsegmente, Parameter und Anker** der ursprünglichen URL bleiben erhalten und werden an die neue Base-URL angehängt. |
-| **Vollständig** | Leitet alle passenden alten Links **komplett** auf eine **neue Ziel-URL** um. **Keine** Bestandteile der alten URL (keine zusätzlichen Pfadsegmente, Parameter oder Anker) werden übernommen. |
+|-------|-----------|
+| **Teilweise** | Ersetzt Pfadsegmente ab dem Matcher. Base‑URL stammt aus den allgemeinen Einstellungen; zusätzliche Segmente, Parameter und Anker werden angehängt. |
+| **Vollständig** | Leitet komplett auf eine neue Ziel‑URL um. Keine Bestandteile der alten URL werden übernommen. |
 
-## Beispiele
+### Beispiele
+**Ausgangs‑URL**
 
-**Ausgangs-URL**
 ```
 https://intranet.alt.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
 **Teilweise**
+
 ```
 Matcher: /sites/team
 Neuer Teilpfad: /teams/finance
 Ergebnis: https://sharepoint.neu.ch/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
-
-Info: Neue Base-URL (https://sharepoint.neu.ch): Wird automatisch aus den General-Einstellungen ausgelesen und muss nicht für jede Regel vom Typ teilweise generiert werden 
 ```
 
 **Vollständig**
+
 ```
 Matcher: /sites/team
 Ziel-URL: https://sharepoint.neu.ch/hub
@@ -54,50 +73,50 @@ Ergebnis: https://sharepoint.neu.ch/hub
 ```
 
 **Ohne Regel (Domainersatz)**
+
 ```
 Ergebnis: https://portal.neu.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
 ## Einsatzszenarien
+- Migrationen (z. B. SharePoint On‑Premises → SharePoint Online)
+- Domain‑Rebrands und Konsolidierungen
+- Umstrukturierungen großer Linklandschaften
 
-- Migrationen (z. B. SharePoint On-Premises → SharePoint Online)  
-- Domain-Rebrands und Konsolidierungen  
-- Umstrukturierungen grosser Linklandschaften
+## Schnellstart
 
-## 🚀 Komplette Installation - Schritt für Schritt
+### Voraussetzungen
+- Node.js >= 18
 
-### Voraussetzungen prüfen
+Überprüfen Sie die Installation:
 
-Stellen Sie sicher, dass Node.js installiert ist:
 ```bash
 node --version
 npm --version
 ```
-**Erforderlich:** Node.js Version 18 oder höher
 
-### Schritt 1: Repository herunterladen
+### 1. Repository klonen
+
 ```bash
-# Repository klonen (ersetzen Sie <repository-url> mit der tatsächlichen URL)
 git clone <repository-url>
 cd SmartRedirectSuite
 ```
 
-### Schritt 2: Dependencies installieren
+### 2. Dependencies installieren
+
 ```bash
 npm install
 ```
 
-### Schritt 3: Umgebungsdatei erstellen (.env)
-
-Erstellen Sie eine `.env` Datei im Hauptverzeichnis mit folgendem Inhalt:
+### 3. .env-Datei erstellen
+Erstellen Sie eine `.env` Datei im Hauptverzeichnis:
 
 ```bash
-# .env Datei erstellen
-cat > .env << 'EOF'
+cat > .env <<'EOF'
 # Admin Panel Authentifizierung
 ADMIN_PASSWORD=MeinSicheresPasswort123
 
-# Session-Sicherheit (generieren Sie einen starken, zufälligen String)
+# Session-Sicherheit
 SESSION_SECRET=super-geheimer-session-schluessel-hier-einfuegen-mindestens-32-zeichen
 
 # Server-Konfiguration
@@ -109,204 +128,22 @@ NODE_ENV=development
 EOF
 ```
 
-**Alternativ:** Kopieren Sie die Beispiel-Datei und bearbeiten Sie sie:
-```bash
-cp .env.example .env
-nano .env  # oder verwenden Sie einen anderen Editor
-```
-
-### Schritt 4: Anwendung starten
+### 4. Anwendung starten
 
 ```bash
-# Entwicklungsserver starten (mit Hot-Reload)
-npm run dev
+npm run dev        # Entwicklungsmodus
+# oder
+npm run build
+npm start          # Produktion
 ```
 
-**Die Anwendung läuft jetzt unter:** `http://localhost:5000`
+Die Anwendung läuft anschließend unter `http://localhost:5000`.
 
-### Schritt 5: Admin-Zugang testen
+## Administration
 
-1. Öffnen Sie `http://localhost:5000/admin` im Browser
-2. Loggen Sie sich mit dem in `.env` definierten Passwort ein
-3. Standardmäßig: **Password1** (falls nicht geändert)
+### Regeln importieren
+Beispiel einer JSON-Datei:
 
-### Produktionsstart (optional)
-
-Für Produktionsumgebung:
-```bash
-# Anwendung für Produktion bauen und starten
-npm install && npm run build
-npm run start
-```
-
-**Hinweis:** Die `.env` Datei wird automatisch geladen. Die Anwendung speichert Logo-Uploads standardmäßig lokal im Ordner `data/uploads`.
-
-### Umgebungsvariablen Erklärung
-
-| Variable | Beschreibung | Standard | Erforderlich |
-|----------|-------------|----------|--------------|
-| `ADMIN_PASSWORD` | Admin-Panel Passwort | `Password1` | Empfohlen |
-| `SESSION_SECRET` | Verschlüsselungsschlüssel für Sessions | Auto-generiert | Empfohlen |
-| `LOCAL_UPLOAD_PATH` | Pfad für Datei-Uploads | `./data/uploads` | Optional |
-| `PORT` | Server-Port | `5000` | Optional |
-| `NODE_ENV` | Umgebung (development/production) | `development` | Optional |
-
-### Troubleshooting Installation
-
-**Problem: "npm install" schlägt fehl**
-```bash
-# Node.js Cache leeren
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
-```
-
-**Problem: Port bereits belegt**
-```bash
-# Anderen Port verwenden
-echo "PORT=3000" >> .env
-npm run dev
-```
-
-**Problem: Admin-Login funktioniert nicht**
-```bash
-# Passwort in .env prüfen
-cat .env | grep ADMIN_PASSWORD
-```
-
-## 📚 Dokumentation
-
-Diese Anwendung verfügt über umfassende Dokumentation für verschiedene Anwendungsfälle:
-
-| Dokument | Beschreibung | Zielgruppe |
-|----------|-------------|-----------|
-| **[README.md](./README.md)** | Vollständige Anleitung mit Installation, Konfiguration und Verwaltung | Alle Benutzer |
-| **[CHANGELOG.md](./CHANGELOG.md)** | **Version 1.0.0** - Vollständige Versionshistorie und Feature-Übersicht | Alle Benutzer |
-| **[INSTALLATION.md](./INSTALLATION.md)** | Schnellstart-Anleitung für sofortige Inbetriebnahme | Entwickler & Administratoren |
-| **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** | Umfassende REST API-Dokumentation mit Beispielen | Entwickler & Integratoren |
-| **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)** | Production-Deployment für Unternehmensumgebungen | DevOps & System-Administratoren |
-| **[OPENSHIFT_DEPLOYMENT.md](./OPENSHIFT_DEPLOYMENT.md)** | OpenShift-spezifisches Deployment mit persistentem Storage | OpenShift-Administratoren |
-
-### Weiterführende Dokumentation
-- **sample-rules-import.json**: Beispieldatei für Regel-Import
-- **.env.example**: Beispiel-Umgebungskonfiguration
-
-## 📁 Projektstruktur
-
-```
-SmartRedirectSuite/
-├── client/                 # Frontend (React + TypeScript)
-│   ├── src/
-│   │   ├── components/     # UI-Komponenten
-│   │   ├── pages/         # Hauptseiten (Admin, Migration)
-│   │   ├── hooks/         # Custom React Hooks
-│   │   └── lib/           # Utilities und Hilfsfunktionen
-├── server/                # Backend (Express + TypeScript)
-│   ├── index.ts           # Server-Einstiegspunkt
-│   ├── routes.ts          # API-Endpunkte
-│   ├── storage.ts         # Daten-Management
-│   └── vite.ts            # Vite-Integration
-├── shared/                # Geteilte Schemas und Typen
-├── data/                  # JSON-Dateien für Datenspeicherung
-│   ├── rules.json         # URL-Transformationsregeln
-│   ├── tracking.json      # Zugriffs-Statistiken
-│   └── settings.json      # Allgemeine Einstellungen
-└── package.json
-```
-
-## 🔧 Verfügbare NPM-Befehle
-
-| Befehl | Beschreibung |
-|--------|-------------|
-| `npm run dev` | Startet Entwicklungsserver mit Hot-Reload |
-| `npm run build` | Erstellt Produktions-Build |
-| `npm start` | Startet Produktionsserver |
-| `npm run check` | TypeScript-Typprüfung |
-
-## 📋 Version Information
-
-**Aktuelle Version:** 1.0.0 (Erste produktionsreife Version)
-
-Siehe [CHANGELOG.md](./CHANGELOG.md) für eine vollständige Übersicht aller Features und Änderungen in Version 1.0.0.
-
-## 🛠️ Administration und Verwaltung
-
-### Admin-Zugang
-
-#### Normaler Zugang
-1. Navigieren Sie zu `http://localhost:5000`
-2. Klicken Sie auf den Admin-Login-Button
-3. Geben Sie das Admin-Passwort ein (Standard: "Password1")
-4. **Automatische Session-Persistenz**: Bleiben Sie nach Browser-Refresh eingeloggt
-5. **Tab-State-Erhaltung**: Ausgewählte Admin-Tabs werden nach Aktualisierung beibehalten
-
-#### Admin-Zugang bei aktivierter automatischer Weiterleitung
-
-**⚠️ Wichtiger Hinweis:** Falls die automatische Weiterleitung aktiviert ist, erreichen Sie das Admin-Panel nur noch über URL-Parameter:
-
-```
-https://ihre-domain.com/?admin=true
-```
-
-**Beispiele:**
-- Entwicklung: `http://localhost:5000/?admin=true`
-
-Dieser Parameter umgeht die automatische Weiterleitung und zeigt das normale Admin-Login an.
-
-### URL-Regeln verwalten
-
-#### Neue Regel erstellen
-1. Im Admin-Panel auf "Neue Regel erstellen" klicken
-2. **URL-Matcher** eingeben (z.B. `/news-beitrag/`)
-3. **Ziel-URL** definieren (z.B. `/nachrichten/artikel/`)
-4. **Regel-Typ** wählen:
-   - `wildcard`: Vollständige Weiterleitung
-   - `partial`: Teilweise Weiterleitung
-5. **Automatische Weiterleitung** aktivieren/deaktivieren
-6. Optional: **Info-Text** für spezielle Hinweise
-
-#### Multi-Select-Funktionen (Desktop)
-- **Einzelauswahl**: Checkboxes neben jeder Regel
-- **Alle auswählen**: Master-Checkbox für gesamte Seitenauswahl
-- **Bulk-Löschung**: Mehrere Regeln gleichzeitig löschen
-- **Bestätigungsdialog**: Sicherheitsabfrage vor Bulk-Operationen
-- **Mobile-Hinweis**: Informative Meldung für mobile Nutzer
-
-### Automatische Weiterleitung konfigurieren
-
-Die Anwendung unterstützt automatische Weiterleitung ohne Anzeige der Migrations-Seite auf zwei Ebenen:
-
-#### Globale Automatische Weiterleitung
-1. Im Admin-Panel zu den "Allgemeinen Einstellungen" navigieren
-2. Zum "Footer"-Bereich scrollen
-3. Die Option "Automatische Weiterleitung" aktivieren
-4. Einstellungen speichern
-
-#### Regel-spezifische Automatische Weiterleitung
-1. Im Admin-Panel unter "URL-Transformationsregeln" eine Regel erstellen oder bearbeiten
-2. Die Option "Automatische Weiterleitung für diese Regel" aktivieren
-3. Regel speichern
-
-#### Funktionsweise und Prioritäten
-- **Regel-spezifisch aktiv**: URLs, die dieser Regel entsprechen, werden automatisch weitergeleitet
-- **Nur global aktiv**: Alle URLs werden automatisch weitergeleitet (außer solche mit Regeln ohne Auto-Redirect)
-- **Beide inaktiv**: Benutzer sehen die normale Migrations-Seite mit Schaltflächen
-
-#### Wichtige Hinweise
-- Regel-spezifische Einstellungen haben Vorrang vor der globalen Einstellung
-- Bei aktivierter automatischer Weiterleitung ist der Admin-Zugang nur über `?admin=true` möglich
-- URL-Regeln werden weiterhin angewendet und in Statistiken erfasst
-- Die Weiterleitung erfolgt sofort beim Seitenladen ohne Benutzerinteraktion
-
-#### Regeln importieren/exportieren
-
-**Export:**
-```bash
-# Über Admin-Panel: "Daten exportieren" → "URL-Regeln" → JSON/CSV
-```
-
-**Import:**
-- JSON-Datei mit folgendem Format vorbereiten:
 ```json
 {
   "rules": [
@@ -319,115 +156,79 @@ Die Anwendung unterstützt automatische Weiterleitung ohne Anzeige der Migration
   ]
 }
 ```
-- Über Admin-Panel hochladen
+
+Im Admin-Panel hochladen oder über `sample-rules-import.json` einsehen.
 
 ### Einstellungen anpassen
+Im Admin-Panel können Texte, Farben und UI-Elemente angepasst werden, einschließlich:
+- Header und Icons
+- Popup-Texte
+- Labels im URL-Vergleich
+- Button-Beschriftungen
+- Zusätzliche Info-Bereiche
 
-Im Admin-Panel können alle Texte und visuelle Elemente angepasst werden:
+### Statistiken & Monitoring
+Das Admin-Panel zeigt:
+- Zugriffszahlen (gesamt, heute, Woche)
+- Top-URLs
+- Zeitbasierte Auswertungen (24h, 7 Tage, alle Daten)
+- Export als CSV/JSON
 
-- **Header-Einstellungen**: Titel, Icons, Hintergrundfarben
-- **Hauptinhalt**: Popup-Texte und Beschreibungen
-- **URL-Vergleich**: Labels und Anzeigeoptionen
-- **Button-Texte**: Alle Schaltflächen-Beschriftungen
-- **Zusätzliche Informationen**: Anpassbare Info-Bereiche
+## Validierung & Qualitätssicherung
+Die Anwendung verhindert:
+- Doppelte URL-Matcher
+- Überlappende Regeln (z. B. `/news/` und `/news/archive/`)
+- Wildcard-Konflikte
+- Ungültige Pfadsegmente
 
-### Statistiken und Monitoring
+Fehler werden detailliert auf Deutsch ausgegeben; bei Validierungsfehlern werden keine Änderungen gespeichert.
 
-Das Admin-Panel bietet umfassende Statistiken:
+## Datenverwaltung
+Standardmäßig werden JSON-Dateien im `data/` Verzeichnis genutzt:
+- `data/rules.json`, `data/settings.json`, `data/tracking.json`
+- `data/sessions/` für Admin-Sessions
 
-- **Zugriffszahlen**: Gesamt, heute, diese Woche
-- **Top-URLs**: Meist aufgerufene veraltete URLs
-- **Zeitbasierte Auswertungen**: 24h, 7 Tage, alle Daten
-- **Export-Funktionen**: CSV/JSON für weitere Analysen
+## Sicherheit
+- Persistente Session-Authentifizierung (7 Tage)
+- Sichere Cookies und dateibasierte Sessions
+- Passwortgeschützter Admin-Bereich
+- XSS-Schutz durch React
+- Input-Validierung mit Zod
+- Konfiguration über Umgebungsvariablen
 
-## 🔍 Validierung und Qualitätssicherung
+## Deployment
+Lokale Produktion:
 
-### URL-Regel-Validierung
-
-Die Anwendung verhindert automatisch:
-- **Doppelte URL-Matcher**: Gleiche URLs können nicht mehrfach definiert werden
-- **Intelligente Überlappungserkennung**: Präzise Erkennung echter URL-Konflikte
-  - ✅ Erlaubt: `/news/` und `/news-beitrag/` (verschiedene Pfade)
-  - ❌ Verhindert: `/news/` und `/news/archive/` (echte Überlappung)
-- **Wildcard-Konflikte**: Probleme mit Pattern-Matching
-- **Pfad-Segment-Analyse**: Intelligente Unterscheidung zwischen ähnlichen URLs
-
-### Fehlerbehandlung
-
-- Detaillierte Fehlermeldungen in deutscher Sprache
-- Transaktionsähnliches Verhalten: Bei Validierungsfehlern werden keine Änderungen gespeichert
-- Konsistente Validierung über alle Schnittstellen (Web-Interface, Import, API)
-
-## 🗃️ Datenverwaltung
-
-### Dateibasierte Speicherung (Standard)
-
-Die Anwendung verwendet JSON-Dateien im `data/` Verzeichnis:
-- **URL-Regeln & Einstellungen**: `data/rules.json`, `data/settings.json`, `data/tracking.json`
-- **Admin-Sessions**: `data/sessions/` Verzeichnis mit automatischer Bereinigung
-- Einfache Konfiguration ohne Datenbank-Setup
-- Automatische Backup-Fähigkeiten durch Datei-Kopien
-- Portabel zwischen verschiedenen Umgebungen
-- **Production-Ready**: Dateibasierte Sessions eliminieren Memory-Leaks und skalieren über mehrere Prozesse
-
-
-
-## 🔒 Sicherheit
-
-- **Persistente Session-Authentifizierung** mit 7-Tage-Gültigkeit und automatischer Verlängerung
-- **Dateibasierte Session-Speicherung** mit sicheren Cookies
-- **Passwort-geschützter Admin-Bereich** mit konfigurierbaren Credentials
-- **XSS-Schutz** durch React's eingebaute Sicherheitsfeatures
-- **Input-Validierung** mit Zod-Schemas
-- **Umgebungsvariablen** für sensible Konfigurationsdaten
-- **Automatische Session-Prüfung** zur Erkennung abgelaufener Anmeldungen
-
-## 🌐 Deployment
-
-### Lokale Produktion
 ```bash
 npm run build
 npm start
 ```
 
-### Weitere Plattformen
-- **Vercel**: Unterstützt Node.js-Anwendungen; `LOCAL_UPLOAD_PATH` auf persistentes Verzeichnis setzen
-- **Heroku**: Mit Procfile für Express-Server; `LOCAL_UPLOAD_PATH` angeben
-- **Docker**: Dockerfile kann bei Bedarf erstellt werden; Volume mounten und `LOCAL_UPLOAD_PATH` setzen
+Weitere Plattformen: Vercel, Heroku oder Docker (Persistenz über `LOCAL_UPLOAD_PATH` sicherstellen).
 
-## 🛠️ Entwicklung
+## Entwicklung
+Technologie-Stack:
+- React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- Express.js und Zod im Backend
+- TanStack Query, Wouter, React Hook Form
 
-### Technologie-Stack
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
-- **Backend**: Express.js, TypeScript, Zod-Validierung
-- **State Management**: TanStack Query für Server-State
-- **Routing**: Wouter für Client-seitige Navigation
-- **Forms**: React Hook Form mit Zod-Resolvers
+Richtlinien:
+1. TypeScript verwenden
+2. Zod-Schemas zur Validierung
+3. Shared Types zwischen Frontend und Backend
+4. UI in deutscher Sprache
+5. Responsive, Mobile-First Design
 
-### Entwicklungsrichtlinien
-1. TypeScript für alle Dateien verwenden
-2. Zod-Schemas für Datenvalidierung
-3. Shared types zwischen Frontend und Backend
-4. Konsistente deutsche Sprache in der UI
-5. Responsive Design mit Mobile-First-Ansatz
+## Support & Beitrag
+Bei Problemen:
+1. Konsolen-Logs prüfen
+2. Umgebungsvariablen kontrollieren
+3. Dependencies installieren
+4. `ADMIN_PASSWORD` verifizieren
+5. Upload-Pfad bei Logo-Fehlern prüfen
 
-## 📞 Support und Beitrag
+## Änderungshistorie
+Aktuelle Version: **1.0.0**
 
-Bei Fragen oder Problemen:
-1. Prüfen Sie die Konsolen-Logs auf Fehlermeldungen
-2. Überprüfen Sie die Umgebungsvariablen
-3. Stellen Sie sicher, dass alle Dependencies installiert sind
-4. Bei Admin-Zugriffsproblemen das `ADMIN_PASSWORD` prüfen
-5. **Logo-Upload-Fehler**: Überprüfen Sie den in `LOCAL_UPLOAD_PATH` gesetzten Upload-Pfad
+Detaillierte Änderungen siehe [CHANGELOG.md](./CHANGELOG.md).
 
-## 📝 Änderungshistorie
-
-**Aktuelle Version:** 1.0.0
-
-Für eine vollständige Übersicht aller Features, Verbesserungen und Änderungen siehe [**CHANGELOG.md**](./CHANGELOG.md).
-
-Das Changelog enthält detaillierte Informationen zu:
-- Allen implementierten Features in Version 1.0.0
-- Technische Architektur und Designentscheidungen  
-- Deployment- und Sicherheitsverbesserungen
-- Geplante Features für zukünftige Versionen
