@@ -95,8 +95,19 @@ export class FileSessionStore extends Store {
 
         // Remove any existing session file to avoid Windows rename errors
         await fs.rm(sessionPath, { force: true });
-        await fs.rename(tempPath, sessionPath);
-        
+
+        try {
+          await fs.rename(tempPath, sessionPath);
+        } catch (error: any) {
+          // Fallback for Windows EPERM or EXDEV errors
+          if (['EXDEV', 'EACCES', 'EPERM'].includes(error.code)) {
+            await fs.copyFile(tempPath, sessionPath);
+            await fs.unlink(tempPath);
+          } else {
+            throw error;
+          }
+        }
+
         callback?.();
       } catch (error) {
         console.error(`FileSessionStore.set: Error saving session ${sid}:`, error);
