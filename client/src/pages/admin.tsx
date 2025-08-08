@@ -627,7 +627,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/rules/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
-      toast({ title: "Regel gelöscht", description: "Die URL-Regel wurde erfolgreich gelöscht." });
+      toast({
+        title: "Regel gelöscht",
+        description: "1 Regel wurde erfolgreich gelöscht.",
+      });
     },
     onError: (error: any) => {
       // Handle authentication errors specifically
@@ -672,9 +675,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       
       console.log(`BULK DELETE SAFETY CHECK: Deleting ${validRuleIds.length} rules from current page (${paginatedRules.length} total on page)`, validRuleIds.slice(0, 5));
-      
+
       // Use the dedicated bulk delete endpoint with ONLY valid IDs
-      return await apiRequest("DELETE", "/api/admin/bulk-delete-rules", { ruleIds: validRuleIds });
+      const response = await apiRequest("DELETE", "/api/admin/bulk-delete-rules", { ruleIds: validRuleIds });
+      return await response.json();
     },
     onSuccess: (result, ruleIds) => {
       const deletedCount = result.deletedCount || 0;
