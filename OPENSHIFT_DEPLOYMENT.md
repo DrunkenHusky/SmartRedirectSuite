@@ -1,4 +1,4 @@
-# OpenShift Deployment Guide - URL Migration Tool
+# OpenShift Deployment Guide - SmartRedirect Suite
 
 > **Zielgruppe**: OpenShift-Administratoren und DevOps-Engineers. Für Standard-Installation siehe [INSTALLATION.md](./INSTALLATION.md). Für Enterprise-Features konsultieren Sie [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
 
@@ -31,22 +31,22 @@ Die Anwendung speichert alle Daten ausschließlich im Dateisystem; eine Datenban
 ### OpenShift-Projekt erstellen
 ```bash
 # Neues Projekt erstellen
-oc new-project url-migration-tool
+oc new-project smartredirect-suite
 
 # Projekt als aktiv setzen
-oc project url-migration-tool
+oc project smartredirect-suite
 
 # Labels für bessere Organisation
-oc label namespace url-migration-tool app=url-migration-tool
+oc label namespace smartredirect-suite app=smartredirect-suite
 ```
 
 ### Service Account konfigurieren
 ```bash
 # Service Account für die Anwendung erstellen
-oc create serviceaccount url-migration-sa
+oc create serviceaccount smartredirect-sa
 
 # Berechtigung für Persistent Volumes
-oc adm policy add-scc-to-user anyuid -z url-migration-sa
+oc adm policy add-scc-to-user anyuid -z smartredirect-sa
 ```
 
 ## 2. Persistent Storage konfigurieren
@@ -63,8 +63,8 @@ Die Anwendung speichert Konfigurationen, Sitzungen und Uploads ausschließlich i
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: url-migration-data-pvc
-  namespace: url-migration-tool
+  name: smartredirect-data-pvc
+  namespace: smartredirect-suite
 spec:
   accessModes:
     - ReadWriteOnce
@@ -95,12 +95,12 @@ oc get storageclass
 ### Application Secrets erstellen
 ```bash
 # Admin-Passwort und Session-Secret erstellen
-oc create secret generic url-migration-secrets \
+oc create secret generic smartredirect-secrets \
   --from-literal=ADMIN_PASSWORD='IhrSicheresPasswort123!' \
   --from-literal=SESSION_SECRET='super-geheimer-session-schluessel-mindestens-64-zeichen-lang-fuer-produktion'
 
 # Optional: TLS-Zertifikate für HTTPS
-oc create secret tls url-migration-tls \
+oc create secret tls smartredirect-tls \
   --cert=path/to/tls.crt \
   --key=path/to/tls.key
 ```
@@ -149,15 +149,15 @@ Die Anwendung **erkennt automatisch** die Umgebung und verwendet die korrekten W
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: url-migration-config
-  namespace: url-migration-tool
+  name: smartredirect-config
+  namespace: smartredirect-suite
 data:
   NODE_ENV: "production"
   PORT: "5000"
   # Upload-Pfad (muss innerhalb von /app/data liegen)
   LOCAL_UPLOAD_PATH: "/app/data/uploads"
   # Cookie-Domain für Production (optional)
-  COOKIE_DOMAIN: "url-migration-tool-url-migration-tool.apps.cluster.example.com"
+  COOKIE_DOMAIN: "smartredirect-suite-smartredirect-suite.apps.cluster.example.com"
 ```
 
 ```bash
@@ -207,13 +207,13 @@ CMD ["npm", "start"]
 ### Image erstellen und pushen
 ```bash
 # Image lokal erstellen
-docker build -t url-migration-tool:latest .
+docker build -t smartredirect-suite:latest .
 
 # Image taggen für Registry
-docker tag url-migration-tool:latest quay.io/yourorg/url-migration-tool:v1.4
+docker tag smartredirect-suite:latest quay.io/yourorg/smartredirect-suite:v1.4
 
 # Image zur Registry pushen
-docker push quay.io/yourorg/url-migration-tool:v1.4
+docker push quay.io/yourorg/smartredirect-suite:v1.4
 ```
 
 ## 5. Deployment konfigurieren
@@ -224,26 +224,26 @@ docker push quay.io/yourorg/url-migration-tool:v1.4
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: url-migration-tool
-  namespace: url-migration-tool
+  name: smartredirect-suite
+  namespace: smartredirect-suite
   labels:
-    app: url-migration-tool
+    app: smartredirect-suite
     version: v1.4
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: url-migration-tool
+      app: smartredirect-suite
   template:
     metadata:
       labels:
-        app: url-migration-tool
+        app: smartredirect-suite
         version: v1.4
     spec:
-      serviceAccountName: url-migration-sa
+      serviceAccountName: smartredirect-sa
       containers:
-      - name: url-migration-tool
-        image: quay.io/yourorg/url-migration-tool:v1.4
+      - name: smartredirect-suite
+        image: quay.io/yourorg/smartredirect-suite:v1.4
         ports:
         - containerPort: 5000
           protocol: TCP
@@ -251,32 +251,32 @@ spec:
         - name: NODE_ENV
           valueFrom:
             configMapKeyRef:
-              name: url-migration-config
+              name: smartredirect-config
               key: NODE_ENV
         - name: PORT
           valueFrom:
             configMapKeyRef:
-              name: url-migration-config
+              name: smartredirect-config
               key: PORT
         - name: ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: url-migration-secrets
+              name: smartredirect-secrets
               key: ADMIN_PASSWORD
         - name: SESSION_SECRET
           valueFrom:
             secretKeyRef:
-              name: url-migration-secrets
+              name: smartredirect-secrets
               key: SESSION_SECRET
         - name: LOCAL_UPLOAD_PATH
           valueFrom:
             configMapKeyRef:
-              name: url-migration-config
+              name: smartredirect-config
               key: LOCAL_UPLOAD_PATH
         - name: COOKIE_DOMAIN
           valueFrom:
             configMapKeyRef:
-              name: url-migration-config
+              name: smartredirect-config
               key: COOKIE_DOMAIN
         # Persistente Volume Mounts
         # Wichtig: Die Anwendung verwendet fest codierte Pfade relativ zum Arbeitsverzeichnis
@@ -323,7 +323,7 @@ spec:
       volumes:
       - name: data-storage
         persistentVolumeClaim:
-          claimName: url-migration-data-pvc
+          claimName: smartredirect-data-pvc
       # Restart Policy
       restartPolicy: Always
 ```
@@ -341,13 +341,13 @@ oc apply -f deployment.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: url-migration-tool-service
-  namespace: url-migration-tool
+  name: smartredirect-suite-service
+  namespace: smartredirect-suite
   labels:
-    app: url-migration-tool
+    app: smartredirect-suite
 spec:
   selector:
-    app: url-migration-tool
+    app: smartredirect-suite
   ports:
   - name: http
     port: 80
@@ -362,15 +362,15 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: url-migration-tool-route
-  namespace: url-migration-tool
+  name: smartredirect-suite-route
+  namespace: smartredirect-suite
   labels:
-    app: url-migration-tool
+    app: smartredirect-suite
 spec:
-  host: url-migration-tool-url-migration-tool.apps.cluster.example.com
+  host: smartredirect-suite-smartredirect-suite.apps.cluster.example.com
   to:
     kind: Service
-    name: url-migration-tool-service
+    name: smartredirect-suite-service
     weight: 100
   port:
     targetPort: http
@@ -394,14 +394,14 @@ oc apply -f route.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: url-migration-tool-monitor
-  namespace: url-migration-tool
+  name: smartredirect-suite-monitor
+  namespace: smartredirect-suite
   labels:
-    app: url-migration-tool
+    app: smartredirect-suite
 spec:
   selector:
     matchLabels:
-      app: url-migration-tool
+      app: smartredirect-suite
   endpoints:
   - port: http
     path: /api/health
@@ -413,10 +413,10 @@ spec:
 ### Logging-Konfiguration
 ```bash
 # Log-Aggregation mit EFK Stack
-oc label pod -l app=url-migration-tool logging=enabled
+oc label pod -l app=smartredirect-suite logging=enabled
 
 # Logs anzeigen
-oc logs -f deployment/url-migration-tool
+oc logs -f deployment/smartredirect-suite
 ```
 
 ## 8. Backup-Strategie
@@ -428,8 +428,8 @@ cat > backup-job.yaml << 'EOF'
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: url-migration-backup
-  namespace: url-migration-tool
+  name: smartredirect-backup
+  namespace: smartredirect-suite
 spec:
   schedule: "0 2 * * *"  # Täglich um 2:00 Uhr
   jobTemplate:
@@ -444,7 +444,7 @@ spec:
             - -c
             - |
               echo "Starting backup at $(date)"
-              tar -czf /backup/url-migration-$(date +%Y%m%d).tar.gz -C /app data
+              tar -czf /backup/smartredirect-$(date +%Y%m%d).tar.gz -C /app data
               echo "Backup completed at $(date)"
             volumeMounts:
             - name: data-storage
@@ -456,6 +456,9 @@ spec:
           - name: data-storage
             persistentVolumeClaim:
               claimName: url-migration-data-pvc
+          - name: upload-storage
+            persistentVolumeClaim:
+              claimName: smartredirect-uploads-pvc
           - name: backup-storage
             persistentVolumeClaim:
               claimName: backup-pvc  # Zusätzlich zu erstellen
@@ -472,7 +475,7 @@ oc apply -f backup-job.yaml
 # 1. Alle Konfigurationen anwenden
 oc apply -f pvc-data.yaml
 oc apply -f configmap.yaml
-oc create secret generic url-migration-secrets \
+oc create secret generic smartredirect-secrets \
   --from-literal=ADMIN_PASSWORD='IhrSicheresPasswort123!' \
   --from-literal=SESSION_SECRET='super-geheimer-session-schluessel-mindestens-64-zeichen-lang'
 
@@ -482,18 +485,18 @@ oc apply -f service.yaml
 oc apply -f route.yaml
 
 # 3. Deployment-Status prüfen
-oc get pods -l app=url-migration-tool
+oc get pods -l app=smartredirect-suite
 oc get pvc
 oc get routes
 
 # 4. Logs prüfen
-oc logs -f deployment/url-migration-tool
+oc logs -f deployment/smartredirect-suite
 ```
 
 ### Verification und Testing
 ```bash
 # Route URL ermitteln
-ROUTE_URL=$(oc get route url-migration-tool-route -o jsonpath='{.spec.host}')
+ROUTE_URL=$(oc get route smartredirect-suite-route -o jsonpath='{.spec.host}')
 echo "Application URL: https://$ROUTE_URL"
 
 # Health Check
@@ -513,13 +516,13 @@ curl -X POST https://$ROUTE_URL/api/admin/auth \
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: url-migration-tool-hpa
-  namespace: url-migration-tool
+  name: smartredirect-suite-hpa
+  namespace: smartredirect-suite
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: url-migration-tool
+    name: smartredirect-suite
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -540,14 +543,14 @@ spec:
 ### Performance-Tuning
 ```bash
 # Resource-Limits anpassen für High-Load
-oc patch deployment url-migration-tool -p='
+oc patch deployment smartredirect-suite -p='
 {
   "spec": {
     "template": {
       "spec": {
         "containers": [
           {
-            "name": "url-migration-tool",
+            "name": "smartredirect-suite",
             "resources": {
               "limits": {
                 "memory": "1Gi",
@@ -573,14 +576,14 @@ oc patch deployment url-migration-tool -p='
 **Pod startet nicht:**
 ```bash
 # Events prüfen
-oc describe pod -l app=url-migration-tool
+oc describe pod -l app=smartredirect-suite
 
 # Logs anzeigen
-oc logs -l app=url-migration-tool --previous
+oc logs -l app=smartredirect-suite --previous
 
 # Storage-Probleme prüfen
 oc get pvc
-oc describe pvc url-migration-data-pvc
+oc describe pvc smartredirect-data-pvc
 ```
 
 **Persistente Daten gehen verloren:**
@@ -589,16 +592,16 @@ oc describe pvc url-migration-data-pvc
 oc get pvc -o wide
 
 # Volume-Mounts verifizieren
-oc describe pod -l app=url-migration-tool | grep -A5 "Mounts:"
+oc describe pod -l app=smartredirect-suite | grep -A5 "Mounts:"
 
 # Datei-Berechtigungen prüfen
-oc exec -it deployment/url-migration-tool -- ls -la /app/
+oc exec -it deployment/smartredirect-suite -- ls -la /app/
 ```
 
 **Performance-Probleme:**
 ```bash
 # Resource-Verbrauch überwachen
-oc top pods -l app=url-migration-tool
+oc top pods -l app=smartredirect-suite
 
 # Gesundheitsstatus prüfen
 curl https://$ROUTE_URL/api/health
@@ -609,25 +612,25 @@ curl https://$ROUTE_URL/api/health
 ### Rolling Updates
 ```bash
 # Neues Image deployen
-oc set image deployment/url-migration-tool \
-  url-migration-tool=quay.io/yourorg/url-migration-tool:v1.5
+oc set image deployment/smartredirect-suite \
+  smartredirect-suite=quay.io/yourorg/smartredirect-suite:v1.5
 
 # Update-Status verfolgen
-oc rollout status deployment/url-migration-tool
+oc rollout status deployment/smartredirect-suite
 
 # Rollback bei Problemen
-oc rollout undo deployment/url-migration-tool
+oc rollout undo deployment/smartredirect-suite
 ```
 
 ### Wartungs-Fenster
 ```bash
 # Wartungsmodus aktivieren (Replicas auf 0)
-oc scale deployment url-migration-tool --replicas=0
+oc scale deployment smartredirect-suite --replicas=0
 
 # Wartungsarbeiten durchführen...
 
 # Service wieder aktivieren
-oc scale deployment url-migration-tool --replicas=2
+oc scale deployment smartredirect-suite --replicas=2
 ```
 
 ## 13. Sicherheit
@@ -638,7 +641,7 @@ oc scale deployment url-migration-tool --replicas=2
 apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
 metadata:
-  name: url-migration-scc
+  name: smartredirect-scc
 allowHostDirVolumePlugin: false
 allowHostIPC: false
 allowHostNetwork: false
@@ -656,7 +659,7 @@ runAsUser:
 seLinuxContext:
   type: MustRunAs
 users:
-- system:serviceaccount:url-migration-tool:url-migration-sa
+- system:serviceaccount:smartredirect-suite:smartredirect-sa
 ```
 
 ### Network Policies
@@ -665,12 +668,12 @@ users:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: url-migration-netpol
-  namespace: url-migration-tool
+  name: smartredirect-netpol
+  namespace: smartredirect-suite
 spec:
   podSelector:
     matchLabels:
-      app: url-migration-tool
+      app: smartredirect-suite
   policyTypes:
   - Ingress
   - Egress
@@ -691,19 +694,19 @@ spec:
 ### Hilfreiche OpenShift-Kommandos
 ```bash
 # Projekt-Ressourcen anzeigen
-oc get all -l app=url-migration-tool
+oc get all -l app=smartredirect-suite
 
 # Deployment-Details
-oc describe deployment url-migration-tool
+oc describe deployment smartredirect-suite
 
 # Pod-Logs live verfolgen
-oc logs -f deployment/url-migration-tool
+oc logs -f deployment/smartredirect-suite
 
 # In Pod einloggen für Debugging
-oc exec -it deployment/url-migration-tool -- /bin/bash
+oc exec -it deployment/smartredirect-suite -- /bin/bash
 
 # Port-Forwarding für lokale Tests
-oc port-forward service/url-migration-tool-service 8080:80
+oc port-forward service/smartredirect-suite-service 8080:80
 ```
 
 ### Ressourcen-Übersicht
@@ -721,4 +724,4 @@ Nach erfolgreichem Deployment haben Sie folgende Ressourcen:
 - **Anwendungssupport**: Siehe [README.md](./README.md)
 - **API-Integration**: Siehe [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 
-Diese Anleitung stellt eine produktionstaugliche Bereitstellung der URL Migration Tool Anwendung auf OpenShift sicher, mit allen notwendigen Sicherheits- und Persistierung-Features.
+Diese Anleitung stellt eine produktionstaugliche Bereitstellung der SmartRedirect Suite Anwendung auf OpenShift sicher, mit allen notwendigen Sicherheits- und Persistierung-Features.

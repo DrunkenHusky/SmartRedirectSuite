@@ -287,19 +287,19 @@ export function OptimizedTable<T extends Record<string, any>>({
                 transform: `translateY(${offsetY}px)`,
               }}
             >
-              {loading ? (
-                LoadingSkeleton
-              ) : visibleData.length > 0 ? (
-                visibleData.map((row, index) => (
-                  <TableRowMemo
-                    key={startIndex + index}
-                    row={row}
-                    index={startIndex + index}
-                    columns={columns}
-                    onClick={onRowClick}
-                  />
-                ))
-              ) : (
+                {loading ? (
+                  LoadingSkeleton
+                ) : visibleData.length > 0 ? (
+                  visibleData.map((row: T, index: number) => (
+                    <TableRowMemo
+                      key={startIndex + index}
+                      row={row}
+                      index={startIndex + index}
+                      columns={columns}
+                      {...(onRowClick ? { onClick: onRowClick } : {})}
+                    />
+                  ))
+                ) : (
                 <TableRow style={{ height: itemHeight }}>
                   <TableCell
                     colSpan={columns.length}

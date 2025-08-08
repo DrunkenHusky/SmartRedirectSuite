@@ -627,7 +627,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/rules/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
-      toast({ title: "Regel gelöscht", description: "Die URL-Regel wurde erfolgreich gelöscht." });
+      toast({
+        title: "Regel gelöscht",
+        description: "1 Regel wurde erfolgreich gelöscht.",
+      });
     },
     onError: (error: any) => {
       // Handle authentication errors specifically
@@ -672,25 +675,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       
       console.log(`BULK DELETE SAFETY CHECK: Deleting ${validRuleIds.length} rules from current page (${paginatedRules.length} total on page)`, validRuleIds.slice(0, 5));
-      
+
       // Use the dedicated bulk delete endpoint with ONLY valid IDs
-      return await apiRequest("DELETE", "/api/admin/bulk-delete-rules", { ruleIds: validRuleIds });
+      const response = await apiRequest("DELETE", "/api/admin/bulk-delete-rules", { ruleIds: validRuleIds });
+      return await response.json();
     },
     onSuccess: (result, ruleIds) => {
       const deletedCount = result.deletedCount || 0;
-      const failedCount = result.failedCount || 0;
+      const failedCount = (result.failedCount || 0) + (result.notFoundCount || 0);
       const totalRequested = result.totalRequested || ruleIds.length;
-      
+
       if (failedCount > 0) {
-        toast({ 
-          title: "Teilweise gelöscht", 
-          description: `${deletedCount} von ${totalRequested} Regeln wurden erfolgreich gelöscht. ${failedCount} konnten nicht gelöscht werden.`,
+        toast({
+          title: "Teilweise gelöscht",
+          description: `${deletedCount} von ${totalRequested} ${totalRequested === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht. ${failedCount} konnten nicht gelöscht werden.`,
           variant: "destructive"
         });
       } else {
-        toast({ 
-          title: "Regeln gelöscht", 
-          description: `${deletedCount} ${deletedCount === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht.` 
+        toast({
+          title: "Regeln gelöscht",
+          description: `${deletedCount} ${deletedCount === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht.`
         });
       }
       
@@ -2206,7 +2210,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                             <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
                               <p className="font-medium">Wichtiger Hinweis:</p>
-                              <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter ?admin=true erreichen.</p>
+                              <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
                               <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
                             </div>
                           </div>
@@ -3357,7 +3361,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
                   <p className="font-medium">Wichtiger Hinweis:</p>
-                  <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter ?admin=true erreichen.</p>
+                  <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
                   <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
                 </div>
               </div>

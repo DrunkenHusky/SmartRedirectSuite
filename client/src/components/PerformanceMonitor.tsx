@@ -11,12 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Activity, 
   Clock, 
-  Database, 
-  Globe, 
-  MemoryStick, 
+  Database,
+  MemoryStick,
   Zap,
   AlertTriangle,
-  CheckCircle 
+  CheckCircle
 } from 'lucide-react';
 import { useLoadingPerformance, useMemoryMonitoring } from '@/hooks/usePerformance';
 

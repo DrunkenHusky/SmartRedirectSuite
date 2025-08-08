@@ -5,11 +5,11 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [1.0.0] - 2025-01-08
+## [1.0.0] - 2025-08-08
 
 ### 🎉 Erste vollständige Version
 
-Diese Version stellt die erste produktionsreife Version der URL-Migration-Anwendung dar. Alle Kernfunktionen sind implementiert und getestet.
+Diese Version stellt die erste produktionsreife Version der SmartRedirect Suite dar. Alle Kernfunktionen sind implementiert und getestet.
 
 ### ✨ Hauptfunktionen
 

@@ -1,4 +1,4 @@
-# Enterprise URL Migration Tool - Production Deployment Guide
+# SmartRedirect Suite - Enterprise Production Deployment Guide
 
 > **Zielgruppe**: DevOps-Engineers, System-Administratoren und Enterprise-Entwickler. Für Standard-Installation siehe [INSTALLATION.md](./INSTALLATION.md). Für API-Integration konsultieren Sie [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
 
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This document provides comprehensive deployment instructions for the enterprise-grade URL migration tool, designed for large-scale production environments with high availability, security, and performance requirements including bulk operations and mobile-responsive interfaces.
+This document provides comprehensive deployment instructions for the enterprise-grade SmartRedirect Suite, designed for large-scale production environments with high availability, security, and performance requirements including bulk operations and mobile-responsive interfaces.
 
 ## Architecture Summary
 
@@ -142,7 +142,7 @@ npm install -g pm2
 cat > ecosystem.config.js << 'EOF'
 module.exports = {
   apps: [{
-    name: 'url-migration-tool',
+    name: 'smartredirect-suite',
     script: 'dist/index.js',
     instances: 'max',
     exec_mode: 'cluster',
@@ -196,7 +196,7 @@ echo "*.* @@logserver:514" >> /etc/rsyslog.conf
 systemctl restart rsyslog
 
 # Log rotation
-cat > /etc/logrotate.d/url-migration << 'EOF'
+cat > /etc/logrotate.d/smartredirect << 'EOF'
 /path/to/app/logs/*.log {
     daily
     missingok
@@ -206,7 +206,7 @@ cat > /etc/logrotate.d/url-migration << 'EOF'
     notifempty
     create 644 appuser appuser
     postrotate
-        pm2 reload url-migration-tool
+        pm2 reload smartredirect-suite
     endscript
 }
 EOF
@@ -342,7 +342,7 @@ app.get('/api/health', async (req, res) => {
 ```yaml
 # Prometheus alerting rules
 groups:
-  - name: url-migration-tool
+  - name: smartredirect-suite
     rules:
       - alert: HighMemoryUsage
         expr: (process_memory_usage_bytes / process_memory_limit_bytes) > 0.8
@@ -376,7 +376,7 @@ groups:
 #!/bin/bash
 # Backup script for production data
 
-BACKUP_DIR="/backup/url-migration/$(date +%Y%m%d_%H%M%S)"
+BACKUP_DIR="/backup/smartredirect/$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
 # Backup application data
@@ -402,10 +402,10 @@ rm -rf "$BACKUP_DIR"
 # Disaster recovery script
 
 # Stop application
-pm2 stop url-migration-tool
+pm2 stop smartredirect-suite
 
 # Restore from backup
-BACKUP_FILE="/backup/url-migration/20240806_170000.tar.gz"
+BACKUP_FILE="/backup/smartredirect/20240806_170000.tar.gz"
 tar -xzf "$BACKUP_FILE" -C /tmp/
 
 # Restore data
@@ -413,7 +413,7 @@ cp -r /tmp/20240806_170000/data ./data
 cp -r /tmp/20240806_170000/logs ./logs
 
 # Restart application
-pm2 start url-migration-tool
+pm2 start smartredirect-suite
 
 # Verify health
 sleep 10
@@ -472,7 +472,7 @@ artillery run load-test.yml
    pm2 monit
    
    # Restart if necessary
-   pm2 restart url-migration-tool
+   pm2 restart smartredirect-suite
    ```
 
 2. **Slow Performance**
@@ -523,4 +523,4 @@ artillery run load-test.yml
 - Comprehensive validation layer
 - Production deployment documentation
 
-This deployment guide ensures enterprise-level reliability, security, and performance for the URL migration tool in production environments.
+This deployment guide ensures enterprise-level reliability, security, and performance for the SmartRedirect Suite in production environments.
