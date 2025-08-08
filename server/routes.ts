@@ -699,8 +699,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If there's an old logo file, delete it before setting the new one
       if (oldLogoUrl && oldLogoUrl.startsWith('/uploads/') && oldLogoUrl !== logoPath) {
         const oldFilename = oldLogoUrl.replace('/uploads/', '');
-        const oldFileDeleted = localUploadService.deleteFile(oldFilename);
-        console.log(`Old logo file deletion attempt for ${oldFilename}:`, oldFileDeleted ? 'success' : 'failed');
+        const oldFileDeleted = await localUploadService.deleteFile(oldFilename);
+        console.log(
+          `Old logo file deletion attempt for ${oldFilename}:`,
+          oldFileDeleted ? 'success' : 'failed'
+        );
       }
 
       console.log("Logo update - current settings has headerLogoUrl:", !!currentSettings.headerLogoUrl);
@@ -746,8 +749,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Try to delete the file - success or failure doesn't matter for the API response
         // as the important thing is removing the logo URL from settings
-        const fileDeleted = localUploadService.deleteFile(filename);
-        console.log(`Logo file deletion attempt for ${filename}:`, fileDeleted ? 'success' : 'file not found (already deleted)');
+        const fileDeleted = await localUploadService.deleteFile(filename);
+        console.log(
+          `Logo file deletion attempt for ${filename}:`,
+          fileDeleted ? 'success' : 'file not found (already deleted)'
+        );
       } else {
         console.log(`Logo URL is not a local file: ${logoUrl}`);
       }
@@ -770,12 +776,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve local uploaded files
-  app.get("/uploads/:filename", (req, res) => {
+  app.get("/uploads/:filename", async (req, res) => {
     const filename = req.params.filename;
     const uploadPath = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
     const filePath = path.join(uploadPath, filename);
-    
-    if (localUploadService.fileExists(filename)) {
+
+    if (await localUploadService.fileExists(filename)) {
       res.sendFile(path.resolve(filePath));
     } else {
       res.status(404).json({ error: "File not found" });
