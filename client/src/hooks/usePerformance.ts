@@ -3,7 +3,7 @@
  * Real-time performance tracking and optimization
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 /**
@@ -37,12 +37,13 @@ export function useRenderPerformance(componentName: string) {
 
   return {
     renderCount: renderCount.current,
-    measureRender: useCallback((operation: string, fn: () => void) => {
+    measureRender: useCallback(<T>(operation: string, fn: () => T): T => {
       const start = performance.now();
-      fn();
+      const result = fn();
       const duration = performance.now() - start;
-      
+
       console.log(`${componentName} ${operation}:`, `${duration.toFixed(2)}ms`);
+      return result;
     }, [componentName]),
   };
 }
@@ -221,6 +222,3 @@ export function useShallowMemo<T extends object>(obj: T): T {
 
   return ref.current;
 }
-
-// Import useState for useDebounce
-import { useState } from 'react';

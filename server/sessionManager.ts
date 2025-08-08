@@ -47,7 +47,7 @@ export class SessionManager {
 
   static async cleanupExpiredSessions(): Promise<void> {
     const now = new Date();
-    await db.delete(adminSessions).where(gt(now, adminSessions.expiresAt));
+    await db.delete(adminSessions).where(gt(adminSessions.expiresAt, now));
   }
 
   static async extendSession(sessionId: string): Promise<void> {

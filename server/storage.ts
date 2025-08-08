@@ -241,7 +241,7 @@ export class FileStorage implements IStorage {
       }
     }
     
-    rules[index] = { ...rules[index], ...updateData };
+    rules[index] = { ...rules[index], ...updateData } as UrlRule;
     await this.writeJsonFile(RULES_FILE, rules);
     return rules[index];
   }
@@ -583,17 +583,15 @@ export class FileStorage implements IStorage {
     const existingRules = await this.getUrlRules();
     let imported = 0;
     let updated = 0;
-    const errors: string[] = [];
-    
+
     // Skip all validation - import rules as provided
-    
-    // Process the import if validation passed
+
     for (const rawRule of importRules) {
       // Skip invalid rules
       if (!rawRule.matcher || !rawRule.targetUrl) {
         continue;
       }
-      
+
       // Handle field mapping for different import formats
       const importRule = {
         id: rawRule.id,
@@ -601,35 +599,34 @@ export class FileStorage implements IStorage {
         targetUrl: rawRule.targetUrl,
         redirectType: rawRule.redirectType || (rawRule.type === "redirect" ? "partial" : rawRule.type) || "partial", // Handle both field names
         infoText: rawRule.infoText || "",
-        autoRedirect: rawRule.autoRedirect // Preserve autoRedirect if present
+        autoRedirect: rawRule.autoRedirect ?? false,
       };
-      
+
       if (importRule.id) {
         // If ID is provided, check if rule exists and update it
         const existingRuleIndex = existingRules.findIndex(r => r.id === importRule.id);
         if (existingRuleIndex !== -1) {
-          // Update existing rule
+          const existingRule = existingRules[existingRuleIndex]!;
           const updatedRule: UrlRule = {
             id: importRule.id,
             matcher: importRule.matcher,
             targetUrl: importRule.targetUrl,
             redirectType: importRule.redirectType,
             infoText: importRule.infoText || "",
-            createdAt: existingRules[existingRuleIndex].createdAt,
-            ...(importRule.autoRedirect !== undefined && { autoRedirect: importRule.autoRedirect })
+            createdAt: existingRule.createdAt,
+            autoRedirect: importRule.autoRedirect,
           };
           existingRules[existingRuleIndex] = updatedRule;
           updated++;
         } else {
-          // ID provided but rule doesn't exist, create new with provided ID
           const newRule: UrlRule = {
             id: importRule.id,
             matcher: importRule.matcher,
             targetUrl: importRule.targetUrl,
             redirectType: importRule.redirectType,
             infoText: importRule.infoText || "",
+            autoRedirect: importRule.autoRedirect,
             createdAt: new Date().toISOString(),
-            ...(importRule.autoRedirect !== undefined && { autoRedirect: importRule.autoRedirect })
           };
           existingRules.push(newRule);
           imported++;
@@ -638,15 +635,15 @@ export class FileStorage implements IStorage {
         // No ID provided, check for duplicate matcher first
         const duplicateIndex = existingRules.findIndex(r => r.matcher === importRule.matcher);
         if (duplicateIndex !== -1) {
-          // Update existing rule with same matcher
+          const existingRule = existingRules[duplicateIndex]!;
           const updatedRule: UrlRule = {
-            id: existingRules[duplicateIndex].id,
+            id: existingRule.id,
             matcher: importRule.matcher,
             targetUrl: importRule.targetUrl,
             redirectType: importRule.redirectType,
             infoText: importRule.infoText || "",
-            createdAt: existingRules[duplicateIndex].createdAt,
-            ...(importRule.autoRedirect !== undefined && { autoRedirect: importRule.autoRedirect })
+            createdAt: existingRule.createdAt,
+            autoRedirect: importRule.autoRedirect,
           };
           existingRules[duplicateIndex] = updatedRule;
           updated++;
@@ -658,18 +655,18 @@ export class FileStorage implements IStorage {
             targetUrl: importRule.targetUrl,
             redirectType: importRule.redirectType,
             infoText: importRule.infoText || "",
+            autoRedirect: importRule.autoRedirect,
             createdAt: new Date().toISOString(),
-            ...(importRule.autoRedirect !== undefined && { autoRedirect: importRule.autoRedirect })
           };
           existingRules.push(newRule);
           imported++;
         }
       }
     }
-    
+
     // Save all rules back to file
     await this.writeJsonFile(RULES_FILE, existingRules);
-    
+
     return { imported, updated, errors: [] };
   }
   
@@ -769,6 +766,7 @@ export class FileStorage implements IStorage {
         infoIcons: ["Bookmark", "Share2", "Clock"],
         footerCopyright: "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
         updatedAt: new Date().toISOString(),
+        autoRedirect: false,
       };
       
       // Save default settings directly to avoid infinite loop

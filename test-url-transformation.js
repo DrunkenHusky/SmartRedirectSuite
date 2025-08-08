@@ -1,5 +1,4 @@
 // Test script to verify URL transformation logic
-const fetch = require('node-fetch');
 
 async function testScenario(name, path, expectedType, expectedResult) {
   console.log(`\n--- ${name} ---`);
