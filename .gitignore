@@ -10,3 +10,6 @@ cookies.txt
 test_cookies.txt
 *cookies*.txt
 *.tmp
+.env
+/.vs
+/data
