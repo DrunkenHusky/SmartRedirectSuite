@@ -86,7 +86,7 @@ Jede Regel definiert:
 **Ausgangs‑URL**
 
 ```
-https://intranet.alt.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
+https://intranet.alt.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
 **Teilweise**
@@ -94,21 +94,21 @@ https://intranet.alt.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 Matcher: /sites/team
 Neuer Teilpfad: /teams/finance
-Ergebnis: https://sharepoint.neu.ch/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
+Ergebnis: https://neuesintranet.cloud.com/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
 **Vollständig**
 
 ```
 Matcher: /sites/team
-Ziel-URL: https://sharepoint.neu.ch/hub
-Ergebnis: https://sharepoint.neu.ch/hub
+Ziel-URL: https://andereseite.com/hub
+Ergebnis: https://andereseite.com/hub
 ```
 
 **Ohne Regel (Domainersatz)**
 
 ```
-Ergebnis: https://portal.neu.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
+Ergebnis: https://neuesintranet.cloud.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
 ## Einsatzszenarien
@@ -119,7 +119,7 @@ Ergebnis: https://portal.neu.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ## Schnellstart
 
 ### Voraussetzungen
-- Node.js >= 18
+- Node.js >= 22
 
 Überprüfen Sie die Installation:
 
