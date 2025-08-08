@@ -30,7 +30,7 @@ npm --version
 ```bash
 # Repository klonen (ersetzen Sie <repository-url> mit der tatsächlichen URL)
 git clone <repository-url>
-cd url-migration-app
+cd SmartRedirectSuite
 ```
 
 ### Schritt 2: Dependencies installieren
@@ -53,11 +53,10 @@ SESSION_SECRET=super-geheimer-session-schluessel-hier-einfuegen-mindestens-32-ze
 
 # Server-Konfiguration
 PORT=5000
-NODE_ENV=production
+NODE_ENV=development
 
-# Object Storage (wird automatisch bei Deployment gesetzt)
-# PRIVATE_OBJECT_DIR=/your-bucket-name/.private
-# PUBLIC_OBJECT_SEARCH_PATHS=/your-bucket-name/public
+# Datei-Upload Pfad (optional)
+# LOCAL_UPLOAD_PATH=./data/uploads
 EOF
 ```
 
@@ -91,7 +90,7 @@ npm install && npm run build
 npm run start
 ```
 
-**Hinweis:** Die `.env` Datei wird automatisch geladen. Die Anwendung verwendet standardmäßig lokale Dateispeicherung im `data/uploads` Ordner für Logo-Uploads.
+**Hinweis:** Die `.env` Datei wird automatisch geladen. Die Anwendung speichert Logo-Uploads standardmäßig lokal im Ordner `data/uploads`.
 
 ### Umgebungsvariablen Erklärung
 
@@ -126,32 +125,6 @@ npm run dev
 cat .env | grep ADMIN_PASSWORD
 ```
 
-## 🌐 Deployment und Object Storage
-
-### Replit Deployment
-
-**Wichtiger Hinweis für Deployment**: Die Logo-Upload-Funktion benötigt Object Storage-Konfiguration.
-
-#### Schritte für erfolgreichen Deployment:
-
-1. **Code deployieren**: Verwenden Sie den "Deploy" Button in Replit
-2. **Object Storage konfigurieren** (erforderlich für Logo-Uploads):
-   - Gehen Sie zu Ihrem deployed Repl
-   - Öffnen Sie das **"Object Storage"** Tool in der linken Seitenleiste
-   - **Erstellen Sie einen neuen Bucket**
-   - Die erforderlichen Umgebungsvariablen werden automatisch gesetzt:
-     - `PRIVATE_OBJECT_DIR=/your-bucket-name/.private`
-     - `PUBLIC_OBJECT_SEARCH_PATHS=/your-bucket-name/public`
-3. **Redeploy**: Nach der Bucket-Erstellung die Anwendung neu deployen
-
-**Fehlerbehebung**: Falls Sie den Fehler `"PRIVATE_OBJECT_DIR not set"` erhalten, wurde Object Storage noch nicht konfiguriert. Führen Sie Schritt 2-3 aus.
-
-### Andere Plattformen
-
-- **Vercel**: Node.js-Unterstützung (Object Storage manuell konfigurieren)
-- **Heroku**: Mit Procfile (Object Storage manuell konfigurieren)  
-- **Docker**: Dockerfile erstellbar (Object Storage manuell konfigurieren)
-
 ## 📚 Dokumentation
 
 Diese Anwendung verfügt über umfassende Dokumentation für verschiedene Anwendungsfälle:
@@ -173,7 +146,7 @@ Diese Anwendung verfügt über umfassende Dokumentation für verschiedene Anwend
 ## 📁 Projektstruktur
 
 ```
-url-migration-app/
+SmartRedirectSuite/
 ├── client/                 # Frontend (React + TypeScript)
 │   ├── src/
 │   │   ├── components/     # UI-Komponenten
@@ -371,12 +344,16 @@ npm start
 ```
 
 ### Replit Deployment
-Die Anwendung ist für Replit optimiert und kann direkt deployed werden.
+Die Anwendung ist für Replit optimiert und kann direkt deployed werden. Für Logo-Uploads sollte ein persistenter Speicher eingerichtet werden und `LOCAL_UPLOAD_PATH` auf den Bucket-Pfad zeigen:
+1. **Deploy** drücken
+2. Im **Object Storage** einen Bucket anlegen
+3. `LOCAL_UPLOAD_PATH` auf den Pfad des Buckets setzen
+4. Anwendung neu deployen
 
 ### Weitere Plattformen
-- **Vercel**: Unterstützt Node.js-Anwendungen
-- **Heroku**: Mit Procfile für Express-Server
-- **Docker**: Dockerfile kann bei Bedarf erstellt werden
+- **Vercel**: Unterstützt Node.js-Anwendungen; `LOCAL_UPLOAD_PATH` auf persistentes Verzeichnis setzen
+- **Heroku**: Mit Procfile für Express-Server; `LOCAL_UPLOAD_PATH` angeben
+- **Docker**: Dockerfile kann bei Bedarf erstellt werden; Volume mounten und `LOCAL_UPLOAD_PATH` setzen
 
 ## 🛠️ Entwicklung
 
@@ -401,7 +378,7 @@ Bei Fragen oder Problemen:
 2. Überprüfen Sie die Umgebungsvariablen
 3. Stellen Sie sicher, dass alle Dependencies installiert sind
 4. Bei Admin-Zugriffsproblemen das `ADMIN_PASSWORD` prüfen
-5. **Logo-Upload-Fehler**: Stellen Sie sicher, dass Object Storage konfiguriert ist (siehe Deployment-Sektion)
+5. **Logo-Upload-Fehler**: Überprüfen Sie den in `LOCAL_UPLOAD_PATH` gesetzten Upload-Pfad
 
 ## 📝 Änderungshistorie
 
