@@ -4,6 +4,7 @@ SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Mi
 
 ## Inhaltsverzeichnis
 - [Key Features](#key-features)
+- [Dokumentation](#dokumentation)
 - [Impressions](#impressions)
 - [Funktionsweise](#funktionsweise)
   - [Regelmodi](#regelmodi)
@@ -35,6 +36,12 @@ SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Mi
 - Intelligente Validierung mit Überlappungserkennung
 - Umfangreiche Statistiken und URL-Tracking
 - Responsives Design für Desktop und Mobilgeräte
+
+## Dokumentation
+- [Benutzerhandbuch](./USER_MANUAL.md)
+- [Admin-Dokumentation](./ADMIN_DOCUMENTATION.md)
+- [Architektur-Übersicht](./ARCHITECTURE_OVERVIEW.md)
+- [Konfigurationsbeispiele](./CONFIGURATION_EXAMPLES.md)
 
 ## Impressions
 
