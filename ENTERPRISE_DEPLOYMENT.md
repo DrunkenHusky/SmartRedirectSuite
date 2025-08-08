@@ -17,7 +17,7 @@ This document provides comprehensive deployment instructions for the enterprise-
 ### Technology Stack
 - **Frontend**: React 18 + TypeScript + Vite
 - **Backend**: Node.js + Express + TypeScript
-- **Data Storage**: File-based JSON storage (easily replaceable with database)
+- **Data Storage**: File-based JSON storage
 - **Session Management**: Express-session with file-based persistence
 - **Object Storage**: Google Cloud Storage integration
 - **Performance**: Virtual scrolling, memory monitoring, and comprehensive caching
@@ -166,22 +166,7 @@ pm2 save
 pm2 startup
 ```
 
-### 3. Database Migration (Optional)
-
-If transitioning from file-based storage to a database:
-
-```typescript
-// Example migration script
-import { migrate } from './scripts/migrate-to-database';
-
-// Migrate existing JSON data to PostgreSQL/MongoDB
-await migrate({
-  sourceDir: './data',
-  targetDatabase: process.env.DATABASE_URL
-});
-```
-
-### 4. Monitoring Setup
+### 3. Monitoring Setup
 
 #### Health Check Endpoint
 ```bash
@@ -327,7 +312,7 @@ app.get('/api/health', async (req, res) => {
     uptime: process.uptime(),
     memory: process.memoryUsage(),
     checks: {
-      database: await checkFileSystemAccess(),
+      filesystem: await checkFileSystemAccess(),
       objectStorage: await checkObjectStorageConnection(),
       sessions: await checkSessionStore()
     }
