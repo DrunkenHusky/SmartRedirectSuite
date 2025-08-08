@@ -40,9 +40,10 @@ https://intranet.alt.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 **Teilweise**
 ```
 Matcher: /sites/team
-Neue Base-URL (Einstellung): https://sharepoint.neu.ch
 Neuer Teilpfad: /teams/finance
 Ergebnis: https://sharepoint.neu.ch/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
+
+Info: Neue Base-URL (https://sharepoint.neu.ch): Wird automatisch aus den General-Einstellungen ausgelesen und muss nicht für jede Regel vom Typ teilweise generiert werden 
 ```
 
 **Vollständig**
