@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import helmet from "helmet";
+import morgan from "morgan";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { FileSessionStore } from "./fileSessionStore";
@@ -18,6 +20,19 @@ app.set('trust proxy', true);
 
 app.use(express.json({ limit: '50mb' })); // Increase payload limit for large rule imports
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// Standard middleware for security and logging
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet());
+}
+
+app.use(
+  morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', {
+    stream: {
+      write: (msg) => log(msg.trim(), 'morgan'),
+    },
+  }),
+);
 
 // Session configuration with improved file-based store
 const sessionMiddleware = session({
@@ -42,59 +57,8 @@ const sessionMiddleware = session({
   rolling: true // Extend session on each request
 });
 
-// Security headers middleware for production
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    // Force HTTPS in production
-    if (req.header('x-forwarded-proto') !== 'https') {
-      res.redirect(`https://${req.header('host')}${req.url}`);
-      return;
-    }
-    
-    // Set security headers
-    res.set({
-      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-      'X-Frame-Options': 'SAMEORIGIN',
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'strict-origin-when-cross-origin'
-    });
-    
-    next();
-  });
-}
-
 // Apply session middleware to all admin routes
 app.use('/api/admin', sessionMiddleware);
-
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
 
 (async () => {
   const server = await registerRoutes(app);
