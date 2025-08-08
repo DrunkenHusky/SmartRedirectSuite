@@ -1,19 +1,67 @@
 # SmartRedirect Suite
 
-**Version 1.0.0** – SmartRedirect Suite ist eine deutsche Web-Anwendung zur Verwaltung von URL-Migrationen zwischen alter und neuer Domain mit erweiterten Admin-Funktionen und intelligenter Regel-Verwaltung.
+**SmartRedirect Suite** ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain – mit erweiterten Admin‑Funktionen und intelligenter Regelverwaltung. Typischer Use Case: Migration von **SharePoint On-Premises** zu **SharePoint Online**, wenn sich Domain und Pfadstruktur ändern.
 
-## 📋 Überblick
+## Überblick der Key-Features
 
-Diese Anwendung hilft Benutzern beim Übergang von veralteten Web-App-Links zu neuen URLs. Sie bietet:
+- **Zentrale Regelverwaltung**: Unbegrenzt viele Weiterleitungsregeln mit automatischer URL-Erkennung und intelligenter Transformationslogik.
+- **Kontrollierte Migrationen**: Konsistente, nachvollziehbare Domain- und Pfadwechsel; stabiler Nutzerfluss vor, während und nach der Migration.
+- **Produktivität im Alltag**: Multi-Select für effiziente Bulk-Operationen (Desktop) plus Import/Export von Regeln und Einstellungen.
+- **Admin-Panel**: Persistente Session-Authentifizierung, Tab-State-Erhaltung und deutschsprachige, vollständig anpassbare UI.
+- **Qualitätssicherung**: Intelligente Validierung mit präziser URL-Überlappungserkennung.
+- **Transparenz & Analyse**: Umfassende Statistiken und URL-Zugriffs-Tracking.
+- **Mobil-optimiert**: Responsives Design mit gerätespezifischen Funktionen.
 
-- **Automatische URL-Erkennung** mit intelligenten Transformationsregeln
-- **Admin-Panel** mit persistenter Session-Authentifizierung und Tab-State-Erhaltung
-- **Multi-Select-Funktionen** für effiziente Bulk-Operationen (Desktop)
-- **Deutsche Benutzeroberfläche** mit vollständig anpassbaren Texten und visuellen Elementen
-- **Import/Export-Funktionen** für URL-Regeln und Einstellungen
-- **Intelligente Validierung** mit präziser URL-Überlappungserkennung
-- **Umfassende Statistiken** und URL-Zugriffs-Tracking
-- **Mobile-optimiert** mit responsivem Design und gerätespezifischen Funktionen
+
+## Wie es funktioniert
+
+Jede Regel definiert:
+- einen **URL-Pfad-Matcher** (ab wann greift die Regel),
+- einen **Modus** (*Teilweise* oder *Vollständig*),
+- sowie Zielwerte (**Base-URL** bzw. **Ziel-URL**).
+
+**Fallback ohne Regeln:**  
+Wenn keine Regeln hinterlegt sind, erfolgt ein **Domainersatz** gemäss den generellen Einstellungen. Pfad, Parameter und Anker bleiben erhalten.
+
+## Regelmodi
+
+| Modus | Verhalten |
+|---|---|
+| **Teilweise** | Ersetzt nur die Pfadsegmente **ab** dem im URL-Pfad-Matcher definierten Wert. Die **Base-URL** wird aus den generellen Einstellungen übernommen. **Zusätzliche Pfadsegmente, Parameter und Anker** der ursprünglichen URL bleiben erhalten und werden an die neue Base-URL angehängt. |
+| **Vollständig** | Leitet alle passenden alten Links **komplett** auf eine **neue Ziel-URL** um. **Keine** Bestandteile der alten URL (keine zusätzlichen Pfadsegmente, Parameter oder Anker) werden übernommen. |
+
+## Beispiele
+
+**Ausgangs-URL**
+```
+https://intranet.alt.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
+```
+
+**Teilweise**
+```
+Matcher: /sites/team
+Neue Base-URL (Einstellung): https://sharepoint.neu.ch
+Neuer Teilpfad: /teams/finance
+Ergebnis: https://sharepoint.neu.ch/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
+```
+
+**Vollständig**
+```
+Matcher: /sites/team
+Ziel-URL: https://sharepoint.neu.ch/hub
+Ergebnis: https://sharepoint.neu.ch/hub
+```
+
+**Ohne Regel (Domainersatz)**
+```
+Ergebnis: https://portal.neu.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
+```
+
+## Einsatzszenarien
+
+- Migrationen (z. B. SharePoint On-Premises → SharePoint Online)  
+- Domain-Rebrands und Konsolidierungen  
+- Umstrukturierungen grosser Linklandschaften
 
 ## 🚀 Komplette Installation - Schritt für Schritt
 
