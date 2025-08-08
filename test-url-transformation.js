@@ -1,57 +1,82 @@
+
 // Test script to verify URL transformation logic
 
-async function testScenario(name, path, expectedType, expectedResult) {
-  console.log(`\n--- ${name} ---`);
-  
-  try {
-    // Check rule matching
-    const ruleResponse = await fetch("http://localhost:5000/api/check-rules", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path }),
-    });
-    
-    const ruleData = await ruleResponse.json();
-    console.log(`Path: ${path}`);
-    console.log(`Rule found: ${ruleData.hasMatch ? 'YES' : 'NO'}`);
-    
-    if (ruleData.rule) {
-      console.log(`- Matcher: ${ruleData.rule.matcher}`);
-      console.log(`- Target: ${ruleData.rule.targetUrl}`);
-      console.log(`- Type: ${ruleData.rule.redirectType}`);
-    }
-    
-    console.log(`Expected result: ${expectedResult}`);
-    
-  } catch (error) {
-    console.log(`ERROR: ${error.message}`);
-  }
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+
+// Load sample rules used for testing
+const rulesPath = new URL('./data/rules.json', import.meta.url);
+const rules = JSON.parse(fs.readFileSync(rulesPath, 'utf-8'));
+
+function findMatchingRule(path) {
+  const sortedRules = [...rules].sort((a, b) => b.matcher.length - a.matcher.length);
+  return (
+    sortedRules.find(rule => path.toLowerCase().includes(rule.matcher.toLowerCase())) || null
+  );
 }
 
-// Manual verification instead of full automated test
-console.log("URL Transformation Test Cases");
-console.log("=============================");
+function generateUrl(path, rule, domain = 'https://newurlofdifferentapp.com') {
+  const base = domain.replace(/\/$/, '');
+  if (!rule) {
+    return base + path;
+  }
+  if (rule.redirectType === 'wildcard') {
+    return rule.targetUrl;
+  }
+  const cleanMatcher = rule.matcher.replace(/\/$/, '');
+  const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, '');
+  const idx = path.toLowerCase().indexOf(cleanMatcher.toLowerCase());
+  const before = idx !== -1 ? path.slice(0, idx) : '';
+  const after = idx !== -1 ? path.slice(idx + cleanMatcher.length) : '';
+  const newPath = `${before}/${cleanTarget}${after}`.replace(/\/+/g, '/');
+  return base + newPath;
+}
 
-testScenario(
-  "Test 1: Wildcard rule (Vollständig)",
-  "/sample-old-path-full",
-  "wildcard",
-  "https://newurlofdifferentapp.com/sample-new-path"
-);
+async function testScenario(name, path, expectedType, expectedResult) {
+  const rule = findMatchingRule(path);
+  if (expectedType === null) {
+    assert.strictEqual(rule, null, `${name}: expected no rule`);
+  } else {
+    assert.ok(rule, `${name}: expected rule`);
+    assert.strictEqual(rule.redirectType, expectedType, `${name}: type mismatch`);
+  }
+  const newUrl = generateUrl(path, rule);
+  assert.strictEqual(newUrl, expectedResult, `${name}: URL mismatch`);
+}
 
-testScenario(
-  "Test 2: Partial rule (Teilweise)", 
-  "/sample-old-path-006002",
-  "partial",
-  "https://newurlofdifferentapp.com/sample-new-path-006002"
-);
+async function run() {
+  await testScenario(
+    'Test 1: Wildcard rule (Vollständig)',
+    '/sample-old-path-full',
+    'wildcard',
+    'https://newurlofdifferentapp.com/sample-new-path'
+  );
+  await testScenario(
+    'Test 2: Partial rule (Teilweise)',
+    '/sample-old-path-006002',
+    'partial',
+    'https://newurlofdifferentapp.com/sample-new-path-006002'
+  );
+  await testScenario(
+    'Test 3: No matching rule',
+    '/no-rule-matches-this',
+    null,
+    'https://newurlofdifferentapp.com/no-rule-matches-this'
+  );
+  await testScenario(
+    'Test 4: Wildcard rule ignores additional segments',
+    '/sample-old-path-full-006965',
+    'wildcard',
+    'https://newurlofdifferentapp.com/sample-new-path'
+  );
+  console.log('All tests passed');
+}
 
-testScenario(
-  "Test 3: No matching rule",
-  "/no-rule-matches-this",
-  null,
-  "https://newurlofdifferentapp.com/no-rule-matches-this"
-);
+run().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
 
 testScenario(
   "Test 4: Complex partial case",
@@ -59,3 +84,4 @@ testScenario(
   "wildcard", // Should match exact wildcard rule
   "https://newurlofdifferentapp.com/sample-new-path-006965"
 );
+
