@@ -4,6 +4,7 @@ SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Mi
 
 ## Inhaltsverzeichnis
 - [Key Features](#key-features)
+- [Impressions](#impressions)
 - [Funktionsweise](#funktionsweise)
   - [Regelmodi](#regelmodi)
   - [Beispiele](#beispiele)
@@ -34,6 +35,30 @@ SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Mi
 - Intelligente Validierung mit Überlappungserkennung
 - Umfangreiche Statistiken und URL-Tracking
 - Responsives Design für Desktop und Mobilgeräte
+
+## Impressions
+
+Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
+
+### Website-Besucher
+1. **Initiale Meldung** – Hinweis, dass der verwendete Link veraltet ist und aktualisiert werden soll.  
+   ![Initiale Meldung – Website Besucher](Impressions/Initiale%20Meldung%20Website%20Besucher.png)
+
+2. **Neue URL mit Hinweisen** – Anzeige der automatisch generierten neuen URL inkl. Hinweise sowie der alten, aufgerufenen URL.  
+   ![Anzeige neuer URL mit Hinweisen – Website Besucher nach Bestätigung Pop-up](Impressions/Anzeige%20neuer%20URL%20mit%20Hinweisen%20Website%20Besucher%20nach%20Best%C3%A4tigung%20Pop%20up.png)
+
+### Admin-Bereich
+3. **Generelle Einstellungen** – Übersicht über globale Optionen und Grundkonfiguration.  
+   ![Admin Menü – Generelle Einstellungen](Impressions/Admin%20Menu%20Generelle%20Einstellungen.png)
+
+4. **URL-Transformationsregeln** – Verwaltung von Regeln (Typ, Auto-Redirect, Status, Metadaten).  
+   ![Admin Menu – URL-Transformationsregeln definieren](Impressions/Admin%20Menu%20URL-Transformationsregeln%20definieren.png)
+
+5. **Statistiken & Tracking** – Liste aller Tracking-Einträge mit Zeitstempel, alter/neuer URL und Pfad.  
+   ![Admin Menu – Statistik](Impressions/Admin%20Menu%20Statistik.png)
+
+6. **Import/Export** – Export von Statistiken (CSV/JSON) sowie Import/Export der URL-Regeln.  
+   ![Admin Menu – Import Export](Impressions/Admin%20Menu%20Import%20Export.png)
 
 ## Funktionsweise
 Jede Regel definiert:
