@@ -23,7 +23,7 @@ The API uses session-based authentication for admin operations. All admin endpoi
 
 ### Login
 ```http
-POST /api/admin/auth
+POST /api/admin/login
 Content-Type: application/json
 
 {
@@ -70,14 +70,14 @@ POST /api/admin/logout
 ## Public Endpoints
 
 ### Check URL Rules
-Checks if a URL matches any configured transformation rules.
+Checks if a path matches any configured transformation rules.
 
 ```http
 POST /api/check-rules
 Content-Type: application/json
 
 {
-  "url": "https://oldsite.com/news/article-1"
+  "path": "/news/article-1"
 }
 ```
 
@@ -91,8 +91,7 @@ Content-Type: application/json
     "targetUrl": "https://newsite.com/articles/",
     "infoText": "This section has been moved to our new articles area.",
     "redirectType": "partial"
-  },
-  "generatedUrl": "https://newsite.com/articles/article-1"
+  }
 }
 ```
 
@@ -617,7 +616,7 @@ class URLMigrationAPI {
   }
 
   async login() {
-    const response = await fetch(`${this.baseURL}/admin/auth`, {
+    const response = await fetch(`${this.baseURL}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: this.credentials.password }),
@@ -665,7 +664,7 @@ class URLMigrationAPI:
     
     def login(self):
         response = self.session.post(
-            f"{self.base_url}/admin/auth",
+            f"{self.base_url}/admin/login",
             json={"password": self.password}
         )
         return response.json()
@@ -692,7 +691,7 @@ rules = api.get_rules()
 ### API Testing with curl
 ```bash
 # Login
-curl -X POST http://localhost:5000/api/admin/auth \
+curl -X POST http://localhost:5000/api/admin/login \
   -H "Content-Type: application/json" \
   -d '{"password":"Password1"}' \
   -c cookies.txt
