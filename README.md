@@ -228,7 +228,5 @@ Bei Problemen:
 5. Upload-Pfad bei Logo-Fehlern prüfen
 
 ## Änderungshistorie
-Aktuelle Version: **1.0.0**
-
 Detaillierte Änderungen siehe [CHANGELOG.md](./CHANGELOG.md).
 
