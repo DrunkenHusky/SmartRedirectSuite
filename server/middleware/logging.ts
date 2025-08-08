@@ -155,26 +155,3 @@ export class PerformanceMonitor {
     return result;
   }
 }
-
-/**
- * Database operation logger
- */
-export function logDatabaseOperation(
-  operation: 'read' | 'write' | 'delete',
-  table: string,
-  duration: number,
-  recordCount?: number
-): void {
-  const monitor = PerformanceMonitor.getInstance();
-  monitor.recordMetric(`db_${operation}_${table}`, duration);
-
-  if (duration > 100) {
-    console.warn('Slow database operation:', {
-      operation,
-      table,
-      duration: `${duration}ms`,
-      recordCount,
-      timestamp: new Date().toISOString(),
-    });
-  }
-}

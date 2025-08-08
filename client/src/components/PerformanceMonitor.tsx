@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Activity, 
-  Clock, 
-  Database,
+import {
+  Activity,
+  Clock,
+  HardDrive,
   MemoryStick,
   Zap,
   AlertTriangle,
@@ -201,7 +201,7 @@ export function PerformanceMonitor({
                         <span>Memory: {memoryData.usagePercentage.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <Database className="h-3 w-3" />
+                      <HardDrive className="h-3 w-3" />
                         <span>Heap: {formatBytes(memoryData.usedJSHeapSize)}</span>
                       </div>
                     </>
