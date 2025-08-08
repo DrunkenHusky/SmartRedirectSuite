@@ -71,12 +71,6 @@ export const urlTrackingSchema = z.object({
   userAgent: z.string()
     .max(1000, "User agent too long")
     .optional(),
-  referrer: z.string()
-    .max(2000, "Referrer too long")
-    .optional(),
-  httpReferrer: z.string()
-    .max(2000, "HTTP referrer too long")
-    .optional(),
 }).strict();
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({

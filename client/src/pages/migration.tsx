@@ -187,7 +187,6 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               path: path,
               timestamp: new Date().toISOString(),
               userAgent: navigator.userAgent,
-              referrer: document.referrer || undefined,
             }),
           });
           
