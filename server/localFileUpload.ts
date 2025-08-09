@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
 
 export class LocalFileUploadService {
@@ -8,12 +8,16 @@ export class LocalFileUploadService {
 
   constructor() {
     this.uploadPath = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
-    this.ensureUploadDirectory();
+    this.ensureUploadDirectory().catch((err) =>
+      console.error('Failed to ensure upload directory:', err)
+    );
   }
 
-  private ensureUploadDirectory(): void {
-    if (!fs.existsSync(this.uploadPath)) {
-      fs.mkdirSync(this.uploadPath, { recursive: true });
+  private async ensureUploadDirectory(): Promise<void> {
+    try {
+      await fs.access(this.uploadPath);
+    } catch {
+      await fs.mkdir(this.uploadPath, { recursive: true });
       console.log(`Created upload directory: ${this.uploadPath}`);
     }
   }
@@ -57,30 +61,32 @@ export class LocalFileUploadService {
   }
 
   // Delete a local file
-  deleteFile(filename: string): boolean {
+  async deleteFile(filename: string): Promise<boolean> {
+    const filePath = path.join(this.uploadPath, filename);
+    console.log(`Attempting to delete file: ${filePath}`);
     try {
-      const filePath = path.join(this.uploadPath, filename);
-      console.log(`Attempting to delete file: ${filePath}`);
-      
-      if (fs.existsSync(filePath)) {
-        console.log(`File exists, deleting: ${filePath}`);
-        fs.unlinkSync(filePath);
-        console.log(`File successfully deleted: ${filePath}`);
-        return true;
-      } else {
+      await fs.unlink(filePath);
+      console.log(`File successfully deleted: ${filePath}`);
+      return true;
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
         console.log(`File does not exist: ${filePath}`);
         return false;
       }
-    } catch (error) {
       console.error('Error deleting file:', error);
-      console.error('File path attempted:', path.join(this.uploadPath, filename));
+      console.error('File path attempted:', filePath);
       return false;
     }
   }
 
   // Check if a file exists locally
-  fileExists(filename: string): boolean {
+  async fileExists(filename: string): Promise<boolean> {
     const filePath = path.join(this.uploadPath, filename);
-    return fs.existsSync(filePath);
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
