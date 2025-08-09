@@ -171,7 +171,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const targetUrlPlaceholder =
     ruleForm.redirectType === "wildcard"
       ? "https://beispiel.com/neue-seite"
-      : "/neue-seite/";
+      : "/neue-seite";
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [rulesSearchQuery, setRulesSearchQuery] = useState("");
