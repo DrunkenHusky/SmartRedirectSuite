@@ -6,6 +6,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+const isDev = import.meta.env.DEV;
+
 /**
  * Hook for measuring component render performance
  */
@@ -20,8 +22,8 @@ export function useRenderPerformance(componentName: string) {
 
   useEffect(() => {
     const renderTime = performance.now() - renderStartTime.current;
-    
-    if (renderTime > 16) { // Slower than 60fps
+
+    if (isDev && renderTime > 16) { // Slower than 60fps
       console.warn(`Slow render detected in ${componentName}:`, {
         renderTime: `${renderTime.toFixed(2)}ms`,
         renderCount: renderCount.current,
@@ -30,7 +32,7 @@ export function useRenderPerformance(componentName: string) {
     }
 
     // Track performance metrics
-    if (typeof window !== 'undefined' && 'performance' in window) {
+    if (isDev && typeof window !== 'undefined' && 'performance' in window) {
       performance.mark(`${componentName}-render-${renderCount.current}`);
     }
   });
@@ -42,9 +44,11 @@ export function useRenderPerformance(componentName: string) {
       const result = fn();
       const duration = performance.now() - start;
 
-      console.log(`${componentName} ${operation}:`, `${duration.toFixed(2)}ms`);
+      if (isDev) {
+        console.log(`${componentName} ${operation}:`, `${duration.toFixed(2)}ms`);
+      }
       return result;
-    }, [componentName]),
+    }, [componentName, isDev]),
   };
 }
 
@@ -55,13 +59,15 @@ export function useApiPerformance() {
   const metrics = useRef<Map<string, number[]>>(new Map());
 
   const recordApiCall = useCallback((endpoint: string, duration: number) => {
+    if (!isDev) return;
+
     if (!metrics.current.has(endpoint)) {
       metrics.current.set(endpoint, []);
     }
-    
+
     const durations = metrics.current.get(endpoint)!;
     durations.push(duration);
-    
+
     // Keep only last 100 measurements
     if (durations.length > 100) {
       durations.shift();
@@ -75,7 +81,7 @@ export function useApiPerformance() {
         average: durations.reduce((a, b) => a + b, 0) / durations.length,
       });
     }
-  }, []);
+  }, [isDev]);
 
   const getMetrics = useCallback((endpoint: string) => {
     const durations = metrics.current.get(endpoint) || [];
@@ -100,6 +106,7 @@ export function useApiPerformance() {
 export function useLoadingPerformance() {
   const { data: performanceData } = useQuery({
     queryKey: ['performance-metrics'],
+    enabled: isDev,
     queryFn: async () => {
       if (typeof window === 'undefined' || !window.performance) {
         return null;
@@ -107,18 +114,18 @@ export function useLoadingPerformance() {
 
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      
+
       // Calculate key metrics
       const metrics = {
         // Core Web Vitals
         domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
         loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
         firstContentfulPaint: 0,
-        
+
         // Resource loading
         totalResources: resources.length,
         slowResources: resources.filter(r => r.duration > 1000).length,
-        
+
         // Bundle analysis
         jsSize: resources
           .filter(r => r.name.includes('.js'))
@@ -126,7 +133,7 @@ export function useLoadingPerformance() {
         cssSize: resources
           .filter(r => r.name.includes('.css'))
           .reduce((sum, r) => sum + (r.transferSize || 0), 0),
-        
+
         // Network timing
         dnsLookup: navigation.domainLookupEnd - navigation.domainLookupStart,
         tcpConnection: navigation.connectEnd - navigation.connectStart,
@@ -154,13 +161,14 @@ export function useLoadingPerformance() {
 export function useMemoryMonitoring() {
   const { data: memoryData } = useQuery({
     queryKey: ['memory-usage'],
+    enabled: isDev,
     queryFn: async () => {
       if (typeof window === 'undefined' || !('memory' in performance)) {
         return null;
       }
 
       const memory = (performance as any).memory;
-      
+
       return {
         usedJSHeapSize: memory.usedJSHeapSize,
         totalJSHeapSize: memory.totalJSHeapSize,
@@ -174,14 +182,14 @@ export function useMemoryMonitoring() {
 
   // Alert on high memory usage
   useEffect(() => {
-    if (memoryData && memoryData.usagePercentage > 80) {
+    if (isDev && memoryData && memoryData.usagePercentage > 80) {
       console.warn('High memory usage detected:', {
         usage: `${memoryData.usagePercentage.toFixed(1)}%`,
         used: `${(memoryData.usedJSHeapSize / 1024 / 1024).toFixed(1)}MB`,
         total: `${(memoryData.totalJSHeapSize / 1024 / 1024).toFixed(1)}MB`,
       });
     }
-  }, [memoryData]);
+  }, [memoryData, isDev]);
 
   return memoryData;
 }

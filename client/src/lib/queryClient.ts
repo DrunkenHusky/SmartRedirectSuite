@@ -1,19 +1,25 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+const isDev = import.meta.env.DEV;
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     // Handle authentication errors globally, but NOT for login endpoint
     if ((res.status === 401 || res.status === 403) && !res.url.includes('/api/admin/login')) {
-      console.warn("Authentication failed, triggering page reload");
-      window.location.reload();
-      return;
+      if (isDev) {
+        console.warn("Authentication failed, triggering page reload");
+        window.location.reload();
+        return;
+      }
     }
     
     try {
       // Clone the response to avoid consuming the body twice
       const responseClone = res.clone();
       const errorData = await responseClone.json();
-      console.log('Parsed error response:', errorData);
+      if (isDev) {
+        console.log('Parsed error response:', errorData);
+      }
       
       if (errorData && typeof errorData === 'object' && errorData.error) {
         // Create a proper Error object with the message
@@ -34,7 +40,9 @@ async function throwIfResNotOk(res: Response) {
         throw parseError;
       }
       
-      console.log('JSON parsing failed, falling back to text:', parseError);
+      if (isDev) {
+        console.log('JSON parsing failed, falling back to text:', parseError);
+      }
       // If JSON parsing fails, fallback to text
       try {
         const text = await res.text();
