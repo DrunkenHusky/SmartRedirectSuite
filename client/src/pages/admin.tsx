@@ -168,6 +168,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     redirectType: "partial" as "wildcard" | "partial",
     autoRedirect: false,
   });
+  const targetUrlPlaceholder =
+    ruleForm.redirectType === "wildcard"
+      ? "https://beispiel.com/neue-seite"
+      : "/neue-seite";
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [rulesSearchQuery, setRulesSearchQuery] = useState("");
@@ -2280,7 +2284,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Ziel-URL (optional)
                             </label>
                             <Input
-                              placeholder="https://thisisthenewurl.com/news"
+                              placeholder={targetUrlPlaceholder}
                               value={ruleForm.targetUrl}
                               onChange={(e) => setRuleForm(prev => ({ ...prev, targetUrl: e.target.value }))}
                             />
@@ -2301,8 +2305,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   {ruleForm.redirectType === "wildcard" && "Vollständig"}
                                 </SelectValue>
                               </SelectTrigger>
-                              <SelectContent className="min-w-[480px] max-w-[600px]">
-                                <SelectItem value="partial" className="p-3">
+                              <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
+                                <SelectItem value="partial" className="pl-8 pr-3 py-3 items-start">
                                   <div className="flex flex-col space-y-1">
                                     <span className="font-medium text-sm">Teilweise</span>
                                     <span className="text-xs text-muted-foreground leading-relaxed">
@@ -2310,7 +2314,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     </span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="wildcard" className="p-3">
+                                <SelectItem value="wildcard" className="pl-8 pr-3 py-3 items-start">
                                   <div className="flex flex-col space-y-1">
                                     <span className="font-medium text-sm">Vollständig</span>
                                     <span className="text-xs text-muted-foreground leading-relaxed">
