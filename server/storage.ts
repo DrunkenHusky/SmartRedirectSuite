@@ -1,15 +1,16 @@
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
-import type { 
-  UrlRule, 
-  InsertUrlRule, 
-  UrlTracking, 
+import type {
+  UrlRule,
+  InsertUrlRule,
+  UrlTracking,
   InsertUrlTracking,
   GeneralSettings,
   InsertGeneralSettings,
   ImportUrlRule
 } from "@shared/schema";
+import { selectMostSpecificRule } from "@shared/ruleMatching";
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const RULES_FILE = path.join(DATA_DIR, 'rules.json');
@@ -186,7 +187,7 @@ export class FileStorage implements IStorage {
       // Check for overlapping patterns
       for (const existingRule of rules) {
         if (this.areMatchersOverlapping(insertRule.matcher, existingRule.matcher)) {
-          validationErrors.push(`Überlappender URL-Matcher: "${insertRule.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`);
+          validationErrors.push(this.getOverlapMessage(insertRule.matcher, existingRule));
         }
       }
       
@@ -226,7 +227,7 @@ export class FileStorage implements IStorage {
       for (const existingRule of rules) {
         if (existingRule.id === id) continue; // Skip current rule
         if (this.areMatchersOverlapping(updateData.matcher, existingRule.matcher)) {
-          validationErrors.push(`Überlappender URL-Matcher: "${updateData.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`);
+          validationErrors.push(this.getOverlapMessage(updateData.matcher, existingRule));
         }
       }
       
@@ -595,7 +596,32 @@ export class FileStorage implements IStorage {
 
     return { imported, updated, errors: [] };
   }
-  
+
+  private getOverlapMessage(newMatcher: string, existingRule: UrlRule): string {
+    const sampleUrl = this.buildSampleUrl(newMatcher, existingRule.matcher);
+    const tempRule: UrlRule = {
+      id: 'new-rule',
+      matcher: newMatcher,
+      targetUrl: '',
+      redirectType: 'partial',
+      infoText: '',
+      autoRedirect: false,
+      createdAt: '',
+    };
+    const winner = selectMostSpecificRule(sampleUrl, [tempRule, existingRule]);
+    if (winner) {
+      const loser = winner.id === existingRule.id ? newMatcher : existingRule.matcher;
+      return `Überlappender URL-Matcher: "${newMatcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id}). Die Regel "${winner.matcher}" wird vor "${loser}" angewendet.`;
+    }
+    return `Überlappender URL-Matcher: "${newMatcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`;
+  }
+
+  private buildSampleUrl(m1: string, m2: string): string {
+    const longer = m1.length >= m2.length ? m1 : m2;
+    const sanitized = longer.replace(/\*/g, 'x').replace(/:[^/]+/g, 'x');
+    return `http://example.com${sanitized.startsWith('/') ? '' : '/'}${sanitized}`;
+  }
+
   // Helper method to check if two URL matchers are overlapping
   private areMatchersOverlapping(matcher1: string, matcher2: string): boolean {
     // Remove leading/trailing slashes for comparison
