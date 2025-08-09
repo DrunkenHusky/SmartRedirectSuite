@@ -10,6 +10,14 @@ interface StoredSession {
 
 export class FileSessionStore extends Store {
   private sessionsDir: string;
+  private dirReady = false;
+  private ensureDirPromise: Promise<void> | null = null;
+  private pendingWrites = new Map<
+    string,
+    { session: StoredSession; callbacks: ((err?: any) => void)[] }
+  >();
+  private writeTimer: NodeJS.Timeout | null = null;
+  private flushInProgress = false;
 
   constructor(options: { dir?: string } = {}) {
     super();
@@ -18,11 +26,21 @@ export class FileSessionStore extends Store {
   }
 
   private async ensureSessionsDir(): Promise<void> {
-    try {
-      await fs.mkdir(this.sessionsDir, { recursive: true });
-    } catch (error) {
-      console.error('Failed to create sessions directory:', error);
+    if (this.dirReady) return;
+    if (!this.ensureDirPromise) {
+      this.ensureDirPromise = fs
+        .mkdir(this.sessionsDir, { recursive: true })
+        .then(() => {
+          this.dirReady = true;
+        })
+        .catch(error => {
+          console.error('Failed to create sessions directory:', error);
+        })
+        .finally(() => {
+          this.ensureDirPromise = null;
+        });
     }
+    return this.ensureDirPromise;
   }
 
   private getSessionPath(sid: string): string {
@@ -74,46 +92,30 @@ export class FileSessionStore extends Store {
     })();
   }
 
-  override set(sid: string, session: SessionData, callback?: (err?: any) => void): void {
+  override set(
+    sid: string,
+    session: SessionData,
+    callback?: (err?: any) => void
+  ): void {
     this.initializeCleanup(); // Initialize cleanup on first use
-    
-    (async () => {
-      try {
-        await this.ensureSessionsDir(); // Ensure directory exists before writing
-        const sessionPath = this.getSessionPath(sid);
-        const stored: StoredSession = {
-          data: session,
-          expires: session.cookie?.expires
-        };
-        
-        // Use a unique temp file to avoid conflicts during concurrent access
-        const tempPath = `${sessionPath}.${randomUUID()}.tmp`;
-        await fs.writeFile(tempPath, JSON.stringify(stored, null, 2));
 
-        // Ensure the target directory still exists before rename
-        await this.ensureSessionsDir();
+    const stored: StoredSession = {
+      data: session,
+      expires: session.cookie?.expires
+    };
 
-        // Remove any existing session file to avoid Windows rename errors
-        await fs.rm(sessionPath, { force: true });
+    if (this.pendingWrites.has(sid)) {
+      const entry = this.pendingWrites.get(sid)!;
+      entry.session = stored;
+      if (callback) entry.callbacks.push(callback);
+    } else {
+      this.pendingWrites.set(sid, {
+        session: stored,
+        callbacks: callback ? [callback] : []
+      });
+    }
 
-        try {
-          await fs.rename(tempPath, sessionPath);
-        } catch (error: any) {
-          // Fallback for Windows EPERM or EXDEV errors
-          if (['EXDEV', 'EACCES', 'EPERM'].includes(error.code)) {
-            await fs.copyFile(tempPath, sessionPath);
-            await fs.unlink(tempPath);
-          } else {
-            throw error;
-          }
-        }
-
-        callback?.();
-      } catch (error) {
-        console.error(`FileSessionStore.set: Error saving session ${sid}:`, error);
-        callback?.(error);
-      }
-    })();
+    this.scheduleWrite();
   }
 
   override destroy(sid: string, callback?: (err?: any) => void): void {
@@ -135,9 +137,7 @@ export class FileSessionStore extends Store {
   override all(callback: (err: any, obj?: { [sid: string]: SessionData } | SessionData[] | null) => void): void {
     (async () => {
       try {
-        // Ensure sessions directory exists
-        await fs.mkdir(this.sessionsDir, { recursive: true });
-        
+        await this.ensureSessionsDir(); // Ensure sessions directory exists
         const files = await fs.readdir(this.sessionsDir);
         const sessions: SessionData[] = [];
         
@@ -170,6 +170,7 @@ export class FileSessionStore extends Store {
   override length(callback: (err: any, length?: number) => void): void {
     (async () => {
       try {
+        await this.ensureSessionsDir();
         const files = await fs.readdir(this.sessionsDir);
         const validSessions = files.filter(file => file.endsWith('.json'));
         callback(null, validSessions.length);
@@ -182,6 +183,7 @@ export class FileSessionStore extends Store {
   override clear(callback?: (err?: any) => void): void {
     (async () => {
       try {
+        await this.ensureSessionsDir();
         const files = await fs.readdir(this.sessionsDir);
         await Promise.all(
           files
@@ -204,7 +206,7 @@ export class FileSessionStore extends Store {
   private cleanupExpiredSessions(): void {
     (async () => {
       try {
-        await fs.mkdir(this.sessionsDir, { recursive: true });
+        await this.ensureSessionsDir();
         const files = await fs.readdir(this.sessionsDir);
         
         for (const file of files) {
@@ -230,6 +232,68 @@ export class FileSessionStore extends Store {
         console.warn('Session cleanup error:', error);
       }
     })();
+  }
+
+  private scheduleWrite(): void {
+    if (!this.writeTimer) {
+      this.writeTimer = setTimeout(() => this.flushPendingWrites(), 50);
+    }
+  }
+
+  private async flushPendingWrites(): Promise<void> {
+    if (this.flushInProgress) return;
+    this.flushInProgress = true;
+
+    const writes = Array.from(this.pendingWrites.entries());
+    this.pendingWrites.clear();
+    this.writeTimer = null;
+
+    try {
+      await this.ensureSessionsDir();
+      await Promise.all(
+        writes.map(([sid, entry]) =>
+          this.writeSessionFile(sid, entry.session)
+        )
+      );
+      writes.forEach(([, entry]) =>
+        entry.callbacks.forEach(cb => cb?.())
+      );
+    } catch (error) {
+      writes.forEach(([, entry]) =>
+        entry.callbacks.forEach(cb => cb?.(error))
+      );
+    } finally {
+      this.flushInProgress = false;
+      if (this.pendingWrites.size) {
+        this.scheduleWrite();
+      }
+    }
+  }
+
+  private async writeSessionFile(
+    sid: string,
+    stored: StoredSession
+  ): Promise<void> {
+    const sessionPath = this.getSessionPath(sid);
+
+    // Use a unique temp file to avoid conflicts during concurrent access
+    const tempPath = `${sessionPath}.${randomUUID()}.tmp`;
+    await fs.writeFile(tempPath, JSON.stringify(stored, null, 2));
+
+    // Remove any existing session file to avoid Windows rename errors
+    await fs.rm(sessionPath, { force: true });
+
+    try {
+      await fs.rename(tempPath, sessionPath);
+    } catch (error: any) {
+      // Fallback for Windows EPERM or EXDEV errors
+      if (['EXDEV', 'EACCES', 'EPERM'].includes(error.code)) {
+        await fs.copyFile(tempPath, sessionPath);
+        await fs.unlink(tempPath);
+      } else {
+        throw error;
+      }
+    }
   }
 
   // Initialize cleanup when store is first used
