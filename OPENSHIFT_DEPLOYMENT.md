@@ -116,6 +116,8 @@ oc create secret tls smartredirect-tls \
 - `SESSION_SECRET` - Geheimer Schlüssel für Sessions
 - `LOCAL_UPLOAD_PATH` - **einziger konfigurierbarer Pfad** für Logo-Uploads (Standard: ./data/uploads – **innerhalb** des `data`-Verzeichnisses!)
 - `COOKIE_DOMAIN` - Domain für Cookies (nur in Production)
+- `LOGIN_MAX_ATTEMPTS` - maximale Fehlversuche bevor eine IP gesperrt wird (Standard: 5)
+- `LOGIN_BLOCK_DURATION_MS` - Sperrdauer in Millisekunden nach Erreichen der Fehlversuche (Standard: 86400000)
 
 **Nicht unterstützte Variablen** (fest codiert in der Anwendung):
 - `DATA_PATH` - Daten werden immer in `./data` gespeichert
@@ -156,6 +158,9 @@ data:
   PORT: "5000"
   # Upload-Pfad (muss innerhalb von /app/data liegen)
   LOCAL_UPLOAD_PATH: "/app/data/uploads"
+  # Brute-Force Schutz (optional)
+  LOGIN_MAX_ATTEMPTS: "5"
+  LOGIN_BLOCK_DURATION_MS: "86400000"
   # Cookie-Domain für Production (optional)
   COOKIE_DOMAIN: "smartredirect-suite-smartredirect-suite.apps.cluster.example.com"
 ```

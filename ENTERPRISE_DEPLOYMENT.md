@@ -22,7 +22,7 @@ This document provides comprehensive deployment instructions for the enterprise-
 - **Performance**: Virtual scrolling, memory monitoring, and comprehensive caching
 
 ### Key Features
-- **Enterprise Security**: Rate limiting, CORS protection, input sanitization
+- **Enterprise Security**: Rate limiting, CORS protection, input sanitization, brute-force login protection
 - **Performance Monitoring**: Real-time metrics, memory usage tracking
 - **Scalable Architecture**: Modular design with enterprise middleware
 - **Comprehensive Validation**: Type-safe schemas with detailed error handling
@@ -47,6 +47,10 @@ export SESSION_SECRET=$(openssl rand -hex 64)
 
 # Set admin password (minimum 8 characters with letters and numbers)
 export ADMIN_PASSWORD="YourSecurePassword123"
+
+# Brute-force login protection (optional)
+export LOGIN_MAX_ATTEMPTS=5
+export LOGIN_BLOCK_DURATION_MS=86400000
 
 # Configure allowed origins for CORS
 export ALLOWED_ORIGINS="https://yourdomain.com,https://www.yourdomain.com"

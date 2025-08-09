@@ -171,6 +171,12 @@ ADMIN_PASSWORD=MeinSicheresPasswort123
 # Session-Sicherheit
 SESSION_SECRET=super-geheimer-session-schluessel-hier-einfuegen-mindestens-32-zeichen
 
+# Brute-Force-Schutz (optional)
+# Max. Fehlversuche bevor IP gesperrt wird
+LOGIN_MAX_ATTEMPTS=5
+# Sperrdauer in Millisekunden (24h)
+LOGIN_BLOCK_DURATION_MS=86400000
+
 # Server-Konfiguration
 PORT=5000
 NODE_ENV=development
@@ -244,6 +250,7 @@ Standardmäßig werden JSON-Dateien im `data/` Verzeichnis genutzt:
 - Persistente Session-Authentifizierung (7 Tage)
 - Sichere Cookies und dateibasierte Sessions
 - Passwortgeschützter Admin-Bereich
+- Brute-Force-Schutz mit IP-Sperre (konfigurierbar über `LOGIN_MAX_ATTEMPTS` und `LOGIN_BLOCK_DURATION_MS`)
 - XSS-Schutz durch React
 - Input-Validierung mit Zod
 - Konfiguration über Umgebungsvariablen
