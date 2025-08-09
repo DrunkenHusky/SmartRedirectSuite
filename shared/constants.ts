@@ -72,3 +72,15 @@ export const ENV_CONFIG = {
     COMPRESSION: true,
   },
 } as const;
+// Rule matching configuration
+export const RULE_MATCHING_CONFIG = {
+  WEIGHT_PATH_SEGMENT: 10,
+  WEIGHT_QUERY_PAIR: 3,
+  PENALTY_WILDCARD: -1,
+  BONUS_EXACT_MATCH: 5,
+  TRAILING_SLASH_POLICY: 'ignore',
+  CASE_SENSITIVITY_PATH: true,
+  CASE_SENSITIVITY_QUERY: false,
+  DEBUG: false,
+} as const;
+

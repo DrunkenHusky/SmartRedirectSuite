@@ -111,6 +111,25 @@ Ergebnis: https://sharepoint.neu.ch/hub
 Ergebnis: https://portal.neu.ch/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
+### Regelpriorisierung (Spezifität)
+Die spezifischste Regel gewinnt. Der Spezifitäts‑Score \(S\) berechnet sich als:
+
+\[
+S = P_{path} \cdot WEIGHT\_PATH\_SEGMENT + P_{param} \cdot WEIGHT\_QUERY\_PAIR + W_{wildcards} \cdot PENALTY\_WILDCARD + E_{exact} \cdot BONUS\_EXACT\_MATCH
+\]
+
+- **P_path** – Anzahl exakt übereinstimmender statischer Pfadsegmente
+- **P_param** – Anzahl übereinstimmender Query‑Key=Value‑Paare
+- **W_wildcards** – Wildcards/Platzhalter (werden negativ gewichtet)
+- **E_exact** – Bonus bei kompletter Pfad- und Query‑Übereinstimmung
+
+Beispiele:
+
+- Request `/subsite/xyz` → Regel `/subsite/xyz` schlägt `/subsite`
+- Request `/subsite?document.aspx=123` → Regel `/subsite?document.aspx=123` schlägt `/subsite`
+
+Tie‑Breaker: mehr statische Segmente → mehr Query‑Paare → weniger Wildcards → älteres `createdAt`/niedrigere ID.
+
 ## Einsatzszenarien
 - Migrationen (z. B. SharePoint On‑Premises → SharePoint Online)
 - Domain‑Rebrands und Konsolidierungen
