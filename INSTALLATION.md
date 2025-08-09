@@ -44,6 +44,7 @@ npm start
 - **Hauptanwendung**: http://localhost:5000
 - **Admin-Panel**: http://localhost:5000 → Admin-Login klicken
 - **Standard Admin-Passwort**: `Password1` (ändern Sie dies in der .env-Datei!)
+- **Brute-Force-Schutz**: Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen wird die IP für `LOGIN_BLOCK_DURATION_MS` ms gesperrt (Standard: 5 Versuche/24h, anpassbar in `.env`)
 
 ## 5. Erste Schritte
 

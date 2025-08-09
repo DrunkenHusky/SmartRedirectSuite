@@ -12,6 +12,7 @@ import {
 import { urlRuleSchemaWithValidation, updateUrlRuleSchemaWithValidation } from "@shared/validation";
 import { z } from "zod";
 import { LocalFileUploadService } from "./localFileUpload";
+import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
 import path from "path";
 
 
@@ -162,11 +163,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin-Authentifizierung
-  app.post("/api/admin/login", async (req, res) => {
+  app.post("/api/admin/login", bruteForceProtection, async (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress || "";
     try {
       // Simple password extraction without validation first
       const { password } = z.object({ password: z.string() }).parse(req.body);
-      
+
       // Check password match first
       if (password === ADMIN_PASSWORD) {
         // Check if session exists, if not return error
@@ -181,20 +183,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.adminLoginTime = Date.now();
 
         // For file store, explicitly save the session
-        req.session.save((err) => {
+        req.session.save(async (err) => {
           if (err) {
             console.error("Session save error:", err);
             res.status(500).json({ error: "Session save error" });
             return;
           }
+          await resetLoginAttempts(ip);
           res.json({ success: true, sessionId: req.sessionID });
         });
       } else {
+        await recordLoginFailure(ip);
         res.status(401).json({ error: "Falsches Passwort" });
       }
     } catch (error) {
       console.error("Login error:", error);
-      
+      await recordLoginFailure(ip);
+
       // Always return "wrong password" for any error during login
       // This prevents exposing validation details to users
       res.status(401).json({ error: "Falsches Passwort" });

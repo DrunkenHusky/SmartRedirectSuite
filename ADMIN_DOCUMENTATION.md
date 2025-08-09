@@ -12,3 +12,8 @@ Diese Dokumentation richtet sich an Administratoren und DevOps-Teams. Sie bünde
 - Regelmäßige Backups der `data/`-Verzeichnisse.
 - Abgelaufene Sessions unter `data/sessions/` bereinigen.
 - Logs und Performance-Metriken gemäß Deployment-Guides überwachen.
+
+## Login-Schutz
+- Fehlgeschlagene Anmeldungen werden IP-basiert gezählt.
+- Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen (Standard: 5) wird die IP für `LOGIN_BLOCK_DURATION_MS` Millisekunden (Standard: 24h) gesperrt.
+- Werte können über Umgebungsvariablen in der `.env` angepasst werden.
