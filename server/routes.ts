@@ -14,6 +14,8 @@ import { z } from "zod";
 import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
 import path from "path";
+import { selectMostSpecificRule } from "@shared/ruleMatching";
+import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 
 
@@ -144,13 +146,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { path } = z.object({ path: z.string() }).parse(req.body);
       const rules = await storage.getUrlRules();
-      
-      // Find matching rule (case-insensitive) - match most specific first
-      // Sort rules by matcher length in descending order to prioritize more specific matches
-      const sortedRules = [...rules].sort((a, b) => b.matcher.length - a.matcher.length);
-      const matchingRule = sortedRules.find(rule => 
-        path.toLowerCase().includes(rule.matcher.toLowerCase())
-      );
+
+      // Rules loaded from storage (server/storage.ts#getUrlRules)
+      // Normalization and specificity prioritization handled by selectMostSpecificRule
+      const matchingRule = selectMostSpecificRule(path, rules, RULE_MATCHING_CONFIG);
       
       res.json({
         rule: matchingRule || null,

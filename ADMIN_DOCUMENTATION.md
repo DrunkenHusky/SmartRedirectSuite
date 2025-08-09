@@ -17,3 +17,7 @@ Diese Dokumentation richtet sich an Administratoren und DevOps-Teams. Sie bünde
 - Fehlgeschlagene Anmeldungen werden IP-basiert gezählt.
 - Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen (Standard: 5) wird die IP für `LOGIN_BLOCK_DURATION_MS` Millisekunden (Standard: 24h) gesperrt.
 - Werte können über Umgebungsvariablen in der `.env` angepasst werden.
+
+## Regelpriorisierung & Debugging
+- Gewichtungen und Normalisierung befinden sich in `shared/constants.ts` (`RULE_MATCHING_CONFIG`).
+- Aktivieren Sie `DEBUG` in dieser Konfiguration, um pro Anfrage Score, angewandte Tie‑Breaker und die gewählte Regel zu protokollieren.

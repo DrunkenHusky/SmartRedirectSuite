@@ -3,6 +3,8 @@
 
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { selectMostSpecificRule } from './shared/ruleMatching.ts';
+import { RULE_MATCHING_CONFIG } from './shared/constants.ts';
 
 
 // Load sample rules used for testing
@@ -10,10 +12,7 @@ const rulesPath = new URL('./data/rules.json', import.meta.url);
 const rules = JSON.parse(fs.readFileSync(rulesPath, 'utf-8'));
 
 function findMatchingRule(path) {
-  const sortedRules = [...rules].sort((a, b) => b.matcher.length - a.matcher.length);
-  return (
-    sortedRules.find(rule => path.toLowerCase().includes(rule.matcher.toLowerCase())) || null
-  );
+  return selectMostSpecificRule(path, rules, RULE_MATCHING_CONFIG);
 }
 
 function generateUrl(path, rule, domain = 'https://newurlofdifferentapp.com') {
@@ -54,9 +53,9 @@ async function run() {
   );
   await testScenario(
     'Test 2: Partial rule (Teilweise)',
-    '/sample-old-path-006002',
+    '/sample-old-path/006002',
     'partial',
-    'https://newurlofdifferentapp.com/sample-new-path-006002'
+    'https://newurlofdifferentapp.com/sample-new-path/006002'
   );
   await testScenario(
     'Test 3: No matching rule',
@@ -66,7 +65,7 @@ async function run() {
   );
   await testScenario(
     'Test 4: Wildcard rule ignores additional segments',
-    '/sample-old-path-full-006965',
+    '/sample-old-path-full/006965',
     'wildcard',
     'https://newurlofdifferentapp.com/sample-new-path'
   );
