@@ -131,7 +131,7 @@ server {
     # Frontend application
     location / {
         try_files $uri $uri/ /index.html;
-        root /path/to/dist/public;
+        root /path/to/dist;
     }
 }
 ```
@@ -231,7 +231,7 @@ const CDN_URL = process.env.CDN_URL || '';
 // Update asset URLs in production
 if (process.env.NODE_ENV === 'production') {
   // Assets will be served from CDN
-  app.use('/assets', express.static('dist/public/assets', {
+  app.use('/assets', express.static('dist/assets', {
     maxAge: '1y',
     etag: true,
     lastModified: true

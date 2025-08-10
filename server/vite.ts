@@ -68,7 +68,10 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  // In production the client build now lives directly in the same
+  // directory as the server bundle (dist). Serve those files as static
+  // assets.
+  const distPath = path.resolve(import.meta.dirname);
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
