@@ -9,10 +9,6 @@ LABEL fly_launch_runtime="Node.js"
 # Node.js app lives here
 WORKDIR /app
 
-# Set production environment
-ENV NODE_ENV="production"
-
-
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
@@ -23,6 +19,9 @@ RUN apt-get update -qq && \
 # Install node modules
 COPY package-lock.json package.json ./
 RUN npm ci --include=dev
+
+# Set production environment
+ENV NODE_ENV="production"
 
 # Copy application code
 COPY . .
