@@ -24,10 +24,10 @@ RUN npm ci --include=dev
 COPY . .
 
 # Build application
-RUN npm install && npm run build
+RUN npm run build
 
 # Remove development dependencies
-RUN npm prune --omit=dev
+# RUN npm prune --omit=dev
 
 
 # Final stage for app image
