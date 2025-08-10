@@ -20,9 +20,6 @@ RUN apt-get update -qq && \
 COPY package-lock.json package.json ./
 RUN npm ci --include=dev
 
-# Set production environment
-ENV NODE_ENV="production"
-
 # Copy application code
 COPY . .
 
