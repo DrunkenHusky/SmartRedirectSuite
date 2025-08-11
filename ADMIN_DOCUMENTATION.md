@@ -2,6 +2,8 @@
 
 Diese Dokumentation richtet sich an Administratoren und DevOps-Teams. Sie bündelt Ressourcen für Installation, Deployment und den laufenden Betrieb.
 
+Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhängen von `?admin=true` an die Basis-URL erreichbar.
+
 ## Installations- und Deployment-Ressourcen
 - [INSTALLATION.md](./INSTALLATION.md): Schnellstart für lokale Entwicklung.
 - [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md): Leitfaden für Produktionsumgebungen.

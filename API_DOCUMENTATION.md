@@ -11,6 +11,8 @@
 
 The SmartRedirect Suite provides a comprehensive REST API for managing URL transformation rules, tracking migration statistics, and administering the system. This documentation covers all available endpoints with enterprise-grade features including authentication, validation, performance monitoring, and bulk operations.
 
+To open the web-based admin menu, use the gear icon in the application or append `?admin=true` to the base URL.
+
 ## Base URL
 ```
 Production: https://yourdomain.com/api
