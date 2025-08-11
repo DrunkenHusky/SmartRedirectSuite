@@ -2244,7 +2244,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </Button>
                       </div>
                     </div>
-                    </div>
                     </form>
                   )}
                 </CardContent>
