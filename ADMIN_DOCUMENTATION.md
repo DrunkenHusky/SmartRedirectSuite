@@ -7,6 +7,7 @@ Diese Dokumentation richtet sich an Administratoren und DevOps-Teams. Sie bünde
 - [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md): Leitfaden für Produktionsumgebungen.
 - [OPENSHIFT_DEPLOYMENT.md](./OPENSHIFT_DEPLOYMENT.md): Beispielkonfiguration für OpenShift.
 - [API_DOCUMENTATION.md](./API_DOCUMENTATION.md): REST-API für Automatisierung und Monitoring.
+- `Dockerfile.demo`: Demo-Container mit automatischem 24h-Reset für Tests.
 
 ## Wartung
 - Regelmäßige Backups der `data/`-Verzeichnisse.

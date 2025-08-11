@@ -8,6 +8,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ## [Unreleased]
 ### Added
 - Spezifitätsbasiertes Regel-Matching mit `selectMostSpecificRule` und konfigurierbarer Gewichtung.
+- `Dockerfile.demo` mit täglichem Cron-Reset für Demo-Instanzen.
 
 ## [1.0.0] - 2025-08-08
 

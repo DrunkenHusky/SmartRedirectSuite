@@ -6,6 +6,7 @@
 - **[README.md](./README.md)**: Vollständige Dokumentation mit allen Features
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Entwickler
 - **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production-Deployment-Anleitung
+- **Dockerfile.demo**: Docker-Setup für Demo-Instanzen mit täglichem Daten-Reset
 
 ## 1. Voraussetzungen prüfen
 
