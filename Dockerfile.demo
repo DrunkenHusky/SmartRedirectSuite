@@ -3,7 +3,7 @@
 # Demo Dockerfile for SmartRedirect Suite
 # Resets data every 24h via cron (sessions, uploads, tracking, settings, rules) and adds a demo Banner
 
-ARG NODE_VERSION=20.18.0
+ARG NODE_VERSION=22.18.0
 FROM node:${NODE_VERSION}-slim AS base
 
 LABEL fly_launch_runtime="Node.js"
