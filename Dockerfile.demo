@@ -16,7 +16,12 @@ RUN apt-get update -qq && \
 COPY package-lock.json package.json ./
 RUN npm ci --include=dev
 COPY . .
-RUN npm run build
+
+RUN npm run build \
+    && printf '%s\n' '<div style="background:#fffbdd;padding:10px;text-align:center;">This is just a demo instance and will be reset every day.<br/>Admin password: <strong>Password1</strong>.<br/><a href="https://github.com/SmartRedirectSuite/SmartRedirectSuite" target="_blank" rel="noopener noreferrer">GitHub repository</a> - For any additional questions, please visit this page.</div>' > /tmp/banner.html \
+    && sed -i '/<body[^>]*>/r /tmp/banner.html' dist/public/index.html \
+    && rm /tmp/banner.html
+
 RUN npm prune --omit=dev
 
 # Final stage
