@@ -26,6 +26,8 @@ Die Anwendung speichert alle Daten ausschließlich im Dateisystem; eine Datenban
 - Node.js 18+ für lokale Tests
 - Git für Source Code Management
 
+> Hinweis: Für Demo-Instanzen steht ein separates `Dockerfile.demo` bereit, das die Anwendung alle 24h zurücksetzt.
+
 ## 1. Projekt-Setup
 
 ### OpenShift-Projekt erstellen
@@ -213,6 +215,9 @@ CMD ["npm", "start"]
 ```bash
 # Image lokal erstellen
 docker build -t smartredirect-suite:latest .
+
+# Demo-Image mit automatischem Reset
+docker build -f Dockerfile.demo -t smartredirect-suite-demo:latest .
 
 # Image taggen für Registry
 docker tag smartredirect-suite:latest quay.io/yourorg/smartredirect-suite:v1.4

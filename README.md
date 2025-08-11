@@ -264,6 +264,7 @@ npm start
 ```
 
 Weitere Plattformen: Vercel, Heroku oder Docker (Persistenz über `LOCAL_UPLOAD_PATH` sicherstellen).
+Für Demo-Zwecke mit täglichem Reset der Daten kann das `Dockerfile.demo` genutzt werden (setzt Sessions, Uploads und Einstellungen täglich zurück).
 
 ## Entwicklung
 Technologie-Stack:

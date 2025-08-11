@@ -1,0 +1,49 @@
+# syntax = docker/dockerfile:1
+
+# Demo Dockerfile for SmartRedirect Suite
+# Resets data every 24h via cron (sessions, uploads, tracking, settings, rules)
+ARG NODE_VERSION=20.18.0
+FROM node:${NODE_VERSION}-slim AS base
+
+LABEL fly_launch_runtime="Node.js"
+
+WORKDIR /app
+
+# Build stage
+FROM base AS build
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
+COPY package-lock.json package.json ./
+RUN npm ci --include=dev
+COPY . .
+RUN npm run build
+RUN npm prune --omit=dev
+
+# Final stage
+FROM base
+
+# Install cron for scheduled resets
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y cron && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy built application
+COPY --from=build /app /app
+
+# Store default configs for daily reset
+RUN mkdir -p /defaults && \
+    cp /app/data/settings.json /defaults/settings.json && \
+    cp /app/data/rules.json /defaults/rules.json
+
+# Add reset script
+COPY demo-reset.sh /usr/local/bin/reset-app.sh
+RUN chmod +x /usr/local/bin/reset-app.sh
+
+# Cron job to reset at midnight
+RUN echo '0 0 * * * root /usr/local/bin/reset-app.sh > /proc/1/fd/1 2>/proc/1/fd/2' > /etc/cron.d/reset-app && \
+    chmod 0644 /etc/cron.d/reset-app
+
+EXPOSE 5000
+
+# Start cron and application
+CMD [ "sh", "-c", "cron && npm run start" ]

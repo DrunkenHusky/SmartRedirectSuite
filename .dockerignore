@@ -3,4 +3,5 @@
 .dockerignore
 .env
 Dockerfile
+Dockerfile.demo
 fly.toml
