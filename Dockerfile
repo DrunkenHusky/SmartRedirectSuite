@@ -1,10 +1,8 @@
 # syntax = docker/dockerfile:1
 
 # Adjust NODE_VERSION as desired
-ARG NODE_VERSION=20.18.0
+ARG NODE_VERSION=22.18.0
 FROM node:${NODE_VERSION}-slim AS base
-
-LABEL fly_launch_runtime="Node.js"
 
 # Node.js app lives here
 WORKDIR /app
