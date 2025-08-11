@@ -3,6 +3,7 @@
   "headerTitle": "Smart Redirect Service",
   "headerIcon": "ArrowRightLeft",
   "headerBackgroundColor": "#ffffff",
+  "popupEnabled": true,
   "mainTitle": "URL veraltet - Aktualisierung erforderlich",
   "mainDescription": "Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen.",
   "mainBackgroundColor": "#ffffff",

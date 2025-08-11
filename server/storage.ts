@@ -668,6 +668,7 @@ export class FileStorage implements IStorage {
         headerTitle: "URL Migration Tool",
         headerIcon: "ArrowRightLeft",
         headerBackgroundColor: "white",
+        popupEnabled: true,
         mainTitle: "Veralteter Link erkannt",
         mainDescription: "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten.",
         mainBackgroundColor: "white",

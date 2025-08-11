@@ -143,8 +143,9 @@ export const generalSettingsSchema = z.object({
   headerBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
     .default("white"),
-    
+
   // Main content section
+  popupEnabled: z.boolean().default(true),
   mainTitle: z.string()
     .min(1, "Haupttitel darf nicht leer sein")
     .max(200, "Haupttitel ist zu lang")

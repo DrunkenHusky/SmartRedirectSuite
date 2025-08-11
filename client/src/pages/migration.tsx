@@ -69,7 +69,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [matchingRule, setMatchingRule] = useState<UrlRule | null>(null);
   const [infoText, setInfoText] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showMainDialog, setShowMainDialog] = useState(true);
+  const [showMainDialog, setShowMainDialog] = useState(false);
   const [showUrlComparison, setShowUrlComparison] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -108,6 +108,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const { data: settings, isLoading: settingsLoading } = useQuery<GeneralSettings>({
     queryKey: ["/api/settings"],
   });
+
+  useEffect(() => {
+    if (settings) {
+      setShowMainDialog(!!settings.popupEnabled);
+    }
+  }, [settings]);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -491,6 +497,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       </footer>
 
       {/* Main Migration Dialog (Popup) */}
+      {settings?.popupEnabled && (
       <Dialog open={showMainDialog} onOpenChange={setShowMainDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ backgroundColor: settings?.mainBackgroundColor || 'white' }}>
           <DialogHeader>
@@ -540,6 +547,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+      )}
 
       <PasswordModal
         isOpen={showPasswordModal}
