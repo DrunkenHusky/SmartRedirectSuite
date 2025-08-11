@@ -111,6 +111,21 @@ try {
     assert.ok(first !== -1 && second !== -1 && first < second);
   }
 
+  // Overlap detection should also consider query parameters
+  {
+    const overlapQueryRule = { matcher: '/test-rule?document.aspx=123', targetUrl: '/other', redirectType: 'partial' };
+    const { res, body } = await request('/api/admin/rules', {
+      method: 'POST',
+      headers: { cookie },
+      body: JSON.stringify(overlapQueryRule),
+    });
+    assert.equal(res.status, 400);
+    assert.ok(body.error.includes('Reihenfolge'));
+    const first = body.error.indexOf('"/test-rule?document.aspx=123"');
+    const second = body.error.indexOf('"/test-rule"');
+    assert.ok(first !== -1 && second !== -1 && first < second);
+  }
+
   console.log('Server feature tests passed');
   await new Promise(resolve => httpServer.close(resolve));
   process.exit(0);

@@ -639,62 +639,100 @@ export class FileStorage implements IStorage {
   
   // Helper method to check if two URL matchers are overlapping
   private areMatchersOverlapping(matcher1: string, matcher2: string): boolean {
+    const [path1, query1] = matcher1.split('?');
+    const [path2, query2] = matcher2.split('?');
+
     // Remove leading/trailing slashes for comparison
-    const clean1 = matcher1.replace(/^\/+|\/+$/g, '');
-    const clean2 = matcher2.replace(/^\/+|\/+$/g, '');
-    
-    // Exact match
-    if (clean1 === clean2) return true;
-    
+    const clean1 = path1.replace(/^\/+|\/+$/g, '');
+    const clean2 = path2.replace(/^\/+|\/+$/g, '');
+
+    // Exact path match
+    if (clean1 === clean2) {
+      // If both have no query or compatible queries, they overlap
+      return this.doQueriesOverlap(query1, query2);
+    }
+
     // For URL paths, we need to be precise about what constitutes an overlap
     // "/news/" and "/news-beitrag/" are NOT overlapping - they're different paths
     // Only consider overlap if one path is a TRUE prefix of another with proper path separation
-    
+
     const segments1 = clean1.split('/').filter(s => s.length > 0);
     const segments2 = clean2.split('/').filter(s => s.length > 0);
-    
+
     // Check if one is a true path prefix of the other
     const isPrefix = (shorter: string[], longer: string[]) => {
       if (shorter.length >= longer.length) return false;
       return shorter.every((segment, i) => segment === longer[i]);
     };
-    
-    // Examples of TRUE overlaps:
-    // "/news/" and "/news/archive/" (prefix relationship)
-    // "/api/" and "/api/v1/" (prefix relationship)
-    // 
-    // Examples of NO overlap:
-    // "/news/" and "/news-beitrag/" (different segments: "news" vs "news-beitrag")
-    // "/api/" and "/apikey/" (different segments: "api" vs "apikey")
+
+    let pathsOverlap = false;
     if (segments1.length < segments2.length && isPrefix(segments1, segments2)) {
-      return true;
+      pathsOverlap = true;
     }
     if (segments2.length < segments1.length && isPrefix(segments2, segments1)) {
-      return true;
+      pathsOverlap = true;
     }
-    
+
     // Check for wildcard overlaps (if using patterns like /news*)
-    if (matcher1.includes('*') || matcher2.includes('*')) {
-      const pattern1 = matcher1.replace(/\*/g, '.*');
-      const pattern2 = matcher2.replace(/\*/g, '.*');
-      
+    if (!pathsOverlap && (matcher1.includes('*') || matcher2.includes('*'))) {
+      const pattern1 = path1.replace(/\*/g, '.*');
+      const pattern2 = path2.replace(/\*/g, '.*');
+
       try {
         const regex1 = new RegExp(`^${pattern1}$`);
         const regex2 = new RegExp(`^${pattern2}$`);
-        
+
         // Test if patterns would match each other's base strings
-        const base1 = matcher1.replace(/\*/g, '');
-        const base2 = matcher2.replace(/\*/g, '');
-        
+        const base1 = path1.replace(/\*/g, '');
+        const base2 = path2.replace(/\*/g, '');
+
         if (regex1.test(base2) || regex2.test(base1)) {
-          return true;
+          pathsOverlap = true;
         }
-      } catch (e) {
+      } catch {
         // Invalid regex, skip this check
       }
     }
-    
-    return false;
+
+    if (!pathsOverlap) return false;
+
+    // If paths overlap, queries must also be compatible
+    return this.doQueriesOverlap(query1, query2);
+  }
+
+  private doQueriesOverlap(q1?: string, q2?: string): boolean {
+    const params1 = new URLSearchParams(q1 || '');
+    const params2 = new URLSearchParams(q2 || '');
+
+    // If either has no params, any URL satisfying the other also matches
+    if ([...params1.keys()].length === 0 || [...params2.keys()].length === 0) {
+      return true;
+    }
+
+    // Build maps of parameter -> values
+    const map1 = new Map<string, string[]>();
+    for (const [k, v] of params1.entries()) {
+      if (!map1.has(k)) map1.set(k, []);
+      map1.get(k)!.push(v);
+    }
+    const map2 = new Map<string, string[]>();
+    for (const [k, v] of params2.entries()) {
+      if (!map2.has(k)) map2.set(k, []);
+      map2.get(k)!.push(v);
+    }
+
+    // For shared keys, ensure at least one common value exists
+    for (const key of map1.keys()) {
+      if (map2.has(key)) {
+        const a = map1.get(key)!;
+        const b = map2.get(key)!;
+        if (!a.some(val => b.includes(val))) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   private getMatcherSpecificity(matcher: string) {

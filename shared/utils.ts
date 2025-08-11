@@ -56,24 +56,63 @@ export const urlUtils = {
 
   /**
    * Checks if two URL matchers overlap
-   */
+  */
   areMatchersOverlapping(matcher1: string, matcher2: string): boolean {
-    const normalize = (m: string) => m.toLowerCase().replace(/\/+$/, '');
+    const normalize = (m: string) => {
+      const [p, q] = m.toLowerCase().split('?');
+      return { path: p.replace(/\/+$/, ''), query: q };
+    };
     const m1 = normalize(matcher1);
     const m2 = normalize(matcher2);
-    
-    if (m1 === m2) return true;
-    
-    const segments1 = m1.split('/').filter(Boolean);
-    const segments2 = m2.split('/').filter(Boolean);
-    
+
+    if (m1.path === m2.path) {
+      return queriesOverlap(m1.query, m2.query);
+    }
+
+    const segments1 = m1.path.split('/').filter(Boolean);
+    const segments2 = m2.path.split('/').filter(Boolean);
+
     const minLength = Math.min(segments1.length, segments2.length);
-    
+
     for (let i = 0; i < minLength; i++) {
       if (segments1[i] !== segments2[i]) return false;
     }
-    
-    return segments1.length !== segments2.length;
+
+    if (segments1.length === segments2.length) return false;
+
+    return queriesOverlap(m1.query, m2.query);
+
+    function queriesOverlap(q1?: string, q2?: string): boolean {
+      const params1 = new URLSearchParams(q1 || '');
+      const params2 = new URLSearchParams(q2 || '');
+
+      if ([...params1.keys()].length === 0 || [...params2.keys()].length === 0) {
+        return true;
+      }
+
+      const map1 = new Map<string, string[]>();
+      for (const [k, v] of params1.entries()) {
+        if (!map1.has(k)) map1.set(k, []);
+        map1.get(k)!.push(v);
+      }
+      const map2 = new Map<string, string[]>();
+      for (const [k, v] of params2.entries()) {
+        if (!map2.has(k)) map2.set(k, []);
+        map2.get(k)!.push(v);
+      }
+
+      for (const key of map1.keys()) {
+        if (map2.has(key)) {
+          const a = map1.get(key)!;
+          const b = map2.get(key)!;
+          if (!a.some(val => b.includes(val))) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
   },
 };
 
