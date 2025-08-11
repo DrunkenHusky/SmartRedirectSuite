@@ -96,6 +96,21 @@ try {
     assert.equal(body.matcher, newRule.matcher);
   }
 
+  // Creating an overlapping rule should report order of precedence
+  {
+    const overlapRule = { matcher: '/test-rule/child', targetUrl: '/other', redirectType: 'partial' };
+    const { res, body } = await request('/api/admin/rules', {
+      method: 'POST',
+      headers: { cookie },
+      body: JSON.stringify(overlapRule),
+    });
+    assert.equal(res.status, 400);
+    assert.ok(body.error.includes('Reihenfolge'));
+    const first = body.error.indexOf('"/test-rule/child"');
+    const second = body.error.indexOf('"/test-rule"');
+    assert.ok(first !== -1 && second !== -1 && first < second);
+  }
+
   console.log('Server feature tests passed');
   await new Promise(resolve => httpServer.close(resolve));
   process.exit(0);

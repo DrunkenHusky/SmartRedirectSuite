@@ -1,15 +1,16 @@
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
-import type { 
-  UrlRule, 
-  InsertUrlRule, 
-  UrlTracking, 
+import type {
+  UrlRule,
+  InsertUrlRule,
+  UrlTracking,
   InsertUrlTracking,
   GeneralSettings,
   InsertGeneralSettings,
   ImportUrlRule
 } from "@shared/schema";
+import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const RULES_FILE = path.join(DATA_DIR, 'rules.json');
@@ -184,12 +185,32 @@ export class FileStorage implements IStorage {
       }
       
       // Check for overlapping patterns
+      const overlappingRules: UrlRule[] = [];
       for (const existingRule of rules) {
         if (this.areMatchersOverlapping(insertRule.matcher, existingRule.matcher)) {
-          validationErrors.push(`Überlappender URL-Matcher: "${insertRule.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`);
+          overlappingRules.push(existingRule);
         }
       }
-      
+
+      if (overlappingRules.length > 0) {
+        const tempRule: UrlRule = {
+          id: 'neue Regel',
+          matcher: insertRule.matcher,
+          targetUrl: '',
+          redirectType: 'partial',
+          infoText: '',
+          autoRedirect: false,
+          createdAt: new Date().toISOString(),
+        };
+        const ranked = this.sortRulesBySpecificity([...overlappingRules, tempRule]);
+        const sequence = ranked
+          .map(r => `"${r.matcher}"${r.id === 'neue Regel' ? ' (neue Regel)' : ` (Regel-ID: ${r.id})`}`)
+          .join(' → ');
+        validationErrors.push(
+          `Überlappende URL-Matcher gefunden. Reihenfolge der Anwendung (höchste Spezifität zuerst): ${sequence}`
+        );
+      }
+
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join('; '));
       }
@@ -223,13 +244,33 @@ export class FileStorage implements IStorage {
       }
       
       // Check for overlapping patterns (excluding the current rule being updated)
+      const overlappingRules: UrlRule[] = [];
       for (const existingRule of rules) {
         if (existingRule.id === id) continue; // Skip current rule
         if (this.areMatchersOverlapping(updateData.matcher, existingRule.matcher)) {
-          validationErrors.push(`Überlappender URL-Matcher: "${updateData.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`);
+          overlappingRules.push(existingRule);
         }
       }
-      
+
+      if (overlappingRules.length > 0) {
+        const tempRule: UrlRule = {
+          id: 'aktualisierte Regel',
+          matcher: updateData.matcher,
+          targetUrl: '',
+          redirectType: 'partial',
+          infoText: '',
+          autoRedirect: false,
+          createdAt: rules[index].createdAt,
+        };
+        const ranked = this.sortRulesBySpecificity([...overlappingRules, tempRule]);
+        const sequence = ranked
+          .map(r => `"${r.matcher}"${r.id === 'aktualisierte Regel' ? ' (aktualisierte Regel)' : ` (Regel-ID: ${r.id})`}`)
+          .join(' → ');
+        validationErrors.push(
+          `Überlappende URL-Matcher gefunden. Reihenfolge der Anwendung (höchste Spezifität zuerst): ${sequence}`
+        );
+      }
+
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join('; '));
       }
@@ -654,6 +695,70 @@ export class FileStorage implements IStorage {
     }
     
     return false;
+  }
+
+  private getMatcherSpecificity(matcher: string) {
+    const cfg = RULE_MATCHING_CONFIG;
+    const [matcherPath, matcherQuery] = matcher.split('?');
+
+    // Normalize path similar to shared/ruleMatching
+    let pathname = matcherPath;
+    if (cfg.TRAILING_SLASH_POLICY === 'ignore') {
+      pathname = pathname.replace(/\/+$/, '');
+    }
+    pathname = pathname.replace(/\/+/g, '/');
+    let segments = pathname.split('/').filter(Boolean).map(seg => decodeURIComponent(seg));
+    if (!cfg.CASE_SENSITIVITY_PATH) {
+      segments = segments.map(s => s.toLowerCase());
+    }
+
+    let staticSegments = 0;
+    let wildcards = 0;
+    for (const seg of segments) {
+      if (seg === '*' || seg.startsWith(':')) {
+        wildcards++;
+      } else {
+        staticSegments++;
+      }
+    }
+
+    // Normalize query similar to shared/ruleMatching
+    const params = new URLSearchParams(matcherQuery ? '?' + matcherQuery : '');
+    let queryPairs = 0;
+    const queryMap = new Map<string, string[]>();
+    for (const [key, value] of params.entries()) {
+      const normKey = cfg.CASE_SENSITIVITY_QUERY ? key : key.toLowerCase();
+      if (!queryMap.has(normKey)) queryMap.set(normKey, []);
+      queryMap.get(normKey)!.push(decodeURIComponent(value));
+    }
+    for (const arr of queryMap.values()) {
+      arr.sort();
+      queryPairs += arr.length;
+    }
+
+    const score =
+      staticSegments * cfg.WEIGHT_PATH_SEGMENT +
+      queryPairs * cfg.WEIGHT_QUERY_PAIR +
+      wildcards * cfg.PENALTY_WILDCARD +
+      cfg.BONUS_EXACT_MATCH;
+
+    return { score, staticSegments, queryPairs, wildcards };
+  }
+
+  private sortRulesBySpecificity(rules: Array<Pick<UrlRule, 'id' | 'matcher' | 'createdAt'>>): Array<Pick<UrlRule, 'id' | 'matcher' | 'createdAt'>> {
+    return rules
+      .map(rule => ({ ...rule, ...this.getMatcherSpecificity(rule.matcher) }))
+      .sort((a, b) => {
+        if (a.score !== b.score) return b.score - a.score;
+        if (a.staticSegments !== b.staticSegments) return b.staticSegments - a.staticSegments;
+        if (a.queryPairs !== b.queryPairs) return b.queryPairs - a.queryPairs;
+        if (a.wildcards !== b.wildcards) return a.wildcards - b.wildcards;
+        const aCreated = a.createdAt || '';
+        const bCreated = b.createdAt || '';
+        if (aCreated !== bCreated) return aCreated < bCreated ? -1 : 1;
+        return a.id.localeCompare(b.id);
+      })
+      .map(({ id, matcher, createdAt }) => ({ id, matcher, createdAt }));
   }
 
   // General Settings implementierung
