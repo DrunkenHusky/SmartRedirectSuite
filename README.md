@@ -1,8 +1,9 @@
 # SmartRedirect Suite
 
 SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain. Typischer Use Case: Migration von SharePoint On-Premises zu SharePoint Online, wenn sich Domain und Pfadstruktur ändern. Die App weist Nutzer auf veraltete Links hin und kann automatisch auf neue Ziele weiterleiten.
-> **Demo-Instanz:** [smartredirectsuite.fly.dev](https://smartredirectsuite.fly.dev)
-> Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird alle 24 Stunden zurückgesetzt und eignet sich zum Ausprobieren der App.
+
+**Demo-Instanz:** <a href="https://smartredirectsuite.fly.dev/" target="_blank">smartredirectsuite.fly.dev</a>
+Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird alle 24 Stunden zurückgesetzt und eignet sich zum Ausprobieren der App.
 
 ## Inhaltsverzeichnis
 - [Key Features](#key-features)
