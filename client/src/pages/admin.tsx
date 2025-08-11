@@ -198,6 +198,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     headerIcon: "ArrowRightLeft" as "ArrowLeftRight" | "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
     headerLogoUrl: "" as string | undefined,
     headerBackgroundColor: "#ffffff",
+    popupMode: "active" as "active" | "inline" | "disabled",
     mainTitle: "Veralteter Link erkannt",
     mainDescription: "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten.",
     mainBackgroundColor: "#ffffff",
@@ -454,7 +455,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         headerIcon: settingsData.headerIcon || "ArrowRightLeft",
         headerLogoUrl: settingsData.headerLogoUrl || "",
         headerBackgroundColor: settingsData.headerBackgroundColor || "#ffffff",
-        mainTitle: settingsData.mainTitle || "", 
+        popupMode: settingsData.popupMode || "active",
+        mainTitle: settingsData.mainTitle || "",
         mainDescription: settingsData.mainDescription || "",
         mainBackgroundColor: settingsData.mainBackgroundColor || "#ffffff",
         alertIcon: settingsData.alertIcon || "AlertTriangle",
@@ -1674,7 +1676,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              PopUp-Anzeige
+                            </label>
+                            <Select value={generalSettings.popupMode} onValueChange={(value) =>
+                              setGeneralSettings({ ...generalSettings, popupMode: value as any })
+                            }>
+                              <SelectTrigger className="bg-white dark:bg-gray-700">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Aktiv</SelectItem>
+                                <SelectItem value="inline">Inline</SelectItem>
+                                <SelectItem value="disabled">Deaktiviert</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className={`${generalSettings.popupMode === 'disabled' ? 'opacity-50 pointer-events-none' : ''} space-y-4 sm:space-y-6`}>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Titel <span className="text-red-500">*</span>
@@ -1684,15 +1704,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 onChange={(e) => setGeneralSettings({ ...generalSettings, mainTitle: e.target.value })}
                                 placeholder="URL veraltet - Aktualisierung erforderlich"
                                 className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                disabled={generalSettings.popupMode === 'disabled'}
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Icon
                               </label>
-                              <Select value={generalSettings.alertIcon} onValueChange={(value) => 
+                              <Select value={generalSettings.alertIcon} onValueChange={(value) =>
                                 setGeneralSettings({ ...generalSettings, alertIcon: value as any })
-                              }>
+                              } disabled={generalSettings.popupMode === 'disabled'}>
                                 <SelectTrigger className="bg-white dark:bg-gray-700">
                                   <SelectValue />
                                 </SelectTrigger>
@@ -1715,6 +1736,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
                               rows={3}
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              disabled={generalSettings.popupMode === 'disabled'}
                             />
                             <p className="text-xs text-gray-500 mt-1">
                               Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
@@ -1729,6 +1751,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               onChange={(e) => setGeneralSettings({ ...generalSettings, popupButtonText: e.target.value })}
                               placeholder="Zeige mir die neue URL"
                               className="bg-white dark:bg-gray-700"
+                              disabled={generalSettings.popupMode === 'disabled'}
                             />
                             <p className="text-xs text-gray-500 mt-1">
                               Text für den Button der das PopUp-Fenster öffnet
@@ -1739,9 +1762,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Alert-Hintergrundfarbe
                               </label>
-                              <Select value={generalSettings.alertBackgroundColor} onValueChange={(value) => 
+                              <Select value={generalSettings.alertBackgroundColor} onValueChange={(value) =>
                                 setGeneralSettings({ ...generalSettings, alertBackgroundColor: value as any })
-                              }>
+                              } disabled={generalSettings.popupMode === 'disabled'}>
                                 <SelectTrigger className="bg-white dark:bg-gray-700">
                                   <SelectValue />
                                 </SelectTrigger>
@@ -1764,12 +1787,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   value={generalSettings.mainBackgroundColor}
                                   onChange={(e) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: e.target.value })}
                                   className="w-20 h-10 p-1 rounded-md border cursor-pointer"
+                                  disabled={generalSettings.popupMode === 'disabled'}
                                 />
                                 <Input
                                   value={generalSettings.mainBackgroundColor}
                                   onChange={(e) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: e.target.value })}
                                   placeholder="#ffffff"
                                   className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
+                                  disabled={generalSettings.popupMode === 'disabled'}
                                 />
                               </div>
                             </div>

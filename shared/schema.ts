@@ -22,6 +22,8 @@ export const COLOR_OPTIONS = [
   "yellow", "red", "orange", "blue", "gray", "white", "black"
 ] as const;
 
+export const POPUP_MODES = ["active", "inline", "disabled"] as const;
+
 export const REDIRECT_TYPES = ["wildcard", "partial"] as const;
 export const EXPORT_FORMATS = ["csv", "json"] as const;
 export const TIME_RANGES = ["24h", "7d", "all"] as const;
@@ -143,7 +145,10 @@ export const generalSettingsSchema = z.object({
   headerBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
     .default("white"),
-    
+
+  // Popup display mode
+  popupMode: z.enum(POPUP_MODES).default('active'),
+
   // Main content section
   mainTitle: z.string()
     .min(1, "Haupttitel darf nicht leer sein")

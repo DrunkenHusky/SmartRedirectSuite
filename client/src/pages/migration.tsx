@@ -69,7 +69,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [matchingRule, setMatchingRule] = useState<UrlRule | null>(null);
   const [infoText, setInfoText] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showMainDialog, setShowMainDialog] = useState(true);
+  const [showMainDialog, setShowMainDialog] = useState(false);
   const [showUrlComparison, setShowUrlComparison] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -108,6 +108,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const { data: settings, isLoading: settingsLoading } = useQuery<GeneralSettings>({
     queryKey: ["/api/settings"],
   });
+
+  useEffect(() => {
+    if (settings) {
+      setShowMainDialog(settings.popupMode === 'active');
+    }
+  }, [settings]);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -312,9 +318,18 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
           {!isLoading && (
             <div className="space-y-6">
-
-
-
+              {settings?.popupMode === 'inline' && (
+                <div className={`${getBackgroundColor(settings?.alertBackgroundColor || 'yellow')} rounded-lg p-4 flex items-start space-x-3`}>
+                  {(() => {
+                    const IconComponent = getIconComponent(settings?.alertIcon || 'AlertTriangle');
+                    return <IconComponent className="h-5 w-5 mt-0.5" />;
+                  })()}
+                  <div>
+                    <h3 className="font-semibold">{settings?.mainTitle || "Veralteter Link erkannt"}</h3>
+                    <p className="text-sm mt-1">{settings?.mainDescription || "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten."}</p>
+                  </div>
+                </div>
+              )}
 
               {/* URL Comparison Section - Shown on main page when requested */}
               {showUrlComparison && (
@@ -491,6 +506,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       </footer>
 
       {/* Main Migration Dialog (Popup) */}
+      {settings?.popupMode === 'active' && (
       <Dialog open={showMainDialog} onOpenChange={setShowMainDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ backgroundColor: settings?.mainBackgroundColor || 'white' }}>
           <DialogHeader>
@@ -540,6 +556,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+      )}
 
       <PasswordModal
         isOpen={showPasswordModal}
