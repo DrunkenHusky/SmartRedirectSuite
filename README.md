@@ -292,6 +292,3 @@ Bei Problemen:
 4. `ADMIN_PASSWORD` verifizieren
 5. Upload-Pfad bei Logo-Fehlern prüfen
 
-## Änderungshistorie
-Detaillierte Änderungen siehe [CHANGELOG.md](./CHANGELOG.md).
-
