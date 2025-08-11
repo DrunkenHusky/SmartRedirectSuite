@@ -517,6 +517,7 @@ curl -X POST https://$ROUTE_URL/api/admin/auth \
   -H "Content-Type: application/json" \
   -d '{"password":"IhrSicheresPasswort123!"}'
 ```
+Die Weboberfläche des Admin-Menüs erreichen Sie über das Zahnrad-Symbol oder unter `https://$ROUTE_URL/?admin=true`.
 
 ## 10. Scaling und Performance
 

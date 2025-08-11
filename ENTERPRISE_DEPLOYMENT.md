@@ -31,6 +31,9 @@ This document provides comprehensive deployment instructions for the enterprise-
 - **Mobile-Responsive**: Optimized UI for desktop and mobile devices
 - **German Localization**: Complete German language support throughout
 
+### Admin Menu Access
+Open the administrator menu via the gear icon in the application or by appending `?admin=true` to the base URL.
+
 ## Pre-Deployment Checklist
 
 ### 1. Environment Requirements

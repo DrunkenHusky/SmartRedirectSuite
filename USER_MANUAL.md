@@ -2,6 +2,8 @@
 
 Dieses Handbuch beschreibt die tägliche Nutzung der SmartRedirect Suite. Die Anwendung verwaltet mehr als 100.000 URL-Transformationsregeln und unterstützt Migrationen zwischen Domains.
 
+Den Admin-Bereich öffnen Sie über das Zahnrad-Symbol in der Kopfzeile oder indem Sie `?admin=true` an die URL anhängen.
+
 ## Allgemeine Einstellungen
 Nach der Anmeldung im Administrator-Bereich steht ein Menü mit vier Reitern zur Verfügung: **Allgemein**, **Regeln**, **Statistik** und **Import/Export**. Über die Schaltflächen im Kopfbereich können Sie sich abmelden oder den Admin-Bereich schließen.
 

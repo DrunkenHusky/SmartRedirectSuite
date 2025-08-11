@@ -199,6 +199,8 @@ Die Anwendung läuft anschließend unter `http://localhost:5000`.
 
 ## Administration
 
+Der Admin-Bereich lässt sich über das Zahnrad-Symbol oben rechts oder direkt über den URL-Parameter `?admin=true` öffnen.
+
 ### Regeln importieren
 Beispiel einer JSON-Datei:
 
