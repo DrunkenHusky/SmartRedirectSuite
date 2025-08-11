@@ -2870,7 +2870,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                 {/* Search and pagination info for paginated views */}
                 {(statsView === 'top100' || statsView === 'browser') && (
-                  <div className="flex justify-between items-center text-sm text-muted-foreground mt-4">
+                  <div className="flex w-full sm:w-auto justify-between items-center text-sm text-muted-foreground mt-4 sm:mt-0">
                     <div>
                       {statsView === 'top100' && (
                         top100Loading ? (
