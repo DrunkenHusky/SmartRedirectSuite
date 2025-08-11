@@ -1801,6 +1801,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </div>
                         </div>
                       </div>
+                      </div>
 
                       {/* 3. URL Comparison Settings */}
                       <div className="space-y-6">
