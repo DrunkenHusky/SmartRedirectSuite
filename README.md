@@ -8,6 +8,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 ☕️ **Kaffee für den Code?** Wenn dir die SmartRedirect Suite gefällt, spendier mir auf [BuyMeACoffee](https://buymeacoffee.com/drunkenhusky) einen Kaffee und halte die Bits am Koffein!
 
 ## Inhaltsverzeichnis
+
 - [Key Features](#key-features)
 - [Dokumentation](#dokumentation)
 - [Impressions](#impressions)
@@ -34,6 +35,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 - [Änderungshistorie](#anderungshistorie)
 
 ## Key Features
+
 - Zentrale Regelverwaltung mit automatischer URL-Erkennung
 - Kontrollierte Migrationen und nachvollziehbare Domainwechsel
 - Produktivität: Multi-Select, Import/Export von Regeln
@@ -44,6 +46,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 - Responsives Design für Desktop und Mobilgeräte
 
 ## Dokumentation
+
 - [Benutzerhandbuch](./USER_MANUAL.md)
 - [Admin-Dokumentation](./ADMIN_DOCUMENTATION.md)
 - [Architektur-Übersicht](./ARCHITECTURE_OVERVIEW.md)
@@ -54,6 +57,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
 
 ### Website-Besucher
+
 1. **Initiale Meldung** – Hinweis, dass der verwendete Link veraltet ist und aktualisiert werden soll.  
    ![Initiale Meldung – Website Besucher](Impressions/Initiale%20Meldung%20Website%20Besucher.png)
 
@@ -61,6 +65,7 @@ Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
    ![Anzeige neuer URL mit Hinweisen – Website Besucher nach Bestätigung Pop-up](Impressions/Anzeige%20neuer%20URL%20mit%20Hinweisen%20Website%20Besucher%20nach%20Best%C3%A4tigung%20Pop%20up.png)
 
 ### Admin-Bereich
+
 3. **Generelle Einstellungen** – Übersicht über globale Optionen und Grundkonfiguration.  
    ![Admin Menü – Generelle Einstellungen](Impressions/Admin%20Menu%20Generelle%20Einstellungen.png)
 
@@ -74,20 +79,27 @@ Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
    ![Admin Menu – Import Export](Impressions/Admin%20Menu%20Import%20Export.png)
 
 ## Funktionsweise
+
 Jede Regel definiert:
+
 - einen **URL-Pfad-Matcher**
-- einen **Modus** (*Teilweise* oder *Vollständig*)
+- einen **Modus** (_Teilweise_ oder _Vollständig_)
 - Zielwerte (**Base-URL** oder **Ziel-URL**)
+
+Der Matcher greift an beliebiger Stelle im Pfad – eine Regel wie `/sites/team`
+matcht sowohl `/sites/team/docs` als auch `/archive/sites/team/docs`.
 
 **Fallback ohne Regeln:** Bei fehlenden Regeln erfolgt ein Domainersatz gemäß den allgemeinen Einstellungen; Pfad, Parameter und Anker bleiben erhalten.
 
 ### Regelmodi
-| Modus | Verhalten |
-|-------|-----------|
-| **Teilweise** | Ersetzt Pfadsegmente ab dem Matcher. Base‑URL stammt aus den allgemeinen Einstellungen; zusätzliche Segmente, Parameter und Anker werden angehängt. |
-| **Vollständig** | Leitet komplett auf eine neue Ziel‑URL um. Keine Bestandteile der alten URL werden übernommen. |
+
+| Modus           | Verhalten                                                                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Teilweise**   | Ersetzt Pfadsegmente ab dem Matcher. Base‑URL stammt aus den allgemeinen Einstellungen; zusätzliche Segmente, Parameter und Anker werden angehängt. |
+| **Vollständig** | Leitet komplett auf eine neue Ziel‑URL um. Keine Bestandteile der alten URL werden übernommen.                                                      |
 
 ### Beispiele
+
 **Ausgangs‑URL**
 
 ```
@@ -117,10 +129,11 @@ Ergebnis: https://neuesintranet.cloud.com/sites/team/docs/handbuch.pdf?version=3
 ```
 
 ### Regelpriorisierung (Spezifität)
+
 Die spezifischste Regel gewinnt. Der Spezifitäts‑Score \(S\) berechnet sich als:
 
 \[
-S = P_{path} \cdot WEIGHT\_PATH\_SEGMENT + P_{param} \cdot WEIGHT\_QUERY\_PAIR + W_{wildcards} \cdot PENALTY\_WILDCARD + E_{exact} \cdot BONUS\_EXACT\_MATCH
+S = P*{path} \cdot WEIGHT_PATH_SEGMENT + P*{param} \cdot WEIGHT_QUERY_PAIR + W*{wildcards} \cdot PENALTY_WILDCARD + E*{exact} \cdot BONUS_EXACT_MATCH
 \]
 
 - **P_path** – Anzahl exakt übereinstimmender statischer Pfadsegmente
@@ -136,6 +149,7 @@ Beispiele:
 Tie‑Breaker: mehr statische Segmente → mehr Query‑Paare → weniger Wildcards → älteres `createdAt`/niedrigere ID.
 
 ## Einsatzszenarien
+
 - Migrationen (z. B. SharePoint On‑Premises → SharePoint Online)
 - Domain‑Rebrands und Konsolidierungen
 - Umstrukturierungen großer Linklandschaften
@@ -143,6 +157,7 @@ Tie‑Breaker: mehr statische Segmente → mehr Query‑Paare → weniger Wildca
 ## Schnellstart
 
 ### Voraussetzungen
+
 - Node.js >= 22
 
 Überprüfen Sie die Installation:
@@ -166,6 +181,7 @@ npm install
 ```
 
 ### 3. .env-Datei erstellen
+
 Erstellen Sie eine `.env` Datei im Hauptverzeichnis:
 
 ```bash
@@ -207,6 +223,7 @@ Die Anwendung läuft anschließend unter `http://localhost:5000`.
 Der Admin-Bereich lässt sich über das Zahnrad-Symbol oben rechts oder direkt über den URL-Parameter `?admin=true` öffnen.
 
 ### Regeln importieren
+
 Beispiel einer JSON-Datei:
 
 ```json
@@ -225,7 +242,9 @@ Beispiel einer JSON-Datei:
 Im Admin-Panel hochladen oder über `sample-rules-import.json` einsehen.
 
 ### Einstellungen anpassen
+
 Im Admin-Panel können Texte, Farben und UI-Elemente angepasst werden, einschließlich:
+
 - Header und Icons
 - Popup-Texte
 - Labels im URL-Vergleich
@@ -233,14 +252,18 @@ Im Admin-Panel können Texte, Farben und UI-Elemente angepasst werden, einschlie
 - Zusätzliche Info-Bereiche
 
 ### Statistiken & Monitoring
+
 Das Admin-Panel zeigt:
+
 - Zugriffszahlen (gesamt, heute, Woche)
 - Top-URLs
 - Zeitbasierte Auswertungen (24h, 7 Tage, alle Daten)
 - Export als CSV/JSON
 
 ## Validierung & Qualitätssicherung
+
 Die Anwendung verhindert:
+
 - Doppelte URL-Matcher
 - Überlappende Regeln (z. B. `/news/` und `/news/archive/`)
 - Wildcard-Konflikte
@@ -249,11 +272,14 @@ Die Anwendung verhindert:
 Fehler werden detailliert auf Deutsch ausgegeben; bei Validierungsfehlern werden keine Änderungen gespeichert.
 
 ## Datenverwaltung
+
 Standardmäßig werden JSON-Dateien im `data/` Verzeichnis genutzt:
+
 - `data/rules.json`, `data/settings.json`, `data/tracking.json`
 - `data/sessions/` für Admin-Sessions
 
 ## Sicherheit
+
 - Persistente Session-Authentifizierung (7 Tage)
 - Sichere Cookies und dateibasierte Sessions
 - Passwortgeschützter Admin-Bereich
@@ -263,6 +289,7 @@ Standardmäßig werden JSON-Dateien im `data/` Verzeichnis genutzt:
 - Konfiguration über Umgebungsvariablen
 
 ## Deployment
+
 Lokale Produktion:
 
 ```bash
@@ -274,12 +301,15 @@ Weitere Plattformen: Vercel, Heroku oder Docker (Persistenz über `LOCAL_UPLOAD_
 Für Demo-Zwecke mit täglichem Reset der Daten kann das `Dockerfile.demo` genutzt werden (setzt Sessions, Uploads und Einstellungen täglich zurück).
 
 ## Entwicklung
+
 Technologie-Stack:
+
 - React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - Express.js und Zod im Backend
 - TanStack Query, Wouter, React Hook Form
 
 Richtlinien:
+
 1. TypeScript verwenden
 2. Zod-Schemas zur Validierung
 3. Shared Types zwischen Frontend und Backend
@@ -287,10 +317,11 @@ Richtlinien:
 5. Responsive, Mobile-First Design
 
 ## Support & Beitrag
+
 Bei Problemen:
+
 1. Konsolen-Logs prüfen
 2. Umgebungsvariablen kontrollieren
 3. Dependencies installieren
 4. `ADMIN_PASSWORD` verifizieren
 5. Upload-Pfad bei Logo-Fehlern prüfen
-

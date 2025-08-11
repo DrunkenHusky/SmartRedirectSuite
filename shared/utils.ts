@@ -28,7 +28,7 @@ export const urlUtils = {
     try {
       const urlObj = new URL(url);
       // Remove trailing slash, normalize case
-      const normalized = `${urlObj.protocol}//${urlObj.host.toLowerCase()}${urlObj.pathname.replace(/\/$/, '')}${urlObj.search}${urlObj.hash}`;
+      const normalized = `${urlObj.protocol}//${urlObj.host.toLowerCase()}${urlObj.pathname.replace(/\/$/, "")}${urlObj.search}${urlObj.hash}`;
       return normalized;
     } catch {
       return url;
@@ -55,25 +55,43 @@ export const urlUtils = {
   },
 
   /**
-   * Checks if two URL matchers overlap
+   * Checks if two URL matchers overlap. A matcher can appear at any position
+   * within a path, therefore we test if their segment patterns can align at
+   * any offset.
    */
   areMatchersOverlapping(matcher1: string, matcher2: string): boolean {
-    const normalize = (m: string) => m.toLowerCase().replace(/\/+$/, '');
+    const normalize = (m: string) =>
+      m.toLowerCase().split("?")[0].replace(/\/+$/, "");
     const m1 = normalize(matcher1);
     const m2 = normalize(matcher2);
-    
-    if (m1 === m2) return true;
-    
-    const segments1 = m1.split('/').filter(Boolean);
-    const segments2 = m2.split('/').filter(Boolean);
-    
-    const minLength = Math.min(segments1.length, segments2.length);
-    
-    for (let i = 0; i < minLength; i++) {
-      if (segments1[i] !== segments2[i]) return false;
+
+    const segs1 = m1.split("/").filter(Boolean);
+    const segs2 = m2.split("/").filter(Boolean);
+    const len1 = segs1.length;
+    const len2 = segs2.length;
+
+    const segmentsCompatible = (a: string, b: string) => {
+      if (a === b) return true;
+      if (a === "*" || a.startsWith(":")) return true;
+      if (b === "*" || b.startsWith(":")) return true;
+      return false;
+    };
+
+    for (let offset = -(len1 - 1); offset <= len2 - 1; offset++) {
+      let overlap = false;
+      let ok = true;
+      for (let i = 0; i < len1; i++) {
+        const j = i + offset;
+        if (j < 0 || j >= len2) continue;
+        overlap = true;
+        if (!segmentsCompatible(segs1[i], segs2[j])) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok && overlap) return true;
     }
-    
-    return segments1.length !== segments2.length;
+    return false;
   },
 };
 
@@ -84,7 +102,7 @@ export const stringUtils = {
   /**
    * Safely truncates text with ellipsis
    */
-  truncate(text: string, maxLength: number, suffix = '...'): string {
+  truncate(text: string, maxLength: number, suffix = "..."): string {
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength - suffix.length) + suffix;
   },
@@ -93,7 +111,7 @@ export const stringUtils = {
    * Escapes HTML to prevent XSS
    */
   escapeHtml(text: string): string {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   },
@@ -102,8 +120,9 @@ export const stringUtils = {
    * Generates a random string with specified length
    */
   generateRandomString(length: number): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -121,8 +140,9 @@ export const stringUtils = {
    * Capitalizes first letter of each word
    */
   toTitleCase(text: string): string {
-    return text.replace(/\w\S*/g, (txt) => 
-      txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+    return text.replace(
+      /\w\S*/g,
+      (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(),
     );
   },
 };
@@ -134,15 +154,18 @@ export const dateUtils = {
   /**
    * Formats date for consistent display
    */
-  formatDate(date: string | Date, format: 'short' | 'long' | 'iso' = 'short'): string {
+  formatDate(
+    date: string | Date,
+    format: "short" | "long" | "iso" = "short",
+  ): string {
     const d = new Date(date);
-    
+
     switch (format) {
-      case 'short':
+      case "short":
         return d.toLocaleDateString();
-      case 'long':
+      case "long":
         return d.toLocaleString();
-      case 'iso':
+      case "iso":
         return d.toISOString();
       default:
         return d.toString();
@@ -156,32 +179,32 @@ export const dateUtils = {
     const now = new Date();
     const target = new Date(date);
     const diffMs = now.getTime() - target.getTime();
-    
+
     const seconds = Math.floor(diffMs / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
-    
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    return 'Just now';
+
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
   },
 
   /**
    * Checks if date is within specified range
    */
-  isWithinRange(date: string | Date, range: '24h' | '7d' | '30d'): boolean {
+  isWithinRange(date: string | Date, range: "24h" | "7d" | "30d"): boolean {
     const now = new Date();
     const target = new Date(date);
     const diffMs = now.getTime() - target.getTime();
-    
+
     switch (range) {
-      case '24h':
+      case "24h":
         return diffMs <= 24 * 60 * 60 * 1000;
-      case '7d':
+      case "7d":
         return diffMs <= 7 * 24 * 60 * 60 * 1000;
-      case '30d':
+      case "30d":
         return diffMs <= 30 * 24 * 60 * 60 * 1000;
       default:
         return false;
@@ -198,7 +221,7 @@ export const performanceUtils = {
    */
   debounce<T extends (...args: unknown[]) => unknown>(
     func: T,
-    wait: number
+    wait: number,
   ): (...args: Parameters<T>) => void {
     let timeout: NodeJS.Timeout;
     return (...args: Parameters<T>) => {
@@ -212,7 +235,7 @@ export const performanceUtils = {
    */
   throttle<T extends (...args: unknown[]) => unknown>(
     func: T,
-    limit: number
+    limit: number,
   ): (...args: Parameters<T>) => void {
     let inThrottle: boolean;
     return (...args: Parameters<T>) => {
@@ -270,19 +293,19 @@ export const validationUtils = {
     let score = 0;
 
     if (password.length >= 8) score += 1;
-    else feedback.push('Password must be at least 8 characters long');
+    else feedback.push("Password must be at least 8 characters long");
 
     if (/[a-z]/.test(password)) score += 1;
-    else feedback.push('Password must contain lowercase letters');
+    else feedback.push("Password must contain lowercase letters");
 
     if (/[A-Z]/.test(password)) score += 1;
-    else feedback.push('Password must contain uppercase letters');
+    else feedback.push("Password must contain uppercase letters");
 
     if (/\d/.test(password)) score += 1;
-    else feedback.push('Password must contain numbers');
+    else feedback.push("Password must contain numbers");
 
     if (/[^a-zA-Z\d]/.test(password)) score += 1;
-    else feedback.push('Password should contain special characters');
+    else feedback.push("Password should contain special characters");
 
     return {
       isValid: score >= 3,
@@ -294,7 +317,11 @@ export const validationUtils = {
   /**
    * Validates file size and type
    */
-  validateFile(file: File, allowedTypes: string[], maxSize: number): {
+  validateFile(
+    file: File,
+    allowedTypes: string[],
+    maxSize: number,
+  ): {
     isValid: boolean;
     errors: string[];
   } {
@@ -324,8 +351,8 @@ export const errorUtils = {
    */
   getErrorMessage(error: unknown): string {
     if (error instanceof Error) return error.message;
-    if (typeof error === 'string') return error;
-    return 'An unknown error occurred';
+    if (typeof error === "string") return error;
+    return "An unknown error occurred";
   },
 
   /**
@@ -346,10 +373,10 @@ export const errorUtils = {
    */
   logError(error: unknown, context?: Record<string, unknown>): void {
     const message = this.getErrorMessage(error);
-    console.error('Error:', message, context);
-    
+    console.error("Error:", message, context);
+
     // In production, send to error tracking service
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       // Example: Sentry.captureException(error, { extra: context });
     }
   },
@@ -363,7 +390,7 @@ export const formatUtils = {
    * Formats file size in human-readable format
    */
   formatFileSize(bytes: number): string {
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const units = ["B", "KB", "MB", "GB", "TB"];
     let size = bytes;
     let unitIndex = 0;
 
@@ -378,7 +405,7 @@ export const formatUtils = {
   /**
    * Formats number with locale-specific formatting
    */
-  formatNumber(num: number, locale = 'en-US'): string {
+  formatNumber(num: number, locale = "en-US"): string {
     return new Intl.NumberFormat(locale).format(num);
   },
 
@@ -386,7 +413,7 @@ export const formatUtils = {
    * Formats percentage
    */
   formatPercentage(value: number, total: number): string {
-    if (total === 0) return '0%';
+    if (total === 0) return "0%";
     const percentage = (value / total) * 100;
     return `${percentage.toFixed(1)}%`;
   },
