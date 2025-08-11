@@ -2233,8 +2233,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             Speichern Sie Ihre Änderungen um sie auf der Website anzuwenden.
                           </p>
                         </div>
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           size="lg"
                           className="min-w-48 px-6"
                           disabled={updateSettingsMutation.isPending}
@@ -2242,6 +2242,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {updateSettingsMutation.isPending ? "Speichere..." : "Einstellungen speichern"}
                         </Button>
                       </div>
+                    </div>
                     </div>
                     </form>
                   )}
