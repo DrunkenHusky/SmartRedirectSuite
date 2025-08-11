@@ -5,6 +5,8 @@ SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Mi
 **Demo-Instanz:** <a href="https://smartredirectsuite.fly.dev/" target="_blank">smartredirectsuite.fly.dev</a>
 Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird alle 24 Stunden zurückgesetzt und eignet sich zum Ausprobieren der App.
 
+☕️ **Kaffee für den Code?** Wenn dir die SmartRedirect Suite gefällt, spendier mir auf [BuyMeACoffee](https://buymeacoffee.com/drunkenhusky) einen Kaffee und halte die Bits am Koffein!
+
 ## Inhaltsverzeichnis
 - [Key Features](#key-features)
 - [Dokumentation](#dokumentation)
