@@ -660,7 +660,11 @@ export class FileStorage implements IStorage {
   async getGeneralSettings(): Promise<GeneralSettings> {
     try {
       const data = await fs.readFile(SETTINGS_FILE, 'utf-8');
-      return JSON.parse(data);
+      const settings = JSON.parse(data);
+      if (!settings.popupMode) {
+        settings.popupMode = 'active';
+      }
+      return settings;
     } catch {
       // Return default settings if file doesn't exist
       const defaultSettings: GeneralSettings = {
@@ -668,6 +672,7 @@ export class FileStorage implements IStorage {
         headerTitle: "URL Migration Tool",
         headerIcon: "ArrowRightLeft",
         headerBackgroundColor: "white",
+        popupMode: 'active',
         mainTitle: "Veralteter Link erkannt",
         mainDescription: "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten.",
         mainBackgroundColor: "white",
