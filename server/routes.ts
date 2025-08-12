@@ -424,11 +424,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
       const topUrls = await storage.getTopUrls(100, timeRange);
-      
+
       res.json(topUrls);
     } catch (error) {
       console.error("Top 100 stats error:", error);
       res.status(500).json({ error: "Failed to fetch top 100 statistics" });
+    }
+  });
+
+  app.get("/api/admin/stats/top-rules", requireAuth, async (req, res) => {
+    try {
+      const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
+      const topRules = await storage.getTopRules(100, timeRange);
+
+      res.json(topRules);
+    } catch (error) {
+      console.error("Top rules stats error:", error);
+      res.status(500).json({ error: "Failed to fetch top rules statistics" });
     }
   });
 

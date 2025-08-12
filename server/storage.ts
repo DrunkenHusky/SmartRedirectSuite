@@ -52,6 +52,10 @@ export interface IStorage {
     limit?: number,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<Array<{ path: string; count: number }>>;
+  getTopRules(
+    limit?: number,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ ruleId: string; matcher: string; count: number }>>;
   getTrackingStats(): Promise<{ total: number; today: number; week: number }>;
 
   // Import functionality
@@ -407,6 +411,30 @@ export class FileStorage implements IStorage {
 
     return Array.from(pathCounts.entries())
       .map(([path, count]) => ({ path, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+
+  async getTopRules(
+    limit = 100,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ ruleId: string; matcher: string; count: number }>> {
+    const trackingData = await this.getTrackingData(timeRange);
+    const ruleCounts = new Map<string, number>();
+
+    trackingData.forEach((track) => {
+      if (track.ruleId) {
+        ruleCounts.set(track.ruleId, (ruleCounts.get(track.ruleId) || 0) + 1);
+      }
+    });
+
+    const rules = await this.getUrlRules();
+
+    return Array.from(ruleCounts.entries())
+      .map(([ruleId, count]) => {
+        const rule = rules.find((r) => r.id === ruleId);
+        return { ruleId, matcher: rule?.matcher || "Unbekannte Regel", count };
+      })
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
   }
