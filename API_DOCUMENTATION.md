@@ -120,7 +120,8 @@ Content-Type: application/json
   "newUrl": "https://newsite.com/articles/article-1",
   "path": "/news/article-1",
   "userAgent": "Mozilla/5.0...",
-  "timestamp": "2025-01-06T17:30:00.000Z"
+  "timestamp": "2025-01-06T17:30:00.000Z",
+  "ruleId": "rule_uuid_1" // optional
 }
 ```
 
@@ -371,6 +372,28 @@ GET /api/admin/stats/top100
     "count": 85,
     "percentage": 6.8,
     "lastAccessed": "2025-01-06T17:30:00.000Z"
+  }
+]
+```
+
+#### Get Top 100 URL Rules
+
+```http
+GET /api/admin/stats/top-rules
+```
+
+**Query Parameters:**
+
+- `timeRange`: "24h", "7d", or "all"
+
+**Response**
+
+```json
+[
+  {
+    "ruleId": "rule_uuid_1",
+    "matcher": "/beispiel",
+    "count": 42
   }
 ]
 ```

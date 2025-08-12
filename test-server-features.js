@@ -89,6 +89,7 @@ try {
   }
 
   // Create a new URL rule
+  let ruleId;
   {
     const newRule = {
       matcher: "/test-rule",
@@ -102,6 +103,7 @@ try {
     });
     assert.equal(res.status, 200);
     assert.equal(body.matcher, newRule.matcher);
+    ruleId = body.id;
   }
 
   // Creating overlapping rule should fail
@@ -118,6 +120,35 @@ try {
     });
     assert.equal(res.status, 400);
     assert.match(body.error, /Überlappender URL-Matcher/);
+  }
+
+  // Track rule usage
+  {
+    for (let i = 0; i < 3; i++) {
+      const tracking = {
+        oldUrl: `https://oldsite.com/test${i}`,
+        newUrl: "https://newsite.com/new-url",
+        path: "/test-rule",
+        timestamp: new Date().toISOString(),
+        ruleId,
+      };
+      const { res } = await request("/api/track", {
+        method: "POST",
+        body: JSON.stringify(tracking),
+      });
+      assert.equal(res.status, 200);
+    }
+  }
+
+  // Fetch top rules stats
+  {
+    const { res, body } = await request("/api/admin/stats/top-rules", {
+      headers: { cookie },
+    });
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(body));
+    assert.equal(body[0].ruleId, ruleId);
+    assert.equal(body[0].count, 3);
   }
 
   console.log("Server feature tests passed");

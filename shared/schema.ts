@@ -72,6 +72,7 @@ export const urlTrackingSchema = z.object({
   userAgent: z.string()
     .max(1000, "User agent too long")
     .optional(),
+  ruleId: z.string().uuid("Invalid rule ID").optional(),
 }).strict();
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({

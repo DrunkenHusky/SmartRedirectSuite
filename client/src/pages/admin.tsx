@@ -230,10 +230,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [statsView, setStatsView] = useState<'top100' | 'browser'>(() => {
+  const [statsView, setStatsView] = useState<'topUrls' | 'topRules' | 'browser'>(() => {
     // Only restore stats view if we're explicitly showing admin view
     const showAdmin = localStorage.getItem('showAdminView') === 'true';
-    return showAdmin ? ((localStorage.getItem('adminStatsView') as 'top100' | 'browser') || 'top100') : 'top100';
+    const stored = localStorage.getItem('adminStatsView');
+    const allowed = ['topUrls', 'topRules', 'browser'] as const;
+    return showAdmin && stored && (allowed as readonly string[]).includes(stored)
+      ? (stored as typeof allowed[number])
+      : 'topUrls';
   });
   const [activeTab, setActiveTab] = useState(() => {
     // Only restore admin tab if we're explicitly showing admin view
@@ -260,7 +264,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   };
 
   // Save stats view to localStorage when it changes
-  const handleStatsViewChange = (newView: 'top100' | 'browser') => {
+  const handleStatsViewChange = (newView: 'topUrls' | 'topRules' | 'browser') => {
     setStatsView(newView);
     localStorage.setItem('adminStatsView', newView);
   };
@@ -373,9 +377,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   // Top 100 URLs - all entries (non-paginated)
-  const { data: topUrlsData, isLoading: top100Loading } = useQuery<Array<{ path: string; count: number }>>({
+  const { data: topUrlsData, isLoading: topUrlsLoading } = useQuery<Array<{ path: string; count: number }>>({
     queryKey: ["/api/admin/stats/top100", statsFilter],
-    enabled: isAuthenticated && statsView === 'top100',
+    enabled: isAuthenticated && statsView === 'topUrls',
     retry: false,
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -388,7 +392,30 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         setIsAuthenticated(false);
         throw new Error('Authentication required');
       }
-      if (!response.ok) throw new Error('Failed to fetch top 100');
+      if (!response.ok) throw new Error('Failed to fetch top URLs');
+      return response.json();
+    },
+  });
+
+  // Top 100 URL rules - all entries
+  const { data: topRulesData, isLoading: topRulesLoading } = useQuery<
+    Array<{ ruleId: string; matcher: string; count: number }>
+  >({
+    queryKey: ["/api/admin/stats/top-rules", statsFilter],
+    enabled: isAuthenticated && statsView === 'topRules',
+    retry: false,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statsFilter !== 'all') {
+        params.append('timeRange', statsFilter);
+      }
+      const url = `/api/admin/stats/top-rules${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url, { credentials: 'include' });
+      if (response.status === 401 || response.status === 403) {
+        setIsAuthenticated(false);
+        throw new Error('Authentication required');
+      }
+      if (!response.ok) throw new Error('Failed to fetch top rules');
       return response.json();
     },
   });
@@ -905,6 +932,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Add missing variables for UI display
   const totalTopUrls = topUrlsData?.length || 0;
   const totalTopUrlsPages = 1; // Since we're not paginating top URLs anymore
+  const totalTopRules = topRulesData?.length || 0;
 
 
 
@@ -1253,7 +1281,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     return new Date(timestamp).toLocaleString('de-DE');
   };
 
-  const maxCount = statsData?.topUrls[0]?.count || 1;
 
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -2823,12 +2850,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    variant={statsView === 'top100' ? 'default' : 'outline'}
+                    variant={statsView === 'topUrls' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handleStatsViewChange('top100')}
+                    onClick={() => handleStatsViewChange('topUrls')}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Top 100
+                    Top 100 URL
+                  </Button>
+                  <Button
+                    variant={statsView === 'topRules' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatsViewChange('topRules')}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Top 100 URL-Regeln
                   </Button>
                   <Button
                     variant={statsView === 'browser' ? 'default' : 'outline'}
@@ -2839,8 +2874,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     Alle Einträge
                   </Button>
                 </div>
-                {/* Time filter for top100 */}
-                {statsView === 'top100' && (
+                {/* Time filter for top views */}
+                {(statsView === 'topUrls' || statsView === 'topRules') && (
                   <Select value={statsFilter} onValueChange={(value) => setStatsFilter(value as '24h' | '7d' | 'all')}>
                     <SelectTrigger className="w-auto">
                       <SelectValue />
@@ -2869,14 +2904,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 )}
 
                 {/* Search and pagination info for paginated views */}
-                {(statsView === 'top100' || statsView === 'browser') && (
+                {(statsView === 'topUrls' || statsView === 'topRules' || statsView === 'browser') && (
                   <div className="flex w-full sm:w-auto justify-between items-center text-sm text-muted-foreground mt-4 sm:mt-0">
                     <div>
-                      {statsView === 'top100' && (
-                        top100Loading ? (
+                      {statsView === 'topUrls' && (
+                        topUrlsLoading ? (
                           "Lade URLs..."
                         ) : (
                           `${totalTopUrls} URL${totalTopUrls !== 1 ? 's' : ''} insgesamt`
+                        )
+                      )}
+                      {statsView === 'topRules' && (
+                        topRulesLoading ? (
+                          "Lade Regeln..."
+                        ) : (
+                          `${totalTopRules} Regel${totalTopRules !== 1 ? 'n' : ''} insgesamt`
                         )
                       )}
                       {statsView === 'browser' && (
@@ -2892,9 +2934,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">Suche...</span>
                       )}
                     </div>
-                    {!entriesLoading && !top100Loading && (
+                    {!entriesLoading && !topUrlsLoading && !topRulesLoading && (
                       <div>
-                        {statsView === 'top100' && totalTopUrlsPages > 1 && `Seite ${statsPage} von ${totalTopUrlsPages}`}
+                        {statsView === 'topUrls' && totalTopUrlsPages > 1 && `Seite ${statsPage} von ${totalTopUrlsPages}`}
                         {statsView === 'browser' && totalStatsPages > 1 && `Seite ${statsPage} von ${totalStatsPages}`}
                       </div>
                     )}
@@ -2904,14 +2946,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
 
 
-              {/* Top 100 View */}
-              {statsView === 'top100' && (
+              {/* Top URLs View */}
+              {statsView === 'topUrls' && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Top URLs</CardTitle>
+                    <CardTitle>Top 100 URLs</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {top100Loading ? (
+                    {topUrlsLoading ? (
                       <div className="text-center py-8">Lade URLs...</div>
                     ) : !topUrlsData?.length ? (
                       <div className="text-center py-8 text-muted-foreground">
@@ -2947,6 +2989,65 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         </div>
                                         <span className="text-xs text-muted-foreground">
                                           {((url.count / maxCount) * 100).toFixed(1)}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Top Rules View */}
+              {statsView === 'topRules' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top 100 URL-Regeln</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {topRulesLoading ? (
+                      <div className="text-center py-8">Lade Regeln...</div>
+                    ) : !topRulesData?.length ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Keine Regelanwendungen vorhanden.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="overflow-hidden">
+                          <table className="w-full">
+                            <thead className="bg-muted/50 border-b">
+                              <tr>
+                                <th className="text-left p-3 font-medium">Rang</th>
+                                <th className="text-left p-3 font-medium">Regel</th>
+                                <th className="text-right p-3 font-medium">Anwendungen</th>
+                                <th className="text-left p-3 font-medium">Anteil</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {topRulesData.map((rule, index) => {
+                                const rank = index + 1;
+                                const maxCount = topRulesData[0]?.count || 1;
+                                return (
+                                  <tr key={rule.ruleId} className="border-b hover:bg-muted/50">
+                                    <td className="p-3 text-sm font-medium">#{rank}</td>
+                                    <td className="p-3">
+                                      <code className="text-sm text-foreground">{rule.matcher}</code>
+                                    </td>
+                                    <td className="p-3 text-right text-sm font-medium">{rule.count}</td>
+                                    <td className="p-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-16">
+                                          <Progress value={(rule.count / maxCount) * 100} className="h-2" />
+                                        </div>
+                                        <span className="text-xs text-muted-foreground">
+                                          {((rule.count / maxCount) * 100).toFixed(1)}%
                                         </span>
                                       </div>
                                     </td>

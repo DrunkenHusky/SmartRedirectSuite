@@ -24,7 +24,8 @@ Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-A
 4. **Bulk-Löschung**: Mehrere Regeln auf der aktuellen Seite markieren und gemeinsam löschen.
 
 ## Statistik
-- **Top 100**: Häufigste aufgerufene Pfade, filterbar nach Zeitraum (24h, 7 Tage, alle Zeit).
+- **Top 100 URL**: Häufigste aufgerufene Pfade, filterbar nach Zeitraum (24h, 7 Tage, alle Zeit).
+- **Top 100 URL-Regeln**: Häufigste angewandte Regeln, filterbar nach Zeitraum (24h, 7 Tage, alle Zeit).
 - **Alle Einträge**: Vollständige Liste der Tracking-Daten mit Such- und Sortierfunktion.
 - **Pagination**: Anzeige der Gesamtanzahl und Navigation zwischen Seiten.
 
