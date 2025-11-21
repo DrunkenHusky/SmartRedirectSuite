@@ -233,7 +233,10 @@ export const generalSettingsSchema = z.object({
     .min(1, "Footer-Copyright darf nicht leer sein")
     .max(200, "Footer-Copyright ist zu lang")
     .trim(),
-    
+
+  // Link detection behavior
+  caseSensitiveLinkDetection: z.boolean().default(false),
+
   // Auto-redirect functionality
   autoRedirect: z.boolean()
     .default(false),

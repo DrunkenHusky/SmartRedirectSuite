@@ -706,6 +706,9 @@ export class FileStorage implements IStorage {
       if (!settings.popupMode) {
         settings.popupMode = "active";
       }
+      if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
+        settings.caseSensitiveLinkDetection = false;
+      }
       return settings;
     } catch {
       // Return default settings if file doesn't exist
@@ -741,6 +744,7 @@ export class FileStorage implements IStorage {
         infoIcons: ["Bookmark", "Share2", "Clock"],
         footerCopyright:
           "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
+        caseSensitiveLinkDetection: false,
         updatedAt: new Date().toISOString(),
         autoRedirect: false,
       };

@@ -22,6 +22,28 @@ function makeRule(id: string, matcher: string, createdOffset = 0): UrlRule {
   assert.equal(r?.matcher, "/subsite/xyz");
 }
 
+// Case-insensitive matching by default
+{
+  const rules = [makeRule("1", "/Case/Path")];
+  const r = selectMostSpecificRule(
+    "/case/path",
+    rules,
+    { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false },
+  );
+  assert.equal(r?.matcher, "/Case/Path");
+}
+
+// Case-sensitive override
+{
+  const rules = [makeRule("1", "/Case/Path")];
+  const r = selectMostSpecificRule(
+    "/case/path",
+    rules,
+    { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: true },
+  );
+  assert.equal(r, null);
+}
+
 // Matcher appearing deeper in path
 {
   const rules = [makeRule("1", "/deep/path"), makeRule("2", "/other")];

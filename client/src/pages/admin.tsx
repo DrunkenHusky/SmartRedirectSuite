@@ -222,6 +222,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     infoItems: ["", "", ""],
     infoIcons: ["Bookmark", "Share2", "Clock"] as ("Bookmark" | "Share2" | "Clock" | "Info" | "CheckCircle" | "Star" | "Heart" | "Bell")[],
     footerCopyright: "",
+    caseSensitiveLinkDetection: false,
     autoRedirect: false,
   });
 
@@ -479,6 +480,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         infoItems: settingsData.infoItems || ["", "", ""],
         infoIcons: settingsData.infoIcons || ["Bookmark", "Share2", "Clock"],
         footerCopyright: settingsData.footerCopyright || "",
+        caseSensitiveLinkDetection: settingsData.caseSensitiveLinkDetection ?? false,
         autoRedirect: settingsData.autoRedirect || false, // Fix: This was missing!
       });
     }
@@ -2180,10 +2182,50 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
-                      {/* 6. Auto-Redirect Settings */}
+                      {/* 6. Link Detection Settings */}
+                      <div className="space-y-6 mt-8">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung</h3>
+                            <p className="text-sm text-muted-foreground">Steuert, ob Groß-/Kleinschreibung bei URL-Regeln beachtet wird</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
+                              <div>
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Groß-/Kleinschreibung beachten</p>
+                                <p className="text-xs text-green-700 dark:text-green-300">
+                                  Wenn aktiviert, werden Regeln nur bei exakt gleicher Schreibweise erkannt. Standard ist deaktiviert.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.caseSensitiveLinkDetection}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, caseSensitiveLinkDetection: checked })
+                              }
+                              className="data-[state=checked]:bg-green-600"
+                            />
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                              <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                <p className="font-medium">Best Practice:</p>
+                                <p>Nutzen Sie die Groß-/Kleinschreibung nur, wenn Ihre Altsysteme URLs case-sensitiv ausliefern und Sie dies exakt abbilden müssen.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 7. Auto-Redirect Settings */}
                       <div className="space-y-6 mt-8">
                       <div className="flex items-center gap-3 border-b pb-3">
-                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">6</div>
+                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">7</div>
                         <div>
                           <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
                           <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>

@@ -24,3 +24,4 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 ## Regelpriorisierung & Debugging
 - Gewichtungen und Normalisierung befinden sich in `shared/constants.ts` (`RULE_MATCHING_CONFIG`).
 - Aktivieren Sie `DEBUG` in dieser Konfiguration, um pro Anfrage Score, angewandte Tie‑Breaker und die gewählte Regel zu protokollieren.
+- Die Groß-/Kleinschreibung der Link-Erkennung lässt sich im Admin-Tab „Einstellungen → Link-Erkennung“ über den Schalter "Groß-/Kleinschreibung beachten" steuern (Standard: aus).

@@ -30,6 +30,7 @@
     "Clock"
   ],
   "footerCopyright": "Proudly brewed with Generative AI.",
+  "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
   "updatedAt": "2025-08-08T10:01:41.129Z"
 }

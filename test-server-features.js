@@ -120,6 +120,48 @@ try {
     assert.match(body.error, /Überlappender URL-Matcher/);
   }
 
+  // Case sensitivity toggle should control rule detection
+  {
+    const rule = {
+      matcher: "/case-toggle",
+      targetUrl: "/new-url",
+      redirectType: "partial",
+    };
+    await request("/api/admin/rules", {
+      method: "POST",
+      headers: { cookie },
+      body: JSON.stringify(rule),
+    });
+
+    const insensitiveCheck = await request("/api/check-rules", {
+      method: "POST",
+      body: JSON.stringify({ path: "/CASE-TOGGLE" }),
+    });
+    assert.equal(insensitiveCheck.res.status, 200);
+    assert.equal(insensitiveCheck.body.hasMatch, true);
+    assert.equal(insensitiveCheck.body.rule.matcher, rule.matcher);
+
+    const currentSettings = await request("/api/settings");
+    const { id: _settingsId, updatedAt: _updatedAt, ...settingsPayload } =
+      currentSettings.body;
+    const settingsUpdate = await request("/api/admin/settings", {
+      method: "PUT",
+      headers: { cookie },
+      body: JSON.stringify({
+        ...settingsPayload,
+        caseSensitiveLinkDetection: true,
+      }),
+    });
+    assert.equal(settingsUpdate.res.status, 200);
+
+    const sensitiveCheck = await request("/api/check-rules", {
+      method: "POST",
+      body: JSON.stringify({ path: "/CASE-TOGGLE" }),
+    });
+    assert.equal(sensitiveCheck.res.status, 200);
+    assert.equal(sensitiveCheck.body.hasMatch, false);
+  }
+
   console.log("Server feature tests passed");
   await new Promise((resolve) => httpServer.close(resolve));
   process.exit(0);

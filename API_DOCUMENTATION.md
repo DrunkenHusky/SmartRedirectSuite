@@ -153,6 +153,7 @@ GET /api/admin/settings
   "mainDescription": "You are using an outdated link...",
   "alertIcon": "AlertTriangle",
   "alertBackgroundColor": "yellow",
+  "caseSensitiveLinkDetection": false,
   "defaultNewDomain": "https://newsite.com",
   "copyButtonText": "Copy URL",
   "openButtonText": "Open in New Tab"
@@ -429,6 +430,7 @@ Content-Type: application/json
   "mainDescription": "Please update your bookmarks...",
   "alertIcon": "AlertTriangle",
   "alertBackgroundColor": "orange",
+  "caseSensitiveLinkDetection": true,
   "defaultNewDomain": "https://newsite.com",
   "copyButtonText": "Copy New URL",
   "openButtonText": "Open New URL"
@@ -442,6 +444,7 @@ Content-Type: application/json
 - `mainDescription`: 1-1000 characters
 - `defaultNewDomain`: Valid HTTP/HTTPS URL
 - Button texts: 1-50 characters each
+- `caseSensitiveLinkDetection`: Boolean toggle (default: `false`) to enforce case-sensitive matching
 
 ### Logo Management
 
