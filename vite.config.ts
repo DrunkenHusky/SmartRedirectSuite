@@ -3,7 +3,29 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import fs from "fs";
 
-const packageJson = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "package.json"), "utf-8"));
+const viteConfigDirectory = import.meta.dirname;
+
+export function resolvePackageJsonPath(baseDirectory = viteConfigDirectory) {
+  const candidatePaths = [
+    path.resolve(baseDirectory, "package.json"),
+    path.resolve(baseDirectory, "..", "package.json"),
+  ];
+
+  const existingPath = candidatePaths.find((candidatePath) =>
+    fs.existsSync(candidatePath),
+  );
+
+  if (!existingPath) {
+    throw new Error(
+      "package.json not found in build or project root; ensure dependencies are installed",
+    );
+  }
+
+  return existingPath;
+}
+
+const packageJsonPath = resolvePackageJsonPath();
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
 
 export default defineConfig({
   define: {
