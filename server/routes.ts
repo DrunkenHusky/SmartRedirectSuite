@@ -16,6 +16,7 @@ import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./
 import path from "path";
 import { selectMostSpecificRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
+import { APPLICATION_METADATA } from "@shared/appMetadata";
 
 
 
@@ -39,7 +40,13 @@ const requireAuth = (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
+  app.use((_, res, next) => {
+    res.setHeader("X-App-Name", APPLICATION_METADATA.displayName);
+    res.setHeader("X-App-Version", APPLICATION_METADATA.version);
+    next();
+  });
+
   // Health check endpoint for monitoring and OpenShift deployment
   app.get("/api/health", async (_req, res) => {
     try {

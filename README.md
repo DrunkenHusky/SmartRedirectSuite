@@ -316,6 +316,11 @@ Richtlinien:
 4. UI in deutscher Sprache
 5. Responsive, Mobile-First Design
 
+Branding & Versionierung:
+
+- App-Name und Version werden zentral über `shared/appMetadata.ts` aus der `package.json` abgeleitet.
+- Änderungen an Name/Version müssen nur dort erfolgen und stehen danach sowohl im Client (Dokumenttitel, Footer) als auch im Server (Response-Header) zur Verfügung.
+
 ## Support & Beitrag
 
 Bei Problemen:
