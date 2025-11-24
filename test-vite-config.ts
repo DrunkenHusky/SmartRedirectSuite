@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import fs from "node:fs";
+import { APPLICATION_METADATA } from "./shared/appMetadata";
 import { resolvePackageJsonPath } from "./vite.config";
-
-const projectPackageJson = JSON.parse(
-  fs.readFileSync(path.resolve(import.meta.dirname, "package.json"), "utf-8"),
-);
 
 async function importFreshConfig() {
   return import(`./vite.config.ts?cache-bust=${Date.now()}`);
@@ -16,8 +12,13 @@ async function importFreshConfig() {
   const config = configModule.default;
   assert.equal(
     config.define?.__APP_VERSION__,
-    JSON.stringify(projectPackageJson.version),
+    JSON.stringify(APPLICATION_METADATA.version),
     "Vite config should expose app version from package.json",
+  );
+  assert.equal(
+    config.define?.__APP_NAME__,
+    JSON.stringify(APPLICATION_METADATA.displayName),
+    "Vite config should expose app name from application metadata",
   );
 
   const distDirectory = path.resolve(import.meta.dirname, "dist");
