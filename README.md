@@ -300,6 +300,14 @@ npm start
 Weitere Plattformen: Vercel, Heroku oder Docker (Persistenz über `LOCAL_UPLOAD_PATH` sicherstellen).
 Für Demo-Zwecke mit täglichem Reset der Daten kann das `Dockerfile.demo` genutzt werden (setzt Sessions, Uploads und Einstellungen täglich zurück).
 
+## Release und CI/CD
+
+- Der Branch `main` triggert die **CI Release Pipeline** (`.github/workflows/release.yml`).
+- Die Pipeline führt Tests, Build und `npm audit --omit=dev --audit-level=high` aus.
+- **semantic-release** bestimmt die nächste SemVer-Version per Conventional Commits, aktualisiert `package.json`, `package-lock.json` und `CHANGELOG.md`, erstellt ein Git-Tag (`v<version>`) und veröffentlicht einen GitHub Release.
+- Bei einem neuen Release werden Docker-Images für GHCR gebaut und gepusht (`ghcr.io/<owner>/<repo>:<version>` und `:latest`); der Release-Text ergänzt die Image-Links.
+- Für das Pushen nach GHCR wird ein Secret `GHCR_TOKEN` (PAT mit `write:packages` und `repo`) benötigt; `GITHUB_TOKEN` reicht für Releases.
+
 ## Entwicklung
 
 Technologie-Stack:
