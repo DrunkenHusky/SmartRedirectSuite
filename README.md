@@ -26,6 +26,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
   - [Regeln importieren](#regeln-importieren)
   - [Einstellungen anpassen](#einstellungen-anpassen)
   - [Statistiken & Monitoring](#statistiken--monitoring)
+- [Release Prozess](#release-prozess)
 - [Validierung & Qualitätssicherung](#validierung--qualitatssicherung)
 - [Datenverwaltung](#datenverwaltung)
 - [Sicherheit](#sicherheit)
@@ -51,6 +52,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 - [Admin-Dokumentation](./ADMIN_DOCUMENTATION.md)
 - [Architektur-Übersicht](./ARCHITECTURE_OVERVIEW.md)
 - [Konfigurationsbeispiele](./CONFIGURATION_EXAMPLES.md)
+- [Release Pipeline](./docs/release-pipeline.md)
 
 ## Impressions
 
@@ -259,6 +261,16 @@ Das Admin-Panel zeigt:
 - Top-URLs
 - Zeitbasierte Auswertungen (24h, 7 Tage, alle Daten)
 - Export als CSV/JSON
+
+## Release Prozess
+
+Dieses Projekt verwendet eine automatisierte CI/CD-Pipeline mit **GitHub Actions** und **Semantic Release**.
+
+- Commits sollten der [Conventional Commits](https://www.conventionalcommits.org/) Konvention folgen (z.B. `feat:`, `fix:`).
+- Bei einem Push auf `main` wird automatisch getestet, versioniert und veröffentlicht.
+- Docker-Images werden automatisch in die GitHub Container Registry (ghcr.io) gepusht.
+
+Weitere Details finden Sie in der [Release-Dokumentation](./docs/release-pipeline.md).
 
 ## Validierung & Qualitätssicherung
 
