@@ -487,6 +487,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             {settings?.footerCopyright || "© 2024 URL Migration Service. Alle Rechte vorbehalten."}
+            <span className="ml-2 text-xs opacity-50">v{__APP_VERSION__}</span>
           </div>
           <div className="flex items-center space-x-2">
 
