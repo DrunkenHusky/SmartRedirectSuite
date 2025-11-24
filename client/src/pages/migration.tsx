@@ -75,6 +75,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const { toast } = useToast();
+  const currentYear = new Date().getFullYear();
+  const fallbackAppName = __APP_NAME__ || "URL Migration Service";
 
   // Check if user is already authenticated before showing password prompt
   const handleAdminAccess = async () => {
@@ -486,7 +488,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       <footer className="bg-surface border-t border-border py-4">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {settings?.footerCopyright || "© 2024 URL Migration Service. Alle Rechte vorbehalten."}
+            {settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
             <span className="ml-2 text-xs opacity-50">v{__APP_VERSION__}</span>
           </div>
           <div className="flex items-center space-x-2">

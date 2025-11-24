@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import fs from "fs";
+import { APPLICATION_METADATA } from "./shared/appMetadata";
 
 const viteConfigDirectory = import.meta.dirname;
 
@@ -24,12 +25,10 @@ export function resolvePackageJsonPath(baseDirectory = viteConfigDirectory) {
   return existingPath;
 }
 
-const packageJsonPath = resolvePackageJsonPath();
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
-
 export default defineConfig({
   define: {
-    '__APP_VERSION__': JSON.stringify(packageJson.version)
+    '__APP_VERSION__': JSON.stringify(APPLICATION_METADATA.version),
+    '__APP_NAME__': JSON.stringify(APPLICATION_METADATA.displayName)
   },
   plugins: [react()],
   resolve: {

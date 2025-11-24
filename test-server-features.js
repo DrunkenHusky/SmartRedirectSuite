@@ -19,6 +19,7 @@ process.chdir(tempDir);
 // Dynamic imports after changing working directory so storage uses temp data path
 const { registerRoutes } = await import("./server/routes.ts");
 const { FileSessionStore } = await import("./server/fileSessionStore.ts");
+const { APPLICATION_METADATA } = await import("./shared/appMetadata.ts");
 
 // Helper to start server on random port
 async function startServer() {
@@ -60,6 +61,14 @@ try {
     const { res, body } = await request("/api/health");
     assert.equal(res.status, 200);
     assert.equal(body.status, "healthy");
+    assert.equal(
+      res.headers.get("x-app-name"),
+      APPLICATION_METADATA.displayName,
+    );
+    assert.equal(
+      res.headers.get("x-app-version"),
+      APPLICATION_METADATA.version,
+    );
   }
 
   // Accessing admin route without auth should fail

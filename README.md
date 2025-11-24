@@ -316,6 +316,12 @@ Richtlinien:
 4. UI in deutscher Sprache
 5. Responsive, Mobile-First Design
 
+Branding & Versionierung:
+
+- App-Name und Version werden zentral über `shared/appMetadata.ts` aus der `package.json` abgeleitet.
+- Änderungen an Name/Version müssen nur dort erfolgen und stehen danach sowohl im Client (Dokumenttitel, Footer) als auch im Server (Response-Header) zur Verfügung.
+- Automatisierte Releases laufen über Semantic Release (`.github/workflows/release.yml`). Bei jedem Push auf `main` oder `work` werden Tests ausgeführt, anschließend werden Version, `package.json`, `package-lock.json` und `CHANGELOG.md` aktualisiert und ein GitHub Release erstellt. Dafür sind gültige Commit-Nachrichten nach dem Conventional-Commits-Standard sowie das `GITHUB_TOKEN` (automatisch) und optional ein `NPM_TOKEN` als Repository-Secret nötig. Nach einem erfolgreichen Release wird automatisch ein Docker-Image (`ghcr.io/<org>/smartredirectsuite:<version>` und `:latest`) gebaut, veröffentlicht und als Abschnitt in den Release Notes verlinkt.
+
 ## Support & Beitrag
 
 Bei Problemen:
