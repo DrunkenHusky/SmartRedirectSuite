@@ -11,7 +11,7 @@ NODE_ENV=development
 ```
 
 ## Beispiel-Regeln
-Die Datei [sample-rules-import.json](./sample-rules-import.json) zeigt den Aufbau einer Regeldatei:
+Die Datei [sample-rules-import.json](../sample-rules-import.json) zeigt den Aufbau einer Regeldatei:
 
 ```json
 {

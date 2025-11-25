@@ -48,10 +48,10 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 
 ## Dokumentation
 
-- [Benutzerhandbuch](./USER_MANUAL.md)
-- [Admin-Dokumentation](./ADMIN_DOCUMENTATION.md)
-- [Architektur-Übersicht](./ARCHITECTURE_OVERVIEW.md)
-- [Konfigurationsbeispiele](./CONFIGURATION_EXAMPLES.md)
+- [Benutzerhandbuch](./docs/USER_MANUAL.md)
+- [Admin-Dokumentation](./docs/ADMIN_DOCUMENTATION.md)
+- [Architektur-Übersicht](./docs/ARCHITECTURE_OVERVIEW.md)
+- [Konfigurationsbeispiele](./docs/CONFIGURATION_EXAMPLES.md)
 - [Release Pipeline](./docs/release-pipeline.md)
 
 ## Impressions

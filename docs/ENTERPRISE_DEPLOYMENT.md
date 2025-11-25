@@ -3,7 +3,7 @@
 > **Zielgruppe**: DevOps-Engineers, System-Administratoren und Enterprise-Entwickler. Für Standard-Installation siehe [INSTALLATION.md](./INSTALLATION.md). Für API-Integration konsultieren Sie [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
 
 ## 📚 Verwandte Dokumentation
-- **[README.md](./README.md)**: Vollständige Feature-Übersicht und Entwicklungsrichtlinien
+- **[README.md](../README.md)**: Vollständige Feature-Übersicht und Entwicklungsrichtlinien
 - **[INSTALLATION.md](./INSTALLATION.md)**: Lokale Entwicklungsumgebung einrichten
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Monitoring-Integration
 
