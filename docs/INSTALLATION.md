@@ -1,9 +1,9 @@
 # 🚀 Schnellstart-Anleitung - SmartRedirect Suite
 
-> **Hinweis**: Diese Schnellstart-Anleitung bietet eine vereinfachte Installation. Für detaillierte Informationen siehe [README.md](./README.md). Für Enterprise-Deployments konsultieren Sie [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
+> **Hinweis**: Diese Schnellstart-Anleitung bietet eine vereinfachte Installation. Für detaillierte Informationen siehe [README.md](../README.md). Für Enterprise-Deployments konsultieren Sie [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
 
 ## 📚 Verwandte Dokumentation
-- **[README.md](./README.md)**: Vollständige Dokumentation mit allen Features
+- **[README.md](../README.md)**: Vollständige Dokumentation mit allen Features
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Entwickler
 - **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production-Deployment-Anleitung
 - **Dockerfile.demo**: Docker-Setup für Demo-Instanzen mit täglichem Daten-Reset

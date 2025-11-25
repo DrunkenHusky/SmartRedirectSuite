@@ -3,7 +3,7 @@
 > **Zielgruppe**: OpenShift-Administratoren und DevOps-Engineers. Für Standard-Installation siehe [INSTALLATION.md](./INSTALLATION.md). Für Enterprise-Features konsultieren Sie [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
 
 ## 📚 Verwandte Dokumentation
-- **[README.md](./README.md)**: Vollständige Feature-Übersicht und Anwendungsdokumentation
+- **[README.md](../README.md)**: Vollständige Feature-Übersicht und Anwendungsdokumentation
 - **[INSTALLATION.md](./INSTALLATION.md)**: Lokale Entwicklungsumgebung für Testing
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Integration
 - **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Allgemeine Enterprise-Deployment-Strategien
@@ -732,7 +732,7 @@ Nach erfolgreichem Deployment haben Sie folgende Ressourcen:
 
 ### Kontakt und Support
 - **OpenShift-spezifische Fragen**: Cluster-Administrator
-- **Anwendungssupport**: Siehe [README.md](./README.md)
+- **Anwendungssupport**: Siehe [README.md](../README.md)
 - **API-Integration**: Siehe [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 
 Diese Anleitung stellt eine produktionstaugliche Bereitstellung der SmartRedirect Suite Anwendung auf OpenShift sicher, mit allen notwendigen Sicherheits- und Persistierung-Features.
