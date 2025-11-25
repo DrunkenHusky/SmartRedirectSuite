@@ -82,53 +82,37 @@ Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
 
 ## Funktionsweise
 
-Jede Regel definiert:
+Jede Regel definiert einen **Matcher** (den zu suchenden URL-Teil) und einen **Modus**, der das Weiterleitungsverhalten steuert.
 
-- einen **URL-Pfad-Matcher**
-- einen **Modus** (_Teilweise_ oder _Vollständig_)
-- Zielwerte (**Base-URL** oder **Ziel-URL**)
-
-Der Matcher greift an beliebiger Stelle im Pfad – eine Regel wie `/sites/team`
-matcht sowohl `/sites/team/docs` als auch `/archive/sites/team/docs`.
-
-**Fallback ohne Regeln:** Bei fehlenden Regeln erfolgt ein Domainersatz gemäß den allgemeinen Einstellungen; Pfad, Parameter und Anker bleiben erhalten.
+-   **Matcher**: Erkennt einen URL-Pfad an einer beliebigen Stelle. Eine Regel für `/sites/team` greift bei `.../sites/team/docs` ebenso wie bei `.../archive/sites/team/docs`.
+-   **Fallback**: Gibt es keine passende Regel, wird nur die Domain gemäß den allgemeinen Einstellungen ersetzt, während Pfad und Parameter erhalten bleiben.
 
 ### Regelmodi
 
-| Modus           | Verhalten                                                                                                                                           |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Teilweise**   | Ersetzt Pfadsegmente ab dem Matcher. Base‑URL stammt aus den allgemeinen Einstellungen; zusätzliche Segmente, Parameter und Anker werden angehängt. |
-| **Vollständig** | Leitet komplett auf eine neue Ziel‑URL um. Keine Bestandteile der alten URL werden übernommen.                                                      |
+| Modus | Zielwert | Verhalten |
+| :--- | :--- | :--- |
+| **PARTIAL** | `targetPath` | Ersetzt den gematchten Teil des URL-Pfads durch den `targetPath`. Der Rest des Pfads und alle URL-Parameter bleiben erhalten. Ideal für strukturelle Änderungen bei gleichbleibender Domain. |
+| **COMPLETE** | `targetUrl` | Leitet die Anfrage vollständig an die `targetUrl` weiter. Pfad und Parameter der alten URL werden verworfen. Perfekt für vollständige Umzüge oder Domain-Wechsel. |
 
 ### Beispiele
 
-**Ausgangs‑URL**
+**Ausgangs-URL:** `https://intranet.alt.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2`
 
-```
-https://intranet.alt.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
-```
+#### PARTIAL-Modus
 
-**Teilweise**
+-   **Matcher**: `/sites/team`
+-   **targetPath**: `/teams/finance`
+-   **Ergebnis**: `https://neuesintranet.cloud.com/teams/finance/docs/handbuch.pdf?version=3#kapitel-2`
 
-```
-Matcher: /sites/team
-Neuer Teilpfad: /teams/finance
-Ergebnis: https://neuesintranet.cloud.com/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
-```
+#### COMPLETE-Modus
 
-**Vollständig**
+-   **Matcher**: `/sites/team`
+-   **targetUrl**: `https://neuesintranet.cloud.com/hub`
+-   **Ergebnis**: `https://neuesintranet.cloud.com/hub`
 
-```
-Matcher: /sites/team
-Ziel-URL: https://andereseite.com/hub
-Ergebnis: https://andereseite.com/hub
-```
+#### Ohne Regel (Domainersatz)
 
-**Ohne Regel (Domainersatz)**
-
-```
-Ergebnis: https://neuesintranet.cloud.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
-```
+-   **Ergebnis**: `https://neuesintranet.cloud.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2`
 
 ### Regelpriorisierung (Spezifität)
 
@@ -226,22 +210,72 @@ Der Admin-Bereich lässt sich über das Zahnrad-Symbol oben rechts oder direkt �
 
 ### Regeln importieren
 
-Beispiel einer JSON-Datei:
+Der Import erwartet eine JSON-Datei mit einem `rules`-Array. Jede Regel muss dem neuen Schema entsprechen:
 
 ```json
 {
   "rules": [
     {
+      "mode": "PARTIAL",
       "matcher": "/alte-seite/",
-      "targetUrl": "/neue-seite/",
-      "type": "redirect",
-      "infoText": "Diese Seite wurde verschoben"
+      "targetPath": "/neue-seite/",
+      "infoText": "Diese Seite wurde verschoben."
+    },
+    {
+      "mode": "COMPLETE",
+      "matcher": "/kompletter-umzug/",
+      "targetUrl": "https://neuedomain.com/ziel",
+      "autoRedirect": true
     }
   ]
 }
 ```
 
-Im Admin-Panel hochladen oder über `sample-rules-import.json` einsehen.
+Eine Beispiel-Datei (`sample-rules-import.json`) finden Sie im Hauptverzeichnis.
+
+## Versionierung und Breaking Changes
+
+Das Projekt folgt **Semantic Versioning**. Die Versionierung wird automatisch durch `semantic-release` basierend auf [Conventional Commits](https://www.conventionalcommits.org/) gesteuert.
+
+-   `fix:`-Commits führen zu Patch-Releases (z.B. 1.0.1).
+-   `feat:`-Commits führen zu Minor-Releases (z.B. 1.1.0).
+-   Commits mit `BREAKING CHANGE:` im Body führen zu Major-Releases (z.B. 2.0.0).
+
+### Migrationsanleitung (von v1.x auf v2.0.0)
+
+Version 2.0.0 führt eine neue, explizite Struktur für URL-Regeln ein. Bestehende Regeln müssen migriert werden.
+
+**Altes Schema (vor v2.0.0):**
+
+```json
+{
+  "redirectType": "partial",
+  "targetUrl": "/neuer-pfad/"
+}
+```
+
+**Neues Schema (ab v2.0.0):**
+
+-   Wenn `redirectType` **`partial`** war, verwenden Sie `mode: "PARTIAL"` und benennen Sie `targetUrl` in `targetPath` um.
+-   Wenn `redirectType` **`wildcard`** oder eine vollständige URL war, verwenden Sie `mode: "COMPLETE"` und stellen Sie sicher, dass `targetUrl` eine vollständige, gültige URL ist.
+
+**Beispiel-Migration:**
+
+```json
+// Alt
+{ "matcher": "/old", "targetUrl": "/new", "redirectType": "partial" }
+
+// Neu
+{ "matcher": "/old", "targetPath": "/new", "mode": "PARTIAL" }
+```
+
+```json
+// Alt
+{ "matcher": "/umzug", "targetUrl": "https://neuedomain.com", "redirectType": "wildcard" }
+
+// Neu
+{ "matcher": "/umzug", "targetUrl": "https://neuedomain.com", "mode": "COMPLETE" }
+```
 
 ### Einstellungen anpassen
 

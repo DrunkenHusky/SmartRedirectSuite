@@ -1,1 +1,20 @@
-[{"id":"d591472c-2593-4a1f-a875-e8ab60248be0","matcher":"/sample-old-path","targetUrl":"/sample-new-path","redirectType":"partial","infoText":"Mit der Option Teilweise werden nur die Pfadsegmente ab dem im URL-Pfad-Matcher definierten Wert ersetzt. Die Base URL wird durch den Wert aus den generellen Einstellungen ersetzt. Zusätzliche Pfadsegmente, Parameter und Anker der ursprünglichen URL bleiben erhalten und werden an die neue Base URL angehängt.","createdAt":"2025-08-08T10:09:22.075Z","autoRedirect":false},{"id":"e8b0493a-2888-40d6-a05e-32bd1e641ffb","matcher":"/sample-old-path-full","targetUrl":"https://newurlofdifferentapp.com/sample-new-path","redirectType":"wildcard","infoText":"Mit der Option Vollständig kannst du alte Links, die den im URL-Pfad-Matcher definierten Wert beinhalten, auf eine neue Ziel-URL umleiten. Dabei werden keinerlei Bestandteile der alten URL in die Weiterleitung übernommen – weder zusätzliche Pfadsegmente noch Parameter oder Anker.","createdAt":"2025-08-08T10:09:22.075Z","autoRedirect":false}]
+[
+  {
+    "id": "d591472c-2593-4a1f-a875-e8ab60248be0",
+    "matcher": "/sample-old-path",
+    "mode": "PARTIAL",
+    "targetPath": "/sample-new-path",
+    "infoText": "Mit der Option Teilweise werden nur die Pfadsegmente ab dem im URL-Pfad-Matcher definierten Wert ersetzt. Die Base URL wird durch den Wert aus den generellen Einstellungen ersetzt. Zusätzliche Pfadsegmente, Parameter und Anker der ursprünglichen URL bleiben erhalten und werden an die neue Base URL angehängt.",
+    "createdAt": "2025-08-08T10:09:22.075Z",
+    "autoRedirect": false
+  },
+  {
+    "id": "e8b0493a-2888-40d6-a05e-32bd1e641ffb",
+    "matcher": "/sample-old-path-full",
+    "mode": "COMPLETE",
+    "targetUrl": "https://newurlofdifferentapp.com/sample-new-path",
+    "infoText": "Mit der Option Vollständig kannst du alte Links, die den im URL-Pfad-Matcher definierten Wert beinhalten, auf eine neue Ziel-URL umleiten. Dabei werden keinerlei Bestandteile der alten URL in die Weiterleitung übernommen – weder zusätzliche Pfadsegmente noch Parameter oder Anker.",
+    "createdAt": "2025-08-08T10:09:22.075Z",
+    "autoRedirect": false
+  }
+]

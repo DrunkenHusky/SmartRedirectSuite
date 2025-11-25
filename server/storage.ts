@@ -153,13 +153,14 @@ export class FileStorage implements IStorage {
     let filteredRules = allRules;
     if (search && search.trim()) {
       const searchLower = search.toLowerCase();
-      filteredRules = allRules.filter(
-        (rule) =>
+      filteredRules = allRules.filter((rule) => {
+        const target = rule.mode === "COMPLETE" ? rule.targetUrl : rule.targetPath;
+        return (
           rule.matcher.toLowerCase().includes(searchLower) ||
-          (rule.targetUrl &&
-            rule.targetUrl.toLowerCase().includes(searchLower)) ||
-          (rule.infoText && rule.infoText.toLowerCase().includes(searchLower)),
-      );
+          (target && target.toLowerCase().includes(searchLower)) ||
+          (rule.infoText && rule.infoText.toLowerCase().includes(searchLower))
+        );
+      });
     }
 
     // Sort rules
@@ -170,10 +171,10 @@ export class FileStorage implements IStorage {
         case "matcher":
           comparison = a.matcher.localeCompare(b.matcher);
           break;
-        case "targetUrl":
-          const aTarget = a.targetUrl || "";
-          const bTarget = b.targetUrl || "";
-          comparison = aTarget.localeCompare(bTarget);
+        case "targetUrl": // This now logically sorts by the "target" field
+          const aTarget = a.mode === "COMPLETE" ? a.targetUrl : a.targetPath;
+          const bTarget = b.mode === "COMPLETE" ? b.targetUrl : b.targetPath;
+          comparison = (aTarget || "").localeCompare(bTarget || "");
           break;
         case "createdAt":
         default:
@@ -247,14 +248,14 @@ export class FileStorage implements IStorage {
       }
     }
 
-    const rule: UrlRule = {
+    const newRule: UrlRule = {
       ...insertRule,
       id: randomUUID(),
       createdAt: new Date().toISOString(),
     };
-    rules.push(rule);
+    rules.push(newRule);
     await this.writeJsonFile(RULES_FILE, rules);
-    return rule;
+    return newRule;
   }
 
   async updateUrlRule(
@@ -598,96 +599,41 @@ export class FileStorage implements IStorage {
 
   // Import functionality implementierung
   async importUrlRules(
-    importRules: any[],
+    importRules: ImportUrlRule[],
   ): Promise<{ imported: number; updated: number; errors: string[] }> {
     const existingRules = await this.getUrlRules();
     let imported = 0;
     let updated = 0;
 
-    // Skip all validation - import rules as provided
+    // A map for quick lookups
+    const existingRulesMap = new Map(existingRules.map(r => r.matcher, r));
 
-    for (const rawRule of importRules) {
-      // Skip invalid rules
-      if (!rawRule.matcher || !rawRule.targetUrl) {
+    for (const importRule of importRules) {
+      // Use Zod schema for validation before processing
+      const parsedRule = importUrlRuleSchema.safeParse(importRule);
+      if (!parsedRule.success) {
+        // Skip invalid rules
         continue;
       }
 
-      // Handle field mapping for different import formats
-      const importRule = {
-        id: rawRule.id,
-        matcher: rawRule.matcher,
-        targetUrl: rawRule.targetUrl,
-        redirectType:
-          rawRule.redirectType ||
-          (rawRule.type === "redirect" ? "partial" : rawRule.type) ||
-          "partial", // Handle both field names
-        infoText: rawRule.infoText || "",
-        autoRedirect: rawRule.autoRedirect ?? false,
-      };
+      const ruleData = parsedRule.data;
+      const existingRule = existingRulesMap.get(ruleData.matcher);
 
-      if (importRule.id) {
-        // If ID is provided, check if rule exists and update it
-        const existingRuleIndex = existingRules.findIndex(
-          (r) => r.id === importRule.id,
-        );
-        if (existingRuleIndex !== -1) {
-          const existingRule = existingRules[existingRuleIndex]!;
-          const updatedRule: UrlRule = {
-            id: importRule.id,
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            createdAt: existingRule.createdAt,
-            autoRedirect: importRule.autoRedirect,
-          };
-          existingRules[existingRuleIndex] = updatedRule;
-          updated++;
-        } else {
-          const newRule: UrlRule = {
-            id: importRule.id,
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            autoRedirect: importRule.autoRedirect,
-            createdAt: new Date().toISOString(),
-          };
-          existingRules.push(newRule);
-          imported++;
-        }
+      if (existingRule) {
+        // Update existing rule
+        const updatedRule = { ...existingRule, ...ruleData };
+        const index = existingRules.findIndex(r => r.id === existingRule.id);
+        existingRules[index] = updatedRule;
+        updated++;
       } else {
-        // No ID provided, check for duplicate matcher first
-        const duplicateIndex = existingRules.findIndex(
-          (r) => r.matcher === importRule.matcher,
-        );
-        if (duplicateIndex !== -1) {
-          const existingRule = existingRules[duplicateIndex]!;
-          const updatedRule: UrlRule = {
-            id: existingRule.id,
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            createdAt: existingRule.createdAt,
-            autoRedirect: importRule.autoRedirect,
-          };
-          existingRules[duplicateIndex] = updatedRule;
-          updated++;
-        } else {
-          // Create new rule with generated ID
-          const newRule: UrlRule = {
-            id: randomUUID(),
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            autoRedirect: importRule.autoRedirect,
-            createdAt: new Date().toISOString(),
-          };
-          existingRules.push(newRule);
-          imported++;
-        }
+        // Create new rule
+        const newRule: UrlRule = {
+          ...ruleData,
+          id: randomUUID(),
+          createdAt: new Date().toISOString(),
+        };
+        existingRules.push(newRule);
+        imported++;
       }
     }
 

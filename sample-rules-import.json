@@ -1,34 +1,36 @@
-[
-  {
-    "id": "rule-001",
-    "matcher": "/old-news/",
-    "targetUrl": "/aktuelles/",
-    "redirectType": "partial",
-    "infoText": "Nachrichten wurden in den neuen Bereich 'Aktuelles' verschoben."
-  },
-  {
-    "id": "rule-002", 
-    "matcher": "/legacy-dashboard",
-    "targetUrl": "/dashboard",
-    "redirectType": "exact",
-    "infoText": "Das neue Dashboard bietet erweiterte Funktionen und ein verbessertes Design."
-  },
-  {
-    "matcher": "/old-products/",
-    "targetUrl": "/produkte/",
-    "redirectType": "partial",
-    "infoText": "Produktkatalog wurde überarbeitet und ist jetzt unter /produkte/ verfügbar."
-  },
-  {
-    "matcher": "/downloads/",
-    "targetUrl": "/ressourcen/downloads/", 
-    "redirectType": "partial"
-  },
-  {
-    "id": "rule-005",
-    "matcher": "/support/",
-    "targetUrl": "/hilfe/",
-    "redirectType": "partial",
-    "infoText": "Support-Bereich wurde umbenannt und erweitert."
-  }
-]
+{
+  "rules": [
+    {
+      "id": "rule-001",
+      "mode": "PARTIAL",
+      "matcher": "/old-news/",
+      "targetPath": "/aktuelles/",
+      "infoText": "Nachrichten wurden in den neuen Bereich 'Aktuelles' verschoben."
+    },
+    {
+      "id": "rule-002",
+      "mode": "COMPLETE",
+      "matcher": "/legacy-dashboard",
+      "targetUrl": "https://neuedomain.com/dashboard",
+      "infoText": "Das neue Dashboard bietet erweiterte Funktionen und ein verbessertes Design."
+    },
+    {
+      "mode": "PARTIAL",
+      "matcher": "/old-products/",
+      "targetPath": "/produkte/",
+      "infoText": "Produktkatalog wurde überarbeitet und ist jetzt unter /produkte/ verfügbar."
+    },
+    {
+      "mode": "PARTIAL",
+      "matcher": "/downloads/",
+      "targetPath": "/ressourcen/downloads/"
+    },
+    {
+      "id": "rule-005",
+      "mode": "PARTIAL",
+      "matcher": "/support/",
+      "targetPath": "/hilfe/",
+      "infoText": "Support-Bereich wurde umbenannt und erweitert."
+    }
+  ]
+}

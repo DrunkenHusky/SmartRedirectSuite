@@ -24,31 +24,41 @@ export const COLOR_OPTIONS = [
 
 export const POPUP_MODES = ["active", "inline", "disabled"] as const;
 
-export const REDIRECT_TYPES = ["wildcard", "partial"] as const;
+export const RULE_MODES = ["PARTIAL", "COMPLETE"] as const;
 export const EXPORT_FORMATS = ["csv", "json"] as const;
 export const TIME_RANGES = ["24h", "7d", "all"] as const;
 
 /**
  * Enhanced URL Rule Schema with enterprise validation
  */
-export const urlRuleSchema = z.object({
+
+// Base schema for common fields
+const urlRuleBaseSchema = z.object({
   id: z.string().uuid("Invalid UUID format"),
   matcher: z.string()
     .min(1, "URL matcher cannot be empty")
     .max(500, "URL matcher too long")
     .regex(URL_MATCHER_PATTERN, "Invalid URL matcher format")
     .transform(val => val.toLowerCase().trim()), // Normalize for consistency
-  targetUrl: z.string()
-    .max(2000, "Target URL too long")
-    .optional(),
   infoText: z.string()
     .max(5000, "Info text too long")
     .optional(),
-  redirectType: z.enum(REDIRECT_TYPES).default('partial'),
   autoRedirect: z.boolean()
     .default(false),
   createdAt: z.string().datetime("Invalid datetime format"),
-}).strict(); // Prevent extra properties
+});
+
+// Discriminated union for mode-specific fields
+export const urlRuleSchema = z.discriminatedUnion("mode", [
+  urlRuleBaseSchema.extend({
+    mode: z.literal(RULE_MODES[0]), // PARTIAL
+    targetPath: z.string().min(1, "Target path cannot be empty"),
+  }),
+  urlRuleBaseSchema.extend({
+    mode: z.literal(RULE_MODES[1]), // COMPLETE
+    targetUrl: z.string().url("Invalid target URL format"),
+  }),
+]).strict();
 
 export const insertUrlRuleSchema = urlRuleSchema.omit({
   id: true,
@@ -100,22 +110,33 @@ export const exportRequestSchema = z.object({
 /**
  * Enhanced Import Schema with comprehensive validation
  */
-export const importUrlRuleSchema = z.object({
+
+// Base schema for import
+const importUrlRuleBaseSchema = z.object({
   id: z.string().uuid().optional(),
   matcher: z.string()
     .min(1, "URL matcher cannot be empty")
     .max(500, "URL matcher too long")
     .regex(URL_MATCHER_PATTERN, "Invalid URL matcher format")
     .transform(val => val.toLowerCase().trim()),
-  targetUrl: z.string()
-    .max(2000, "Target URL too long"),
-  redirectType: z.enum(REDIRECT_TYPES).default('partial'),
   infoText: z.string()
     .max(5000, "Info text too long")
     .optional(),
   autoRedirect: z.boolean()
     .default(false),
-}).strict();
+});
+
+// Discriminated union for import schema
+export const importUrlRuleSchema = z.discriminatedUnion("mode", [
+  importUrlRuleBaseSchema.extend({
+    mode: z.literal(RULE_MODES[0]), // PARTIAL
+    targetPath: z.string().min(1, "Target path cannot be empty"),
+  }),
+  importUrlRuleBaseSchema.extend({
+    mode: z.literal(RULE_MODES[1]), // COMPLETE
+    targetUrl: z.string().url("Invalid target URL format"),
+  }),
+]).strict();
 
 export const importRulesRequestSchema = z.object({
   rules: z.array(importUrlRuleSchema)

@@ -18,28 +18,31 @@ function generateUrl(path, rule, domain = "https://newurlofdifferentapp.com") {
   if (!rule) {
     return base + path;
   }
-  if (rule.redirectType === "wildcard") {
+
+  if (rule.mode === "COMPLETE") {
     return rule.targetUrl;
   }
+
+  // Handle PARTIAL mode
   const cleanMatcher = rule.matcher.replace(/\/$/, "");
-  const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, "");
+  const cleanTargetPath = rule.targetPath.replace(/^\/|\/$/g, "");
   const idx = path.toLowerCase().indexOf(cleanMatcher.toLowerCase());
   const before = idx !== -1 ? path.slice(0, idx) : "";
   const after = idx !== -1 ? path.slice(idx + cleanMatcher.length) : "";
-  const newPath = `${before}/${cleanTarget}${after}`.replace(/\/+/g, "/");
+  const newPath = `${before}/${cleanTargetPath}${after}`.replace(/\/+/g, "/");
   return base + newPath;
 }
 
-async function testScenario(name, path, expectedType, expectedResult) {
+async function testScenario(name, path, expectedMode, expectedResult) {
   const rule = findMatchingRule(path);
-  if (expectedType === null) {
+  if (expectedMode === null) {
     assert.strictEqual(rule, null, `${name}: expected no rule`);
   } else {
     assert.ok(rule, `${name}: expected rule`);
     assert.strictEqual(
-      rule.redirectType,
-      expectedType,
-      `${name}: type mismatch`,
+      rule.mode,
+      expectedMode,
+      `${name}: mode mismatch`,
     );
   }
   const newUrl = generateUrl(path, rule);
@@ -48,15 +51,15 @@ async function testScenario(name, path, expectedType, expectedResult) {
 
 async function run() {
   await testScenario(
-    "Test 1: Wildcard rule (Vollständig)",
+    "Test 1: COMPLETE mode rule",
     "/sample-old-path-full",
-    "wildcard",
+    "COMPLETE",
     "https://newurlofdifferentapp.com/sample-new-path",
   );
   await testScenario(
-    "Test 2: Partial rule (Teilweise)",
+    "Test 2: PARTIAL mode rule",
     "/sample-old-path/006002",
-    "partial",
+    "PARTIAL",
     "https://newurlofdifferentapp.com/sample-new-path/006002",
   );
   await testScenario(
@@ -66,21 +69,21 @@ async function run() {
     "https://newurlofdifferentapp.com/no-rule-matches-this",
   );
   await testScenario(
-    "Test 4: Wildcard rule ignores additional segments",
+    "Test 4: COMPLETE mode rule ignores additional segments",
     "/sample-old-path-full/006965",
-    "wildcard",
+    "COMPLETE",
     "https://newurlofdifferentapp.com/sample-new-path",
   );
   await testScenario(
-    "Test 5: Partial rule match in sub-path",
+    "Test 5: PARTIAL mode rule match in sub-path",
     "/foo/sample-old-path/123",
-    "partial",
+    "PARTIAL",
     "https://newurlofdifferentapp.com/foo/sample-new-path/123",
   );
   await testScenario(
-    "Test 6: Wildcard rule match in sub-path",
+    "Test 6: COMPLETE mode rule match in sub-path",
     "/foo/sample-old-path-full/999",
-    "wildcard",
+    "COMPLETE",
     "https://newurlofdifferentapp.com/sample-new-path",
   );
   console.log("All tests passed");
