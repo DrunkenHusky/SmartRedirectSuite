@@ -1329,6 +1329,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     }
   };
 
+  // Cache rebuild mutation
+  const rebuildCacheMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/force-cache-rebuild");
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Cache neu aufgebaut",
+        description: "Der Regel-Cache wurde erfolgreich neu erstellt.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fehler beim Cache-Neuaufbau",
+        description: error.message || "Der Cache konnte nicht neu erstellt werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile-Friendly Admin Header */}
@@ -3294,6 +3315,33 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <li>• <strong>Bestehende Werte:</strong> Werden vollständig durch importierte Werte ersetzt</li>
                             <li>• <strong>Backup empfohlen:</strong> Exportieren Sie vorher Ihre aktuellen Einstellungen</li>
                           </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mt-6">
+                    <div className="p-4 border border-border rounded-lg bg-red-50 dark:bg-red-900/10">
+                      <h3 className="font-medium text-foreground mb-2 flex items-center text-red-600 dark:text-red-400">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Wartung
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Aktionen zur Wartung und Fehlerbehebung.
+                      </p>
+                      <div className="space-y-2">
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => rebuildCacheMutation.mutate()}
+                          disabled={rebuildCacheMutation.isPending}
+                        >
+                          {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
+                        </Button>
+                        <div className="text-xs text-muted-foreground mt-2">
+                          <p>
+                            <strong>Hinweis:</strong> Dies ist normalerweise nicht erforderlich. Verwenden Sie dies nur, wenn Sie nach dem Ändern oder Importieren von Regeln Probleme mit Weiterleitungen feststellen.
+                          </p>
                         </div>
                       </div>
                     </div>
