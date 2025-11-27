@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.3.1...v2.3.2) (2025-11-27)
+
+
+### Bug Fixes
+
+* **ui:** add missing DialogDescription to DialogContent components ([2738487](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/2738487b1828462028b272c3a1d635c7b1d843d9))
+
 ## [2.3.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.3.0...v2.3.1) (2025-11-27)
 
 
