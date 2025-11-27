@@ -240,6 +240,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Force Cache Rebuild
+  app.post("/api/admin/force-cache-rebuild", requireAuth, async (_req, res) => {
+    try {
+      await storage.forceCacheRebuild();
+      res.json({ success: true, message: "Cache rebuild triggered successfully" });
+    } catch (error) {
+      console.error("Cache rebuild error:", error);
+      res.status(500).json({ error: "Failed to rebuild cache" });
+    }
+  });
+
   // URL-Regeln verwalten
   app.get("/api/admin/rules", requireAuth, async (_req, res) => {
     try {

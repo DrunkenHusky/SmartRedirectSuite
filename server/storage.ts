@@ -100,6 +100,9 @@ export interface IStorage {
   updateGeneralSettings(
     settings: InsertGeneralSettings,
   ): Promise<GeneralSettings>;
+
+  // Maintenance
+  forceCacheRebuild(): Promise<void>;
 }
 
 export class FileStorage implements IStorage {
@@ -942,6 +945,14 @@ export class FileStorage implements IStorage {
     }
 
     return settings;
+  }
+
+  async forceCacheRebuild(): Promise<void> {
+    console.log("Forcing cache rebuild...");
+    this.rulesCache = null;
+    this.lastCacheConfig = null;
+    await this.ensureRulesLoaded();
+    console.log("Cache rebuild complete.");
   }
 }
 
