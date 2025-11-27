@@ -26,6 +26,9 @@ const normalizeVersion = (version: unknown): string => {
 };
 
 const formatDisplayName = (name: string): string => {
+  if (name === "smartredirectsuite") {
+    return "Smart Redirect Suite";
+  }
   const spaced = name
     .replace(/[-_]+/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
