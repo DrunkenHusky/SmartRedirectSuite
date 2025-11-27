@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.0.1...v2.1.0) (2025-11-27)
+
+
+### Features
+
+* implement dynamic favicon update based on logo or icon settings ([e3bbfad](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e3bbfad4c864ca3adb91741ad51c90f21f56149e))
+
 ## [2.0.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.0.0...v2.0.1) (2025-11-27)
 
 
