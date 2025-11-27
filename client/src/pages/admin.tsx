@@ -97,27 +97,6 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
     },
   });
 
-  // Cache rebuild mutation
-  const rebuildCacheMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/force-cache-rebuild");
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Cache neu aufgebaut",
-        description: "Der Regel-Cache wurde erfolgreich neu erstellt.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Fehler beim Cache-Neuaufbau",
-        description: error.message || "Der Cache konnte nicht neu erstellt werden.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password.trim()) {
@@ -1190,7 +1169,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-
+  // Cache rebuild mutation
+  const rebuildCacheMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/force-cache-rebuild");
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Cache neu aufgebaut",
+        description: "Der Regel-Cache wurde erfolgreich neu erstellt.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fehler beim Cache-Neuaufbau",
+        description: error.message || "Der Cache konnte nicht neu erstellt werden.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleLogout = () => {
     logoutMutation.mutate();
