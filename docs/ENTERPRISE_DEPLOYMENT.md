@@ -19,7 +19,7 @@ This document provides comprehensive deployment instructions for the enterprise-
 - **Data Storage**: File-based JSON storage
 - **Session Management**: Express-session with file-based persistence
 - **Object Storage**: Google Cloud Storage integration
-- **Performance**: Virtual scrolling, memory monitoring, and comprehensive caching
+- **Performance**: Virtual scrolling, memory monitoring, and comprehensive in-memory caching for rules and settings
 
 ### Key Features
 - **Enterprise Security**: Rate limiting, CORS protection, input sanitization, brute-force login protection
@@ -37,11 +37,19 @@ Open the administrator menu via the gear icon in the application or by appending
 ## Pre-Deployment Checklist
 
 ### 1. Environment Requirements
-- Node.js 18+ (LTS recommended)
+- Node.js 22+ (LTS recommended)
 - npm 8+
-- Minimum 2GB RAM
+- Minimum 512MB RAM (see Memory Sizing below)
 - 10GB+ disk space for logs and data
 - SSL certificate for HTTPS
+
+#### Memory Sizing & Caching
+The application uses an aggressive in-memory caching strategy to minimize I/O latency and CPU usage. All URL rules are loaded into RAM on startup.
+
+- **100,000 Rules**: Requires ~80-150MB of additional heap memory.
+- **Scaling**: RAM usage scales linearly with the number of rules.
+- **Recommendation**: For datasets > 500,000 rules, consider increasing the Node.js heap limit via `--max-old-space-size`.
+- **Safety**: The system is tested and optimized for datasets up to several hundred thousand rules within standard Node.js memory limits.
 
 ### 2. Security Configuration
 ```bash

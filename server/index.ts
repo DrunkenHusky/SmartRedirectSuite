@@ -16,8 +16,8 @@ app.use('/api', (_req, res, next) => {
 // This is essential for proper HTTPS detection and secure cookies
 app.set('trust proxy', true);
 
-app.use(express.json({ limit: '50mb' })); // Increase payload limit for large rule imports
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.json({ limit: '200mb' })); // Increase payload limit for large rule imports
+app.use(express.urlencoded({ extended: false, limit: '200mb' }));
 
 // Session configuration with improved file-based store
 const sessionMiddleware = session({

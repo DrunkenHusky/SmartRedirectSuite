@@ -252,11 +252,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
-      const search = req.query.search as string;
+      const search = req.query.search as string; // Can be undefined, null, empty string
       const sortBy = req.query.sortBy as string || 'createdAt';
       const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
       
-      const result = await storage.getUrlRulesPaginated(page, limit, search, sortBy, sortOrder);
+      // If search is provided but empty or whitespace only, treat it as undefined
+      const cleanSearch = (search && search.trim().length > 0) ? search.trim() : undefined;
+
+      const result = await storage.getUrlRulesPaginated(page, limit, cleanSearch, sortBy, sortOrder);
       res.json(result);
     } catch (error: any) {
       console.error('Error getting paginated rules:', error);
@@ -680,6 +683,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "No file uploaded" });
         return;
       }
+
+      // Explicitly register file in cache (if optimization enabled)
+      localUploadService.registerFile(req.file.filename);
 
       const fileUrl = localUploadService.getFileUrl(req.file.filename);
       console.log("File uploaded successfully:", fileUrl);

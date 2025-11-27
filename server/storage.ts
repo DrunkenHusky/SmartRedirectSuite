@@ -100,6 +100,9 @@ export interface IStorage {
 }
 
 export class FileStorage implements IStorage {
+  private rulesCache: UrlRule[] | null = null;
+  private settingsCache: GeneralSettings | null = null;
+
   constructor() {
     this.ensureDataDirectory();
   }
@@ -130,7 +133,9 @@ export class FileStorage implements IStorage {
 
   // URL-Regeln implementierung
   async getUrlRules(): Promise<UrlRule[]> {
-    return this.readJsonFile<UrlRule>(RULES_FILE, []);
+    if (this.rulesCache) return this.rulesCache;
+    this.rulesCache = await this.readJsonFile<UrlRule>(RULES_FILE, []);
+    return this.rulesCache;
   }
 
   async getUrlRulesPaginated(
@@ -150,7 +155,7 @@ export class FileStorage implements IStorage {
     const totalAllRules = allRules.length;
 
     // Filter rules based on search
-    let filteredRules = allRules;
+    let filteredRules: UrlRule[];
     if (search && search.trim()) {
       const searchLower = search.toLowerCase();
       filteredRules = allRules.filter(
@@ -160,6 +165,9 @@ export class FileStorage implements IStorage {
             rule.targetUrl.toLowerCase().includes(searchLower)) ||
           (rule.infoText && rule.infoText.toLowerCase().includes(searchLower)),
       );
+    } else {
+      // Create a copy to avoid mutating the cache when sorting
+      filteredRules = [...allRules];
     }
 
     // Sort rules
@@ -252,8 +260,14 @@ export class FileStorage implements IStorage {
       id: randomUUID(),
       createdAt: new Date().toISOString(),
     };
-    rules.push(rule);
-    await this.writeJsonFile(RULES_FILE, rules);
+
+    // Create copy for modification
+    const newRules = [...rules, rule];
+    await this.writeJsonFile(RULES_FILE, newRules);
+
+    // Update cache after successful write
+    this.rulesCache = newRules;
+
     return rule;
   }
 
@@ -300,9 +314,16 @@ export class FileStorage implements IStorage {
       }
     }
 
-    rules[index] = { ...rules[index], ...updateData } as UrlRule;
-    await this.writeJsonFile(RULES_FILE, rules);
-    return rules[index];
+    // Create shallow copy of rules
+    const newRules = [...rules];
+    newRules[index] = { ...newRules[index], ...updateData } as UrlRule;
+
+    await this.writeJsonFile(RULES_FILE, newRules);
+
+    // Update cache after successful write
+    this.rulesCache = newRules;
+
+    return newRules[index];
   }
 
   async deleteUrlRule(id: string): Promise<boolean> {
@@ -310,8 +331,15 @@ export class FileStorage implements IStorage {
     const index = rules.findIndex((rule) => rule.id === id);
     if (index === -1) return false;
 
-    rules.splice(index, 1);
-    await this.writeJsonFile(RULES_FILE, rules);
+    // Create shallow copy of rules
+    const newRules = [...rules];
+    newRules.splice(index, 1);
+
+    await this.writeJsonFile(RULES_FILE, newRules);
+
+    // Update cache after successful write
+    this.rulesCache = newRules;
+
     return true;
   }
 
@@ -334,11 +362,16 @@ export class FileStorage implements IStorage {
     // Single atomic write operation
     await this.writeJsonFile(RULES_FILE, filteredRules);
 
+    // Update cache after successful write
+    this.rulesCache = filteredRules;
+
     return { deleted: deletedCount, notFound: notFoundCount };
   }
 
   async clearAllRules(): Promise<void> {
     await this.writeJsonFile(RULES_FILE, []);
+    // Update cache after successful write
+    this.rulesCache = [];
   }
 
   // URL-Tracking implementierung
@@ -601,6 +634,20 @@ export class FileStorage implements IStorage {
     importRules: any[],
   ): Promise<{ imported: number; updated: number; errors: string[] }> {
     const existingRules = await this.getUrlRules();
+
+    // Create shallow copy to avoid mutating the cache directly
+    const newRules = [...existingRules];
+
+    // Create indices for fast lookup
+    const rulesById = new Map<string, number>();
+    const rulesByMatcher = new Map<string, number>();
+
+    // Initialize indices
+    newRules.forEach((rule, index) => {
+      rulesById.set(rule.id, index);
+      rulesByMatcher.set(rule.matcher, index);
+    });
+
     let imported = 0;
     let updated = 0;
 
@@ -625,74 +672,86 @@ export class FileStorage implements IStorage {
         autoRedirect: rawRule.autoRedirect ?? false,
       };
 
-      if (importRule.id) {
-        // If ID is provided, check if rule exists and update it
-        const existingRuleIndex = existingRules.findIndex(
-          (r) => r.id === importRule.id,
-        );
-        if (existingRuleIndex !== -1) {
-          const existingRule = existingRules[existingRuleIndex]!;
-          const updatedRule: UrlRule = {
-            id: importRule.id,
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            createdAt: existingRule.createdAt,
-            autoRedirect: importRule.autoRedirect,
-          };
-          existingRules[existingRuleIndex] = updatedRule;
-          updated++;
-        } else {
-          const newRule: UrlRule = {
-            id: importRule.id,
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            autoRedirect: importRule.autoRedirect,
-            createdAt: new Date().toISOString(),
-          };
-          existingRules.push(newRule);
-          imported++;
+      if (importRule.id && rulesById.has(importRule.id)) {
+        // Update existing rule by ID
+        const index = rulesById.get(importRule.id)!;
+        const existingRule = newRules[index];
+
+        // Remove old matcher from index if it changed
+        if (existingRule.matcher !== importRule.matcher) {
+          rulesByMatcher.delete(existingRule.matcher);
         }
+
+        const updatedRule: UrlRule = {
+          id: importRule.id,
+          matcher: importRule.matcher,
+          targetUrl: importRule.targetUrl,
+          redirectType: importRule.redirectType,
+          infoText: importRule.infoText || "",
+          createdAt: existingRule.createdAt,
+          autoRedirect: importRule.autoRedirect,
+        };
+
+        newRules[index] = updatedRule;
+        // Update matcher index
+        rulesByMatcher.set(importRule.matcher, index);
+        updated++;
+      } else if (importRule.id) {
+         // ID provided but not found - create new
+         const newRule: UrlRule = {
+          id: importRule.id,
+          matcher: importRule.matcher,
+          targetUrl: importRule.targetUrl,
+          redirectType: importRule.redirectType,
+          infoText: importRule.infoText || "",
+          autoRedirect: importRule.autoRedirect,
+          createdAt: new Date().toISOString(),
+        };
+        const newIndex = newRules.push(newRule) - 1;
+        rulesById.set(newRule.id, newIndex);
+        rulesByMatcher.set(newRule.matcher, newIndex);
+        imported++;
+      } else if (rulesByMatcher.has(importRule.matcher)) {
+         // No ID, but matcher exists - update
+         const index = rulesByMatcher.get(importRule.matcher)!;
+         const existingRule = newRules[index];
+
+         const updatedRule: UrlRule = {
+           id: existingRule.id,
+           matcher: importRule.matcher,
+           targetUrl: importRule.targetUrl,
+           redirectType: importRule.redirectType,
+           infoText: importRule.infoText || "",
+           createdAt: existingRule.createdAt,
+           autoRedirect: importRule.autoRedirect,
+         };
+
+         newRules[index] = updatedRule;
+         // Matcher index is already correct
+         updated++;
       } else {
-        // No ID provided, check for duplicate matcher first
-        const duplicateIndex = existingRules.findIndex(
-          (r) => r.matcher === importRule.matcher,
-        );
-        if (duplicateIndex !== -1) {
-          const existingRule = existingRules[duplicateIndex]!;
-          const updatedRule: UrlRule = {
-            id: existingRule.id,
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            createdAt: existingRule.createdAt,
-            autoRedirect: importRule.autoRedirect,
-          };
-          existingRules[duplicateIndex] = updatedRule;
-          updated++;
-        } else {
-          // Create new rule with generated ID
-          const newRule: UrlRule = {
-            id: randomUUID(),
-            matcher: importRule.matcher,
-            targetUrl: importRule.targetUrl,
-            redirectType: importRule.redirectType,
-            infoText: importRule.infoText || "",
-            autoRedirect: importRule.autoRedirect,
-            createdAt: new Date().toISOString(),
-          };
-          existingRules.push(newRule);
-          imported++;
-        }
+        // Create new rule with generated ID
+        const newRule: UrlRule = {
+          id: randomUUID(),
+          matcher: importRule.matcher,
+          targetUrl: importRule.targetUrl,
+          redirectType: importRule.redirectType,
+          infoText: importRule.infoText || "",
+          autoRedirect: importRule.autoRedirect,
+          createdAt: new Date().toISOString(),
+        };
+        const newIndex = newRules.push(newRule) - 1;
+        rulesById.set(newRule.id, newIndex);
+        rulesByMatcher.set(newRule.matcher, newIndex);
+        imported++;
       }
     }
 
     // Save all rules back to file
-    await this.writeJsonFile(RULES_FILE, existingRules);
+    await this.writeJsonFile(RULES_FILE, newRules);
+
+    // Update cache after successful write
+    this.rulesCache = newRules;
 
     return { imported, updated, errors: [] };
   }
@@ -700,6 +759,8 @@ export class FileStorage implements IStorage {
   // Helper method to check if two URL matchers are overlapping
   // General Settings implementierung
   async getGeneralSettings(): Promise<GeneralSettings> {
+    if (this.settingsCache) return this.settingsCache;
+
     try {
       const data = await fs.readFile(SETTINGS_FILE, "utf-8");
       const settings = JSON.parse(data);
@@ -709,6 +770,7 @@ export class FileStorage implements IStorage {
       if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
         settings.caseSensitiveLinkDetection = false;
       }
+      this.settingsCache = settings;
       return settings;
     } catch {
       // Return default settings if file doesn't exist
@@ -754,6 +816,7 @@ export class FileStorage implements IStorage {
         SETTINGS_FILE,
         JSON.stringify(defaultSettings, null, 2),
       );
+      this.settingsCache = defaultSettings;
       return defaultSettings;
     }
   }
@@ -795,6 +858,7 @@ export class FileStorage implements IStorage {
     }
 
     await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    this.settingsCache = settings;
     return settings;
   }
 }

@@ -714,7 +714,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     mutationFn: (settings: typeof generalSettings) => 
       apiRequest("PUT", "/api/admin/settings", settings),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({ title: "Einstellungen gespeichert", description: "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert." });
     },
     onError: (error: any) => {
@@ -793,10 +793,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         window.location.reload();
         return;
       }
+
+      // Handle PayloadTooLargeError (413) specifically
+      if (error?.status === 413 || error?.message?.includes('too large')) {
+        toast({
+          title: "Datei zu groß",
+          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
+          variant: "destructive",
+          duration: 10000
+        });
+        return;
+      }
       
       toast({ 
         title: "Import fehlgeschlagen", 
-        description: "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
+        description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
         variant: "destructive" 
       });
     },
@@ -806,7 +817,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     mutationFn: (settings: any) => 
       apiRequest("POST", "/api/admin/import/settings", { settings }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({ 
         title: "Import erfolgreich", 
         description: "Die Einstellungen wurden erfolgreich importiert." 
