@@ -51,11 +51,8 @@ Die Anwendung wird über Umgebungsvariablen konfiguriert.
 | `PORT` | Der Port, auf dem die App im Container lauscht. | `5000` | Nein |
 | `NODE_ENV` | Umgebungsmodus (`production` oder `development`). | `production` | Nein |
 | `ADMIN_PASSWORD` | Passwort für das Admin-Panel. **Dringend empfohlen.** | `Password1` | **Ja (Prod)** |
-| `SESSION_SECRET` | Geheimer Schlüssel für Sessions. Muss lang & zufällig sein. | (Zufallsstring) | **Ja (Prod)** |
 | `LOGIN_MAX_ATTEMPTS` | Max. Login-Versuche vor temporärer Sperre. | `5` | Nein |
 | `LOGIN_BLOCK_DURATION_MS` | Sperrdauer in ms nach Fehlversuchen. | `86400000` (24h) | Nein |
-| `LOCAL_UPLOAD_PATH` | Pfad für hochgeladene Dateien (z.B. Logos). | `./uploads` | Nein |
-| `COOKIE_DOMAIN` | Domain für Session-Cookies (wichtig bei Subdomains). | `undefined` | Nein |
 
 ## 💾 Datenpersistenz
 
@@ -64,7 +61,6 @@ Die SmartRedirect Suite nutzt dateibasierten Speicher für Regeln, Einstellungen
 | Pfad im Container | Beschreibung |
 |-------------------|-------------|
 | `/app/data` | Speichert `rules.json`, `settings.json` und Admin-Sessions. |
-| `/app/uploads` | Speichert Uploads (falls `LOCAL_UPLOAD_PATH` darauf zeigt). |
 
 **Hinweis zu Berechtigungen:**
 Stellen Sie sicher, dass die eingebundenen Verzeichnisse auf dem Host beschreibbar sind. Da das Dockerfile standardmäßig als `root` läuft, funktionieren Standardberechtigungen in der Regel problemlos.
@@ -89,7 +85,6 @@ services:
       - NODE_ENV=production
       - PORT=5000
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-SicheresPasswort123}
-      - SESSION_SECRET=${SESSION_SECRET:-langer-zufaelliger-string-mindestens-32-zeichen}
       - LOGIN_MAX_ATTEMPTS=5
       - LOGIN_BLOCK_DURATION_MS=3600000 # 1 Stunde
     volumes:
