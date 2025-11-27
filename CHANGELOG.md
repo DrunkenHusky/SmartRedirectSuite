@@ -1,3 +1,11 @@
+## [2.1.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.1.0...v2.1.1) (2025-11-27)
+
+
+### Performance Improvements
+
+* optimize rule matching with unified pre-processed cache ([3f02fa8](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3f02fa8a49f8cb5ed18439830fa8631359f0ff3a))
+* optimize rule matching with unified pre-processed cache ([aa3f97c](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/aa3f97c91f5ea00742394696b8861e27f732d887))
+
 # [2.1.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.0.1...v2.1.0) (2025-11-27)
 
 
