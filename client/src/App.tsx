@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import MigrationPage from "@/pages/migration";
 import AdminPage from "@/pages/admin";
-import { FaviconUpdater } from "@/components/FaviconUpdater";
+import { DocumentHeadUpdater } from "@/components/DocumentHeadUpdater";
 
 function App() {
   const [currentView, setCurrentView] = useState<'migration' | 'admin'>('migration');
@@ -77,7 +77,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <FaviconUpdater />
+      <DocumentHeadUpdater />
       <TooltipProvider>
         <Toaster />
         <Switch>

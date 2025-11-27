@@ -1,0 +1,3 @@
+
+> smartredirectsuite@2.1.1 dev
+> cross-env NODE_ENV=development tsx server/index.ts
