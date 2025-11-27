@@ -1,3 +1,11 @@
+## [2.3.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.3.0...v2.3.1) (2025-11-27)
+
+
+### Bug Fixes
+
+* **client:** move mutation hook to top level in AdminPage ([ec916b3](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ec916b3809c0f67c2f374b508c56711a3a0223bf))
+* **client:** move mutation hook to top level in AdminPage ([db2ec0d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/db2ec0dbf9af9d9abb9f0d05d5b168980651481e))
+
 # [2.3.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.2.0...v2.3.0) (2025-11-27)
 
 
