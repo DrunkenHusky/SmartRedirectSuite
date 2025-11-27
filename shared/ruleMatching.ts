@@ -18,7 +18,12 @@ export interface RuleMatchingConfig {
   DEBUG?: boolean;
 }
 
-function normalizePath(path: string, cfg: RuleMatchingConfig): string[] {
+export interface ProcessedUrlRule extends UrlRule {
+  normalizedPath: string[];
+  normalizedQuery: Map<string, string[]>;
+}
+
+export function normalizePath(path: string, cfg: RuleMatchingConfig): string[] {
   // Remove fragment and normalize slashes
   const url = new URL(path, "http://example.com");
   let pathname = url.pathname;
@@ -36,7 +41,7 @@ function normalizePath(path: string, cfg: RuleMatchingConfig): string[] {
   return segments;
 }
 
-function normalizeQuery(
+export function normalizeQuery(
   query: string,
   cfg: RuleMatchingConfig,
 ): Map<string, string[]> {
@@ -53,9 +58,22 @@ function normalizeQuery(
   return map;
 }
 
+export function preprocessRule(rule: UrlRule, config: RuleMatchingConfig): ProcessedUrlRule {
+  const [matcherPath, matcherQuery] = rule.matcher.split("?");
+  return {
+    ...rule,
+    normalizedPath: normalizePath(matcherPath, config),
+    normalizedQuery: normalizeQuery(matcherQuery ? "?" + matcherQuery : "", config),
+  };
+}
+
+function isProcessedRule(rule: UrlRule | ProcessedUrlRule): rule is ProcessedUrlRule {
+  return 'normalizedPath' in rule && 'normalizedQuery' in rule;
+}
+
 export function selectMostSpecificRule(
   requestUrl: string,
-  rules: UrlRule[],
+  rules: UrlRule[] | ProcessedUrlRule[],
   config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
 ): UrlRule | null {
   const reqUrl = new URL(requestUrl, "http://example.com");
@@ -71,14 +89,25 @@ export function selectMostSpecificRule(
   } | null = null;
 
   for (const rule of rules) {
-    const [matcherPath, matcherQuery] = rule.matcher.split("?");
-    const rulePath = normalizePath(matcherPath, config);
-    if (rulePath.length > reqPath.length) continue;
+    let rulePath: string[];
+    let ruleQuery: Map<string, string[]>;
 
-    const ruleQuery = normalizeQuery(
-      matcherQuery ? "?" + matcherQuery : "",
-      config,
-    );
+    if (isProcessedRule(rule)) {
+      rulePath = rule.normalizedPath;
+      ruleQuery = rule.normalizedQuery;
+    } else {
+      const [matcherPath, matcherQuery] = rule.matcher.split("?");
+      rulePath = normalizePath(matcherPath, config);
+      // Pre-check length to avoid unnecessary query processing
+      if (rulePath.length > reqPath.length) continue;
+
+      ruleQuery = normalizeQuery(
+        matcherQuery ? "?" + matcherQuery : "",
+        config,
+      );
+    }
+
+    if (rulePath.length > reqPath.length) continue;
 
     for (let start = 0; start <= reqPath.length - rulePath.length; start++) {
       // Path matching
