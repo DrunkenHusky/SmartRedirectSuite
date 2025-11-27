@@ -4,6 +4,7 @@
 
 ## 📚 Verwandte Dokumentation
 - **[README.md](../README.md)**: Vollständige Dokumentation mit allen Features
+- **[DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)**: Docker Deployment Guide
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Entwickler
 - **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production-Deployment-Anleitung
 - **Dockerfile.demo**: Docker-Setup für Demo-Instanzen mit täglichem Daten-Reset
