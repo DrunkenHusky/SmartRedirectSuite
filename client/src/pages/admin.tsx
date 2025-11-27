@@ -3101,6 +3101,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {getSortIcon('path')}
                                   </Button>
                                 </th>
+                                <th className="text-left p-3">
+                                  Regel
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3121,6 +3124,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </td>
                                   <td className="p-3">
                                     <code className="text-sm text-foreground">{entry.path}</code>
+                                  </td>
+                                  <td className="p-3">
+                                    {entry.rule ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-auto p-1 text-xs bg-muted hover:bg-muted/80"
+                                        onClick={() => handleEditRule(entry.rule)}
+                                        title="Regel bearbeiten"
+                                      >
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        {entry.rule.matcher}
+                                      </Button>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">-</span>
+                                    )}
                                   </td>
                                 </tr>
                               ))}
