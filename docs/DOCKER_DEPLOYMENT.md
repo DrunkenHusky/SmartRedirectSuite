@@ -1,10 +1,16 @@
 # Docker Deployment Guide - SmartRedirect Suite
 
-This guide explains how to deploy the SmartRedirect Suite using Docker. It covers building the image, configuration, data persistence, and using Docker Compose for production setups.
+Diese Anleitung erklärt, wie die SmartRedirect Suite mittels Docker bereitgestellt wird. Sie deckt das Beziehen des Images, das Bauen aus dem Quellcode, die Konfiguration, Datenpersistenz und die Verwendung von Docker Compose für Produktionsumgebungen ab.
 
-## 🚀 Quick Start
+## 🚀 Schnellstart (Image beziehen)
 
-If you have a pre-built image or want to run the demo locally:
+Das Docker Image kann direkt aus der GitHub Container Registry bezogen werden. Um die aktuellste Version zu erhalten:
+
+```bash
+docker pull ghcr.io/drunkenhusky/smartredirectsuite:latest
+```
+
+Starten Sie einen Container (Demo-Modus):
 
 ```bash
 docker run -d \
@@ -12,63 +18,68 @@ docker run -d \
   -e ADMIN_PASSWORD="ChangeMe123!" \
   -v $(pwd)/data:/app/data \
   --name smartredirect \
-  ghcr.io/your-username/smartredirect-suite:latest
+  ghcr.io/drunkenhusky/smartredirectsuite:latest
 ```
 
-The application will be available at `http://localhost:5000`.
+Die Anwendung ist anschließend unter `http://localhost:5000` erreichbar.
 
-## 🏗️ Building the Image
+## 🏗️ Image bauen (Aus Quellcode)
 
-To build the Docker image locally from the source code:
+Wenn Sie das Image selbst bauen möchten, müssen Sie zuerst das Repository klonen:
 
 ```bash
+# Repository klonen
+git clone https://github.com/drunkenhusky/smartredirectsuite.git
+cd smartredirectsuite
+
+# Docker Image bauen
 docker build -t smartredirect-suite .
 ```
 
-To run the newly built image:
+Anschließend können Sie das selbst gebaute Image starten:
 
 ```bash
 docker run -d -p 5000:5000 smartredirect-suite
 ```
 
-## ⚙️ Configuration
+## ⚙️ Konfiguration
 
-The application is configured via environment variables.
+Die Anwendung wird über Umgebungsvariablen konfiguriert.
 
-| Variable | Description | Default | Required |
+| Variable | Beschreibung | Standard | Erforderlich |
 |----------|-------------|---------|----------|
-| `PORT` | The port the application listens on inside the container. | `5000` | No |
-| `NODE_ENV` | Environment mode (`production` or `development`). | `production` | No |
-| `ADMIN_PASSWORD` | Password for the Admin Panel. **Strongly recommended to set this.** | `Password1` | **Yes (Prod)** |
-| `SESSION_SECRET` | Secret key for session signing. Must be random and long. | (Random string) | **Yes (Prod)** |
-| `LOGIN_MAX_ATTEMPTS` | Max login attempts before temporary block. | `5` | No |
-| `LOGIN_BLOCK_DURATION_MS` | Duration of block in ms after max attempts. | `86400000` (24h) | No |
-| `LOCAL_UPLOAD_PATH` | Path for uploaded files (e.g., logos). | `./uploads` | No |
-| `COOKIE_DOMAIN` | Domain for session cookies (useful for subdomains). | `undefined` | No |
+| `PORT` | Der Port, auf dem die App im Container lauscht. | `5000` | Nein |
+| `NODE_ENV` | Umgebungsmodus (`production` oder `development`). | `production` | Nein |
+| `ADMIN_PASSWORD` | Passwort für das Admin-Panel. **Dringend empfohlen.** | `Password1` | **Ja (Prod)** |
+| `SESSION_SECRET` | Geheimer Schlüssel für Sessions. Muss lang & zufällig sein. | (Zufallsstring) | **Ja (Prod)** |
+| `LOGIN_MAX_ATTEMPTS` | Max. Login-Versuche vor temporärer Sperre. | `5` | Nein |
+| `LOGIN_BLOCK_DURATION_MS` | Sperrdauer in ms nach Fehlversuchen. | `86400000` (24h) | Nein |
+| `LOCAL_UPLOAD_PATH` | Pfad für hochgeladene Dateien (z.B. Logos). | `./uploads` | Nein |
+| `COOKIE_DOMAIN` | Domain für Session-Cookies (wichtig bei Subdomains). | `undefined` | Nein |
 
-## 💾 Data Persistence
+## 💾 Datenpersistenz
 
-The SmartRedirect Suite uses file-based storage for rules, settings, and sessions. To prevent data loss when the container is recreated, you **must** mount volumes.
+Die SmartRedirect Suite nutzt dateibasierten Speicher für Regeln, Einstellungen und Sessions. Um Datenverlust beim Neustart des Containers zu vermeiden, **müssen** Volumes eingebunden werden.
 
-| Path in Container | Description |
+| Pfad im Container | Beschreibung |
 |-------------------|-------------|
-| `/app/data` | Stores `rules.json`, `settings.json`, and admin sessions. |
-| `/app/uploads` | Stores uploaded files (if `LOCAL_UPLOAD_PATH` is set to this or similar). |
+| `/app/data` | Speichert `rules.json`, `settings.json` und Admin-Sessions. |
+| `/app/uploads` | Speichert Uploads (falls `LOCAL_UPLOAD_PATH` darauf zeigt). |
 
-**Note on Permissions:**
-Ensure the mounted host directories are writable by the user running the process inside the container (default is often root or a specific node user depending on image configuration). The current Dockerfile runs as root by default, so standard permissions usually work.
+**Hinweis zu Berechtigungen:**
+Stellen Sie sicher, dass die eingebundenen Verzeichnisse auf dem Host beschreibbar sind. Da das Dockerfile standardmäßig als `root` läuft, funktionieren Standardberechtigungen in der Regel problemlos.
 
-## 🐳 Docker Compose (Recommended)
+## 🐳 Docker Compose (Empfohlen)
 
-For production deployments, `docker-compose` is the easiest way to manage the configuration.
+Für Produktionsumgebungen ist `docker-compose` die einfachste Art der Verwaltung.
 
-Create a `docker-compose.yml` file:
+Erstellen Sie eine `docker-compose.yml`:
 
 ```yaml
 services:
   smartredirect:
-    image: smartredirect-suite:latest
-    # Or build from source:
+    image: ghcr.io/drunkenhusky/smartredirectsuite:latest
+    # Alternativ lokal bauen:
     # build: .
     container_name: smartredirect-suite
     restart: always
@@ -77,10 +88,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-SecurePassword123}
-      - SESSION_SECRET=${SESSION_SECRET:-long-random-string-at-least-32-chars}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-SicheresPasswort123}
+      - SESSION_SECRET=${SESSION_SECRET:-langer-zufaelliger-string-mindestens-32-zeichen}
       - LOGIN_MAX_ATTEMPTS=5
-      - LOGIN_BLOCK_DURATION_MS=3600000 # 1 hour
+      - LOGIN_BLOCK_DURATION_MS=3600000 # 1 Stunde
     volumes:
       - ./data:/app/data
     healthcheck:
@@ -89,28 +100,27 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
 ```
 
-Start the service:
+Dienst starten:
 
 ```bash
 docker-compose up -d
 ```
 
-View logs:
+Logs einsehen:
 
 ```bash
 docker-compose logs -f
 ```
 
-## 🔒 Production Best Practices
+## 🔒 Best Practices für die Produktion
 
-1.  **Change Default Credentials:** Always set a strong `ADMIN_PASSWORD` and a unique `SESSION_SECRET`.
-2.  **Use a Reverse Proxy:** In a real production environment, do not expose port 5000 directly to the internet. Use Nginx, Traefik, or Caddy to handle SSL termination (HTTPS) and proxy requests to the container.
-    *   Set `X-Forwarded-Proto` header in your proxy so the app knows it's running behind HTTPS.
-3.  **Backups:** regularly backup the `./data` directory on the host machine.
-4.  **Resource Limits:** You can limit memory and CPU in `docker-compose.yml`:
+1.  **Standard-Zugangsdaten ändern:** Setzen Sie immer ein starkes `ADMIN_PASSWORD` und ein einzigartiges `SESSION_SECRET`.
+2.  **Reverse Proxy verwenden:** Exponieren Sie Port 5000 nicht direkt ins Internet. Nutzen Sie Nginx, Traefik oder Caddy für SSL-Terminierung (HTTPS) und leiten Sie Anfragen an den Container weiter.
+    *   Setzen Sie den `X-Forwarded-Proto` Header im Proxy, damit die App HTTPS erkennt.
+3.  **Backups:** Sichern Sie regelmäßig das `./data` Verzeichnis auf dem Host-System.
+4.  **Ressourcen-Limits:** Sie können CPU und RAM in der `docker-compose.yml` begrenzen:
     ```yaml
     deploy:
       resources:
