@@ -141,27 +141,19 @@ export class FileStorage implements IStorage {
   private async ensureRulesLoaded(config?: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
     // If we have a cache
     if (this.rulesCache) {
-      // And we have a config to check against
-      if (config && this.lastCacheConfig) {
-        // If config matches, return cache
-        if (
-          this.lastCacheConfig.CASE_SENSITIVITY_PATH === config.CASE_SENSITIVITY_PATH &&
-          this.lastCacheConfig.CASE_SENSITIVITY_QUERY === config.CASE_SENSITIVITY_QUERY &&
-          this.lastCacheConfig.TRAILING_SLASH_POLICY === config.TRAILING_SLASH_POLICY
-        ) {
-          return this.rulesCache;
+      // Check if we need to reprocess based on config mismatch or invalidation (lastCacheConfig === null)
+      if (config) {
+        const needsReprocess = !this.lastCacheConfig ||
+          this.lastCacheConfig.CASE_SENSITIVITY_PATH !== config.CASE_SENSITIVITY_PATH ||
+          this.lastCacheConfig.CASE_SENSITIVITY_QUERY !== config.CASE_SENSITIVITY_QUERY ||
+          this.lastCacheConfig.TRAILING_SLASH_POLICY !== config.TRAILING_SLASH_POLICY;
+
+        if (needsReprocess) {
+          // Reprocess existing cache in-place or map
+          this.rulesCache = this.rulesCache.map(rule => preprocessRule(rule, config));
+          this.lastCacheConfig = config;
         }
-
-        // Config mismatch: Reprocess existing cache in-place or map
-        // Since we are changing the processing, we must re-run preprocessRule on the base data.
-        // ProcessedUrlRule contains the base data, so we can re-process it.
-        this.rulesCache = this.rulesCache.map(rule => preprocessRule(rule, config));
-        this.lastCacheConfig = config;
-        return this.rulesCache;
       }
-
-      // If no config provided, just return what we have (assuming it was processed with default or previous config)
-      // Ideally getUrlRules() shouldn't care about processing, but since we unify, we return ProcessedUrlRule[]
       return this.rulesCache;
     }
 
