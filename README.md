@@ -50,6 +50,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 
 - [Benutzerhandbuch](./docs/USER_MANUAL.md)
 - [Admin-Dokumentation](./docs/ADMIN_DOCUMENTATION.md)
+- [Docker Deployment](./docs/DOCKER_DEPLOYMENT.md)
 - [Architektur-Übersicht](./docs/ARCHITECTURE_OVERVIEW.md)
 - [Konfigurationsbeispiele](./docs/CONFIGURATION_EXAMPLES.md)
 - [Release Pipeline](./docs/release-pipeline.md)
@@ -309,7 +310,8 @@ npm run build
 npm start
 ```
 
-Weitere Plattformen: Vercel, Heroku oder Docker (Persistenz über `LOCAL_UPLOAD_PATH` sicherstellen).
+Weitere Plattformen: Vercel, Heroku oder Docker. Details zur Docker-Installation finden Sie im [Docker Deployment Guide](./docs/DOCKER_DEPLOYMENT.md).
+
 Für Demo-Zwecke mit täglichem Reset der Daten kann das `Dockerfile.demo` genutzt werden (setzt Sessions, Uploads und Einstellungen täglich zurück).
 
 ## Entwicklung

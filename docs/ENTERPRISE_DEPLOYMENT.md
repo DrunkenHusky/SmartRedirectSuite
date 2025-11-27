@@ -4,6 +4,7 @@
 
 ## 📚 Verwandte Dokumentation
 - **[README.md](../README.md)**: Vollständige Feature-Übersicht und Entwicklungsrichtlinien
+- **[DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)**: Docker Deployment Guide
 - **[INSTALLATION.md](./INSTALLATION.md)**: Lokale Entwicklungsumgebung einrichten
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Monitoring-Integration
 
@@ -81,6 +82,8 @@ export PRIVATE_OBJECT_DIR="/objects/.private"
 ```
 
 ## Deployment Steps
+
+The application can be deployed using standard Node.js methods (PM2) or via Docker. For Docker-specific instructions, please refer to the [Docker Deployment Guide](./DOCKER_DEPLOYMENT.md).
 
 ### 1. Production Build
 ```bash
