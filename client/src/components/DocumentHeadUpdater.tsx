@@ -16,6 +16,7 @@ import {
   Bell
 } from "lucide-react";
 import type { GeneralSettings } from "@shared/schema";
+import { APPLICATION_METADATA } from "@shared/appMetadata";
 
 const iconMap = {
   ArrowRightLeft,
@@ -32,7 +33,7 @@ const iconMap = {
   Bell
 } as const;
 
-export function FaviconUpdater() {
+export function DocumentHeadUpdater() {
   const { data: settings } = useQuery<GeneralSettings>({
     queryKey: ["/api/settings"],
   });
@@ -40,6 +41,14 @@ export function FaviconUpdater() {
   useEffect(() => {
     if (!settings) return;
 
+    // Update document title
+    if (settings.headerTitle) {
+      document.title = settings.headerTitle;
+    } else {
+      document.title = APPLICATION_METADATA.displayName;
+    }
+
+    // Update favicon
     // Use a more specific selector to avoid matching apple-touch-icon
     let link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
     if (!link) {
