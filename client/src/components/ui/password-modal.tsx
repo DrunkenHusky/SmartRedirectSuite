@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -58,13 +58,12 @@ export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps
           <DialogTitle>
             Administrator-Anmeldung
           </DialogTitle>
+          <DialogDescription className="text-gray-600">
+            Bitte geben Sie das Administrator-Passwort ein:
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <p className="text-gray-600">
-            Bitte geben Sie das Administrator-Passwort ein:
-          </p>
-          
           <Input
             type="password"
             placeholder="Passwort eingeben"
