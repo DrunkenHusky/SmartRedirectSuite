@@ -5,16 +5,39 @@ import { randomUUID } from 'crypto';
 
 export class LocalFileUploadService {
   private uploadPath: string;
+  private fileCache: Set<string> | null = null;
 
   constructor() {
     this.uploadPath = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
     this.ensureUploadDirectory();
+    // Initialize cache asynchronously to not block startup, or strictly lazy
+    this.refreshFileCache();
   }
 
   private ensureUploadDirectory(): void {
     if (!fs.existsSync(this.uploadPath)) {
       fs.mkdirSync(this.uploadPath, { recursive: true });
       console.log(`Created upload directory: ${this.uploadPath}`);
+    }
+  }
+
+  private refreshFileCache() {
+    try {
+      if (fs.existsSync(this.uploadPath)) {
+        const files = fs.readdirSync(this.uploadPath);
+        this.fileCache = new Set(files);
+      } else {
+        this.fileCache = new Set();
+      }
+    } catch (error) {
+      console.error('Failed to initialize file cache:', error);
+      this.fileCache = new Set();
+    }
+  }
+
+  public registerFile(filename: string) {
+    if (this.fileCache) {
+      this.fileCache.add(filename);
     }
   }
 
@@ -62,6 +85,11 @@ export class LocalFileUploadService {
       const filePath = path.join(this.uploadPath, filename);
       console.log(`Attempting to delete file: ${filePath}`);
       
+      // Update cache optimistically
+      if (this.fileCache) {
+        this.fileCache.delete(filename);
+      }
+
       if (fs.existsSync(filePath)) {
         console.log(`File exists, deleting: ${filePath}`);
         fs.unlinkSync(filePath);
@@ -80,6 +108,11 @@ export class LocalFileUploadService {
 
   // Check if a file exists locally
   fileExists(filename: string): boolean {
+    // Use cache if available
+    if (this.fileCache) {
+      return this.fileCache.has(filename);
+    }
+    // Fallback to disk if cache not initialized (shouldn't happen often)
     const filePath = path.join(this.uploadPath, filename);
     return fs.existsSync(filePath);
   }
