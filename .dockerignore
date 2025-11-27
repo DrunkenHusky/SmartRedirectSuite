@@ -10,5 +10,3 @@ fly.toml
 /docs
 .releaserc.json
 CHANGELOG.md
-demo-reset.sh
-sample-rules-import.json
