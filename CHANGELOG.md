@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.1.1...v2.2.0) (2025-11-27)
+
+
+### Features
+
+* **ui:** update page title from admin settings ([3ec4ec0](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3ec4ec0b66c258cdf8d7ee09d6244a515abe28a8))
+
 ## [2.1.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.1.0...v2.1.1) (2025-11-27)
 
 
