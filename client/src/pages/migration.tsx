@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   ArrowRightLeft, 
   AlertTriangle, 
@@ -534,14 +534,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               </div>
               <span>{settings?.mainTitle || "Veralteter Link erkannt"}</span>
             </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {settings?.mainDescription || "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten."}
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
-            {/* Main Description */}
-            <div className="text-muted-foreground">
-              {settings?.mainDescription || "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten."}
-            </div>
-
             {/* Simple popup content */}
             <div className="text-center space-y-4">
               <div className="flex gap-3 justify-center">

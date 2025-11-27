@@ -2364,6 +2364,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <DialogTitle className="text-lg sm:text-xl">
                             {editingRule ? "Regel bearbeiten" : "Neue Regel erstellen"}
                           </DialogTitle>
+                          <DialogDescription className="text-sm text-muted-foreground">
+                            {editingRule ? "Bearbeiten Sie die existierende Regel hier." : "Erstellen Sie hier eine neue Regel."}
+                          </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmitRule} className="space-y-4 sm:space-y-6">
                           <div>
