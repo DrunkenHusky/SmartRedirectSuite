@@ -152,15 +152,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/check-rules", async (req, res) => {
     try {
       const { path } = z.object({ path: z.string() }).parse(req.body);
-      const rules = await storage.getUrlRules();
+      // Removed direct getUrlRules call to use processed version below
       const settings = await storage.getGeneralSettings();
 
-      // Rules loaded from storage (server/storage.ts#getUrlRules)
-      // Normalization and specificity prioritization handled by selectMostSpecificRule
-      const matchingRule = selectMostSpecificRule(path, rules, {
+      const config = {
         ...RULE_MATCHING_CONFIG,
         CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
-      });
+      };
+
+      // Rules loaded from storage with pre-processing (server/storage.ts#getProcessedUrlRules)
+      const rules = await storage.getProcessedUrlRules(config);
+
+      // Normalization and specificity prioritization handled by selectMostSpecificRule
+      const matchingRule = selectMostSpecificRule(path, rules, config);
 
       res.json({
         rule: matchingRule || null,

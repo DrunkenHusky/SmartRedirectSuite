@@ -11,6 +11,8 @@ import type {
   ImportUrlRule,
 } from "@shared/schema";
 import { urlUtils } from "@shared/utils";
+import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
+import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const RULES_FILE = path.join(DATA_DIR, "rules.json");
@@ -20,6 +22,7 @@ const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 export interface IStorage {
   // URL-Regeln
   getUrlRules(): Promise<UrlRule[]>;
+  getProcessedUrlRules(config: RuleMatchingConfig): Promise<ProcessedUrlRule[]>;
   getUrlRulesPaginated(
     page: number,
     limit: number,
@@ -100,7 +103,10 @@ export interface IStorage {
 }
 
 export class FileStorage implements IStorage {
-  private rulesCache: UrlRule[] | null = null;
+  // Unified cache that holds rules that are processed or will be processed
+  // We type it as ProcessedUrlRule[] because we ensure they are processed when loaded
+  private rulesCache: ProcessedUrlRule[] | null = null;
+  private lastCacheConfig: RuleMatchingConfig | null = null;
   private settingsCache: GeneralSettings | null = null;
 
   constructor() {
@@ -131,11 +137,67 @@ export class FileStorage implements IStorage {
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
   }
 
+  // Helper to ensure rules are loaded and processed
+  private async ensureRulesLoaded(config?: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
+    // If we have a cache
+    if (this.rulesCache) {
+      // And we have a config to check against
+      if (config && this.lastCacheConfig) {
+        // If config matches, return cache
+        if (
+          this.lastCacheConfig.CASE_SENSITIVITY_PATH === config.CASE_SENSITIVITY_PATH &&
+          this.lastCacheConfig.CASE_SENSITIVITY_QUERY === config.CASE_SENSITIVITY_QUERY &&
+          this.lastCacheConfig.TRAILING_SLASH_POLICY === config.TRAILING_SLASH_POLICY
+        ) {
+          return this.rulesCache;
+        }
+
+        // Config mismatch: Reprocess existing cache in-place or map
+        // Since we are changing the processing, we must re-run preprocessRule on the base data.
+        // ProcessedUrlRule contains the base data, so we can re-process it.
+        this.rulesCache = this.rulesCache.map(rule => preprocessRule(rule, config));
+        this.lastCacheConfig = config;
+        return this.rulesCache;
+      }
+
+      // If no config provided, just return what we have (assuming it was processed with default or previous config)
+      // Ideally getUrlRules() shouldn't care about processing, but since we unify, we return ProcessedUrlRule[]
+      return this.rulesCache;
+    }
+
+    // Cache miss: Load from file
+    const rawRules = await this.readJsonFile<UrlRule>(RULES_FILE, []);
+
+    // Determine config: use provided or fetch settings to build default
+    let effectiveConfig = config;
+    if (!effectiveConfig) {
+       const settings = await this.getGeneralSettings();
+       effectiveConfig = {
+         ...RULE_MATCHING_CONFIG,
+         CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
+       };
+    }
+
+    // Process rules
+    this.rulesCache = rawRules.map(rule => preprocessRule(rule, effectiveConfig!));
+    this.lastCacheConfig = effectiveConfig;
+
+    return this.rulesCache;
+  }
+
+  // Strip computed properties for saving to disk
+  private cleanRulesForSave(rules: ProcessedUrlRule[]): UrlRule[] {
+    return rules.map(({ normalizedPath, normalizedQuery, ...rule }) => rule);
+  }
+
   // URL-Regeln implementierung
   async getUrlRules(): Promise<UrlRule[]> {
-    if (this.rulesCache) return this.rulesCache;
-    this.rulesCache = await this.readJsonFile<UrlRule>(RULES_FILE, []);
-    return this.rulesCache;
+    // Return the unified cache (it satisfies UrlRule[])
+    return this.ensureRulesLoaded();
+  }
+
+  async getProcessedUrlRules(config: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
+    return this.ensureRulesLoaded(config);
   }
 
   async getUrlRulesPaginated(
@@ -219,7 +281,8 @@ export class FileStorage implements IStorage {
     insertRule: InsertUrlRule,
     force: boolean = false,
   ): Promise<UrlRule> {
-    const rules = await this.getUrlRules();
+    // Ensure loaded so we can check duplicates
+    const rules = await this.ensureRulesLoaded();
 
     // Skip validation if force flag is set
     if (!force) {
@@ -255,20 +318,27 @@ export class FileStorage implements IStorage {
       }
     }
 
-    const rule: UrlRule = {
+    const rawRule: UrlRule = {
       ...insertRule,
       id: randomUUID(),
       createdAt: new Date().toISOString(),
     };
 
+    // Process the new rule using current config (or default if not loaded, but ensureRulesLoaded called above ensures we have one)
+    const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
+    const processedRule = preprocessRule(rawRule, config);
+
     // Create copy for modification
-    const newRules = [...rules, rule];
-    await this.writeJsonFile(RULES_FILE, newRules);
+    const newRules = [...rules, processedRule];
+
+    // Save cleanly to file
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
 
     // Update cache after successful write
     this.rulesCache = newRules;
+    // lastCacheConfig remains valid
 
-    return rule;
+    return processedRule;
   }
 
   async updateUrlRule(
@@ -276,7 +346,7 @@ export class FileStorage implements IStorage {
     updateData: Partial<InsertUrlRule>,
     force: boolean = false,
   ): Promise<UrlRule | undefined> {
-    const rules = await this.getUrlRules();
+    const rules = await this.ensureRulesLoaded();
     const index = rules.findIndex((rule) => rule.id === id);
     if (index === -1) return undefined;
 
@@ -316,9 +386,16 @@ export class FileStorage implements IStorage {
 
     // Create shallow copy of rules
     const newRules = [...rules];
-    newRules[index] = { ...newRules[index], ...updateData } as UrlRule;
 
-    await this.writeJsonFile(RULES_FILE, newRules);
+    // Create updated rule
+    const updatedRaw = { ...newRules[index], ...updateData };
+
+    // Re-process the updated rule
+    const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
+    newRules[index] = preprocessRule(updatedRaw as UrlRule, config);
+
+    // Save cleanly
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
 
     // Update cache after successful write
     this.rulesCache = newRules;
@@ -327,7 +404,7 @@ export class FileStorage implements IStorage {
   }
 
   async deleteUrlRule(id: string): Promise<boolean> {
-    const rules = await this.getUrlRules();
+    const rules = await this.ensureRulesLoaded();
     const index = rules.findIndex((rule) => rule.id === id);
     if (index === -1) return false;
 
@@ -335,7 +412,7 @@ export class FileStorage implements IStorage {
     const newRules = [...rules];
     newRules.splice(index, 1);
 
-    await this.writeJsonFile(RULES_FILE, newRules);
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
 
     // Update cache after successful write
     this.rulesCache = newRules;
@@ -347,7 +424,7 @@ export class FileStorage implements IStorage {
   async bulkDeleteUrlRules(
     ids: string[],
   ): Promise<{ deleted: number; notFound: number }> {
-    const rules = await this.getUrlRules();
+    const rules = await this.ensureRulesLoaded();
     const idsToDelete = new Set(ids);
 
     const originalCount = rules.length;
@@ -360,7 +437,7 @@ export class FileStorage implements IStorage {
     );
 
     // Single atomic write operation
-    await this.writeJsonFile(RULES_FILE, filteredRules);
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(filteredRules));
 
     // Update cache after successful write
     this.rulesCache = filteredRules;
@@ -372,6 +449,7 @@ export class FileStorage implements IStorage {
     await this.writeJsonFile(RULES_FILE, []);
     // Update cache after successful write
     this.rulesCache = [];
+    // Cache config stays valid for empty array
   }
 
   // URL-Tracking implementierung
@@ -633,7 +711,8 @@ export class FileStorage implements IStorage {
   async importUrlRules(
     importRules: any[],
   ): Promise<{ imported: number; updated: number; errors: string[] }> {
-    const existingRules = await this.getUrlRules();
+    // Ensure loaded
+    const existingRules = await this.ensureRulesLoaded();
 
     // Create shallow copy to avoid mutating the cache directly
     const newRules = [...existingRules];
@@ -650,6 +729,9 @@ export class FileStorage implements IStorage {
 
     let imported = 0;
     let updated = 0;
+
+    // Config for processing imported rules
+    const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
 
     // Skip all validation - import rules as provided
 
@@ -692,7 +774,7 @@ export class FileStorage implements IStorage {
           autoRedirect: importRule.autoRedirect,
         };
 
-        newRules[index] = updatedRule;
+        newRules[index] = preprocessRule(updatedRule, config);
         // Update matcher index
         rulesByMatcher.set(importRule.matcher, index);
         updated++;
@@ -707,7 +789,7 @@ export class FileStorage implements IStorage {
           autoRedirect: importRule.autoRedirect,
           createdAt: new Date().toISOString(),
         };
-        const newIndex = newRules.push(newRule) - 1;
+        const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
         rulesById.set(newRule.id, newIndex);
         rulesByMatcher.set(newRule.matcher, newIndex);
         imported++;
@@ -726,7 +808,7 @@ export class FileStorage implements IStorage {
            autoRedirect: importRule.autoRedirect,
          };
 
-         newRules[index] = updatedRule;
+         newRules[index] = preprocessRule(updatedRule, config);
          // Matcher index is already correct
          updated++;
       } else {
@@ -740,7 +822,7 @@ export class FileStorage implements IStorage {
           autoRedirect: importRule.autoRedirect,
           createdAt: new Date().toISOString(),
         };
-        const newIndex = newRules.push(newRule) - 1;
+        const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
         rulesById.set(newRule.id, newIndex);
         rulesByMatcher.set(newRule.matcher, newIndex);
         imported++;
@@ -748,7 +830,7 @@ export class FileStorage implements IStorage {
     }
 
     // Save all rules back to file
-    await this.writeJsonFile(RULES_FILE, newRules);
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
 
     // Update cache after successful write
     this.rulesCache = newRules;
@@ -827,6 +909,7 @@ export class FileStorage implements IStorage {
   ): Promise<GeneralSettings> {
     // Get existing settings to preserve ID and any fields not being updated
     const existingSettings = await this.getGeneralSettings();
+    const oldSettings = { ...existingSettings };
 
     let settings: GeneralSettings;
 
@@ -859,6 +942,13 @@ export class FileStorage implements IStorage {
 
     await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
     this.settingsCache = settings;
+
+    // Check if relevant settings changed
+    // Invalidate config so cache is reprocessed on next access
+    if (oldSettings.caseSensitiveLinkDetection !== settings.caseSensitiveLinkDetection) {
+      this.lastCacheConfig = null; // Forces re-evaluation in ensureRulesLoaded
+    }
+
     return settings;
   }
 }
