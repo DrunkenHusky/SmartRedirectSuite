@@ -1,6 +1,0 @@
-
-> smartredirectsuite@2.1.1 start
-> cross-env NODE_ENV=production node dist/index.js
-
-Created upload directory: ./data/uploads
-8:04:20 PM [express] serving on port 5000
