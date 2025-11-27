@@ -5,3 +5,10 @@
 Dockerfile
 Dockerfile.demo
 fly.toml
+/Impressions
+/.github
+/docs
+.releaserc.json
+CHANGELOG.md
+demo-reset.sh
+sample-rules-import.json
