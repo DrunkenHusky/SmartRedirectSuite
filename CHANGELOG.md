@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.0.0...v2.0.1) (2025-11-27)
+
+
+### Bug Fixes
+
+* correct app name to smartredirectsuite and sync lockfile ([fc8383e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/fc8383e570c5dab4a83ecccce7e9cc6bd07eb348))
+
 # [2.0.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v1.0.0...v2.0.0) (2025-11-25)
 
 
