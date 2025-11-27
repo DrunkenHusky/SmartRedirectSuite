@@ -291,20 +291,6 @@ export class FileStorage implements IStorage {
         );
       }
 
-      // Check for overlapping patterns
-      for (const existingRule of rules) {
-        if (
-          urlUtils.areMatchersOverlapping(
-            insertRule.matcher,
-            existingRule.matcher,
-          )
-        ) {
-          validationErrors.push(
-            `Überlappender URL-Matcher (Match an beliebiger Pfadposition): "${insertRule.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`,
-          );
-        }
-      }
-
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
       }
@@ -354,21 +340,6 @@ export class FileStorage implements IStorage {
         validationErrors.push(
           `URL-Matcher bereits vorhanden: "${updateData.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
         );
-      }
-
-      // Check for overlapping patterns (excluding the current rule being updated)
-      for (const existingRule of rules) {
-        if (existingRule.id === id) continue; // Skip current rule
-        if (
-          urlUtils.areMatchersOverlapping(
-            updateData.matcher,
-            existingRule.matcher,
-          )
-        ) {
-          validationErrors.push(
-            `Überlappender URL-Matcher (Match an beliebiger Pfadposition): "${updateData.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`,
-          );
-        }
       }
 
       if (validationErrors.length > 0) {

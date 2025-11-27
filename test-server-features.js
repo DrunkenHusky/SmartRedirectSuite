@@ -113,7 +113,7 @@ try {
     assert.equal(body.matcher, newRule.matcher);
   }
 
-  // Creating overlapping rule should fail
+  // Creating overlapping rule should succeed now
   {
     const overlappingRule = {
       matcher: "/foo/test-rule",
@@ -125,8 +125,8 @@ try {
       headers: { cookie },
       body: JSON.stringify(overlappingRule),
     });
-    assert.equal(res.status, 400);
-    assert.match(body.error, /Überlappender URL-Matcher/);
+    assert.equal(res.status, 200);
+    assert.equal(body.matcher, overlappingRule.matcher);
   }
 
   // Case sensitivity toggle should control rule detection
