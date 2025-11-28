@@ -224,6 +224,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     footerCopyright: "",
     caseSensitiveLinkDetection: false,
     autoRedirect: false,
+    showLinkQualityGauge: true,
   });
 
   // Statistics filters and state
@@ -481,7 +482,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         infoIcons: settingsData.infoIcons || ["Bookmark", "Share2", "Clock"],
         footerCopyright: settingsData.footerCopyright || "",
         caseSensitiveLinkDetection: settingsData.caseSensitiveLinkDetection ?? false,
-        autoRedirect: settingsData.autoRedirect || false, // Fix: This was missing!
+        autoRedirect: settingsData.autoRedirect || false,
+        showLinkQualityGauge: settingsData.showLinkQualityGauge ?? true,
       });
     }
   }, [settingsData]);
@@ -1956,6 +1958,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <p className="text-xs text-gray-500 mt-1">
                               Domain die verwendet wird wenn keine spezielle URL-Regel greift - der Pfad wird automatisch übernommen
                             </p>
+                          </div>
+
+                          {/* Show Link Quality Gauge Setting */}
+                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                              <div>
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                <p className="text-xs text-green-700 dark:text-green-300">
+                                  Zeigt ein Symbol mit der Qualität der URL-Übereinstimmung auf der Migrationsseite an
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.showLinkQualityGauge}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
+                              }
+                              className="data-[state=checked]:bg-green-600"
+                            />
                           </div>
                           
                           {/* Action Buttons Sub-section */}

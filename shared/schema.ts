@@ -240,6 +240,10 @@ export const generalSettingsSchema = z.object({
   // Auto-redirect functionality
   autoRedirect: z.boolean()
     .default(false),
+
+  // Show link quality gauge
+  showLinkQualityGauge: z.boolean()
+    .default(true),
     
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict(); // Prevent extra properties

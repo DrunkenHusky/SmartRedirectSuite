@@ -23,6 +23,18 @@ export interface ProcessedUrlRule extends UrlRule {
   normalizedQuery: Map<string, string[]>;
 }
 
+export interface MatchDetails {
+  rule: UrlRule;
+  score: number;
+  quality: number; // 0-100
+  level: 'red' | 'yellow' | 'green';
+  debug?: {
+    start: number;
+    hasExtraQuery: boolean;
+    isExact: boolean;
+  };
+}
+
 export function normalizePath(path: string, cfg: RuleMatchingConfig): string[] {
   // Remove fragment and normalize slashes
   const url = new URL(path, "http://example.com");
@@ -71,11 +83,11 @@ function isProcessedRule(rule: UrlRule | ProcessedUrlRule): rule is ProcessedUrl
   return 'normalizedPath' in rule && 'normalizedQuery' in rule;
 }
 
-export function selectMostSpecificRule(
+export function findMatchingRule(
   requestUrl: string,
   rules: UrlRule[] | ProcessedUrlRule[],
   config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
-): UrlRule | null {
+): MatchDetails | null {
   const reqUrl = new URL(requestUrl, "http://example.com");
   const reqPath = normalizePath(reqUrl.pathname, config);
   const reqQuery = normalizeQuery(reqUrl.search, config);
@@ -86,6 +98,8 @@ export function selectMostSpecificRule(
     staticSegments: number;
     queryPairs: number;
     wildcards: number;
+    start: number;
+    ruleQuery: Map<string, string[]>;
   } | null = null;
 
   for (const rule of rules) {
@@ -201,10 +215,63 @@ export function selectMostSpecificRule(
           staticSegments: staticMatches,
           queryPairs,
           wildcards,
+          start,
+          ruleQuery
         };
       }
     }
   }
 
-  return best ? best.rule : null;
+  if (!best) return null;
+
+  // Calculate Match Quality
+  let quality = 100;
+  const start = best.start;
+  const ruleQuery = best.ruleQuery;
+
+  // Check for extra query params
+  let hasExtraQuery = false;
+  for (const key of reqQuery.keys()) {
+    if (!ruleQuery.has(key)) {
+      hasExtraQuery = true;
+      break;
+    }
+  }
+
+  // Check if it's a deep partial match (rule found in middle of path)
+  // If start > 0, it means the rule matched starting at a later segment (substring match)
+  // If (staticSegments + wildcards) < reqPath.length, it means the rule is shorter than the requested path (prefix match)
+  const rulePathLength = best.staticSegments + best.wildcards;
+  if (start > 0 || rulePathLength < reqPath.length) {
+    quality = 50;
+  } else if (hasExtraQuery) {
+    quality = 75;
+  }
+  // Default is 100 (start === 0 && !hasExtraQuery)
+
+  let level: 'red' | 'yellow' | 'green' = 'green';
+  if (quality < 60) level = 'red'; // Changed 50% to red based on user requirement "Red is when only the main url is replaced"
+  if (quality >= 60 && quality < 90) level = 'yellow'; // 75%
+  if (quality >= 90) level = 'green'; // 100%
+
+  return {
+    rule: best.rule,
+    score: best.score,
+    quality,
+    level,
+    debug: {
+        start,
+        hasExtraQuery,
+        isExact: start === 0 && !hasExtraQuery && best.staticSegments === reqPath.length
+    }
+  };
+}
+
+export function selectMostSpecificRule(
+  requestUrl: string,
+  rules: UrlRule[] | ProcessedUrlRule[],
+  config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
+): UrlRule | null {
+  const match = findMatchingRule(requestUrl, rules, config);
+  return match ? match.rule : null;
 }
