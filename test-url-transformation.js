@@ -7,6 +7,33 @@ import { RULE_MATCHING_CONFIG } from "./shared/constants.ts";
 
 // Load sample rules used for testing
 const rulesPath = new URL("./data/rules.json", import.meta.url);
+
+// Ensure data directory exists
+if (!fs.existsSync(new URL("./data", import.meta.url))) {
+  fs.mkdirSync(new URL("./data", import.meta.url));
+}
+
+// Create sample rules if they don't exist
+if (!fs.existsSync(rulesPath)) {
+  const sampleRules = [
+    {
+      "id": "1",
+      "matcher": "/sample-old-path-full",
+      "targetUrl": "https://newurlofdifferentapp.com/sample-new-path",
+      "redirectType": "wildcard",
+      "createdAt": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "2",
+      "matcher": "/sample-old-path",
+      "targetUrl": "/sample-new-path",
+      "redirectType": "partial",
+      "createdAt": "2023-01-01T00:00:00.000Z"
+    }
+  ];
+  fs.writeFileSync(rulesPath, JSON.stringify(sampleRules, null, 2));
+}
+
 const rules = JSON.parse(fs.readFileSync(rulesPath, "utf-8"));
 
 function findMatchingRule(path) {
