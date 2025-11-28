@@ -1957,6 +1957,41 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Domain die verwendet wird wenn keine spezielle URL-Regel greift - der Pfad wird automatisch übernommen
                             </p>
                           </div>
+
+                          {/* Auto-Redirect Setting Moved Here */}
+                          <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                              <div>
+                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Globale Auto-Weiterleitung</p>
+                                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                                  Aktiviert die sofortige automatische Weiterleitung für alle Besucher
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.autoRedirect}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setPendingAutoRedirectValue(true);
+                                  setShowAutoRedirectDialog(true);
+                                } else {
+                                  setGeneralSettings({ ...generalSettings, autoRedirect: false });
+                                }
+                              }}
+                              className="data-[state=checked]:bg-yellow-600"
+                            />
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                              <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                <p className="font-medium">Wichtiger Hinweis:</p>
+                                <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
+                                <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
+                              </div>
+                            </div>
+                          </div>
                           
                           {/* Action Buttons Sub-section */}
                           <div className="pt-6">
@@ -2251,52 +2286,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </div>
                         </div>
                       </div>
-
-                      {/* 7. Auto-Redirect Settings */}
-                      <div className="space-y-6 mt-8">
-                      <div className="flex items-center gap-3 border-b pb-3">
-                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">7</div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
-                          <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
-                        <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                            <div>
-                              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Globale Auto-Weiterleitung</p>
-                              <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                                Aktiviert die sofortige automatische Weiterleitung für alle Besucher
-                              </p>
-                            </div>
-                          </div>
-                          <Switch
-                            checked={generalSettings.autoRedirect}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setPendingAutoRedirectValue(true);
-                                setShowAutoRedirectDialog(true);
-                              } else {
-                                setGeneralSettings({ ...generalSettings, autoRedirect: false });
-                              }
-                            }}
-                            className="data-[state=checked]:bg-yellow-600"
-                          />
-                        </div>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                            <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                              <p className="font-medium">Wichtiger Hinweis:</p>
-                              <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
-                              <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
                     {/* Save Button */}
                     <div className="border-t pt-6 mt-8">

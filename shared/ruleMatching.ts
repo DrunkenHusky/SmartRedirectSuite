@@ -23,6 +23,18 @@ export interface ProcessedUrlRule extends UrlRule {
   normalizedQuery: Map<string, string[]>;
 }
 
+export interface MatchDetails {
+  rule: UrlRule;
+  score: number;
+  quality: number; // 0-100
+  level: 'red' | 'yellow' | 'green';
+  debug?: {
+    start: number;
+    hasExtraQuery: boolean;
+    isExact: boolean;
+  };
+}
+
 export function normalizePath(path: string, cfg: RuleMatchingConfig): string[] {
   // Remove fragment and normalize slashes
   const url = new URL(path, "http://example.com");
@@ -71,11 +83,11 @@ function isProcessedRule(rule: UrlRule | ProcessedUrlRule): rule is ProcessedUrl
   return 'normalizedPath' in rule && 'normalizedQuery' in rule;
 }
 
-export function selectMostSpecificRule(
+export function findMatchingRule(
   requestUrl: string,
   rules: UrlRule[] | ProcessedUrlRule[],
   config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
-): UrlRule | null {
+): MatchDetails | null {
   const reqUrl = new URL(requestUrl, "http://example.com");
   const reqPath = normalizePath(reqUrl.pathname, config);
   const reqQuery = normalizeQuery(reqUrl.search, config);
@@ -86,6 +98,8 @@ export function selectMostSpecificRule(
     staticSegments: number;
     queryPairs: number;
     wildcards: number;
+    start: number;
+    ruleQuery: Map<string, string[]>;
   } | null = null;
 
   for (const rule of rules) {
@@ -201,10 +215,62 @@ export function selectMostSpecificRule(
           staticSegments: staticMatches,
           queryPairs,
           wildcards,
+          start,
+          ruleQuery
         };
       }
     }
   }
 
-  return best ? best.rule : null;
+  if (!best) return null;
+
+  // Calculate Match Quality
+  let quality = 100;
+  const start = best.start;
+  const ruleQuery = best.ruleQuery;
+
+  // Check for extra query params
+  let hasExtraQuery = false;
+  for (const key of reqQuery.keys()) {
+    if (!ruleQuery.has(key)) {
+      hasExtraQuery = true;
+      break;
+    }
+  }
+
+  if (start > 0) {
+    quality = 50;
+  } else if (hasExtraQuery) {
+    quality = 75;
+  }
+  // Default is 100 (start === 0 && !hasExtraQuery)
+
+  // Note: We ignore if reqPath.length > rulePath.length (partial match at end) as 100%
+  // unless user specified otherwise. Examples suggest /path/ is 100%.
+
+  let level: 'red' | 'yellow' | 'green' = 'green';
+  if (quality < 60) level = 'yellow'; // 50%
+  if (quality >= 60 && quality < 90) level = 'yellow'; // 75%
+  if (quality >= 90) level = 'green'; // 100%
+
+  return {
+    rule: best.rule,
+    score: best.score,
+    quality,
+    level,
+    debug: {
+        start,
+        hasExtraQuery,
+        isExact: start === 0 && !hasExtraQuery && best.staticSegments === reqPath.length
+    }
+  };
+}
+
+export function selectMostSpecificRule(
+  requestUrl: string,
+  rules: UrlRule[] | ProcessedUrlRule[],
+  config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
+): UrlRule | null {
+  const match = findMatchingRule(requestUrl, rules, config);
+  return match ? match.rule : null;
 }
