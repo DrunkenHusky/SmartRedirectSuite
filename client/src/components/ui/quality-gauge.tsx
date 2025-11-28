@@ -1,5 +1,4 @@
 import React from 'react';
-import { Gauge } from 'lucide-react';
 
 interface QualityGaugeProps {
   score: number; // 0-100
@@ -22,18 +21,13 @@ export function QualityGauge({ score, level }: QualityGaugeProps) {
     borderColorClass = "border-yellow-200";
   }
 
-  // Calculate rotation for gauge needle (-90deg to 90deg)
-  // 0 -> -90deg
-  // 100 -> 90deg
-  const rotation = (score / 100) * 180 - 90;
-
   return (
     <div className={`flex flex-col items-center justify-center p-4 rounded-lg border ${bgClass} ${borderColorClass} shadow-sm`}>
       <div className="relative w-24 h-12 overflow-hidden mb-2">
          {/* Gauge Background (Semicircle) */}
         <div className="absolute top-0 left-0 w-24 h-24 rounded-full border-[10px] border-gray-200 box-border"></div>
 
-        {/* Gauge Color Segments (Optional, simpler to just color the filled part if using SVG, but using div trickery here is hard. Let's use SVG) */}
+        {/* Gauge Color Segments */}
         <svg viewBox="0 0 100 50" className="w-full h-full">
             <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e5e7eb" strokeWidth="10" />
             <path
@@ -44,12 +38,6 @@ export function QualityGauge({ score, level }: QualityGaugeProps) {
                 strokeDasharray={`${(score / 100) * 126} 126`} // 126 is approx arc length for radius 40 semicircle
             />
         </svg>
-
-        {/* Needle */}
-        {/* <div
-            className="absolute bottom-0 left-1/2 w-1 h-10 bg-gray-800 origin-bottom transform -translate-x-1/2"
-            style={{ transform: `translateX(-50%) rotate(${rotation}deg)` }}
-        ></div> */}
       </div>
       <div className={`text-xl font-bold ${colorClass}`}>
         {score}%

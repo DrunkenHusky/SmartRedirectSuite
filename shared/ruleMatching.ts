@@ -238,6 +238,8 @@ export function findMatchingRule(
     }
   }
 
+  // Check if it's a deep partial match (rule found in middle of path)
+  // If start > 0, it means the rule matched starting at a later segment (substring match)
   if (start > 0) {
     quality = 50;
   } else if (hasExtraQuery) {
@@ -249,7 +251,7 @@ export function findMatchingRule(
   // unless user specified otherwise. Examples suggest /path/ is 100%.
 
   let level: 'red' | 'yellow' | 'green' = 'green';
-  if (quality < 60) level = 'yellow'; // 50%
+  if (quality < 60) level = 'red'; // Changed 50% to red based on user requirement "Red is when only the main url is replaced"
   if (quality >= 60 && quality < 90) level = 'yellow'; // 75%
   if (quality >= 90) level = 'green'; // 100%
 
