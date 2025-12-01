@@ -1,3 +1,15 @@
+# [2.7.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.6.0...v2.7.0) (2025-12-01)
+
+
+### Bug Fixes
+
+* **data:** remove obsolete showMatchIndicator from settings ([d1e825b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d1e825b2d82dd25232772a1c47aaa2dd1b336814))
+
+
+### Features
+
+* make matching indicator texts configurable ([1af8509](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1af8509ff746008cb6a50da7d92ccf3b4df4b7a6))
+
 # [2.6.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.5.0...v2.6.0) (2025-12-01)
 
 
