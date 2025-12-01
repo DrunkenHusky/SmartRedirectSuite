@@ -1,3 +1,17 @@
+# [2.6.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.5.0...v2.6.0) (2025-12-01)
+
+
+### Bug Fixes
+
+* adjust quality score logic and ensure case sensitivity ([eff041f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/eff041f220af72ee95f534d4ca5c30c857284065))
+* fix rule dialog access from statistics tab and table formatting ([31b5d62](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/31b5d62fac1567323affa0e4292008b86b216328))
+* **ui:** remove duplicate link quality indicator from migration page ([e9481bd](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e9481bdcb41a9acf21a2dd79a317ae7af9327caf))
+
+
+### Features
+
+* Restore admin redirect settings and fix build ([3599508](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/35995080cc3846526ec4b4e24dad2412b7b79f2a))
+
 # [2.5.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.4.0...v2.5.0) (2025-12-01)
 
 
