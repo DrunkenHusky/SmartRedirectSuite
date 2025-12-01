@@ -2,42 +2,29 @@
 
 import fs from "node:fs";
 import assert from "node:assert/strict";
-import { selectMostSpecificRule } from "./shared/ruleMatching.ts";
-import { RULE_MATCHING_CONFIG } from "./shared/constants.ts";
+import { selectMostSpecificRule } from "../../shared/ruleMatching.ts";
+import { RULE_MATCHING_CONFIG } from "../../shared/constants.ts";
 
-// Load sample rules used for testing
-const rulesPath = new URL("./data/rules.json", import.meta.url);
-
-// Ensure data directory exists
-if (!fs.existsSync(new URL("./data", import.meta.url))) {
-  fs.mkdirSync(new URL("./data", import.meta.url));
-}
-
-// Create sample rules if they don't exist
-if (!fs.existsSync(rulesPath)) {
-  const sampleRules = [
-    {
-      "id": "1",
-      "matcher": "/sample-old-path-full",
-      "targetUrl": "https://newurlofdifferentapp.com/sample-new-path",
-      "redirectType": "wildcard",
-      "createdAt": "2023-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "2",
-      "matcher": "/sample-old-path",
-      "targetUrl": "/sample-new-path",
-      "redirectType": "partial",
-      "createdAt": "2023-01-01T00:00:00.000Z"
-    }
-  ];
-  fs.writeFileSync(rulesPath, JSON.stringify(sampleRules, null, 2));
-}
-
-const rules = JSON.parse(fs.readFileSync(rulesPath, "utf-8"));
+// Sample rules used for testing
+const sampleRules = [
+  {
+    "id": "1",
+    "matcher": "/sample-old-path-full",
+    "targetUrl": "https://newurlofdifferentapp.com/sample-new-path",
+    "redirectType": "wildcard",
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "matcher": "/sample-old-path",
+    "targetUrl": "/sample-new-path",
+    "redirectType": "partial",
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  }
+];
 
 function findMatchingRule(path) {
-  return selectMostSpecificRule(path, rules, RULE_MATCHING_CONFIG);
+  return selectMostSpecificRule(path, sampleRules, RULE_MATCHING_CONFIG);
 }
 
 function generateUrl(path, rule, domain = "https://newurlofdifferentapp.com") {
