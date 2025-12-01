@@ -14,7 +14,7 @@ if (!fs.existsSync(new URL("./data", import.meta.url))) {
 }
 
 // Create sample rules if they don't exist
-if (!fs.existsSync(rulesPath)) {
+if (!fs.existsSync(rulesPath) || fs.readFileSync(rulesPath, "utf-8").trim() === "") {
   const sampleRules = [
     {
       "id": "1",
