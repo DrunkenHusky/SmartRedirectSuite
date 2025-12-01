@@ -14,6 +14,7 @@ import { urlRuleSchemaWithValidation, updateUrlRuleSchemaWithValidation } from "
 import { z } from "zod";
 import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
+import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
 import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
@@ -138,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // URL-Tracking endpoint
-  app.post("/api/track", async (req, res) => {
+  app.post("/api/track", trackingRateLimiter, async (req, res) => {
     try {
       const trackingData = insertUrlTrackingSchema.parse(req.body);
       const tracking = await storage.trackUrlAccess(trackingData);
@@ -150,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // URL-Regel Matching endpoint
-  app.post("/api/check-rules", async (req, res) => {
+  app.post("/api/check-rules", apiRateLimiter, async (req, res) => {
     try {
       const { path } = z.object({ path: z.string() }).parse(req.body);
       // Removed direct getUrlRules call to use processed version below

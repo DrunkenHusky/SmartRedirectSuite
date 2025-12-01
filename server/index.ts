@@ -7,6 +7,8 @@ import { FileSessionStore } from "./fileSessionStore";
 
 const app = express();
 app.disable('etag');
+app.disable('x-powered-by'); // Hide Express header for security
+
 app.use('/api', (_req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
@@ -18,7 +20,7 @@ app.set('trust proxy', true);
 
 // Configure body parsers with specific limits
 const defaultLimit = '1mb';
-const importLimit = '200mb';
+const importLimit = '500mb'; // Increased to 500mb as request
 
 // Middleware to select limit based on path
 const jsonMiddleware = express.json({ limit: defaultLimit });
