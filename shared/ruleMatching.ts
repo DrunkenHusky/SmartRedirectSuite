@@ -240,15 +240,14 @@ export function findMatchingRule(
 
   // Check if it's a deep partial match (rule found in middle of path)
   // If start > 0, it means the rule matched starting at a later segment (substring match)
-  if (start > 0) {
+  // If (staticSegments + wildcards) < reqPath.length, it means the rule is shorter than the requested path (prefix match)
+  const rulePathLength = best.staticSegments + best.wildcards;
+  if (start > 0 || rulePathLength < reqPath.length) {
     quality = 50;
   } else if (hasExtraQuery) {
     quality = 75;
   }
   // Default is 100 (start === 0 && !hasExtraQuery)
-
-  // Note: We ignore if reqPath.length > rulePath.length (partial match at end) as 100%
-  // unless user specified otherwise. Examples suggest /path/ is 100%.
 
   let level: 'red' | 'yellow' | 'green' = 'green';
   if (quality < 60) level = 'red'; // Changed 50% to red based on user requirement "Red is when only the main url is replaced"

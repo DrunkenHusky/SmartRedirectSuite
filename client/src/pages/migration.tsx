@@ -70,6 +70,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [matchingRule, setMatchingRule] = useState<UrlRule | null>(null);
   const [matchQuality, setMatchQuality] = useState(0);
   const [matchLevel, setMatchLevel] = useState<'red' | 'yellow' | 'green'>('red');
+  const [matchExplanation, setMatchExplanation] = useState("");
   const [infoText, setInfoText] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMainDialog, setShowMainDialog] = useState(false);
@@ -165,14 +166,32 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             foundRule = rule;
             setMatchQuality(quality || 0);
             setMatchLevel(level || 'red');
+            // Determine explanation
+            if (quality >= 90) {
+              setMatchExplanation("Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.");
+            } else if (quality >= 60) {
+              setMatchExplanation("Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).");
+            } else {
+              setMatchExplanation("Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).");
+            }
+
             // Check rule-specific auto-redirect first, then fall back to global setting
             shouldAutoRedirect = rule.autoRedirect || settings.autoRedirect || false;
             redirectUrl = generateUrlWithRule(url, rule, settings.defaultNewDomain);
             generatedNewUrl = redirectUrl;
           } else {
             // No match
-            setMatchQuality(0);
-            setMatchLevel('red');
+            if (path === "/" || path === "") {
+                // Root URL case - 100% match equivalent
+                setMatchQuality(100);
+                setMatchLevel('green');
+                setMatchExplanation("Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
+            } else {
+                setMatchQuality(0);
+                setMatchLevel('red');
+                setMatchExplanation("Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
+            }
+
             if (settings.autoRedirect) {
                // No matching rule, but global auto-redirect is enabled
                shouldAutoRedirect = true;
@@ -349,17 +368,24 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               {showUrlComparison && (
                 <Card className="animate-fade-in border-green-200 bg-green-50" style={{ backgroundColor: settings?.urlComparisonBackgroundColor || 'white' }}>
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-green-800">
-                      {settings?.urlComparisonIcon && settings.urlComparisonIcon !== "none" ? (
-                        (() => {
-                          const IconComponent = getIconComponent(settings.urlComparisonIcon);
-                          return <IconComponent className="h-5 w-5" />;
-                        })()
-                      ) : (
-                        <ArrowRightLeft className="h-5 w-5" />
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center space-x-2 text-green-800">
+                        {settings?.urlComparisonIcon && settings.urlComparisonIcon !== "none" ? (
+                          (() => {
+                            const IconComponent = getIconComponent(settings.urlComparisonIcon);
+                            return <IconComponent className="h-5 w-5" />;
+                          })()
+                        ) : (
+                          <ArrowRightLeft className="h-5 w-5" />
+                        )}
+                        <span>{settings?.urlComparisonTitle || "URL-Vergleich"}</span>
+                      </CardTitle>
+
+                      {/* Quality Gauge in Top Right */}
+                      {settings?.showLinkQualityGauge && (
+                        <QualityGauge score={matchQuality} level={matchLevel} explanation={matchExplanation} />
                       )}
-                      <span>{settings?.urlComparisonTitle || "URL-Vergleich"}</span>
-                    </CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* New URL */}
