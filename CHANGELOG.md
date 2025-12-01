@@ -1,3 +1,10 @@
+## [2.7.3](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.2...v2.7.3) (2025-12-01)
+
+
+### Bug Fixes
+
+* **api:** handle invalid ruleId in tracking and sanitize input ([5cad5a1](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5cad5a15ffc4ff6689e62e84a2ef67be932409f5))
+
 ## [2.7.2](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.1...v2.7.2) (2025-12-01)
 
 
