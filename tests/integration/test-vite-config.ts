@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { APPLICATION_METADATA } from "./shared/appMetadata";
-import { resolvePackageJsonPath } from "./vite.config";
+import { APPLICATION_METADATA } from "../../shared/appMetadata";
+import { resolvePackageJsonPath } from "../../vite.config";
 
 async function importFreshConfig() {
-  return import(`./vite.config.ts?cache-bust=${Date.now()}`);
+  return import(`../../vite.config.ts?cache-bust=${Date.now()}`);
 }
 
 (async () => {
@@ -21,11 +21,12 @@ async function importFreshConfig() {
     "Vite config should expose app name from application metadata",
   );
 
-  const distDirectory = path.resolve(import.meta.dirname, "dist");
+  const rootDirectory = path.resolve(import.meta.dirname, "../..");
+  const distDirectory = path.resolve(rootDirectory, "dist");
   const resolvedPathFromDist = resolvePackageJsonPath(distDirectory);
   assert.equal(
     resolvedPathFromDist,
-    path.resolve(import.meta.dirname, "package.json"),
+    path.resolve(rootDirectory, "package.json"),
     "Resolver should fall back to project root when build output lacks package.json",
   );
 
