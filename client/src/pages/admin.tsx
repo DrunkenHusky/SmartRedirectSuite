@@ -492,6 +492,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("POST", "/api/admin/rules", rule),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -2337,133 +2341,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       )}
                       
                       {/* Create New Rule Button */}
-                      <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button 
-                            onClick={resetRuleForm}
-                            size="sm"
-                            className="flex-1 sm:flex-initial sm:w-auto"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Neue Regel
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle className="text-lg sm:text-xl">
-                            {editingRule ? "Regel bearbeiten" : "Neue Regel erstellen"}
-                          </DialogTitle>
-                          <DialogDescription className="text-sm text-muted-foreground">
-                            {editingRule ? "Bearbeiten Sie die existierende Regel hier." : "Erstellen Sie hier eine neue Regel."}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmitRule} className="space-y-4 sm:space-y-6">
-                          <div>
-                            <label className="block text-sm font-medium mb-2">
-                              URL-Pfad Matcher
-                            </label>
-                            <Input
-                              placeholder="/news-beitrag"
-                              value={ruleForm.matcher}
-                              onChange={(e) => setRuleForm(prev => ({ ...prev, matcher: e.target.value }))}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">
-                              Ziel-URL (optional)
-                            </label>
-                            <Input
-                              placeholder={targetUrlPlaceholder}
-                              value={ruleForm.targetUrl}
-                              onChange={(e) => setRuleForm(prev => ({ ...prev, targetUrl: e.target.value }))}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">
-                              Redirect-Typ
-                            </label>
-                            <Select
-                              value={ruleForm.redirectType}
-                              onValueChange={(value: "wildcard" | "partial") => 
-                                setRuleForm(prev => ({ ...prev, redirectType: value }))
-                              }
-                            >
-                              <SelectTrigger className="h-auto min-h-[40px]">
-                                <SelectValue>
-                                  {ruleForm.redirectType === "partial" && "Teilweise"}
-                                  {ruleForm.redirectType === "wildcard" && "Vollständig"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
-                                <SelectItem value="partial" className="pl-8 pr-3 py-3 items-start">
-                                  <div className="flex flex-col space-y-1">
-                                    <span className="font-medium text-sm">Teilweise</span>
-                                    <span className="text-xs text-muted-foreground leading-relaxed">
-                                      Nur die Pfadsegmente ab dem Matcher werden ersetzt. Base URL aus den generellen Einstellungen wird verwendet. Zusätzliche Pfadsegmente, Parameter und Anker bleiben erhalten.
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="wildcard" className="pl-8 pr-3 py-3 items-start">
-                                  <div className="flex flex-col space-y-1">
-                                    <span className="font-medium text-sm">Vollständig</span>
-                                    <span className="text-xs text-muted-foreground leading-relaxed">
-                                      Alte Links werden komplett auf die neue Ziel-URL umgeleitet. Keine Bestandteile der alten URL werden übernommen – weder Pfadsegmente noch Parameter oder Anker.
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2">
-                              Info-Text (Markdown)
-                            </label>
-                            <Textarea
-                              placeholder="Nachrichtenbeiträge wurden migriert..."
-                              value={ruleForm.infoText}
-                              onChange={(e) => setRuleForm(prev => ({ ...prev, infoText: e.target.value }))}
-                              rows={3}
-                            />
-                          </div>
-                          <div className="border-t pt-4">
-                            <div className="flex items-start space-x-3">
-                              <Switch
-                                checked={ruleForm.autoRedirect}
-                                onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, autoRedirect: checked }))}
-                              />
-                              <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                  Automatische Weiterleitung für diese Regel
-                                </label>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                            <Button 
-                              type="submit" 
-                              className="flex-1"
-                              size="sm"
-                              disabled={createRuleMutation.isPending || updateRuleMutation.isPending}
-                            >
-                              {editingRule ? "Aktualisieren" : "Erstellen"}
-                            </Button>
-                            <Button 
-                              type="button" 
-                              variant="secondary" 
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => setIsRuleDialogOpen(false)}
-                            >
-                              Abbrechen
-                            </Button>
-                          </div>
-                        </form>
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        onClick={() => {
+                          resetRuleForm();
+                          setIsRuleDialogOpen(true);
+                        }}
+                        size="sm"
+                        className="flex-1 sm:flex-initial sm:w-auto"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Neue Regel
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -3090,7 +2978,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {getSortIcon('path')}
                                   </Button>
                                 </th>
-                                <th className="text-left p-3">
+                                <th className="text-left p-3 font-medium text-sm">
                                   Regel
                                 </th>
                               </tr>
@@ -3361,6 +3249,125 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           </Tabs>
         </div>
       </main>
+
+      {/* Rule Editing Dialog - Moved outside TabsContent to be accessible from all tabs */}
+      <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              {editingRule ? "Regel bearbeiten" : "Neue Regel erstellen"}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {editingRule ? "Bearbeiten Sie die existierende Regel hier." : "Erstellen Sie hier eine neue Regel."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitRule} className="space-y-4 sm:space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                URL-Pfad Matcher
+              </label>
+              <Input
+                placeholder="/news-beitrag"
+                value={ruleForm.matcher}
+                onChange={(e) => setRuleForm(prev => ({ ...prev, matcher: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Ziel-URL (optional)
+              </label>
+              <Input
+                placeholder={targetUrlPlaceholder}
+                value={ruleForm.targetUrl}
+                onChange={(e) => setRuleForm(prev => ({ ...prev, targetUrl: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Redirect-Typ
+              </label>
+              <Select
+                value={ruleForm.redirectType}
+                onValueChange={(value: "wildcard" | "partial") =>
+                  setRuleForm(prev => ({ ...prev, redirectType: value }))
+                }
+              >
+                <SelectTrigger className="h-auto min-h-[40px]">
+                  <SelectValue>
+                    {ruleForm.redirectType === "partial" && "Teilweise"}
+                    {ruleForm.redirectType === "wildcard" && "Vollständig"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
+                  <SelectItem value="partial" className="pl-8 pr-3 py-3 items-start">
+                    <div className="flex flex-col space-y-1">
+                      <span className="font-medium text-sm">Teilweise</span>
+                      <span className="text-xs text-muted-foreground leading-relaxed">
+                        Nur die Pfadsegmente ab dem Matcher werden ersetzt. Base URL aus den generellen Einstellungen wird verwendet. Zusätzliche Pfadsegmente, Parameter und Anker bleiben erhalten.
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="wildcard" className="pl-8 pr-3 py-3 items-start">
+                    <div className="flex flex-col space-y-1">
+                      <span className="font-medium text-sm">Vollständig</span>
+                      <span className="text-xs text-muted-foreground leading-relaxed">
+                        Alte Links werden komplett auf die neue Ziel-URL umgeleitet. Keine Bestandteile der alten URL werden übernommen – weder Pfadsegmente noch Parameter oder Anker.
+                      </span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Info-Text (Markdown)
+              </label>
+              <Textarea
+                placeholder="Nachrichtenbeiträge wurden migriert..."
+                value={ruleForm.infoText}
+                onChange={(e) => setRuleForm(prev => ({ ...prev, infoText: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div className="border-t pt-4">
+              <div className="flex items-start space-x-3">
+                <Switch
+                  checked={ruleForm.autoRedirect}
+                  onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, autoRedirect: checked }))}
+                />
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Automatische Weiterleitung für diese Regel
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+              <Button
+                type="submit"
+                className="flex-1"
+                size="sm"
+                disabled={createRuleMutation.isPending || updateRuleMutation.isPending}
+              >
+                {editingRule ? "Aktualisieren" : "Erstellen"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="flex-1"
+                onClick={() => setIsRuleDialogOpen(false)}
+              >
+                Abbrechen
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Auto-Redirect Confirmation Dialog */}
       <Dialog open={showAutoRedirectDialog} onOpenChange={setShowAutoRedirectDialog}>
