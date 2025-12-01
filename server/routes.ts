@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { createHash, timingSafeEqual } from "crypto";
 import { storage } from "./storage";
 import {
   insertUrlTrackingSchema,
@@ -13,6 +14,7 @@ import { urlRuleSchemaWithValidation, updateUrlRuleSchemaWithValidation } from "
 import { z } from "zod";
 import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
+import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
 import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
@@ -137,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // URL-Tracking endpoint
-  app.post("/api/track", async (req, res) => {
+  app.post("/api/track", trackingRateLimiter, async (req, res) => {
     try {
       const trackingData = insertUrlTrackingSchema.parse(req.body);
       const tracking = await storage.trackUrlAccess(trackingData);
@@ -149,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // URL-Regel Matching endpoint
-  app.post("/api/check-rules", async (req, res) => {
+  app.post("/api/check-rules", apiRateLimiter, async (req, res) => {
     try {
       const { path } = z.object({ path: z.string() }).parse(req.body);
       // Removed direct getUrlRules call to use processed version below
@@ -185,8 +187,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Simple password extraction without validation first
       const { password } = z.object({ password: z.string() }).parse(req.body);
 
-      // Check password match first
-      if (password === ADMIN_PASSWORD) {
+      // Hash both passwords for constant-time comparison
+      const inputHash = createHash('sha256').update(password).digest();
+      const storedHash = createHash('sha256').update(ADMIN_PASSWORD).digest();
+
+      // Check password match using timingSafeEqual
+      if (timingSafeEqual(inputHash, storedHash)) {
         // Check if session exists, if not return error
         if (!req.session) {
           console.error("Session not available during login");
@@ -194,19 +200,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
 
-        // Set session data and force save for file store
-        req.session.isAdminAuthenticated = true;
-        req.session.adminLoginTime = Date.now();
-
-        // For file store, explicitly save the session
-        req.session.save(async (err) => {
+        // Regenerate session to prevent fixation
+        req.session.regenerate((err) => {
           if (err) {
-            console.error("Session save error:", err);
-            res.status(500).json({ error: "Session save error" });
+            console.error("Session regeneration error:", err);
+            res.status(500).json({ error: "Session error" });
             return;
           }
-          await resetLoginAttempts(ip);
-          res.json({ success: true, sessionId: req.sessionID });
+
+          // Set session data and force save for file store
+          req.session.isAdminAuthenticated = true;
+          req.session.adminLoginTime = Date.now();
+
+          // For file store, explicitly save the session
+          req.session.save(async (saveErr) => {
+            if (saveErr) {
+              console.error("Session save error:", saveErr);
+              res.status(500).json({ error: "Session save error" });
+              return;
+            }
+            await resetLoginAttempts(ip);
+            res.json({ success: true, sessionId: req.sessionID });
+          });
         });
       } else {
         await recordLoginFailure(ip);

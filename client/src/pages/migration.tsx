@@ -224,6 +224,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               path: path,
               timestamp: new Date().toISOString(),
               userAgent: navigator.userAgent,
+              ruleId: foundRule?.id,
             }),
           });
           
@@ -249,6 +250,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             path: path,
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
+            ruleId: foundRule?.id,
           }),
         });
 
@@ -392,18 +394,25 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         <CheckCircle className="inline text-green-500 mr-2" />
                         {settings?.newUrlLabel || "Neue URL (verwenden Sie diese)"}
                       </label>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-help">
-                            <code className="text-sm text-green-800 break-all">
-                              {newUrl}
-                            </code>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>So sieht die neue Ziel-URL aus</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                <div className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-help h-full flex items-center">
+                                    <code className="text-sm text-green-800 break-all">
+                                    {newUrl}
+                                    </code>
+                                </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                <p>So sieht die neue Ziel-URL aus</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <div className="flex-shrink-0">
+                            <QualityGauge score={matchQuality} level={matchLevel} />
+                        </div>
+                      </div>
                     </div>
 
 
