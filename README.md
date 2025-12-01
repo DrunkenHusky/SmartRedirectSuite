@@ -101,6 +101,15 @@ matcht sowohl `/sites/team/docs` als auch `/archive/sites/team/docs`.
 | **Teilweise**   | Ersetzt Pfadsegmente ab dem Matcher. Base‑URL stammt aus den allgemeinen Einstellungen; zusätzliche Segmente, Parameter und Anker werden angehängt. |
 | **Vollständig** | Leitet komplett auf eine neue Ziel‑URL um. Keine Bestandteile der alten URL werden übernommen.                                                      |
 
+### Gross-/Kleinschreibung
+
+In den allgemeinen Einstellungen kann die Option "Gross/Kleinschreibung beachten" aktiviert werden.
+
+- **Deaktiviert (Standard):** `/Test` und `/test` werden als gleich behandelt. Das System normalisiert alle Pfade intern zu Kleinbuchstaben.
+- **Aktiviert:** `/Test` und `/test` werden als unterschiedlich betrachtet. Eine Regel für `/Test` greift nicht bei einem Aufruf von `/test`.
+
+**Best Practice:** Aktivieren Sie diese Option nur, wenn das ursprüngliche System (z. B. ein Linux-Dateisystem oder ein spezifisches CMS) case-sensitive URLs verwendet hat und Sie Kollisionen vermeiden müssen.
+
 ### Beispiele
 
 **Ausgangs‑URL**
