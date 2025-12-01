@@ -226,6 +226,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     caseSensitiveLinkDetection: false,
     autoRedirect: false,
     showLinkQualityGauge: true,
+    matchHighExplanation: "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
+    matchMediumExplanation: "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).",
+    matchLowExplanation: "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
+    matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
+    matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
   });
 
   // Statistics filters and state
@@ -485,6 +490,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         caseSensitiveLinkDetection: settingsData.caseSensitiveLinkDetection ?? false,
         autoRedirect: settingsData.autoRedirect || false,
         showLinkQualityGauge: settingsData.showLinkQualityGauge ?? true,
+        matchHighExplanation: settingsData.matchHighExplanation || "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
+        matchMediumExplanation: settingsData.matchMediumExplanation || "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).",
+        matchLowExplanation: settingsData.matchLowExplanation || "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
+        matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
+        matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
       });
     }
   }, [settingsData]);
@@ -1966,23 +1976,86 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </div>
 
                           {/* Show Link Quality Gauge Setting */}
-                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                              <div>
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
-                                <p className="text-xs text-green-700 dark:text-green-300">
-                                  Zeigt ein Symbol mit der Qualität der URL-Übereinstimmung auf der Migrationsseite an
-                                </p>
+                          <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                <div>
+                                  <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                  <p className="text-xs text-green-700 dark:text-green-300">
+                                    Zeigt ein Symbol mit der Qualität der URL-Übereinstimmung auf der Migrationsseite an
+                                  </p>
+                                </div>
                               </div>
+                              <Switch
+                                checked={generalSettings.showLinkQualityGauge}
+                                onCheckedChange={(checked) =>
+                                  setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
+                                }
+                                className="data-[state=checked]:bg-green-600"
+                              />
                             </div>
-                            <Switch
-                              checked={generalSettings.showLinkQualityGauge}
-                              onCheckedChange={(checked) =>
-                                setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
-                              }
-                              className="data-[state=checked]:bg-green-600"
-                            />
+
+                            {/* Match Explanation Texts */}
+                            {generalSettings.showLinkQualityGauge && (
+                              <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für hohe Übereinstimmung (≥ 90%)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchHighExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchHighExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für mittlere Übereinstimmung (≥ 60%)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchMediumExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter)."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für niedrige Übereinstimmung (Partial Match)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchLowExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchLowExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match)."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für Startseiten-Übereinstimmung (Root)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchRootExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchRootExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Startseite erkannt. Direkte Weiterleitung auf die neue Domain."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für keine Übereinstimmung
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchNoneExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet."
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
                           
                           {/* Action Buttons Sub-section */}
