@@ -1,3 +1,10 @@
+## [2.7.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.0...v2.7.1) (2025-12-01)
+
+
+### Bug Fixes
+
+* **api:** relax tracking schema validation and improve error messages ([f8aae71](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f8aae715d0cf757a74da8cb2c075578c8e18230c))
+
 # [2.7.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.6.0...v2.7.0) (2025-12-01)
 
 
