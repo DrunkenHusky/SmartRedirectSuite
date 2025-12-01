@@ -50,6 +50,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  ArrowRightLeft,
   AlertTriangle,
   Info,
 } from "lucide-react";
@@ -2272,6 +2273,52 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
                                 <p className="font-medium">Best Practice:</p>
                                 <p>Nutzen Sie die Groß-/Kleinschreibung nur, wenn Ihre Altsysteme URLs case-sensitiv ausliefern und Sie dies exakt abbilden müssen.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 7. Automatic Redirect Settings */}
+                      <div className="space-y-6 mt-8">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 text-sm font-semibold">7</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
+                            <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <ArrowRightLeft className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                              <div>
+                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Automatische Weiterleitung aktivieren</p>
+                                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                                  Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.autoRedirect}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setPendingAutoRedirectValue(true);
+                                  setShowAutoRedirectDialog(true);
+                                } else {
+                                  setGeneralSettings({ ...generalSettings, autoRedirect: false });
+                                }
+                              }}
+                              className="data-[state=checked]:bg-yellow-600"
+                            />
+                          </div>
+
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                              <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                <p className="font-medium">Admin-Zugriff:</p>
+                                <p>Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">?admin=true</code> erreichen.</p>
                               </div>
                             </div>
                           </div>

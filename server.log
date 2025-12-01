@@ -1,6 +1,4 @@
 
-> smartredirectsuite@2.3.2 dev
+> smartredirectsuite@2.5.0 dev
 > cross-env NODE_ENV=development tsx server/index.ts
 
-10:18:07 PM [express] serving on port 5000
-10:18:08 PM [express] POST /api/check-rules 200 in 11ms :: {"rule":null,"hasMatch":false}
