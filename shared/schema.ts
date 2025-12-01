@@ -11,7 +11,7 @@ const URL_MATCHER_PATTERN = /^\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/;
 export const ICON_OPTIONS = [
   "ArrowLeftRight", "ArrowRightLeft", "AlertTriangle", "XCircle", 
   "AlertCircle", "Info", "Bookmark", "Share2", "Clock", 
-  "CheckCircle", "Star", "Heart", "Bell", "none"
+  "CheckCircle", "Star", "Heart", "Bell", "Link", "none"
 ] as const;
 
 export const ALERT_ICON_OPTIONS = [

@@ -20,7 +20,8 @@ import {
   Settings,
   Star,
   Heart,
-  Bell
+  Bell,
+  Link
 } from "lucide-react";
 import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +48,8 @@ const getIconComponent = (iconName: string) => {
     CheckCircle,
     Star,
     Heart,
-    Bell
+    Bell,
+    Link
   } as const;
   return iconMap[iconName as keyof typeof iconMap] || AlertTriangle;
 };

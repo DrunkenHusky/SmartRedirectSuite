@@ -52,6 +52,7 @@ import {
   ArrowDown,
   AlertTriangle,
   Info,
+  Link,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1487,6 +1488,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectItem value="Star">⭐ Stern</SelectItem>
                                   <SelectItem value="Heart">❤️ Herz</SelectItem>
                                   <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                  <SelectItem value="Link">🔗 Link</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1890,6 +1892,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectItem value="Star">⭐ Stern</SelectItem>
                                   <SelectItem value="Heart">❤️ Herz</SelectItem>
                                   <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                  <SelectItem value="Link">🔗 Link</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -2063,6 +2066,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectItem value="Star">⭐ Stern</SelectItem>
                                   <SelectItem value="Heart">❤️ Herz</SelectItem>
                                   <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                  <SelectItem value="Link">🔗 Link</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -2135,6 +2139,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectItem value="Star">⭐ Stern</SelectItem>
                                   <SelectItem value="Heart">❤️ Herz</SelectItem>
                                   <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                  <SelectItem value="Link">🔗 Link</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -2186,6 +2191,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         <SelectItem value="Star">⭐ Star</SelectItem>
                                         <SelectItem value="Heart">❤️ Heart</SelectItem>
                                         <SelectItem value="Bell">🔔 Bell</SelectItem>
+                                        <SelectItem value="Link">🔗 Link</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>

@@ -13,7 +13,8 @@ import {
   CheckCircle,
   Star,
   Heart,
-  Bell
+  Bell,
+  Link
 } from "lucide-react";
 import type { GeneralSettings } from "@shared/schema";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
@@ -30,7 +31,8 @@ const iconMap = {
   CheckCircle,
   Star,
   Heart,
-  Bell
+  Bell,
+  Link
 } as const;
 
 export function DocumentHeadUpdater() {
