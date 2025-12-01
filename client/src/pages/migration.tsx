@@ -409,9 +409,6 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                                 </TooltipContent>
                             </Tooltip>
                         </div>
-                        <div className="flex-shrink-0">
-                            <QualityGauge score={matchQuality} level={matchLevel} />
-                        </div>
                       </div>
                     </div>
 
