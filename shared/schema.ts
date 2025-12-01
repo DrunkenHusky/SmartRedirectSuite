@@ -61,20 +61,21 @@ export const insertUrlRuleSchema = urlRuleSchema.omit({
 export const urlTrackingSchema = z.object({
   id: z.string().uuid("Invalid tracking ID"),
   oldUrl: z.string()
-    .max(2000, "Old URL too long"),
+    .max(8000, "Old URL too long"),
   newUrl: z.string()
-    .max(2000, "New URL too long")
+    .max(8000, "New URL too long")
     .optional(),
   path: z.string()
     .min(1, "Path cannot be empty")
-    .max(1000, "Path too long"),
+    .max(8000, "Path too long"),
   timestamp: z.string().datetime("Invalid timestamp format"),
   userAgent: z.string()
-    .max(1000, "User agent too long")
+    .max(2000, "User agent too long")
     .optional(),
   ruleId: z.string()
     .uuid("Invalid rule ID")
-    .optional(),
+    .optional()
+    .catch(undefined),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
