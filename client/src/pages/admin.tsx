@@ -50,6 +50,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  ArrowRightLeft,
   AlertTriangle,
   Info,
 } from "lucide-react";
@@ -2278,38 +2279,48 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
-                      {/* 7. Automatische Weiterleitung */}
+                      {/* 7. Automatic Redirect Settings */}
                       <div className="space-y-6 mt-8">
                         <div className="flex items-center gap-3 border-b pb-3">
-                          <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-sm font-semibold">7</div>
+                          <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 text-sm font-semibold">7</div>
                           <div>
                             <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
                             <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
-                          <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                          <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                             <div className="flex items-center gap-3">
-                              <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                              <ArrowRightLeft className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                               <div>
-                                <p className="text-sm font-medium text-orange-800 dark:text-orange-200">Alle Weiterleitungen automatisch ausführen</p>
-                                <p className="text-xs text-orange-700 dark:text-orange-300">
-                                  Wenn aktiviert, werden alle Nutzer sofort auf die neue URL weitergeleitet, ohne die Migrationsseite zu sehen.
+                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Automatische Weiterleitung aktivieren</p>
+                                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                                  Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
                                 </p>
                               </div>
                             </div>
                             <Switch
                               checked={generalSettings.autoRedirect}
                               onCheckedChange={(checked) => {
-                                setPendingAutoRedirectValue(checked);
                                 if (checked) {
+                                  setPendingAutoRedirectValue(true);
                                   setShowAutoRedirectDialog(true);
                                 } else {
                                   setGeneralSettings({ ...generalSettings, autoRedirect: false });
                                 }
                               }}
-                              className="data-[state=checked]:bg-orange-600"
+                              className="data-[state=checked]:bg-yellow-600"
                             />
+                          </div>
+
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                              <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                <p className="font-medium">Admin-Zugriff:</p>
+                                <p>Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">?admin=true</code> erreichen.</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
