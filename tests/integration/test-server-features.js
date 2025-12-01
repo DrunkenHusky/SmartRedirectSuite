@@ -6,20 +6,26 @@ import express from "express";
 import session from "express-session";
 
 // Prepare isolated working directory with required data files
-const repoDataDir = new URL("./data", import.meta.url);
+const repoDataDir = new URL("../../data", import.meta.url);
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "srs-test-"));
 fs.mkdirSync(path.join(tempDir, "data"), { recursive: true });
 // Copy existing data files to temp directory
-fs.cpSync(repoDataDir, path.join(tempDir, "data"), { recursive: true });
+if (fs.existsSync(repoDataDir)) {
+  fs.cpSync(repoDataDir, path.join(tempDir, "data"), { recursive: true });
+} else {
+  // If data dir doesn't exist (e.g. in CI without checkout of data?), create structure
+  fs.mkdirSync(path.join(tempDir, "data"), { recursive: true });
+}
 // Ensure sessions directory exists for health check
 fs.mkdirSync(path.join(tempDir, "data", "sessions"), { recursive: true });
 
 process.chdir(tempDir);
 
 // Dynamic imports after changing working directory so storage uses temp data path
-const { registerRoutes } = await import("./server/routes.ts");
-const { FileSessionStore } = await import("./server/fileSessionStore.ts");
-const { APPLICATION_METADATA } = await import("./shared/appMetadata.ts");
+// Note: Dynamic import("./...") resolves relative to the current module file
+const { registerRoutes } = await import("../../server/routes.ts");
+const { FileSessionStore } = await import("../../server/fileSessionStore.ts");
+const { APPLICATION_METADATA } = await import("../../shared/appMetadata.ts");
 
 // Helper to start server on random port
 async function startServer() {

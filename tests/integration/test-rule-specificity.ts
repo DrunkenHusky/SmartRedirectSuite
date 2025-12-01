@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { selectMostSpecificRule } from "./shared/ruleMatching";
-import { RULE_MATCHING_CONFIG } from "./shared/constants";
-import type { UrlRule } from "./shared/schema";
+import { selectMostSpecificRule } from "../../shared/ruleMatching";
+import { RULE_MATCHING_CONFIG } from "../../shared/constants";
+import type { UrlRule } from "../../shared/schema";
 
 function makeRule(id: string, matcher: string, createdOffset = 0): UrlRule {
   return {
