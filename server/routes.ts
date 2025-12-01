@@ -146,7 +146,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tracking);
     } catch (error) {
       console.error("Tracking error:", error);
-      res.status(400).json({ error: "Invalid tracking data" });
+
+      if (error instanceof z.ZodError) {
+        const validationErrors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }));
+
+        res.status(400).json({
+          error: "Invalid tracking data",
+          details: validationErrors
+        });
+      } else {
+        res.status(400).json({ error: "Invalid tracking data" });
+      }
     }
   });
 

@@ -75,7 +75,7 @@ export const urlTrackingSchema = z.object({
   ruleId: z.string()
     .uuid("Invalid rule ID")
     .optional(),
-}).strict();
+});
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
   id: true,
