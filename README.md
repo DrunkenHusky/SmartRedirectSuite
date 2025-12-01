@@ -25,6 +25,7 @@ Diese Version basiert stets auf dem neuesten Commit des `main`-Branches, wird al
 - [Administration](#administration)
   - [Regeln importieren](#regeln-importieren)
   - [Einstellungen anpassen](#einstellungen-anpassen)
+  - [Matching Indicator](#matching-indicator)
   - [Statistiken & Monitoring](#statistiken--monitoring)
 - [Release Prozess](#release-prozess)
 - [Validierung & Qualitätssicherung](#validierung--qualitatssicherung)
@@ -262,6 +263,18 @@ Im Admin-Panel können Texte, Farben und UI-Elemente angepasst werden, einschlie
 - Labels im URL-Vergleich
 - Button-Beschriftungen
 - Zusätzliche Info-Bereiche
+
+### Matching Indicator
+
+Der Matching Indicator (Link-Qualitätstacho) visualisiert, wie gut eine aufgerufene URL zu einer neuen URL passt. Er wird auf der Migrationsseite angezeigt.
+
+**Qualitätsstufen:**
+
+- **Grün (100%):** Exakte Übereinstimmung oder Startseite (Root).
+- **Gelb (60-90%):** URL erkannt, aber mit leichten Abweichungen (z.B. zusätzliche Parameter).
+- **Rot (< 60%):** Nur Teilübereinstimmung (Partial Match) oder keine spezifische Zuordnung möglich.
+
+Die Erklärungstexte für diese Stufen können im Admin-Bereich unter "Allgemeine Einstellungen" individuell angepasst werden.
 
 ### Statistiken & Monitoring
 

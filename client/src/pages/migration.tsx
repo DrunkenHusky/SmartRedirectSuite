@@ -168,11 +168,11 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             setMatchLevel(level || 'red');
             // Determine explanation
             if (quality >= 90) {
-              setMatchExplanation("Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.");
+              setMatchExplanation(settings.matchHighExplanation || "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.");
             } else if (quality >= 60) {
-              setMatchExplanation("Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).");
+              setMatchExplanation(settings.matchMediumExplanation || "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).");
             } else {
-              setMatchExplanation("Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).");
+              setMatchExplanation(settings.matchLowExplanation || "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).");
             }
 
             // Check rule-specific auto-redirect first, then fall back to global setting
@@ -185,11 +185,11 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 // Root URL case - 100% match equivalent
                 setMatchQuality(100);
                 setMatchLevel('green');
-                setMatchExplanation("Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
+                setMatchExplanation(settings.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
             } else {
                 setMatchQuality(0);
                 setMatchLevel('red');
-                setMatchExplanation("Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
+                setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
             }
 
             if (settings.autoRedirect) {

@@ -247,6 +247,32 @@ export const generalSettingsSchema = z.object({
   // Show link quality gauge
   showLinkQualityGauge: z.boolean()
     .default(true),
+
+  // Match quality explanations
+  matchHighExplanation: z.string()
+    .min(1, "Text für hohe Übereinstimmung darf nicht leer sein")
+    .max(500, "Text für hohe Übereinstimmung ist zu lang")
+    .default("Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität."),
+
+  matchMediumExplanation: z.string()
+    .min(1, "Text für mittlere Übereinstimmung darf nicht leer sein")
+    .max(500, "Text für mittlere Übereinstimmung ist zu lang")
+    .default("Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter)."),
+
+  matchLowExplanation: z.string()
+    .min(1, "Text für niedrige Übereinstimmung darf nicht leer sein")
+    .max(500, "Text für niedrige Übereinstimmung ist zu lang")
+    .default("Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match)."),
+
+  matchRootExplanation: z.string()
+    .min(1, "Text für Startseiten-Übereinstimmung darf nicht leer sein")
+    .max(500, "Text für Startseiten-Übereinstimmung ist zu lang")
+    .default("Startseite erkannt. Direkte Weiterleitung auf die neue Domain."),
+
+  matchNoneExplanation: z.string()
+    .min(1, "Text für keine Übereinstimmung darf nicht leer sein")
+    .max(500, "Text für keine Übereinstimmung ist zu lang")
+    .default("Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet."),
     
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict(); // Prevent extra properties
