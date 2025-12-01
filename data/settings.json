@@ -1,7 +1,7 @@
 {
   "id": "fd19faba-b08a-4c83-b6eb-e101fba86607",
-  "headerTitle": "Smart Redirect Service",
-  "headerIcon": "ArrowRightLeft",
+  "headerTitle": "SmartRedirect Suite",
+  "headerIcon": "Info",
   "headerBackgroundColor": "#ffffff",
   "mainTitle": "URL veraltet - Aktualisierung erforderlich",
   "mainDescription": "Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen.",
@@ -13,7 +13,7 @@
   "urlComparisonBackgroundColor": "#ffffff",
   "oldUrlLabel": "Alte aufgerufene URL",
   "newUrlLabel": "Neue URL",
-  "defaultNewDomain": "https://newurlofdifferentapp.com/",
+  "defaultNewDomain": "https://new.example.com",
   "copyButtonText": "URL kopieren",
   "openButtonText": "In neuem Tab öffnen",
   "showUrlButtonText": "Zeige mir die neue URL",
@@ -32,6 +32,9 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2025-11-27T19:44:04.605Z",
-  "popupMode": "active"
+  "updatedAt": "2025-12-01T21:38:48.166Z",
+  "popupMode": "inline",
+  "showMatchIndicator": true,
+  "showLinkQualityGauge": true,
+  "headerLogoUrl": ""
 }
