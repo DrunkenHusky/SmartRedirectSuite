@@ -2278,6 +2278,42 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
+                      {/* 7. Automatische Weiterleitung */}
+                      <div className="space-y-6 mt-8">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-sm font-semibold">7</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
+                            <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                              <div>
+                                <p className="text-sm font-medium text-orange-800 dark:text-orange-200">Alle Weiterleitungen automatisch ausführen</p>
+                                <p className="text-xs text-orange-700 dark:text-orange-300">
+                                  Wenn aktiviert, werden alle Nutzer sofort auf die neue URL weitergeleitet, ohne die Migrationsseite zu sehen.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.autoRedirect}
+                              onCheckedChange={(checked) => {
+                                setPendingAutoRedirectValue(checked);
+                                if (checked) {
+                                  setShowAutoRedirectDialog(true);
+                                } else {
+                                  setGeneralSettings({ ...generalSettings, autoRedirect: false });
+                                }
+                              }}
+                              className="data-[state=checked]:bg-orange-600"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                     {/* Save Button */}
                     <div className="border-t pt-6 mt-8">
                       <div className="flex items-center justify-between">
