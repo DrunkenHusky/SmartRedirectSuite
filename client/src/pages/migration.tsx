@@ -215,16 +215,21 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         // Handle auto-redirect
         if (shouldAutoRedirect && redirectUrl && redirectUrl !== url) {
           // Track the redirect before redirecting
+          const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
+          const safeOldUrl = url.substring(0, 8000);
+          const safeRedirectUrl = redirectUrl.substring(0, 8000);
+          const safePath = path.substring(0, 8000);
+
           await fetch("/api/track", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              oldUrl: url,
-              newUrl: redirectUrl,
-              path: path,
+              oldUrl: safeOldUrl,
+              newUrl: safeRedirectUrl,
+              path: safePath,
               timestamp: new Date().toISOString(),
-              userAgent: navigator.userAgent,
-              ruleId: foundRule?.id,
+              userAgent: safeUserAgent,
+              ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
             }),
           });
           
@@ -241,16 +246,22 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         setNewUrl(generatedNewUrl);
 
         // Track URL access - only track once per page load
+        // Truncate values to match schema limits
+        const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
+        const safeOldUrl = url.substring(0, 8000);
+        const safeNewUrl = generatedNewUrl.substring(0, 8000);
+        const safePath = path.substring(0, 8000);
+
         await fetch("/api/track", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            oldUrl: url,
-            newUrl: generatedNewUrl,
-            path: path,
+            oldUrl: safeOldUrl,
+            newUrl: safeNewUrl,
+            path: safePath,
             timestamp: new Date().toISOString(),
-            userAgent: navigator.userAgent,
-            ruleId: foundRule?.id,
+            userAgent: safeUserAgent,
+            ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
           }),
         });
 
