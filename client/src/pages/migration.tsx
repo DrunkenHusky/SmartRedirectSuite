@@ -25,6 +25,7 @@ import {
 import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordModal } from "@/components/ui/password-modal";
+import { QualityGauge } from "@/components/ui/quality-gauge";
 import { useQuery } from "@tanstack/react-query";
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -67,6 +68,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [currentUrl, setCurrentUrl] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [matchingRule, setMatchingRule] = useState<UrlRule | null>(null);
+  const [matchQuality, setMatchQuality] = useState(0);
+  const [matchLevel, setMatchLevel] = useState<'red' | 'yellow' | 'green'>('red');
   const [infoText, setInfoText] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMainDialog, setShowMainDialog] = useState(false);
@@ -156,22 +159,29 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         let generatedNewUrl = "";
         
         if (ruleResponse.ok) {
-          const { rule, hasMatch } = await ruleResponse.json();
+          const { rule, hasMatch, matchQuality: quality, matchLevel: level } = await ruleResponse.json();
           
           if (hasMatch && rule) {
             foundRule = rule;
+            setMatchQuality(quality || 0);
+            setMatchLevel(level || 'red');
             // Check rule-specific auto-redirect first, then fall back to global setting
             shouldAutoRedirect = rule.autoRedirect || settings.autoRedirect || false;
             redirectUrl = generateUrlWithRule(url, rule, settings.defaultNewDomain);
             generatedNewUrl = redirectUrl;
-          } else if (settings.autoRedirect) {
-            // No matching rule, but global auto-redirect is enabled
-            shouldAutoRedirect = true;
-            redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
-            generatedNewUrl = redirectUrl;
           } else {
-            // No auto-redirect, generate URL for display
-            generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+            // No match
+            setMatchQuality(0);
+            setMatchLevel('red');
+            if (settings.autoRedirect) {
+               // No matching rule, but global auto-redirect is enabled
+               shouldAutoRedirect = true;
+               redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
+               generatedNewUrl = redirectUrl;
+            } else {
+               // No auto-redirect, generate URL for display
+               generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+            }
           }
         } else if (settings.autoRedirect) {
           // Fallback to global auto-redirect if rule check fails
@@ -356,18 +366,25 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         <CheckCircle className="inline text-green-500 mr-2" />
                         {settings?.newUrlLabel || "Neue URL (verwenden Sie diese)"}
                       </label>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-help">
-                            <code className="text-sm text-green-800 break-all">
-                              {newUrl}
-                            </code>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>So sieht die neue Ziel-URL aus</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                <div className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-help h-full flex items-center">
+                                    <code className="text-sm text-green-800 break-all">
+                                    {newUrl}
+                                    </code>
+                                </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                <p>So sieht die neue Ziel-URL aus</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <div className="flex-shrink-0">
+                            <QualityGauge score={matchQuality} level={matchLevel} />
+                        </div>
+                      </div>
                     </div>
 
 
