@@ -1,3 +1,21 @@
+# [2.5.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.4.0...v2.5.0) (2025-12-01)
+
+
+### Features
+
+* enhance API security and increase import limit ([befda0a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/befda0ae8fc0cc1edc5517e6db908a82919d00c7))
+
+# [2.4.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.3.2...v2.4.0) (2025-12-01)
+
+
+### Features
+
+* add match quality gauge and move settings ([6b42eb3](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/6b42eb3694de5803e6f3c6686c1a6e26d3ac33f9))
+* add match quality gauge and refactor settings ([167c33f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/167c33f58d1c59a042497e10ff05d2f956167ffc))
+* harden application security against OWASP Top 10 risks ([ed05ee5](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ed05ee59ba51f4abf9e4aae0d3a1f454687b2c43))
+* show clickable rule link in tracking statistics ([13a4e08](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/13a4e084e5919b597083f46a553204531c081bde))
+* show clickable rule link in tracking statistics ([e34632f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e34632fb521f0aaef184a8f66bb6a71f34a9a0c5))
+
 ## [2.3.2](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.3.1...v2.3.2) (2025-11-27)
 
 
