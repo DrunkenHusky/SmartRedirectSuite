@@ -32,8 +32,13 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2025-12-01T21:38:48.166Z",
+  "updatedAt": "2025-12-01T22:31:54.938Z",
   "popupMode": "inline",
   "showLinkQualityGauge": true,
-  "headerLogoUrl": ""
+  "headerLogoUrl": "",
+  "matchHighExplanation": "Die neue URL wurde gefunden und korrekt zugeordnet.",
+  "matchMediumExplanation": "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Link-Parameter).",
+  "matchLowExplanation": "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
+  "matchRootExplanation": "Startseite erkannt. Direkte Weiterleitung auf die neue Seite.",
+  "matchNoneExplanation": "Die URL konnte nicht spezifisch zugeordnet werden. Bitte nutzen Sie die Suche der neuen Applikation."
 }
