@@ -1,3 +1,10 @@
+## [2.7.2](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.1...v2.7.2) (2025-12-01)
+
+
+### Bug Fixes
+
+* **server:** prevent console.error crash on error inspection ([b2de90e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b2de90ea018c591573dbb4dee9a01217af889f5d))
+
 ## [2.7.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.0...v2.7.1) (2025-12-01)
 
 
