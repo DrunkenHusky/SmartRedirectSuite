@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.4.0...v2.5.0) (2025-12-01)
+
+
+### Features
+
+* enhance API security and increase import limit ([befda0a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/befda0ae8fc0cc1edc5517e6db908a82919d00c7))
+
 # [2.4.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.3.2...v2.4.0) (2025-12-01)
 
 
