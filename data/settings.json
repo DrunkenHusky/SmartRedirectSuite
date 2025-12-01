@@ -34,7 +34,6 @@
   "autoRedirect": false,
   "updatedAt": "2025-12-01T21:38:48.166Z",
   "popupMode": "inline",
-  "showMatchIndicator": true,
   "showLinkQualityGauge": true,
   "headerLogoUrl": ""
 }
