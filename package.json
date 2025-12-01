@@ -1,6 +1,6 @@
 {
   "name": "smartredirectsuite",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -28,7 +28,7 @@
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
-    "cross-env": "^10.0.0",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.2.1",
     "esbuild": "^0.25.0",
     "express": "^4.21.2",
@@ -47,6 +47,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@tailwindcss/vite": "^4.1.3",

@@ -16,7 +16,7 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { selectMostSpecificRule } from "@shared/ruleMatching";
+import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 
@@ -165,12 +165,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Rules loaded from storage with pre-processing (server/storage.ts#getProcessedUrlRules)
       const rules = await storage.getProcessedUrlRules(config);
 
-      // Normalization and specificity prioritization handled by selectMostSpecificRule
-      const matchingRule = selectMostSpecificRule(path, rules, config);
+      // Normalization and specificity prioritization handled by findMatchingRule
+      const matchDetails = findMatchingRule(path, rules, config);
 
       res.json({
-        rule: matchingRule || null,
-        hasMatch: !!matchingRule,
+        rule: matchDetails?.rule || null,
+        hasMatch: !!matchDetails,
+        matchQuality: matchDetails?.quality || 0,
+        matchLevel: matchDetails?.level || 'red'
       });
     } catch (error) {
       console.error("Rule check error:", error);

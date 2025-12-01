@@ -20,7 +20,7 @@ app.set('trust proxy', true);
 
 // Configure body parsers with specific limits
 const defaultLimit = '1mb';
-const importLimit = '500mb'; // Increased to 500mb as requested
+const importLimit = '500mb'; // Increased to 500mb as request
 
 // Middleware to select limit based on path
 const jsonMiddleware = express.json({ limit: defaultLimit });

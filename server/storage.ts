@@ -78,7 +78,7 @@ export interface IStorage {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
   ): Promise<{
-    entries: UrlTracking[];
+    entries: (UrlTracking & { rule?: UrlRule })[];
     total: number;
     totalPages: number;
     currentPage: number;
@@ -609,7 +609,7 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
   ): Promise<{
-    entries: UrlTracking[];
+    entries: (UrlTracking & { rule?: UrlRule })[];
     total: number;
     totalPages: number;
     currentPage: number;
@@ -666,8 +666,19 @@ export class FileStorage implements IStorage {
     const endIndex = startIndex + limit;
     const paginatedEntries = filteredEntries.slice(startIndex, endIndex);
 
+    // Enrich with rule information
+    const rules = await this.getUrlRules();
+    const rulesMap = new Map(rules.map((r) => [r.id, r]));
+
+    const enrichedEntries = paginatedEntries.map((entry) => {
+      if (entry.ruleId && rulesMap.has(entry.ruleId)) {
+        return { ...entry, rule: rulesMap.get(entry.ruleId) };
+      }
+      return entry;
+    });
+
     return {
-      entries: paginatedEntries,
+      entries: enrichedEntries,
       total,
       totalPages,
       currentPage: page,
