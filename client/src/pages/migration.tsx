@@ -205,6 +205,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               path: path,
               timestamp: new Date().toISOString(),
               userAgent: navigator.userAgent,
+              ruleId: foundRule?.id,
             }),
           });
           
@@ -230,6 +231,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             path: path,
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
+            ruleId: foundRule?.id,
           }),
         });
 
