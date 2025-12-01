@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(rule);
       }
     } catch (error) {
-      console.error("Create rule error:", error);
+      console.error("Create rule error:", error instanceof Error ? error.message : String(error));
       if (error instanceof Error) {
         // Extract clean error message from Zod validation errors
         let cleanMessage = error.message;
@@ -387,7 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(rule);
     } catch (error) {
-      console.error("Update rule error:", error);
+      console.error("Update rule error:", error instanceof Error ? error.message : String(error));
       if (error instanceof Error) {
         // Extract clean error message from Zod validation errors
         let cleanMessage = error.message;
