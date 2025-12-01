@@ -16,7 +16,7 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { findMatchingRule } from "@shared/ruleMatching";
+import { findMatchingRule, constructTargetUrl } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 
@@ -168,11 +168,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Normalization and specificity prioritization handled by findMatchingRule
       const matchDetails = findMatchingRule(path, rules, config);
 
+      // Construct the redirect URL server-side
+      const redirectUrl = constructTargetUrl(
+        path,
+        matchDetails,
+        settings.defaultNewDomain,
+        config
+      );
+
       res.json({
         rule: matchDetails?.rule || null,
         hasMatch: !!matchDetails,
         matchQuality: matchDetails?.quality || 0,
-        matchLevel: matchDetails?.level || 'red'
+        matchLevel: matchDetails?.level || 'red',
+        redirectUrl
       });
     } catch (error) {
       console.error("Rule check error:", error);

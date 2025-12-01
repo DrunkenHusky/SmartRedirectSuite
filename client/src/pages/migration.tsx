@@ -160,7 +160,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         let generatedNewUrl = "";
         
         if (ruleResponse.ok) {
-          const { rule, hasMatch, matchQuality: quality, matchLevel: level } = await ruleResponse.json();
+          const { rule, hasMatch, matchQuality: quality, matchLevel: level, redirectUrl: serverRedirectUrl } = await ruleResponse.json();
           
           if (hasMatch && rule) {
             foundRule = rule;
@@ -177,7 +177,9 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
             // Check rule-specific auto-redirect first, then fall back to global setting
             shouldAutoRedirect = rule.autoRedirect || settings.autoRedirect || false;
-            redirectUrl = generateUrlWithRule(url, rule, settings.defaultNewDomain);
+
+            // Use server-provided redirect URL
+            redirectUrl = serverRedirectUrl;
             generatedNewUrl = redirectUrl;
           } else {
             // No match
@@ -192,14 +194,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 setMatchExplanation("Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
             }
 
+            // If server returned a redirect URL (fallback), use it. Otherwise generate fallback locally.
+            redirectUrl = serverRedirectUrl || generateNewUrl(url, settings.defaultNewDomain);
+            generatedNewUrl = redirectUrl;
+
             if (settings.autoRedirect) {
-               // No matching rule, but global auto-redirect is enabled
                shouldAutoRedirect = true;
-               redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
-               generatedNewUrl = redirectUrl;
-            } else {
-               // No auto-redirect, generate URL for display
-               generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
             }
           }
         } else if (settings.autoRedirect) {

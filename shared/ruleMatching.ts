@@ -28,8 +28,9 @@ export interface MatchDetails {
   score: number;
   quality: number; // 0-100
   level: 'red' | 'yellow' | 'green';
+  matchStartIndex: number;
+  matchLength: number;
   debug?: {
-    start: number;
     hasExtraQuery: boolean;
     isExact: boolean;
   };
@@ -227,6 +228,7 @@ export function findMatchingRule(
   // Calculate Match Quality
   let quality = 100;
   const start = best.start;
+  const matchLength = best.staticSegments + best.wildcards;
   const ruleQuery = best.ruleQuery;
 
   // Check for extra query params
@@ -259,8 +261,9 @@ export function findMatchingRule(
     score: best.score,
     quality,
     level,
+    matchStartIndex: start,
+    matchLength: matchLength,
     debug: {
-        start,
         hasExtraQuery,
         isExact: start === 0 && !hasExtraQuery && best.staticSegments === reqPath.length
     }
@@ -274,4 +277,86 @@ export function selectMostSpecificRule(
 ): UrlRule | null {
   const match = findMatchingRule(requestUrl, rules, config);
   return match ? match.rule : null;
+}
+
+/**
+ * Constructs the target URL based on the match details and the original request URL.
+ * This ensures consistency between rule matching and URL generation.
+ */
+export function constructTargetUrl(
+  requestUrl: string,
+  matchDetails: MatchDetails | null,
+  defaultNewDomain: string,
+  config: RuleMatchingConfig = RULE_MATCHING_CONFIG
+): string {
+  // If no match, fallback to domain replacement
+  if (!matchDetails) {
+    // Basic domain replacement logic
+    const u = new URL(requestUrl, "http://example.com");
+    // Ensure we use the full path including search and hash
+    // If requestUrl was absolute, use its path. If relative, use as is.
+
+    // We need to handle potential relative URLs or absolute URLs
+    // Let's assume requestUrl can be full or relative path
+    let path = u.pathname + u.search + u.hash;
+
+    // If requestUrl was actually full URL, we might want to respect that?
+    // But usually we just take the path/query/hash and append to defaultNewDomain
+
+    // Clean defaultNewDomain
+    const base = defaultNewDomain.replace(/\/$/, "");
+    return base + path;
+  }
+
+  const { rule, matchStartIndex, matchLength } = matchDetails;
+
+  if (rule.mode === "COMPLETE") {
+    // Complete mode: completely replace with targetUrl
+    return rule.targetUrl!;
+  }
+
+  // Partial mode
+  // We need to reconstruct the path based on the match
+  const reqUrl = new URL(requestUrl, "http://example.com");
+  const reqPathSegments = normalizePath(reqUrl.pathname, config);
+
+  // Use explicit match details from finding process
+  const start = matchStartIndex;
+
+  // Construct new path
+  // Segments before match
+  const prefixSegments = reqPathSegments.slice(0, start);
+
+  // Segments after match
+  const suffixSegments = reqPathSegments.slice(start + matchLength);
+
+  // Target path from rule
+  const targetPath = rule.targetUrl || "";
+  // Ensure target path is clean (no leading/trailing slashes if we are joining)
+  // But wait, targetUrl might be absolute or relative path?
+  // Schema says targetUrl for PARTIAL is usually a path.
+
+  // If targetUrl is absolute, we should probably treat it as a new base?
+  // But PARTIAL usually implies path replacement.
+
+  // Let's assume targetUrl is a path.
+  // We must NOT normalize casing for the target path, as it dictates the output.
+  // We use a temporary config forcing case sensitivity for the target path processing.
+  const targetConfig = { ...config, CASE_SENSITIVITY_PATH: true };
+  const targetPathSegments = normalizePath(targetPath, targetConfig); // This strips slashes but keeps case
+
+  // Combine: Prefix + Target + Suffix
+  const newPathSegments = [...prefixSegments, ...targetPathSegments, ...suffixSegments];
+
+  const newPath = "/" + newPathSegments.join("/");
+
+  // Base Domain
+  const base = defaultNewDomain.replace(/\/$/, "");
+
+  // Append Query and Hash from original request
+  // (Unless they were part of the match? The logic says "additional segments, parameters and anchors are appended")
+  // For parameters: we preserve all parameters unless we want to filter them?
+  // The current simple logic preserves all.
+
+  return base + newPath + reqUrl.search + reqUrl.hash;
 }
