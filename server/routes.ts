@@ -19,6 +19,7 @@ import path from "path";
 import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
+import { ImportExportService } from "./import-export";
 
 
 
@@ -620,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import rules
+  // Import rules (Old route kept for compatibility but it clears all rules)
   app.post("/api/admin/import", requireAuth, async (req, res) => {
     try {
       const { rules } = req.body;
@@ -848,6 +849,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- New Import/Export Routes ---
+
+  // Preview import file
+  app.post("/api/admin/import/preview", requireAuth, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+
+      const buffer = await import('fs/promises').then(fs => fs.readFile(req.file!.path));
+      const rawRules = ImportExportService.parseFile(buffer, req.file.originalname);
+      const parsedResults = ImportExportService.normalizeRules(rawRules);
+
+      // Clean up temp file
+      await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
+
+      res.json({
+        total: parsedResults.length,
+        preview: parsedResults.slice(0, 10), // Send first 10 for preview
+        all: parsedResults, // Send all to client (for now, assuming it handles it, or client can paginate if needed)
+        counts: {
+          new: parsedResults.filter(r => r.status === 'new').length,
+          update: parsedResults.filter(r => r.status === 'update').length,
+          invalid: parsedResults.filter(r => r.status === 'invalid').length
+        }
+      });
+    } catch (error) {
+      console.error("Import preview error:", error);
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to parse file" });
+    }
+  });
+
+  // Export rules as CSV/Excel
+  app.get("/api/admin/export/rules", requireAuth, async (req, res) => {
+    try {
+      const format = (req.query.format as string || 'json').toLowerCase();
+      const rules = await storage.getUrlRules();
+
+      if (format === 'csv') {
+        const csv = ImportExportService.generateCSV(rules);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="rules.csv"');
+        res.send(csv);
+      } else if (format === 'xlsx' || format === 'excel') {
+        const buffer = ImportExportService.generateExcel(rules);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="rules.xlsx"');
+        res.send(buffer);
+      } else {
+        // Default to JSON
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
+        res.json(rules);
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      res.status(500).json({ error: "Failed to export rules" });
+    }
+  });
 
 
   const httpServer = createServer(app);
