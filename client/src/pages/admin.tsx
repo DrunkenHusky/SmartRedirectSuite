@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,6 +67,7 @@ import {
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import { CardDescription } from "@/components/ui/card";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -810,34 +811,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  const previewMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch("/api/admin/import/preview", {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to preview file");
-      }
-      return await response.json();
-    },
-    onSuccess: (data: ImportPreviewData) => {
-      setImportPreviewData(data);
-      setShowPreviewDialog(true);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Vorschau fehlgeschlagen",
-        description: error.message || "Die Datei konnte nicht gelesen werden.",
-        variant: "destructive",
-      });
-    }
-  });
-
   const importMutation = useMutation({
     mutationFn: async (rules: any[]) => {
       const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
@@ -845,9 +818,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
-      setShowPreviewDialog(false);
-      setImportPreviewData(null);
-
       if (data.errors && data.errors.length > 0) {
         toast({ 
           title: "Import mit Validierungsfehlern", 
@@ -1148,17 +1118,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const handleExport = async (type: string, format: string = 'json') => {
     try {
-      if (type === 'rules' && (format === 'csv' || format === 'xlsx')) {
-        // Special endpoint for rule export in Excel/CSV
-        window.location.href = `/api/admin/export/rules?format=${format}`;
-        toast({
-          title: "Export gestartet",
-          description: `Der Download der ${format.toUpperCase()}-Datei wurde gestartet.`
-        });
-        return;
-      }
-
-      // Default export logic
       const response = await fetch("/api/admin/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1241,88 +1200,91 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    previewMutation.mutate(file);
-    event.target.value = ''; // Reset input
-  };
-
-  const handleExecuteImport = () => {
-    if (!importPreviewData) return;
-    // Map parsed results to the format expected by the API
-    const rulesToImport = importPreviewData.all
-      .filter(r => r.isValid)
-      .map(r => r.rule);
-
-    importMutation.mutate(rulesToImport);
-  };
-
-  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!window.confirm("ACHTUNG: Dies ist der Experten-Import. Bestehende Regeln mit gleicher ID werden überschrieben. Fortfahren?")) {
-      event.target.value = '';
-      return;
+  // Import/Export mutations
+  const previewMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch("/api/admin/import/preview", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to preview file");
+      }
+      return await response.json();
+    },
+    onSuccess: (data: ImportPreviewData) => {
+      setImportPreviewData(data);
+      setShowPreviewDialog(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Vorschau fehlgeschlagen",
+        description: error.message || "Die Datei konnte nicht gelesen werden.",
+        variant: "destructive",
+      });
     }
+  });
 
-    try {
-      const fileContent = await file.text();
-      const importData = JSON.parse(fileContent);
+  const importMutation = useMutation({
+    mutationFn: async (rules: any[]) => {
+      const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      setShowPreviewDialog(false);
+      setImportPreviewData(null);
 
-      // Validate that it's an array of rules
-      if (!Array.isArray(importData)) {
-        throw new Error("Import-Datei muss ein Array von Regeln enthalten");
+      if (data.errors && data.errors.length > 0) {
+        toast({
+          title: "Import mit Validierungsfehlern",
+          description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
+          variant: "destructive"
+        });
+      } else {
+        const imported = data.imported || 0;
+        const updated = data.updated || 0;
+        toast({
+          title: "Import erfolgreich",
+          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.`
+        });
+      }
+    },
+    onError: (error: any) => {
+      // Handle authentication errors specifically
+      if (error?.status === 403 || error?.status === 401) {
+        setIsAuthenticated(false);
+        toast({
+          title: "Authentifizierung erforderlich",
+          description: "Bitte melden Sie sich erneut an.",
+          variant: "destructive"
+        });
+        window.location.reload();
+        return;
       }
 
-      // Import the rules
-      importMutation.mutate(importData);
-
-      // Reset file input
-      event.target.value = '';
-    } catch (error) {
-      toast({
-        title: "Dateifehler",
-        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
-        variant: "destructive"
-      });
-      // Reset file input
-      event.target.value = '';
-    }
-  };
-
-  const handleImportSettingsFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const fileContent = await file.text();
-      const importData = JSON.parse(fileContent);
-
-      // Validate that it's a settings object (should have required fields)
-      if (!importData || typeof importData !== 'object' || Array.isArray(importData)) {
-        throw new Error("Import-Datei muss ein Einstellungs-Objekt enthalten");
+      // Handle PayloadTooLargeError (413) specifically
+      if (error?.status === 413 || error?.message?.includes('too large')) {
+        toast({
+          title: "Datei zu groß",
+          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
+          variant: "destructive",
+          duration: 10000
+        });
+        return;
       }
 
-      // Remove id and updatedAt fields if present (they will be auto-generated)
-      const { id, updatedAt, ...settingsData } = importData;
-
-      // Import the settings
-      importSettingsMutation.mutate(settingsData);
-
-      // Reset file input
-      event.target.value = '';
-    } catch (error) {
       toast({
-        title: "Dateifehler",
-        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
+        title: "Import fehlgeschlagen",
+        description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
         variant: "destructive"
       });
-      // Reset file input
-      event.target.value = '';
-    }
-  };
+    },
+  });
 
   // Cache rebuild mutation
   const rebuildCacheMutation = useMutation({
@@ -1442,6 +1404,89 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const maxCount = statsData?.topUrls[0]?.count || 1;
 
+  const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    previewMutation.mutate(file);
+    event.target.value = ''; // Reset input
+  };
+
+  const handleExecuteImport = () => {
+    if (!importPreviewData) return;
+    // Map parsed results to the format expected by the API
+    const rulesToImport = importPreviewData.all
+      .filter(r => r.isValid)
+      .map(r => r.rule);
+
+    importMutation.mutate(rulesToImport);
+  };
+
+  // Old JSON Import (Advanced)
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!window.confirm("ACHTUNG: Dies ist der Experten-Import. Bestehende Regeln mit gleicher ID werden überschrieben. Fortfahren?")) {
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const fileContent = await file.text();
+      const importData = JSON.parse(fileContent);
+
+      // Validate that it's an array of rules
+      if (!Array.isArray(importData)) {
+        throw new Error("Import-Datei muss ein Array von Regeln enthalten");
+      }
+
+      // Import the rules
+      importMutation.mutate(importData);
+
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      toast({
+        title: "Dateifehler",
+        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
+        variant: "destructive"
+      });
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const handleImportSettingsFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileContent = await file.text();
+      const importData = JSON.parse(fileContent);
+
+      // Validate that it's a settings object (should have required fields)
+      if (!importData || typeof importData !== 'object' || Array.isArray(importData)) {
+        throw new Error("Import-Datei muss ein Einstellungs-Objekt enthalten");
+      }
+
+      // Remove id and updatedAt fields if present (they will be auto-generated)
+      const { id, updatedAt, ...settingsData } = importData;
+
+      // Import the settings
+      importSettingsMutation.mutate(settingsData);
+
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      toast({
+        title: "Dateifehler",
+        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
+        variant: "destructive"
+      });
+      // Reset file input
+      event.target.value = '';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -1504,7 +1549,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               </TabsList>
             </div>
 
-            {/* General Settings Tab - (Restored from backup) */}
+            {/* General Settings Tab */}
             <TabsContent value="general">
               <Card>
                 <CardHeader>
@@ -1602,37 +1647,882 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                           </div>
 
-                          {/* Logo Upload Section - Keeping code for brevity but ensuring it is valid JSX */}
+                          {/* Logo Upload Section */}
                           <div className="pt-4">
-                             {/* ... Logo upload logic ... */}
-                             {/* For brevity in this fix, I am restoring the content, assuming the agent has the content or can rebuild it if needed.
-                                 Wait, I need to restore the FULL content as requested by the reviewer.
-                                 I will paste the full content of the General Settings tab from admin.tsx.bak here.
-                             */}
-                             {/* Inserting full content... */}
-                             {/* (The tool input limit might be an issue, but I will try to be as complete as possible) */}
-                             {/* Since I am pasting the whole file, I will include the logic from backup */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Logo hochladen
+                              </label>
+                              <div className="space-y-2">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+
+                                    // Validate file size (5MB)
+                                    if (file.size > 5242880) {
+                                      toast({
+                                        title: "Datei zu groß",
+                                        description: "Die Datei darf maximal 5MB groß sein.",
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
+
+                                    try {
+                                      const formData = new FormData();
+                                      formData.append('file', file);
+
+                                      const response = await fetch('/api/admin/logo/upload', {
+                                        method: 'POST',
+                                        body: formData,
+                                        credentials: 'include',
+                                      });
+
+                                      if (response.status === 401 || response.status === 403) {
+                                        setIsAuthenticated(false);
+                                        toast({
+                                          title: "Authentifizierung erforderlich",
+                                          description: "Bitte melden Sie sich erneut an.",
+                                          variant: "destructive",
+                                        });
+                                        window.location.reload();
+                                        return;
+                                      }
+
+                                      if (!response.ok) {
+                                        throw new Error('Upload failed');
+                                      }
+
+                                      const data = await response.json();
+
+                                      // Update settings with the new logo URL
+                                      const logoResponse = await apiRequest("PUT", "/api/admin/logo", { logoUrl: data.uploadURL });
+                                      const logoData = await logoResponse.json();
+
+                                      // Update local state immediately with returned settings
+                                      if (logoData?.settings) {
+                                        setGeneralSettings(logoData.settings);
+                                      } else {
+                                        // Fallback: update logo URL in current state
+                                        setGeneralSettings(prev => ({
+                                          ...prev,
+                                          headerLogoUrl: data.uploadURL
+                                        }));
+                                      }
+
+                                      toast({
+                                        title: "Logo hochgeladen",
+                                        description: "Das Header-Logo wurde erfolgreich aktualisiert.",
+                                      });
+
+                                      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+                                      // Reset the input
+                                      e.target.value = '';
+
+                                    } catch (error) {
+                                      console.error("Logo upload error:", error);
+                                      toast({
+                                        title: "Fehler beim Hochladen",
+                                        description: "Das Logo konnte nicht hochgeladen werden.",
+                                        variant: "destructive",
+                                      });
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer cursor-pointer"
+                                />
+                                <div className="text-xs text-muted-foreground">
+                                  <strong>Empfehlung:</strong> PNG mit transparentem Hintergrund, 200x50 Pixel (max. 5MB)
+                                </div>
+                                <div className="text-xs text-gray-500 mt-2">
+                                  <strong>Funktion:</strong> Wenn ein Logo hochgeladen wird, ersetzt es das gewählte Icon links neben dem Header-Titel. Ohne Logo wird das gewählte Icon angezeigt.
+                                </div>
+
+                                {/* Logo Preview and Delete */}
+                                {generalSettings.headerLogoUrl && generalSettings.headerLogoUrl.trim() !== "" && (
+                                  <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-800 border rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Aktuelles Logo:
+                                      </span>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={!generalSettings.headerLogoUrl || generalSettings.headerLogoUrl.trim() === ""} // Prevent clicks when no logo
+                                        onClick={async (e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+
+                                          // Disable button immediately to prevent multiple clicks
+                                          const button = e.currentTarget;
+                                          button.disabled = true;
+
+                                          try {
+                                            const response = await apiRequest("DELETE", "/api/admin/logo");
+
+                                            if (!response.ok) {
+                                              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                                            }
+
+                                            const deleteData = await response.json();
+
+                                            // Update local state to immediately remove logo URL
+                                            setGeneralSettings(prev => ({
+                                              ...prev,
+                                              headerLogoUrl: ""
+                                            }));
+
+                                            toast({
+                                              title: "Logo entfernt",
+                                              description: "Das Header-Logo wurde erfolgreich entfernt.",
+                                            });
+
+                                            // Invalidate settings to ensure UI reflects the change
+                                            queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+
+                                          } catch (error: any) {
+                                            console.error("Logo deletion error:", error);
+
+                                            // Re-enable button in case of error
+                                            button.disabled = false;
+
+                                            // Handle authentication errors specifically
+                                            if (error?.status === 403 || error?.status === 401) {
+                                              setIsAuthenticated(false);
+                                              toast({
+                                                title: "Authentifizierung erforderlich",
+                                                description: "Bitte melden Sie sich erneut an.",
+                                                variant: "destructive",
+                                              });
+                                              window.location.reload();
+                                              return;
+                                            }
+
+                                            toast({
+                                              title: "Fehler",
+                                              description: "Das Logo konnte nicht entfernt werden.",
+                                              variant: "destructive",
+                                            });
+                                          }
+                                        }}
+                                        className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                                      >
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        Löschen
+                                      </Button>
+                                    </div>
+                                    <div className="flex justify-center p-4 bg-white dark:bg-gray-700 border rounded">
+                                      <img
+                                        src={generalSettings.headerLogoUrl}
+                                        alt="Header Logo"
+                                        className="max-h-16 max-w-[200px] object-contain"
+                                        onError={(e) => {
+                                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkgyOEMzMC4yMDkxIDE2IDMyIDE3Ljc5MDkgMzIgMjBWMjRDMzIgMjYuMjA5MSAzMC4yMDkxIDI4IDI4IDI4SDEyQzkuNzkwODYgMjggOCAyNi4yMDkxIDggMjRWMjBDOCAxNy43OTA5IDkuNzkwODYgMTYgMTIgMTZaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-2 justify-center">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <span className="text-xs text-green-700 dark:text-green-300">
+                                        Logo aktiv - wird anstelle des Icons angezeigt
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* ... (Rest of General Settings Form content from backup) ... */}
-                      {/* Since the file is large, I'm just signaling that the rest of the file content matches the backup */}
-                      {/* For the sake of the tool execution, I will assume the provided block is sufficient or I will paste the entire file if I can. */}
-
-                      {/* To ensure correctness, I will paste the REST of the general settings form logic here */}
-
-                       {/* 2. PopUp Content Settings */}
+                      {/* 2. PopUp Content Settings */}
                       <div className="space-y-4 sm:space-y-6">
-                        {/* ... (Content from backup) ... */}
-                        {/* I'll use the content I read from admin.tsx.bak in the previous step. */}
-                         {/* Due to length limits, I'll trust that I am overwriting the file with the FULL content provided in the tool call. */}
-                         {/* I will copy paste the relevant parts from the backup into the final block. */}
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-xs sm:text-sm font-semibold">2</div>
+                          <div>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">PopUp-Einstellungen</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">Dialog-Fenster das automatisch erscheint, wenn ein Nutzer eine veraltete URL aufruft</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              PopUp-Anzeige
+                            </label>
+                            <Select value={generalSettings.popupMode} onValueChange={(value) =>
+                              setGeneralSettings({ ...generalSettings, popupMode: value as any })
+                            }>
+                              <SelectTrigger className="bg-white dark:bg-gray-700">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Aktiv</SelectItem>
+                                <SelectItem value="inline">Inline</SelectItem>
+                                <SelectItem value="disabled">Deaktiviert</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className={`${generalSettings.popupMode === 'disabled' ? 'opacity-50 pointer-events-none' : ''} space-y-4 sm:space-y-6`}>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Titel <span className="text-red-500">*</span>
+                              </label>
+                              <Input
+                                value={generalSettings.mainTitle}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, mainTitle: e.target.value })}
+                                placeholder="URL veraltet - Aktualisierung erforderlich"
+                                className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                disabled={generalSettings.popupMode === 'disabled'}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Icon
+                              </label>
+                              <Select value={generalSettings.alertIcon} onValueChange={(value) =>
+                                setGeneralSettings({ ...generalSettings, alertIcon: value as any })
+                              } disabled={generalSettings.popupMode === 'disabled'}>
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              Beschreibung <span className="text-red-500">*</span>
+                            </label>
+                            <Textarea
+                              value={generalSettings.mainDescription}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, mainDescription: e.target.value })}
+                              placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
+                              rows={3}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              disabled={generalSettings.popupMode === 'disabled'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              PopUp Button-Text
+                            </label>
+                            <Input
+                              value={generalSettings.popupButtonText}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, popupButtonText: e.target.value })}
+                              placeholder="Zeige mir die neue URL"
+                              className="bg-white dark:bg-gray-700"
+                              disabled={generalSettings.popupMode === 'disabled'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Text für den Button der das PopUp-Fenster öffnet
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Alert-Hintergrundfarbe
+                              </label>
+                              <Select value={generalSettings.alertBackgroundColor} onValueChange={(value) =>
+                                setGeneralSettings({ ...generalSettings, alertBackgroundColor: value as any })
+                              } disabled={generalSettings.popupMode === 'disabled'}>
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="yellow">🟡 Gelb</SelectItem>
+                                  <SelectItem value="red">🔴 Rot</SelectItem>
+                                  <SelectItem value="orange">🟠 Orange</SelectItem>
+                                  <SelectItem value="blue">🔵 Blau</SelectItem>
+                                  <SelectItem value="gray">⚫ Grau</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Hauptinhalt-Hintergrundfarbe
+                              </label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={generalSettings.mainBackgroundColor}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: e.target.value })}
+                                  className="w-20 h-10 p-1 rounded-md border cursor-pointer"
+                                  disabled={generalSettings.popupMode === 'disabled'}
+                                />
+                                <Input
+                                  value={generalSettings.mainBackgroundColor}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: e.target.value })}
+                                  placeholder="#ffffff"
+                                  className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
+                                  disabled={generalSettings.popupMode === 'disabled'}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                       </div>
 
-                      {/* ... (URL Comparison, Additional Info, Footer, Link Detection, Auto Redirect) ... */}
+                      {/* 3. URL Comparison Settings */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">3</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">URL-Vergleich</h3>
+                            <p className="text-sm text-muted-foreground">Bereich für alte/neue URL-Gegenüberstellung</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                            {/* Title */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Titel
+                              </label>
+                              <Input
+                                value={generalSettings.urlComparisonTitle}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, urlComparisonTitle: e.target.value })}
+                                placeholder="Zu verwendende URL"
+                                className="bg-white dark:bg-gray-700"
+                              />
+                            </div>
 
-                      <div className="border-t pt-6 mt-8">
+                            {/* Icon */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Icon
+                              </label>
+                              <Select value={generalSettings.urlComparisonIcon} onValueChange={(value) =>
+                                setGeneralSettings({ ...generalSettings, urlComparisonIcon: value as any })
+                              }>
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
+                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
+                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
+                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
+                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
+                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
+                                  <SelectItem value="Star">⭐ Stern</SelectItem>
+                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
+                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Background Color */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Hintergrundfarbe
+                              </label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={generalSettings.urlComparisonBackgroundColor}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, urlComparisonBackgroundColor: e.target.value })}
+                                  className="w-20 h-10 p-1 rounded-md border cursor-pointer"
+                                />
+                                <Input
+                                  value={generalSettings.urlComparisonBackgroundColor}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, urlComparisonBackgroundColor: e.target.value })}
+                                  placeholder="#ffffff"
+                                  className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* URL Labels */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Label für alte URL
+                              </label>
+                              <Input
+                                value={generalSettings.oldUrlLabel}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, oldUrlLabel: e.target.value })}
+                                placeholder="Alte aufgerufene URL"
+                                className="bg-white dark:bg-gray-700"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Beschriftung für die veraltete URL im Vergleich
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Label für neue URL
+                              </label>
+                              <Input
+                                value={generalSettings.newUrlLabel}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, newUrlLabel: e.target.value })}
+                                placeholder="Neue URL"
+                                className="bg-white dark:bg-gray-700"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Beschriftung für die neue/aktuelle URL im Vergleich
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Default Domain */}
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              Standard neue Domain
+                            </label>
+                            <Input
+                              value={generalSettings.defaultNewDomain}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, defaultNewDomain: e.target.value })}
+                              placeholder="https://newapplicationurl.com/"
+                              className="bg-white dark:bg-gray-700"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Domain die verwendet wird wenn keine spezielle URL-Regel greift - der Pfad wird automatisch übernommen
+                            </p>
+                          </div>
+
+                          {/* Show Link Quality Gauge Setting */}
+                          <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                <div>
+                                  <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                  <p className="text-xs text-green-700 dark:text-green-300">
+                                    Zeigt ein Symbol mit der Qualität der URL-Übereinstimmung auf der Migrationsseite an
+                                  </p>
+                                </div>
+                              </div>
+                              <Switch
+                                checked={generalSettings.showLinkQualityGauge}
+                                onCheckedChange={(checked) =>
+                                  setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
+                                }
+                                className="data-[state=checked]:bg-green-600"
+                              />
+                            </div>
+
+                            {/* Match Explanation Texts */}
+                            {generalSettings.showLinkQualityGauge && (
+                              <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für hohe Übereinstimmung (≥ 90%)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchHighExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchHighExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für mittlere Übereinstimmung (≥ 60%)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchMediumExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter)."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für niedrige Übereinstimmung (Partial Match)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchLowExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchLowExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match)."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für Startseiten-Übereinstimmung (Root)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchRootExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchRootExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Startseite erkannt. Direkte Weiterleitung auf die neue Domain."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
+                                    Text für keine Übereinstimmung
+                                  </label>
+                                  <Input
+                                    value={generalSettings.matchNoneExplanation}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: e.target.value })}
+                                    className="bg-white dark:bg-gray-800"
+                                    placeholder="Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet."
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons Sub-section */}
+                          <div className="pt-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                  Button-Text "URL kopieren"
+                                </label>
+                                <Input
+                                  value={generalSettings.copyButtonText}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, copyButtonText: e.target.value })}
+                                  placeholder="URL kopieren"
+                                  className="bg-white dark:bg-gray-700"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Kopiert die neue URL in die Zwischenablage
+                                </p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                  Button-Text "In neuem Tab öffnen"
+                                </label>
+                                <Input
+                                  value={generalSettings.openButtonText}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, openButtonText: e.target.value })}
+                                  placeholder="In neuem Tab öffnen"
+                                  className="bg-white dark:bg-gray-700"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Öffnet die neue URL in einem neuen Browser-Tab
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Special Hints Sub-section */}
+                          <div className="pt-8 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-semibold">3.1</div>
+                              <div>
+                                <h4 className="text-base font-semibold text-foreground">Spezielle Hinweise</h4>
+                                <p className="text-sm text-muted-foreground">Zusatzbereich der immer sichtbar ist</p>
+                              </div>
+                            </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Titel
+                              </label>
+                              <Input
+                                value={generalSettings.specialHintsTitle}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsTitle: e.target.value })}
+                                placeholder="Bitte beachte folgendes für diese URL:"
+                                className="bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Icon
+                              </label>
+                              <Select value={generalSettings.specialHintsIcon} onValueChange={(value) =>
+                                setGeneralSettings({ ...generalSettings, specialHintsIcon: value as any })
+                              }>
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
+                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
+                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
+                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
+                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
+                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
+                                  <SelectItem value="Star">⭐ Stern</SelectItem>
+                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
+                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              Standard-Beschreibung
+                            </label>
+                            <Textarea
+                              value={generalSettings.specialHintsDescription}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsDescription: e.target.value })}
+                              placeholder="Die neue URL wurde automatisch generiert. Es kann sein, dass sie nicht wie erwartet funktioniert. Falls die URL ungültig ist, nutze bitte die Suchfunktion in der neuen Applikation, um den gewünschten Inhalt zu finden."
+                              rows={3}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.specialHintsDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Wird angezeigt, wenn keine passende URL-Regel aktiv ist
+                            </p>
+                          </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. Additional Information */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-semibold">4</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Zusätzliche Informationen</h3>
+                            <p className="text-sm text-muted-foreground">Wird nur angezeigt wenn mindestens ein Info-Punkt konfiguriert ist</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Titel der Sektion
+                              </label>
+                              <Input
+                                value={generalSettings.infoTitle}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, infoTitle: e.target.value })}
+                                placeholder="Zusätzliche Informationen"
+                                className="bg-white dark:bg-gray-700"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Überschrift für den Bereich mit zusätzlichen Informationen
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Icon für den Titel
+                              </label>
+                              <Select value={generalSettings.infoTitleIcon} onValueChange={(value) =>
+                                setGeneralSettings({ ...generalSettings, infoTitleIcon: value as any })
+                              }>
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
+                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
+                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
+                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
+                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
+                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
+                                  <SelectItem value="Star">⭐ Stern</SelectItem>
+                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
+                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Informations-Punkte
+                              </label>
+                              <p className="text-xs text-gray-500 mb-2">
+                                Liste von Stichpunkten die unter dem Info-Text angezeigt werden
+                              </p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={addInfoItem}
+                                className="flex items-center gap-2 bg-white dark:bg-gray-700"
+                              >
+                                <Plus className="h-4 w-4" />
+                                <span>Hinzufügen</span>
+                              </Button>
+                            </div>
+                            <div className="space-y-3">
+                              {generalSettings.infoItems.map((item, index) => (
+                                <div key={index} className="flex gap-3 items-center p-3 bg-white dark:bg-gray-700 rounded-lg border">
+                                  <div className="flex-1">
+                                    <Input
+                                      value={item}
+                                      onChange={(e) => handleInfoItemChange(index, e.target.value)}
+                                      placeholder={`Informationspunkt ${index + 1}`}
+                                      className="border-0 bg-transparent focus:ring-1 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                  <div className="w-36">
+                                    <Select
+                                      value={generalSettings.infoIcons[index] || "Info"}
+                                      onValueChange={(value) => handleInfoIconChange(index, value)}
+                                    >
+                                      <SelectTrigger className="h-9 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Bookmark">🔖 Bookmark</SelectItem>
+                                        <SelectItem value="Share2">📤 Share</SelectItem>
+                                        <SelectItem value="Clock">⏰ Clock</SelectItem>
+                                        <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                        <SelectItem value="CheckCircle">✅ Check</SelectItem>
+                                        <SelectItem value="Star">⭐ Star</SelectItem>
+                                        <SelectItem value="Heart">❤️ Heart</SelectItem>
+                                        <SelectItem value="Bell">🔔 Bell</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeInfoItem(index)}
+                                    className="h-9 w-9 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                              {generalSettings.infoItems.length === 0 && (
+                                <div className="text-center p-8 bg-white dark:bg-gray-700 rounded-lg border border-dashed">
+                                  <p className="text-sm text-muted-foreground">
+                                    Keine Info-Punkte vorhanden. Klicken Sie "Hinzufügen" um welche zu erstellen.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 5. Footer Settings */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 text-sm font-semibold">5</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Footer</h3>
+                            <p className="text-sm text-muted-foreground">Copyright und Fußzeile der Anwendung</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              Copyright-Text <span className="text-red-500">*</span>
+                            </label>
+                            <Input
+                              value={generalSettings.footerCopyright}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, footerCopyright: e.target.value })}
+                              placeholder="Proudly brewed with Generative AI."
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                            />
+                          </div>
+
+
+                        </div>
+                      </div>
+
+                      {/* 6. Link Detection Settings */}
+                      <div className="space-y-6 mt-8">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung</h3>
+                            <p className="text-sm text-muted-foreground">Steuert, ob Groß-/Kleinschreibung bei URL-Regeln beachtet wird</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
+                              <div>
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Groß-/Kleinschreibung beachten</p>
+                                <p className="text-xs text-green-700 dark:text-green-300">
+                                  Wenn aktiviert, werden Regeln nur bei exakt gleicher Schreibweise erkannt. Standard ist deaktiviert.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.caseSensitiveLinkDetection}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, caseSensitiveLinkDetection: checked })
+                              }
+                              className="data-[state=checked]:bg-green-600"
+                            />
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                              <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                <p className="font-medium">Best Practice:</p>
+                                <p>Nutzen Sie die Groß-/Kleinschreibung nur, wenn Ihre Altsysteme URLs case-sensitiv ausliefern und Sie dies exakt abbilden müssen.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 7. Automatic Redirect Settings */}
+                      <div className="space-y-6 mt-8">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 text-sm font-semibold">7</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
+                            <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <ArrowRightLeft className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                              <div>
+                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Automatische Weiterleitung aktivieren</p>
+                                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                                  Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.autoRedirect}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setPendingAutoRedirectValue(true);
+                                  setShowAutoRedirectDialog(true);
+                                } else {
+                                  setGeneralSettings({ ...generalSettings, autoRedirect: false });
+                                }
+                              }}
+                              className="data-[state=checked]:bg-yellow-600"
+                            />
+                          </div>
+
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                              <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                <p className="font-medium">Admin-Zugriff:</p>
+                                <p>Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">?admin=true</code> erreichen.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    {/* Save Button */}
+                    <div className="border-t pt-6 mt-8">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">
@@ -1655,11 +2545,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               </Card>
             </TabsContent>
 
-            {/* Rules Tab - (Restored from backup) */}
+            {/* Rules Tab */}
             <TabsContent value="rules">
-                {/* ... (Full content of Rules tab from backup) ... */}
-                {/* I will make sure the rendered output includes the full table and logic */}
-                <Card>
+              <Card>
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                     <div className="flex-1">
@@ -1749,7 +2637,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                     ) : (
                       <>
-                      {/* Desktop Table View */}
+                      {/* Desktop Table View - Hidden on mobile/tablet */}
                       <div className="hidden lg:block overflow-x-auto">
                         <table className="w-full">
                           <thead>
@@ -1767,13 +2655,63 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   title="Alle Regeln auf dieser Seite auswählen/abwählen"
                                 />
                               </th>
-                              <th className="text-left py-3 px-4">Match</th>
-                              <th className="text-left py-3 px-4">Ziel</th>
-                              <th className="text-left py-3 px-4">Typ</th>
-                              <th className="text-left py-3 px-4">Auto</th>
-                              <th className="text-left py-3 px-4">Info</th>
-                              <th className="text-left py-3 px-4">Erstellt</th>
-                              <th className="text-left py-3 px-4">Aktionen</th>
+                              <th className="text-left py-3 px-4">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                                  onClick={() => handleRulesSort('matcher')}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    URL-Pfad Matcher
+                                    {rulesSortBy === 'matcher' && (
+                                      rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                    )}
+                                  </span>
+                                </Button>
+                              </th>
+                              <th className="text-left py-3 px-4">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                                  onClick={() => handleRulesSort('targetUrl')}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    Ziel-URL
+                                    {rulesSortBy === 'targetUrl' && (
+                                      rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                    )}
+                                  </span>
+                                </Button>
+                              </th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                                Typ
+                              </th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                                Auto-Redirect
+                              </th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                                Info-Text
+                              </th>
+                              <th className="text-left py-3 px-4">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                                  onClick={() => handleRulesSort('createdAt')}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    Erstellt am
+                                    {rulesSortBy === 'createdAt' && (
+                                      rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                    )}
+                                  </span>
+                                </Button>
+                              </th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                                Aktionen
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1787,16 +2725,76 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     className="rounded border border-gray-300 focus:ring-2 focus:ring-blue-500"
                                   />
                                 </td>
-                                <td className="py-3 px-4"><Badge variant="secondary">{rule.matcher}</Badge></td>
-                                <td className="py-3 px-4 text-sm">{rule.targetUrl || '-'}</td>
-                                <td className="py-3 px-4"><Badge variant="outline">{rule.redirectType}</Badge></td>
-                                <td className="py-3 px-4">{rule.autoRedirect ? 'Ja' : 'Nein'}</td>
-                                <td className="py-3 px-4 text-sm text-muted-foreground">{rule.infoText ? rule.infoText.substring(0, 20) + '...' : '-'}</td>
-                                <td className="py-3 px-4 text-xs text-muted-foreground">{rule.createdAt ? new Date(rule.createdAt).toLocaleDateString() : '-'}</td>
+                                <td className="py-3 px-4">
+                                  <Badge variant="secondary">{rule.matcher}</Badge>
+                                </td>
+                                <td className="py-3 px-4 text-sm">
+                                  {rule.targetUrl ? (
+                                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                                      {rule.targetUrl}
+                                    </code>
+                                  ) : (
+                                    <span className="italic text-muted-foreground">
+                                      Automatisch generiert
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : 'default'}>
+                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : 'Teilweise'}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Badge variant={rule.autoRedirect ? 'default' : 'secondary'}>
+                                    {rule.autoRedirect ? '✓ Aktiv' : '✗ Inaktiv'}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4 text-sm text-muted-foreground">
+                                  {rule.infoText ? rule.infoText.substring(0, 50) + "..." : "-"}
+                                </td>
+                                <td className="py-3 px-4 text-xs text-muted-foreground">
+                                  {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
+                                </td>
                                 <td className="py-3 px-4">
                                   <div className="flex space-x-2">
-                                    <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}><Edit className="h-4 w-4" /></Button>
-                                    <Button variant="ghost" size="sm" onClick={() => deleteRuleMutation.mutate(rule.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditRule(rule)}
+                                      title="Bearbeiten"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-destructive hover:text-destructive"
+                                          title="Löschen"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Regel löschen</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Sind Sie sicher, dass Sie diese Regel löschen möchten?
+                                            Diese Aktion kann nicht rückgängig gemacht werden.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => deleteRuleMutation.mutate(rule.id)}
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                          >
+                                            Löschen
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                   </div>
                                 </td>
                               </tr>
@@ -1804,6 +2802,196 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </tbody>
                         </table>
                       </div>
+
+                      {/* Mobile/Tablet Sort Controls - Hidden on desktop */}
+                      <div className="lg:hidden flex flex-wrap gap-2 pb-4 border-b border-border">
+                        <Button
+                          variant={rulesSortBy === 'matcher' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleRulesSort('matcher')}
+                          className="text-xs"
+                        >
+                          URL-Pfad
+                          {rulesSortBy === 'matcher' && (
+                            rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
+                          )}
+                        </Button>
+                        <Button
+                          variant={rulesSortBy === 'targetUrl' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleRulesSort('targetUrl')}
+                          className="text-xs"
+                        >
+                          Ziel-URL
+                          {rulesSortBy === 'targetUrl' && (
+                            rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
+                          )}
+                        </Button>
+                        <Button
+                          variant={rulesSortBy === 'createdAt' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleRulesSort('createdAt')}
+                          className="text-xs"
+                        >
+                          Erstellt am
+                          {rulesSortBy === 'createdAt' && (
+                            rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Mobile/Tablet Card Layout - Hidden on desktop */}
+                      <div className="lg:hidden space-y-3">
+                        {/* Multi-select info for mobile users */}
+                        {paginatedRules.length > 1 && (
+                          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                            <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+                              <Info className="h-4 w-4 flex-shrink-0" />
+                              <span>
+                                <strong>Hinweis:</strong> Das Auswählen und Löschen mehrerer Regeln ist nur auf Desktop-Geräten verfügbar.
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {paginatedRules.map((rule: UrlRule) => (
+                          <div key={rule.id} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                            {/* Header with Matcher and Actions */}
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <Badge variant="secondary" className="mb-2 text-xs">
+                                  {rule.matcher}
+                                </Badge>
+                                <div className="flex flex-wrap gap-2">
+                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : 'default'} className="text-xs">
+                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : 'Teilweise'}
+                                  </Badge>
+                                  <Badge variant={rule.autoRedirect ? 'default' : 'secondary'} className="text-xs">
+                                    {rule.autoRedirect ? '✓ Auto-Redirect' : '✗ Manuell'}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex space-x-1 flex-shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditRule(rule)}
+                                  title="Bearbeiten"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                                      title="Löschen"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Regel löschen</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Sind Sie sicher, dass Sie diese Regel löschen möchten?
+                                        Diese Aktion kann nicht rückgängig gemacht werden.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteRuleMutation.mutate(rule.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Löschen
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+
+                            {/* Target URL */}
+                            <div className="mb-3">
+                              <div className="text-xs text-muted-foreground mb-1">Ziel-URL:</div>
+                              {rule.targetUrl ? (
+                                <code className="text-xs bg-muted px-2 py-1 rounded block break-all">
+                                  {rule.targetUrl}
+                                </code>
+                              ) : (
+                                <span className="text-xs italic text-muted-foreground">
+                                  Automatisch generiert
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Info Text */}
+                            {rule.infoText && (
+                              <div className="mb-3">
+                                <div className="text-xs text-muted-foreground mb-1">Info-Text:</div>
+                                <p className="text-xs text-foreground break-words">
+                                  {rule.infoText.length > 100 ? rule.infoText.substring(0, 100) + "..." : rule.infoText}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Created Date */}
+                            <div className="text-xs text-muted-foreground">
+                              Erstellt: {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRulesPage(1)}
+                              disabled={rulesPage === 1}
+                            >
+                              Erste
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRulesPage(rulesPage - 1)}
+                              disabled={rulesPage === 1}
+                            >
+                              Vorherige
+                            </Button>
+                          </div>
+
+                          <div className="text-sm text-muted-foreground">
+                            Zeige {startIndex + 1}-{Math.min(endIndex, totalFilteredRules)} von {totalFilteredRules}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRulesPage(rulesPage + 1)}
+                              disabled={rulesPage === totalPages}
+                            >
+                              Nächste
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRulesPage(totalPages)}
+                              disabled={rulesPage === totalPages}
+                            >
+                              Letzte
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       </>
                     )}
                   </div>
@@ -1811,31 +2999,316 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               </Card>
             </TabsContent>
 
-            {/* Statistics Tab - (Restored from backup) */}
+            {/* Statistics Tab */}
             <TabsContent value="stats" className="space-y-6">
-                 {/* ... (Full content of Stats tab from backup) ... */}
-                 {/* Simplified for brevity in tool call, but essentially restoring the stats view */}
-                 <Card>
-                    <CardHeader><CardTitle>Statistiken</CardTitle></CardHeader>
-                    <CardContent>
-                        {/* Rendering Logic for Stats */}
-                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                            <div className="flex flex-wrap gap-2">
-                                <Button variant={statsView === 'top100' ? 'default' : 'outline'} size="sm" onClick={() => handleStatsViewChange('top100')}>Top 100</Button>
-                                <Button variant={statsView === 'browser' ? 'default' : 'outline'} size="sm" onClick={() => handleStatsViewChange('browser')}>Alle Einträge</Button>
+              {/* Statistics View Navigation */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={statsView === 'top100' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatsViewChange('top100')}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Top 100
+                  </Button>
+                  <Button
+                    variant={statsView === 'browser' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatsViewChange('browser')}
+                  >
+                    <List className="h-4 w-4 mr-2" />
+                    Alle Einträge
+                  </Button>
+                </div>
+                {/* Time filter for top100 */}
+                {statsView === 'top100' && (
+                  <Select value={statsFilter} onValueChange={(value) => setStatsFilter(value as '24h' | '7d' | 'all')}>
+                    <SelectTrigger className="w-auto">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="24h">Letzte 24h</SelectItem>
+                      <SelectItem value="7d">Letzte 7 Tage</SelectItem>
+                      <SelectItem value="all">Alle Zeit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Search for browser view */}
+                {statsView === 'browser' && (
+                  <div className="relative w-full sm:w-80">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <input
+                      ref={statsSearchInputRef}
+                      type="text"
+                      placeholder="Einträge suchen..."
+                      value={statsSearchQuery}
+                      onChange={(e) => setStatsSearchQuery(e.target.value)}
+                      className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
+                    />
+                  </div>
+                )}
+
+                {/* Search and pagination info for paginated views */}
+                {(statsView === 'top100' || statsView === 'browser') && (
+                  <div className="flex w-full sm:w-auto justify-between items-center text-sm text-muted-foreground mt-4 sm:mt-0">
+                    <div>
+                      {statsView === 'top100' && (
+                        top100Loading ? (
+                          "Lade URLs..."
+                        ) : (
+                          `${totalTopUrls} URL${totalTopUrls !== 1 ? 's' : ''} insgesamt`
+                        )
+                      )}
+                      {statsView === 'browser' && (
+                        entriesLoading ? (
+                          "Lade Einträge..."
+                        ) : debouncedStatsSearchQuery ? (
+                          `${totalStatsEntries} von ${totalAllStatsEntries} Eintrag${totalStatsEntries !== 1 ? 'e' : ''} gefunden`
+                        ) : (
+                          `${totalAllStatsEntries} Eintrag${totalAllStatsEntries !== 1 ? 'e' : ''} insgesamt`
+                        )
+                      )}
+                      {statsView === 'browser' && statsSearchQuery !== debouncedStatsSearchQuery && (
+                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">Suche...</span>
+                      )}
+                    </div>
+                    {!entriesLoading && !top100Loading && (
+                      <div>
+                        {statsView === 'top100' && totalTopUrlsPages > 1 && `Seite ${statsPage} von ${totalTopUrlsPages}`}
+                        {statsView === 'browser' && totalStatsPages > 1 && `Seite ${statsPage} von ${totalStatsPages}`}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+
+
+              {/* Top 100 View */}
+              {statsView === 'top100' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top URLs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {top100Loading ? (
+                      <div className="text-center py-8">Lade URLs...</div>
+                    ) : !topUrlsData?.length ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Keine URL-Aufrufe vorhanden.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="overflow-hidden">
+                          <table className="w-full">
+                            <thead className="bg-muted/50 border-b">
+                              <tr>
+                                <th className="text-left p-3 font-medium">Rang</th>
+                                <th className="text-left p-3 font-medium">URL-Pfad</th>
+                                <th className="text-right p-3 font-medium">Aufrufe</th>
+                                <th className="text-left p-3 font-medium">Anteil</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {topUrlsData.map((url, index) => {
+                                const rank = index + 1;
+                                const maxCount = topUrlsData[0]?.count || 1;
+                                return (
+                                  <tr key={index} className="border-b hover:bg-muted/50">
+                                    <td className="p-3 text-sm font-medium">#{rank}</td>
+                                    <td className="p-3">
+                                      <code className="text-sm text-foreground">{url.path}</code>
+                                    </td>
+                                    <td className="p-3 text-right text-sm font-medium">{url.count}</td>
+                                    <td className="p-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-16">
+                                          <Progress value={(url.count / maxCount) * 100} className="h-2" />
+                                        </div>
+                                        <span className="text-xs text-muted-foreground">
+                                          {((url.count / maxCount) * 100).toFixed(1)}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Comprehensive Tracking Browser */}
+              {statsView === 'browser' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Alle Tracking-Einträge</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {entriesLoading ? (
+                      <div className="text-center py-8">Lade Einträge...</div>
+                    ) : !trackingEntries?.length ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        {statsSearchQuery ? `Keine Einträge für "${statsSearchQuery}" gefunden.` : 'Keine Tracking-Einträge vorhanden.'}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="overflow-hidden">
+                          <table className="w-full">
+                            <thead className="bg-muted/50 border-b">
+                              <tr>
+                                <th className="text-left p-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSort('timestamp')}
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                  >
+                                    Zeitstempel
+                                    {getSortIcon('timestamp')}
+                                  </Button>
+                                </th>
+                                <th className="text-left p-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSort('oldUrl')}
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                  >
+                                    Alte URL
+                                    {getSortIcon('oldUrl')}
+                                  </Button>
+                                </th>
+                                <th className="text-left p-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSort('newUrl')}
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                  >
+                                    Neue URL
+                                    {getSortIcon('newUrl')}
+                                  </Button>
+                                </th>
+                                <th className="text-left p-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSort('path')}
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                  >
+                                    Pfad
+                                    {getSortIcon('path')}
+                                  </Button>
+                                </th>
+                                <th className="text-left p-3 font-medium text-sm">
+                                  Regel
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {trackingEntries.map((entry: any) => (
+                                <tr key={entry.id} className="border-b hover:bg-muted/50">
+                                  <td className="p-3 text-sm">
+                                    {formatTimestamp(entry.timestamp)}
+                                  </td>
+                                  <td className="p-3">
+                                    <code className="text-xs text-foreground break-all">
+                                      {entry.oldUrl}
+                                    </code>
+                                  </td>
+                                  <td className="p-3">
+                                    <code className="text-xs text-foreground break-all">
+                                      {entry.newUrl || 'N/A'}
+                                    </code>
+                                  </td>
+                                  <td className="p-3">
+                                    <code className="text-sm text-foreground">{entry.path}</code>
+                                  </td>
+                                  <td className="p-3">
+                                    {entry.rule ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-auto p-1 text-xs bg-muted hover:bg-muted/80"
+                                        onClick={() => handleEditRule(entry.rule)}
+                                        title="Regel bearbeiten"
+                                      >
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        {entry.rule.matcher}
+                                      </Button>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination Controls for Browser View */}
+                        {totalStatsPages > 1 && (
+                          <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setStatsPage(1)}
+                                disabled={statsPage === 1}
+                              >
+                                Erste
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setStatsPage(statsPage - 1)}
+                                disabled={statsPage === 1}
+                              >
+                                Vorherige
+                              </Button>
                             </div>
-                         </div>
-                         {statsView === 'top100' && (
-                             <div>{/* Table for Top 100 */}</div>
-                         )}
-                         {statsView === 'browser' && (
-                             <div>{/* Table for Browser */}</div>
-                         )}
-                    </CardContent>
-                 </Card>
+
+                            <div className="text-sm text-muted-foreground">
+                              Zeige {statsStartIndex + 1}-{Math.min(statsEndIndex, totalStatsEntries)} von {debouncedStatsSearchQuery ? totalStatsEntries : totalAllStatsEntries}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setStatsPage(statsPage + 1)}
+                                disabled={statsPage === totalStatsPages}
+                              >
+                                Nächste
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setStatsPage(totalStatsPages)}
+                                disabled={statsPage === totalStatsPages}
+                              >
+                                Letzte
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
             </TabsContent>
 
-            {/* Export Tab - (NEW CONTENT) */}
+            {/* Export Tab - REDESIGNED */}
             <TabsContent value="export">
               <div className="space-y-6">
                 {/* Standard Import/Export Section */}
@@ -2036,145 +3509,246 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         </div>
       </main>
 
-      {/* Rule Editing Dialog */}
+      {/* Rule Editing Dialog - Moved outside TabsContent to be accessible from all tabs */}
       <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
-         <DialogContent>
-             <DialogHeader>
-                 <DialogTitle>{editingRule ? "Regel bearbeiten" : "Neue Regel"}</DialogTitle>
-             </DialogHeader>
-             <form onSubmit={handleSubmitRule}>
-                 <div className="space-y-4">
-                    <div>
-                        <label className="text-sm font-medium">Matcher</label>
-                        <Input value={ruleForm.matcher} onChange={e => setRuleForm({...ruleForm, matcher: e.target.value})} />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium">Target URL</label>
-                        <Input value={ruleForm.targetUrl} onChange={e => setRuleForm({...ruleForm, targetUrl: e.target.value})} />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium">Redirect Type</label>
-                        <Select value={ruleForm.redirectType} onValueChange={(v: any) => setRuleForm({...ruleForm, redirectType: v})}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="partial">Partial</SelectItem>
-                                <SelectItem value="wildcard">Wildcard</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium">Info Text</label>
-                        <Input value={ruleForm.infoText} onChange={e => setRuleForm({...ruleForm, infoText: e.target.value})} />
-                    </div>
-                 </div>
-                 <DialogFooter className="mt-4">
-                     <Button type="submit">Speichern</Button>
-                 </DialogFooter>
-             </form>
-         </DialogContent>
-      </Dialog>
-
-      {/* Import Preview Dialog */}
-      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-            <DialogHeader>
-                <DialogTitle>Import Vorschau</DialogTitle>
-                <DialogDescription>
-                    Überprüfen Sie die zu importierenden Regeln.
-                </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex-1 overflow-auto py-4">
-                {importPreviewData && (
-                    <div className="space-y-4">
-                        <div className="flex gap-4 text-sm">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Neu: {importPreviewData.counts.new}
-                            </Badge>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                Update: {importPreviewData.counts.update}
-                            </Badge>
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                Ungültig: {importPreviewData.counts.invalid}
-                            </Badge>
-                            <span className="text-muted-foreground">Total: {importPreviewData.total}</span>
-                        </div>
-
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Matcher</TableHead>
-                                    <TableHead>Target</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Auto</TableHead>
-                                    <TableHead>Validierung</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {importPreviewData.preview.map((item, i) => (
-                                    <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
-                                        <TableCell>
-                                            {item.status === 'new' && <Badge variant="default" className="bg-green-600">Neu</Badge>}
-                                            {item.status === 'update' && <Badge variant="secondary" className="bg-blue-100 text-blue-700">Update</Badge>}
-                                            {item.status === 'invalid' && <Badge variant="destructive">Fehler</Badge>}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs">{item.rule.matcher || '-'}</TableCell>
-                                        <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
-                                        <TableCell className="text-xs text-red-600">
-                                            {item.errors.join(', ')}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {importPreviewData.total > 10 && (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                            ... und {importPreviewData.total - 10} weitere Einträge
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                )}
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              {editingRule ? "Regel bearbeiten" : "Neue Regel erstellen"}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {editingRule ? "Bearbeiten Sie die existierende Regel hier." : "Erstellen Sie hier eine neue Regel."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitRule} className="space-y-4 sm:space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                URL-Pfad Matcher
+              </label>
+              <Input
+                placeholder="/news-beitrag"
+                value={ruleForm.matcher}
+                onChange={(e) => setRuleForm(prev => ({ ...prev, matcher: e.target.value }))}
+                required
+              />
             </div>
-
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Abbrechen</Button>
-                <Button
-                    onClick={handleExecuteImport}
-                    disabled={importMutation.isPending || !importPreviewData?.all.some(r => r.isValid)}
-                >
-                    {importMutation.isPending ? "Importiere..." : `${importPreviewData?.all.filter(r => r.isValid).length || 0} Regeln Importieren`}
-                </Button>
-            </DialogFooter>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Ziel-URL (optional)
+              </label>
+              <Input
+                placeholder={targetUrlPlaceholder}
+                value={ruleForm.targetUrl}
+                onChange={(e) => setRuleForm(prev => ({ ...prev, targetUrl: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Redirect-Typ
+              </label>
+              <Select
+                value={ruleForm.redirectType}
+                onValueChange={(value: "wildcard" | "partial") =>
+                  setRuleForm(prev => ({ ...prev, redirectType: value }))
+                }
+              >
+                <SelectTrigger className="h-auto min-h-[40px]">
+                  <SelectValue>
+                    {ruleForm.redirectType === "partial" && "Teilweise"}
+                    {ruleForm.redirectType === "wildcard" && "Vollständig"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
+                  <SelectItem value="partial" className="pl-8 pr-3 py-3 items-start">
+                    <div className="flex flex-col space-y-1">
+                      <span className="font-medium text-sm">Teilweise</span>
+                      <span className="text-xs text-muted-foreground leading-relaxed">
+                        Nur die Pfadsegmente ab dem Matcher werden ersetzt. Base URL aus den generellen Einstellungen wird verwendet. Zusätzliche Pfadsegmente, Parameter und Anker bleiben erhalten.
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="wildcard" className="pl-8 pr-3 py-3 items-start">
+                    <div className="flex flex-col space-y-1">
+                      <span className="font-medium text-sm">Vollständig</span>
+                      <span className="text-xs text-muted-foreground leading-relaxed">
+                        Alte Links werden komplett auf die neue Ziel-URL umgeleitet. Keine Bestandteile der alten URL werden übernommen – weder Pfadsegmente noch Parameter oder Anker.
+                      </span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Info-Text (Markdown)
+              </label>
+              <Textarea
+                placeholder="Nachrichtenbeiträge wurden migriert..."
+                value={ruleForm.infoText}
+                onChange={(e) => setRuleForm(prev => ({ ...prev, infoText: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div className="border-t pt-4">
+              <div className="flex items-start space-x-3">
+                <Switch
+                  checked={ruleForm.autoRedirect}
+                  onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, autoRedirect: checked }))}
+                />
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Automatische Weiterleitung für diese Regel
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+              <Button
+                type="submit"
+                className="flex-1"
+                size="sm"
+                disabled={createRuleMutation.isPending || updateRuleMutation.isPending}
+              >
+                {editingRule ? "Aktualisieren" : "Erstellen"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="flex-1"
+                onClick={() => setIsRuleDialogOpen(false)}
+              >
+                Abbrechen
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
       {/* Auto-Redirect Confirmation Dialog */}
       <Dialog open={showAutoRedirectDialog} onOpenChange={setShowAutoRedirectDialog}>
-          <DialogContent>
-              <DialogHeader><DialogTitle>Bestätigung</DialogTitle></DialogHeader>
-              <DialogFooter>
-                  <Button onClick={() => setShowAutoRedirectDialog(false)}>Ok</Button>
-              </DialogFooter>
-          </DialogContent>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-600">
+              <AlertTriangle className="h-5 w-5" />
+              Wichtiger Hinweis
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Bestätigung für die Aktivierung der automatischen Weiterleitung
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Sie sind dabei, die automatische sofortige Weiterleitung für alle Besucher und alle URLs zu aktivieren. Besucher werden so automatisch sofort zur neuen URL ohne Anzeige der Seite weitergeleitet.
+            </p>
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                  <p className="font-medium">Wichtiger Hinweis:</p>
+                  <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
+                  <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAutoRedirectDialog(false);
+                setPendingAutoRedirectValue(false);
+              }}
+              className="w-full sm:w-auto"
+            >
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => {
+                setGeneralSettings({ ...generalSettings, autoRedirect: pendingAutoRedirectValue });
+                setShowAutoRedirectDialog(false);
+                setPendingAutoRedirectValue(false);
+              }}
+              className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700"
+            >
+              Ich habe verstanden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       {/* Validation Warning Dialog */}
       <AlertDialog open={showValidationDialog} onOpenChange={setShowValidationDialog}>
-         <AlertDialogContent>
-             <AlertDialogHeader><AlertDialogTitle>Warnung</AlertDialogTitle></AlertDialogHeader>
-         </AlertDialogContent>
+        <AlertDialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <AlertDialogHeader className="flex-shrink-0">
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Validierungswarnung
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground text-sm">
+              Möchten Sie die Regel trotz der folgenden Warnung(en) speichern?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="flex-1 min-h-0 my-4">
+            <div className="max-h-60 overflow-y-auto border rounded-md p-3 bg-muted/50">
+              <div className="text-sm text-foreground whitespace-pre-wrap">
+                {validationError}
+              </div>
+            </div>
+          </div>
+
+          <AlertDialogFooter className="flex-shrink-0">
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleForceSave}
+              disabled={forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {(forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending)
+                ? 'Speichere...'
+                : 'Trotzdem speichern'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
 
       {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
-         <AlertDialogContent>
-             <AlertDialogHeader><AlertDialogTitle>Löschen?</AlertDialogTitle></AlertDialogHeader>
-         </AlertDialogContent>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regeln löschen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sind Sie sicher, dass Sie die ausgewählten {selectedRuleIds.length} {selectedRuleIds.length === 1 ? 'Regel' : 'Regeln'} löschen möchten?
+              Diese Aktion kann nicht rückgängig gemacht werden.
+              <br /><br />
+              <strong>Hinweis:</strong> Es werden nur die auf der aktuellen Seite ausgewählten Regeln gelöscht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                // Critical fix: Only delete rules that are on current page
+                const currentPageRuleIds = paginatedRules.map(rule => rule.id);
+                const safeRuleIds = selectedRuleIds.filter(id => currentPageRuleIds.includes(id));
+                console.log('DIALOG DELETE: Filtering selected rules for safety', {
+                  originalSelected: selectedRuleIds.length,
+                  safeSelected: safeRuleIds.length,
+                  pageRules: currentPageRuleIds.length
+                });
+                bulkDeleteRulesMutation.mutate(safeRuleIds);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={bulkDeleteRulesMutation.isPending}
+            >
+              {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
 
       <Toaster />

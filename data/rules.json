@@ -39,5 +39,14 @@
     "infoText": "",
     "autoRedirect": false,
     "createdAt": "2025-12-04T08:45:06.163Z"
+  },
+  {
+    "id": "02f272ee-41da-4b92-9c0b-22c3b0a6e972",
+    "matcher": "/test-new-cache",
+    "targetUrl": "https://example.com/new",
+    "redirectType": "partial",
+    "infoText": "",
+    "autoRedirect": false,
+    "createdAt": "2025-12-04T08:59:11.124Z"
   }
 ]
