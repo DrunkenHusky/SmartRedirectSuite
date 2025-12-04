@@ -3330,11 +3330,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
-                                    Excel Export
+                                    Herunterladen (Excel)
                                 </Button>
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
                                     <FileText className="h-4 w-4 mr-2" />
-                                    CSV Export
+                                    Herunterladen (CSV)
                                 </Button>
                             </div>
                         </div>
@@ -3354,7 +3354,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6">
                          {/* JSON Rules */}
                          <div className="space-y-4 border rounded-lg p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
@@ -3368,7 +3368,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('rules', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    JSON Exportieren
+                                    Herunterladen (JSON)
                                 </Button>
                                 <div className="relative">
                                     <input
@@ -3383,7 +3383,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         disabled={importMutation.isPending}
                                     >
                                         <Upload className="h-4 w-4 mr-2" />
-                                        JSON Importieren (Experte)
+                                        Importieren (JSON)
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -3397,26 +3397,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </p>
                             </div>
                          </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                         {/* Settings & Stats */}
+                {/* System Settings & Statistics Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Settings className="h-6 w-6 text-foreground" />
+                        <CardTitle>Systemeinstellungen & Statistiken</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Verwaltung der globalen Konfiguration und Export von Nutzungsstatistiken.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         {/* System Settings */}
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Systemdaten</h3>
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <Settings className="h-4 w-4" />
+                                Systemeinstellungen
+                            </h3>
                             <div className="space-y-2">
                                 <Button
                                     className="w-full"
                                     variant="outline"
                                     onClick={() => handleExport('settings', 'json')}
                                 >
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Einstellungen Exportieren
-                                </Button>
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleExport('statistics', 'csv')}
-                                >
-                                    <BarChart3 className="h-4 w-4 mr-2" />
-                                    Statistiken (CSV)
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Herunterladen (JSON)
                                 </Button>
                                 <div className="relative">
                                   <input
@@ -3427,14 +3438,34 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   />
                                   <Button
                                     className="w-full"
-                                    variant="ghost"
-                                    size="sm"
+                                    variant="secondary"
                                     disabled={importSettingsMutation.isPending}
                                   >
-                                    <Upload className="h-3 w-3 mr-2" />
-                                    Einstellungen importieren
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Importieren (JSON)
                                   </Button>
                                 </div>
+                            </div>
+                         </div>
+
+                         {/* Statistics */}
+                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4" />
+                                Statistiken
+                            </h3>
+                            <div className="space-y-2">
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => handleExport('statistics', 'csv')}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Herunterladen (CSV)
+                                </Button>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Exportiert alle Tracking-Daten für weitere Analysen.
+                                </p>
                             </div>
                          </div>
                     </div>
