@@ -91,6 +91,7 @@ export class ImportExportService {
         const type = String(rule.redirectType).toLowerCase();
         if (type.includes('wild') || type === 'complete') rule.redirectType = 'wildcard';
         else if (type.includes('part') || type === 'partial') rule.redirectType = 'partial';
+        else if (type.includes('domain')) rule.redirectType = 'domain';
       } else {
         rule.redirectType = 'partial'; // Default
       }
