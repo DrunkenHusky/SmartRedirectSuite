@@ -21,5 +21,14 @@
     "infoText": "",
     "createdAt": "2025-12-03T16:10:57.600Z",
     "autoRedirect": false
+  },
+  {
+    "id": "34b7f6a5-9942-4397-b5b0-b28fc3e17af2",
+    "matcher": "/test-import-api-v2",
+    "targetUrl": "https://example.com",
+    "redirectType": "partial",
+    "infoText": "",
+    "autoRedirect": false,
+    "createdAt": "2025-12-04T07:23:07.248Z"
   }
 ]

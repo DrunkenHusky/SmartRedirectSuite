@@ -1598,6 +1598,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <li>Type - 'wildcard' oder 'partial'</li>
                                     <li>ID (optional) - Zum Aktualisieren bestehender Regeln</li>
                                 </ul>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Musterdatei (Excel)
+                                  </a>
+                                  <span className="text-muted-foreground">|</span>
+                                  <a href="/sample-rules-import.csv" download className="text-xs text-primary hover:underline flex items-center">
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Musterdatei (CSV)
+                                  </a>
+                                </div>
                             </div>
                             <div className="flex gap-2 items-center">
                                 <div className="relative flex-1">

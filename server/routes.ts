@@ -138,6 +138,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/sample-rules-import.json", (_req, res) => {
     res.sendFile("sample-rules-import.json", { root: process.cwd() });
   });
+
+  app.get("/sample-rules-import.csv", (_req, res) => {
+    res.sendFile("sample-rules-import.csv", { root: process.cwd() });
+  });
+
+  app.get("/sample-rules-import.xlsx", (_req, res) => {
+    res.sendFile("sample-rules-import.xlsx", { root: process.cwd() });
+  });
   
   // URL-Tracking endpoint
   app.post("/api/track", trackingRateLimiter, async (req, res) => {
