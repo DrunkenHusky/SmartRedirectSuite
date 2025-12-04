@@ -3279,10 +3279,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <h3 className="font-medium text-foreground">Regeln Importieren</h3>
                             <div className="text-sm text-muted-foreground space-y-2">
                                 <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
-                                <ul className="list-disc list-inside text-xs">
-                                    <li>Matcher (Pflicht) - z.B. /alte-seite</li>
-                                    <li>Target URL (Pflicht) - z.B. https://neue-seite.de</li>
-                                    <li>Description (Optional) - z.B. Eine Beschreibung der Regel</li>
+                                <ul className="list-disc list-inside text-xs space-y-1 my-2">
+                                    <li><strong>Matcher</strong> (Pflicht) - Der relative Pfad der alten URL (z.B. <code>/alte-seite</code>)</li>
+                                    <li><strong>Target URL</strong> (Pflicht) - Die absolute oder relative Ziel-URL (z.B. <code>https://neue-seite.de/home</code>)</li>
+                                    <li><strong>Type</strong> (Optional) - Redirect-Typ: 'partial' (Standard) oder 'wildcard' (z.B. <code>wildcard</code>)</li>
+                                    <li><strong>Info</strong> (Optional) - Interne Notizen oder Beschreibungen (z.B. <code>Marketing Kampagne 2023</code>)</li>
+                                    <li><strong>Auto Redirect</strong> (Optional) - Automatische Weiterleitung aktivieren: 'true', '1', 'ja' (z.B. <code>true</code>)</li>
+                                    <li><strong>ID</strong> (Optional) - System-ID für Updates bestehender Regeln (z.B. <code>123e4567-e89b-12d3-a456-426614174000</code>)</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
