@@ -74,6 +74,34 @@ export class LocalFileUploadService {
     });
   }
 
+  // Configure multer for document imports (CSV, Excel, JSON)
+  getDocumentUploadConfig() {
+    const storage = multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        cb(null, this.uploadPath);
+      },
+      filename: (_req, file, cb) => {
+        const fileExtension = path.extname(file.originalname);
+        const uniqueName = `import_${randomUUID()}${fileExtension}`;
+        cb(null, uniqueName);
+      }
+    });
+
+    return multer({
+      storage,
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB limit for imports
+      },
+      fileFilter: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (['.csv', '.xlsx', '.xls', '.json'].includes(ext)) {
+          return cb(null, true);
+        }
+        cb(new Error('Only CSV, Excel, and JSON files are allowed'));
+      }
+    });
+  }
+
   // Get the public URL for a local file
   getFileUrl(filename: string): string {
     return `/uploads/${filename}`;

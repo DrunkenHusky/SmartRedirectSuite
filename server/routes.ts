@@ -19,7 +19,8 @@ import path from "path";
 import { findMatchingRule, constructTargetUrl } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
-
+import { ImportExportService } from "./import-export";
+import fs from "fs";
 
 
 // Extend Express Session interface
@@ -576,6 +577,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Preview Import (Accepts File)
+  app.post("/api/admin/import/preview", requireAuth, documentUpload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+
+      // 1. Read file
+      const filePath = path.join(process.env.LOCAL_UPLOAD_PATH || './data/uploads', req.file.filename);
+      const fileBuffer = fs.readFileSync(filePath);
+
+      // 2. Parse content
+      const rawData = await importExportService.parseFile(fileBuffer, req.file.mimetype, req.file.originalname);
+
+      // 3. Normalize
+      const rules = importExportService.normalizeRules(rawData);
+
+      // 4. Cleanup temp file
+      localUploadService.deleteFile(req.file.filename);
+
+      // 5. Generate Preview stats (without saving)
+      // We need to check against DB for updates vs new
+      const existingRules = await storage.getUrlRules();
+      const existingMap = new Map(existingRules.map(r => [r.matcher, r]));
+
+      let newCount = 0;
+      let updateCount = 0;
+
+      for (const rule of rules) {
+        if (rule.id) {
+           updateCount++; // Assuming ID match implies update intent
+        } else if (rule.matcher && existingMap.has(rule.matcher)) {
+           updateCount++;
+        } else {
+           newCount++;
+        }
+      }
+
+      res.json({
+        totalRules: rules.length,
+        newRules: newCount,
+        updatedRules: updateCount,
+        preview: rules.slice(0, 5), // Send first 5 as preview
+        rules: rules // Send full list for the client to hold until confirmation
+      });
+
+    } catch (error) {
+      console.error("Import preview error:", error);
+      res.status(400).json({ error: error instanceof Error ? error.message : "Import failed" });
+    }
+  });
+
   // Import-Funktionalität
   app.post("/api/admin/import/rules", requireAuth, async (req, res) => {
     try {
@@ -716,7 +770,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Local File Upload Route for Logo
   const localUploadService = new LocalFileUploadService();
+  const importExportService = new ImportExportService();
   const upload = localUploadService.getMulterConfig();
+  const documentUpload = localUploadService.getDocumentUploadConfig();
   
   app.post("/api/admin/logo/upload", requireAuth, upload.single('file'), async (req, res) => {
     try {

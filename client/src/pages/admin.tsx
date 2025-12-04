@@ -187,6 +187,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [selectedRuleIds, setSelectedRuleIds] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
+  // Import preview state
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState<{
+    totalRules: number;
+    newRules: number;
+    updatedRules: number;
+    preview: any[];
+    rules: any[];
+  } | null>(null);
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
@@ -766,6 +776,36 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
+  const previewMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch("/api/admin/import/preview", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Preview failed");
+      }
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setImportPreviewData(data);
+      setShowPreviewDialog(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Vorschau fehlgeschlagen",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const importRulesFileMutation = useMutation({
     mutationFn: async (rules: any[]) => {
       const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
@@ -787,6 +827,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.` 
         });
       }
+      setShowPreviewDialog(false);
+      setImportPreviewData(null);
     },
     onError: (error: any) => {
       // Handle authentication errors specifically
@@ -1290,28 +1332,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    try {
-      const fileContent = await file.text();
-      const importData = JSON.parse(fileContent);
-      
-      // Validate that it's an array of rules
-      if (!Array.isArray(importData)) {
-        throw new Error("Import-Datei muss ein Array von Regeln enthalten");
-      }
+    // Use preview mutation instead of direct import
+    previewMutation.mutate(file);
 
-      // Import the rules
-      importRulesFileMutation.mutate(importData);
-      
-      // Reset file input
-      event.target.value = '';
-    } catch (error) {
-      toast({ 
-        title: "Dateifehler", 
-        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
-        variant: "destructive" 
-      });
-      // Reset file input
-      event.target.value = '';
+    // Reset file input
+    event.target.value = '';
+  };
+
+  const handleExecuteImport = () => {
+    if (importPreviewData && importPreviewData.rules) {
+      importRulesFileMutation.mutate(importPreviewData.rules);
     }
   };
 
@@ -3169,7 +3199,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="relative">
                           <input
                             type="file"
-                            accept=".json"
+                            accept=".json,.csv,.xlsx,.xls"
                             onChange={handleImportFile}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             id="import-rules-file"
@@ -3177,19 +3207,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <Button 
                             variant="secondary" 
                             className="w-full"
-                            disabled={importRulesFileMutation.isPending}
+                            disabled={previewMutation.isPending}
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            {importRulesFileMutation.isPending ? 'Importiere...' : 'Regeln importieren'}
+                            {previewMutation.isPending ? 'Analysiere...' : 'Regeln importieren'}
                           </Button>
                         </div>
                         <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="font-medium mb-1">Import-Verhalten:</div>
+                          <div className="font-medium mb-1">Unterstützte Formate:</div>
                           <ul className="space-y-1">
-                            <li>• <strong>Mit ID:</strong> Bestehende Regel mit gleicher ID wird aktualisiert</li>
-                            <li>• <strong>Ohne ID:</strong> Prüfung auf gleichen Matcher - bei Übereinstimmung wird aktualisiert, sonst neue Regel erstellt</li>
-                            <li>• <strong>Bestehende Regeln:</strong> Bleiben erhalten (kein Überschreiben oder Löschen)</li>
-                            <li>• <strong>Ergebnis:</strong> Additive Ergänzung + Updates bei Übereinstimmungen</li>
+                            <li>• <strong>JSON, CSV, Excel</strong> (.xlsx)</li>
+                            <li>• Vorschau der Änderungen vor dem Import</li>
+                            <li>• Automatische Duplikaterkennung</li>
                           </ul>
                         </div>
                       </div>
@@ -3513,6 +3542,73 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               disabled={bulkDeleteRulesMutation.isPending}
             >
               {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Import Preview Dialog */}
+      <AlertDialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Import-Vorschau</AlertDialogTitle>
+            <AlertDialogDescription>
+              Überprüfen Sie die zu importierenden Daten.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {importPreviewData && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold">{importPreviewData.totalRules}</div>
+                  <div className="text-xs text-muted-foreground">Regeln erkannt</div>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {importPreviewData.newRules}
+                  </div>
+                  <div className="text-xs text-green-700 dark:text-green-300">Neu</div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {importPreviewData.updatedRules}
+                  </div>
+                  <div className="text-xs text-blue-700 dark:text-blue-300">Aktualisierungen</div>
+                </div>
+              </div>
+
+              {importPreviewData.preview && importPreviewData.preview.length > 0 && (
+                <div className="border rounded-md">
+                  <div className="bg-muted px-4 py-2 text-xs font-medium">Vorschau (erste 5 Einträge)</div>
+                  <div className="divide-y">
+                    {importPreviewData.preview.map((rule: any, i: number) => (
+                      <div key={i} className="px-4 py-2 text-sm flex justify-between items-center">
+                        <div className="truncate max-w-[200px]" title={rule.matcher}>
+                          {rule.matcher}
+                        </div>
+                        <ArrowRightLeft className="h-3 w-3 text-muted-foreground mx-2" />
+                        <div className="truncate max-w-[200px]" title={rule.targetUrl}>
+                          {rule.targetUrl}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowPreviewDialog(false);
+              setImportPreviewData(null);
+            }}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleExecuteImport}
+              disabled={importRulesFileMutation.isPending}
+            >
+              {importRulesFileMutation.isPending ? 'Importiere...' : 'Import bestätigen'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
