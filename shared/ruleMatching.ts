@@ -100,6 +100,7 @@ export function findMatchingRule(
     wildcards: number;
     start: number;
     ruleQuery: Map<string, string[]>;
+    hasPartialSegmentMatch: boolean;
   } | null = null;
 
   for (const rule of rules) {
@@ -128,15 +129,33 @@ export function findMatchingRule(
       let staticMatches = 0;
       let wildcards = 0;
       let pathMismatch = false;
+      let hasPartialSegmentMatch = false;
+
       for (let i = 0; i < rulePath.length; i++) {
         const seg = rulePath[i];
         const reqSeg = reqPath[start + i];
+
         if (seg === "*" || seg.startsWith(":")) {
           wildcards++;
           continue;
         }
+
+        // Check for explicit wildcard suffix (e.g., "prefix*")
+        if (seg.endsWith("*") && seg.length > 1) {
+          const prefix = seg.slice(0, -1);
+          if (reqSeg && reqSeg.startsWith(prefix)) {
+            staticMatches++;
+            hasPartialSegmentMatch = true;
+            continue;
+          }
+        }
+
         if (seg === reqSeg) {
           staticMatches++;
+        } else if (rule.redirectType === 'partial' && reqSeg && reqSeg.startsWith(seg)) {
+          // Implicit partial match for 'partial' type rules
+          staticMatches++;
+          hasPartialSegmentMatch = true;
         } else {
           pathMismatch = true;
           break;
@@ -169,6 +188,7 @@ export function findMatchingRule(
       if (
         start === 0 &&
         rulePath.length === reqPath.length &&
+        !hasPartialSegmentMatch && // Ensure no partial segment matches for exact bonus
         ruleQuery.size === reqQuery.size
       ) {
         exact = true;
@@ -182,7 +202,7 @@ export function findMatchingRule(
 
       if (config.DEBUG) {
         console.debug(
-          `Rule ${rule.matcher} -> score=${score}, static=${staticMatches}, query=${queryPairs}, wildcards=${wildcards}, exact=${exact}`,
+          `Rule ${rule.matcher} -> score=${score}, static=${staticMatches}, query=${queryPairs}, wildcards=${wildcards}, exact=${exact}, partialSeg=${hasPartialSegmentMatch}`,
         );
       }
 
@@ -201,11 +221,19 @@ export function findMatchingRule(
           staticMatches === best.staticSegments &&
           queryPairs === best.queryPairs &&
           wildcards === best.wildcards &&
+          !exact && // Only prefer longer matchers for non-exact matches (e.g. partials) to preserve strict equivalence behavior
+          rule.matcher.length > best.rule.matcher.length) ||
+        (score === best.score &&
+          staticMatches === best.staticSegments &&
+          queryPairs === best.queryPairs &&
+          wildcards === best.wildcards &&
+          rule.matcher.length === best.rule.matcher.length &&
           (rule.createdAt || "") < (best.rule.createdAt || "")) ||
         (score === best.score &&
           staticMatches === best.staticSegments &&
           queryPairs === best.queryPairs &&
           wildcards === best.wildcards &&
+          rule.matcher.length === best.rule.matcher.length &&
           (rule.createdAt || "") === (best.rule.createdAt || "") &&
           rule.id < best.rule.id)
       ) {
@@ -216,7 +244,8 @@ export function findMatchingRule(
           queryPairs,
           wildcards,
           start,
-          ruleQuery
+          ruleQuery,
+          hasPartialSegmentMatch
         };
       }
     }
@@ -228,6 +257,7 @@ export function findMatchingRule(
   let quality = 100;
   const start = best.start;
   const ruleQuery = best.ruleQuery;
+  const hasPartialSegmentMatch = best.hasPartialSegmentMatch;
 
   // Check for extra query params
   let hasExtraQuery = false;
@@ -241,13 +271,14 @@ export function findMatchingRule(
   // Check if it's a deep partial match (rule found in middle of path)
   // If start > 0, it means the rule matched starting at a later segment (substring match)
   // If (staticSegments + wildcards) < reqPath.length, it means the rule is shorter than the requested path (prefix match)
+  // If hasPartialSegmentMatch is true, it means we matched a segment partially (prefix match), so quality should be lower
   const rulePathLength = best.staticSegments + best.wildcards;
-  if (start > 0 || rulePathLength < reqPath.length) {
+  if (start > 0 || rulePathLength < reqPath.length || hasPartialSegmentMatch) {
     quality = 50;
   } else if (hasExtraQuery) {
     quality = 75;
   }
-  // Default is 100 (start === 0 && !hasExtraQuery)
+  // Default is 100 (start === 0 && !hasExtraQuery && !hasPartialSegmentMatch)
 
   let level: 'red' | 'yellow' | 'green' = 'green';
   if (quality < 60) level = 'red'; // Changed 50% to red based on user requirement "Red is when only the main url is replaced"
