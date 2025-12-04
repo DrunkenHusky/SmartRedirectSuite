@@ -578,9 +578,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (exportRequest.type === 'rules') {
         const rules = await storage.getUrlRules();
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
-        res.json(rules);
+        if (exportRequest.format === 'csv') {
+          const csv = ImportExportService.generateCSV(rules);
+          res.setHeader('Content-Type', 'text/csv');
+          res.setHeader('Content-Disposition', 'attachment; filename="rules.csv"');
+          res.send(csv);
+        } else if (exportRequest.format === 'xlsx') {
+          const buffer = ImportExportService.generateExcel(rules);
+          res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+          res.setHeader('Content-Disposition', 'attachment; filename="rules.xlsx"');
+          res.send(buffer);
+        } else {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
+          res.json(rules);
+        }
       } else if (exportRequest.type === 'settings') {
         const settings = await storage.getGeneralSettings();
         res.setHeader('Content-Type', 'application/json');
@@ -907,15 +919,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean up temp file
       await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
 
-      // Limit preview results based on configuration, but return ALL for import logic
-      const previewResults = parsedResults.slice(0, IMPORT_PREVIEW_LIMIT);
+      // If "all" query param is set, return all results, otherwise limit
+      const showAll = req.query.all === 'true';
+      const limit = showAll ? parsedResults.length : IMPORT_PREVIEW_LIMIT;
+      const previewResults = parsedResults.slice(0, limit);
 
       res.json({
         total: parsedResults.length,
-        limit: IMPORT_PREVIEW_LIMIT,
-        isLimited: parsedResults.length > IMPORT_PREVIEW_LIMIT,
-        preview: previewResults, // Limited subset for UI
-        all: parsedResults, // Full set for import logic
+        limit: limit,
+        isLimited: parsedResults.length > limit,
+        preview: previewResults, // Limited subset for UI (or full if requested)
+        all: parsedResults, // Full set for import logic (always returned currently, but frontend should prefer 'preview' for display)
         counts: {
           new: parsedResults.filter(r => r.status === 'new').length,
           update: parsedResults.filter(r => r.status === 'update').length,
@@ -951,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(rules);
       }
     } catch (error) {
-      console.error("Export error:", error);
+      console.error("Export error:", error instanceof Error ? error.message : "Unknown error");
       res.status(500).json({ error: "Failed to export rules" });
     }
   });

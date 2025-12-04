@@ -1,4 +1,4 @@
-import { read, utils, write } from 'xlsx';
+import { read, utils, write } from '@e965/xlsx';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import { UrlRule, importUrlRuleSchema } from '@shared/schema';
@@ -90,7 +90,7 @@ export class ImportExportService {
       if (rule.redirectType) {
         const type = String(rule.redirectType).toLowerCase();
         if (type.includes('wild') || type === 'complete') rule.redirectType = 'wildcard';
-        else if (type.includes('part')) rule.redirectType = 'partial';
+        else if (type.includes('part') || type === 'partial') rule.redirectType = 'partial';
       } else {
         rule.redirectType = 'partial'; // Default
       }
@@ -106,6 +106,7 @@ export class ImportExportService {
       // Validation using Zod schema (partially)
       // We manually check required fields because the Zod schema might be too strict for initial parsing
       if (!rule.matcher) errors.push('Matcher (Quelle) is required');
+      if (!rule.targetUrl) errors.push('Target URL (Ziel) is required');
 
       // Attempt to validate with Zod if basic checks pass
       let isValid = errors.length === 0;
@@ -170,6 +171,9 @@ export class ImportExportService {
     const workbook = utils.book_new();
     const worksheet = utils.json_to_sheet(data);
     utils.book_append_sheet(workbook, worksheet, 'Rules');
-    return write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Explicitly using type 'buffer' which returns a Buffer in Node.js
+    const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return buffer as unknown as Buffer;
   }
 }

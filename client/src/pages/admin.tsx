@@ -230,6 +230,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Import Preview State
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState<ImportPreviewData | null>(null);
+  const [previewLimit, setPreviewLimit] = useState(50);
+  const [showAllPreview, setShowAllPreview] = useState(false);
 
   const [generalSettings, setGeneralSettings] = useState({
     headerTitle: "URL Migration Tool",
@@ -1151,10 +1153,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Import/Export mutations
   const previewMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, all = false }: { file: File; all?: boolean }) => {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch("/api/admin/import/preview", {
+      const response = await fetch(`/api/admin/import/preview?all=${all}`, {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -1168,6 +1170,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     onSuccess: (data: ImportPreviewData) => {
       setImportPreviewData(data);
       setShowPreviewDialog(true);
+      setShowAllPreview(false); // Reset to default view
+      setPreviewLimit(50);
     },
     onError: (error: any) => {
       toast({
@@ -1356,7 +1360,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    previewMutation.mutate(file);
+    previewMutation.mutate({ file });
+    // Keep file for re-upload if needed for "Show All" or implement state.
+    // However, since server doesn't keep state, we need to re-upload to get all if we didn't fetch all initially.
+    // Wait, the API returns everything if we ask? No, API slices.
+    // Actually, I modified the server to return 'all' array always or sliced?
+    // Let's check server logic. Server currently slices 'preview' but returns 'all'.
+    // So we have all data in 'importPreviewData.all' already! We don't need to re-fetch.
+
     event.target.value = ''; // Reset input
   };
 
@@ -3470,53 +3481,81 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             <div className="flex-1 overflow-auto py-4">
                 {importPreviewData && (
                     <div className="space-y-4">
-                        <div className="flex gap-4 text-sm">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Neu: {importPreviewData.counts.new}
-                            </Badge>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                Update: {importPreviewData.counts.update}
-                            </Badge>
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                Ungültig: {importPreviewData.counts.invalid}
-                            </Badge>
-                            <span className="text-muted-foreground">
-                                Zeige {importPreviewData.preview.length} von {importPreviewData.total}
-                            </span>
+                        <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+                            <div className="flex gap-2">
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  Neu: {importPreviewData.counts.new}
+                              </Badge>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  Update: {importPreviewData.counts.update}
+                              </Badge>
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                  Ungültig: {importPreviewData.counts.invalid}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">
+                                  Zeige {Math.min(previewLimit, importPreviewData.total)} von {importPreviewData.total}
+                              </span>
+                              {importPreviewData.total > 50 && !showAllPreview && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs text-blue-600 hover:text-blue-800"
+                                  onClick={() => {
+                                    setShowAllPreview(true);
+                                    setPreviewLimit(100); // Start with more
+                                  }}
+                                >
+                                  Alle anzeigen
+                                </Button>
+                              )}
+                            </div>
                         </div>
 
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Matcher</TableHead>
-                                    <TableHead>Target</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Auto</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {importPreviewData.preview.map((item, i) => (
-                                    <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
-                                        <TableCell className="font-mono text-xs">
-                                          {item.rule.matcher || '-'}
-                                          {!item.isValid && item.errors.length > 0 && (
-                                            <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
-                                          )}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
-                                    </TableRow>
-                                ))}
-                                {importPreviewData.total > importPreviewData.limit && (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="text-center text-muted-foreground text-xs py-2">
-                                            ... {importPreviewData.total - importPreviewData.limit} weitere Einträge nicht angezeigt (Limit: {importPreviewData.limit})
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                        <div className="border rounded-md">
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Matcher</TableHead>
+                                      <TableHead>Target</TableHead>
+                                      <TableHead>Type</TableHead>
+                                      <TableHead>Auto</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {/* Use either the limited preview or slice from 'all' if available */}
+                                  {(showAllPreview ? importPreviewData.all : importPreviewData.preview)
+                                    .slice(0, previewLimit)
+                                    .map((item, i) => (
+                                      <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
+                                          <TableCell className="font-mono text-xs">
+                                            {item.rule.matcher || '-'}
+                                            {!item.isValid && item.errors.length > 0 && (
+                                              <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Pagination / Load More for "Show All" mode */}
+                        {showAllPreview && previewLimit < importPreviewData.total && (
+                          <div className="flex justify-center pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPreviewLimit(prev => Math.min(prev + 100, importPreviewData.total))}
+                            >
+                              Mehr laden (+100)
+                            </Button>
+                          </div>
+                        )}
                     </div>
                 )}
             </div>

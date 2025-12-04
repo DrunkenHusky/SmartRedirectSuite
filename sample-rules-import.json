@@ -3,12 +3,14 @@
     "matcher": "/old-page",
     "targetUrl": "https://example.com/new-page",
     "redirectType": "partial",
-    "infoText": "Optional description"
+    "infoText": "Sample Redirect",
+    "autoRedirect": false
   },
   {
     "matcher": "/legacy-section",
     "targetUrl": "https://example.com/modern-section",
-    "redirectType": "partial",
-    "infoText": "Optional description"
+    "redirectType": "wildcard",
+    "infoText": "Legacy Section Redirect",
+    "autoRedirect": true
   }
 ]
