@@ -4,38 +4,54 @@ import fs from 'fs';
 import path from 'path';
 import { UrlRule } from '../shared/schema';
 
+// Simplified sample rules with only essential fields
 const sampleRules: UrlRule[] = [
   {
-    id: "uuid-placeholder-1", // Will be ignored on import if not matching existing
     matcher: "/old-page",
     targetUrl: "https://example.com/new-page",
-    redirectType: "partial",
-    autoRedirect: false,
-    infoText: "Simple partial redirect",
-    createdAt: new Date().toISOString()
-  },
+    // Optional fields are omitted in the source data for generation to keep the file clean
+    // The generator might add empty columns if the interface expects them,
+    // but we want minimal columns for the sample file.
+  } as any,
   {
-    id: "uuid-placeholder-2",
     matcher: "/legacy-section",
     targetUrl: "https://example.com/modern-section",
-    redirectType: "wildcard",
-    autoRedirect: true,
-    infoText: "Wildcard redirect with auto-redirect enabled",
-    createdAt: new Date().toISOString()
-  }
+  } as any
 ];
 
-// Generate CSV
-const csvContent = ImportExportService.generateCSV(sampleRules);
+// Custom generation to avoid optional columns in CSV/Excel for samples
+import { stringify } from 'csv-stringify/sync';
+import { utils, write } from 'xlsx';
+
+// 1. CSV
+const csvData = sampleRules.map(r => ({
+  Matcher: r.matcher,
+  'Target URL': r.targetUrl
+}));
+const csvContent = stringify(csvData, { header: true });
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.csv'), csvContent);
 console.log('Generated sample-rules-import.csv');
 
-// Generate Excel
-const excelBuffer = ImportExportService.generateExcel(sampleRules);
+// 2. Excel
+const excelData = sampleRules.map(r => ({
+  Matcher: r.matcher,
+  'Target URL': r.targetUrl
+}));
+const workbook = utils.book_new();
+const worksheet = utils.json_to_sheet(excelData);
+utils.book_append_sheet(workbook, worksheet, 'Rules');
+const excelBuffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.xlsx'), excelBuffer);
 console.log('Generated sample-rules-import.xlsx');
 
-// Generate JSON
-const jsonContent = JSON.stringify(sampleRules, null, 2);
+// 3. JSON (Keep full structure or simplified? Usually JSON users are advanced, but consistency helps)
+// Let's keep JSON simple too, but maybe with type hint
+const jsonRules = sampleRules.map(r => ({
+  matcher: r.matcher,
+  targetUrl: r.targetUrl,
+  redirectType: 'partial', // Hint at default
+  infoText: 'Optional description'
+}));
+const jsonContent = JSON.stringify(jsonRules, null, 2);
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.json'), jsonContent);
 console.log('Generated sample-rules-import.json');

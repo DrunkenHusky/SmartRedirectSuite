@@ -82,6 +82,8 @@ interface ParsedRuleResult {
 
 interface ImportPreviewData {
   total: number;
+  limit: number;
+  isLimited: boolean;
   preview: ParsedRuleResult[];
   all: ParsedRuleResult[];
   counts: {
@@ -3279,9 +3281,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
                                 <ul className="list-disc list-inside text-xs">
                                     <li>Matcher (Pflicht) - z.B. /alte-seite</li>
-                                    <li>Target URL - z.B. https://neue-seite.de</li>
-                                    <li>Type - 'wildcard' oder 'partial'</li>
-                                    <li>ID (optional) - Zum Aktualisieren bestehender Regeln</li>
+                                    <li>Target URL (Pflicht) - z.B. https://neue-seite.de</li>
+                                    <li>Description (Optional) - z.B. Eine Beschreibung der Regel</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
@@ -3455,6 +3456,82 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           </Tabs>
         </div>
       </main>
+
+      {/* Import Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Import Vorschau</DialogTitle>
+                <DialogDescription>
+                    Überprüfen Sie die zu importierenden Regeln. {importPreviewData?.isLimited && `(Vorschau auf ${importPreviewData.limit} Einträge begrenzt)`}
+                </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-auto py-4">
+                {importPreviewData && (
+                    <div className="space-y-4">
+                        <div className="flex gap-4 text-sm">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Neu: {importPreviewData.counts.new}
+                            </Badge>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                Update: {importPreviewData.counts.update}
+                            </Badge>
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                Ungültig: {importPreviewData.counts.invalid}
+                            </Badge>
+                            <span className="text-muted-foreground">
+                                Zeige {importPreviewData.preview.length} von {importPreviewData.total}
+                            </span>
+                        </div>
+
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Matcher</TableHead>
+                                    <TableHead>Target</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Auto</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {importPreviewData.preview.map((item, i) => (
+                                    <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
+                                        <TableCell className="font-mono text-xs">
+                                          {item.rule.matcher || '-'}
+                                          {!item.isValid && item.errors.length > 0 && (
+                                            <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                        <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
+                                        <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
+                                    </TableRow>
+                                ))}
+                                {importPreviewData.total > importPreviewData.limit && (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center text-muted-foreground text-xs py-2">
+                                            ... {importPreviewData.total - importPreviewData.limit} weitere Einträge nicht angezeigt (Limit: {importPreviewData.limit})
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </div>
+
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Abbrechen</Button>
+                <Button
+                    onClick={handleExecuteImport}
+                    disabled={importMutation.isPending || !importPreviewData?.all.some(r => r.isValid)}
+                >
+                    {importMutation.isPending ? "Importiere..." : `${importPreviewData?.all.filter(r => r.isValid).length || 0} Regeln Importieren`}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rule Editing Dialog - Moved outside TabsContent to be accessible from all tabs */}
       <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>

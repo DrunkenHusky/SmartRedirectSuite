@@ -35,6 +35,9 @@ declare module 'express-session' {
 // Admin-Passwort aus Umgebungsvariable oder Standard
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Password1";
 
+// Import Preview Limit from environment variable (default 1000)
+const IMPORT_PREVIEW_LIMIT = parseInt(process.env.IMPORT_PREVIEW_LIMIT || "1000", 10);
+
 // Middleware to check admin authentication
 const requireAuth = (req: any, res: any, next: any) => {
   if (!req.session?.isAdminAuthenticated) {
@@ -904,10 +907,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean up temp file
       await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
 
+      // Limit preview results based on configuration, but return ALL for import logic
+      const previewResults = parsedResults.slice(0, IMPORT_PREVIEW_LIMIT);
+
       res.json({
         total: parsedResults.length,
-        preview: parsedResults.slice(0, 10), // Send first 10 for preview
-        all: parsedResults, // Send all to client (for now, assuming it handles it, or client can paginate if needed)
+        limit: IMPORT_PREVIEW_LIMIT,
+        isLimited: parsedResults.length > IMPORT_PREVIEW_LIMIT,
+        preview: previewResults, // Limited subset for UI
+        all: parsedResults, // Full set for import logic
         counts: {
           new: parsedResults.filter(r => r.status === 'new').length,
           update: parsedResults.filter(r => r.status === 'update').length,

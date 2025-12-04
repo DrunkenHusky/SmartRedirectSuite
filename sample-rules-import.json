@@ -1,20 +1,14 @@
 [
   {
-    "id": "uuid-placeholder-1",
     "matcher": "/old-page",
     "targetUrl": "https://example.com/new-page",
     "redirectType": "partial",
-    "autoRedirect": false,
-    "infoText": "Simple partial redirect",
-    "createdAt": "2025-12-04T08:18:16.654Z"
+    "infoText": "Optional description"
   },
   {
-    "id": "uuid-placeholder-2",
     "matcher": "/legacy-section",
     "targetUrl": "https://example.com/modern-section",
-    "redirectType": "wildcard",
-    "autoRedirect": true,
-    "infoText": "Wildcard redirect with auto-redirect enabled",
-    "createdAt": "2025-12-04T08:18:16.654Z"
+    "redirectType": "partial",
+    "infoText": "Optional description"
   }
 ]

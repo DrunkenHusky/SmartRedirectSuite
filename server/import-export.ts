@@ -72,6 +72,15 @@ export class ImportExportService {
 
       rule.matcher = getValue(COLUMN_MAPPING.matcher);
       rule.targetUrl = getValue(COLUMN_MAPPING.targetUrl);
+
+      // Encode matcher and targetUrl to handle special characters and spaces
+      if (typeof rule.matcher === 'string') {
+        rule.matcher = encodeURI(rule.matcher);
+      }
+      if (typeof rule.targetUrl === 'string') {
+        rule.targetUrl = encodeURI(rule.targetUrl);
+      }
+
       rule.redirectType = getValue(COLUMN_MAPPING.redirectType);
       rule.infoText = getValue(COLUMN_MAPPING.infoText);
       rule.autoRedirect = getValue(COLUMN_MAPPING.autoRedirect);

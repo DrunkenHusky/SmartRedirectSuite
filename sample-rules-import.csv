@@ -1,3 +1,3 @@
-ID,Matcher,Target URL,Type,Info,Auto Redirect
-uuid-placeholder-1,/old-page,https://example.com/new-page,partial,Simple partial redirect,false
-uuid-placeholder-2,/legacy-section,https://example.com/modern-section,wildcard,Wildcard redirect with auto-redirect enabled,true
+Matcher,Target URL
+/old-page,https://example.com/new-page
+/legacy-section,https://example.com/modern-section

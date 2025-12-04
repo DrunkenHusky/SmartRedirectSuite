@@ -211,6 +211,9 @@ LOGIN_MAX_ATTEMPTS=5
 # Sperrdauer in Millisekunden (24h)
 LOGIN_BLOCK_DURATION_MS=86400000
 
+# Limit für Import-Vorschau (Anzahl Regeln)
+IMPORT_PREVIEW_LIMIT=1000
+
 # Server-Konfiguration
 PORT=5000
 NODE_ENV=development

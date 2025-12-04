@@ -110,7 +110,7 @@ export const importUrlRuleSchema = z.object({
     .min(1, "URL matcher cannot be empty")
     .max(500, "URL matcher too long")
     .regex(URL_MATCHER_PATTERN, "Invalid URL matcher format")
-    .transform(val => val.toLowerCase().trim()),
+    .transform(val => val.trim()), // Removed toLowerCase to preserve encoding for comparison
   targetUrl: z.string()
     .max(2000, "Target URL too long"),
   redirectType: z.enum(REDIRECT_TYPES).default('partial'),
