@@ -55,7 +55,7 @@ export class ImportExportService {
   /**
    * Normalize parsed data to internal Rule structure
    */
-  static normalizeRules(rawRules: any[]): ParsedRuleResult[] {
+  static normalizeRules(rawRules: any[], options: { encodeImportedUrls?: boolean } = { encodeImportedUrls: true }): ParsedRuleResult[] {
     return rawRules.map(row => {
       const rule: any = {};
       const errors: string[] = [];
@@ -73,12 +73,14 @@ export class ImportExportService {
       rule.matcher = getValue(COLUMN_MAPPING.matcher);
       rule.targetUrl = getValue(COLUMN_MAPPING.targetUrl);
 
-      // Encode matcher and targetUrl to handle special characters and spaces
-      if (typeof rule.matcher === 'string') {
-        rule.matcher = encodeURI(rule.matcher);
-      }
-      if (typeof rule.targetUrl === 'string') {
-        rule.targetUrl = encodeURI(rule.targetUrl);
+      // Encode matcher and targetUrl to handle special characters and spaces if enabled
+      if (options.encodeImportedUrls) {
+        if (typeof rule.matcher === 'string') {
+          rule.matcher = encodeURI(rule.matcher);
+        }
+        if (typeof rule.targetUrl === 'string') {
+          rule.targetUrl = encodeURI(rule.targetUrl);
+        }
       }
 
       rule.redirectType = getValue(COLUMN_MAPPING.redirectType);

@@ -3310,9 +3310,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </a>
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <div className="relative">
-                                    <input
+                            {/* Import Settings - Encoding Toggle */}
+                            <div className="flex items-center justify-between p-3 border rounded-md bg-background">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-sm font-medium">URLs automatisch kodieren</span>
+                                <span className="text-xs text-muted-foreground">Sonderzeichen in URLs automatisch konvertieren (encodeURI)</span>
+                              </div>
+                              <Switch
+                                checked={generalSettings.encodeImportedUrls}
+                                onCheckedChange={(checked) => {
+                                  // Update local state
+                                  const newSettings = { ...generalSettings, encodeImportedUrls: checked };
+                                  setGeneralSettings(newSettings);
+                                  // Immediately persist to server
+                                  updateSettingsMutation.mutate(newSettings);
+                                }}
+                              />
+                            </div>
+
+                            <div className="flex gap-2 items-center">
+                                <div className="relative flex-1">
+                                    <Input
                                         id="rule-import-file"
                                         type="file"
                                         accept=".xlsx, .xls, .csv"

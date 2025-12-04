@@ -241,6 +241,9 @@ export const generalSettingsSchema = z.object({
   // Link detection behavior
   caseSensitiveLinkDetection: z.boolean().default(false),
 
+  // Import settings
+  encodeImportedUrls: z.boolean().default(true),
+
   // Auto-redirect functionality
   autoRedirect: z.boolean()
     .default(false),
