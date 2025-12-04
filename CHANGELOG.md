@@ -1,3 +1,20 @@
+# [2.8.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.3...v2.8.0) (2025-12-04)
+
+
+### Bug Fixes
+
+* enable excel/csv upload and ui preview dialog ([81a4913](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/81a49133425665208be967df44533317928b0383))
+* remove duplicate importMutation declaration in admin.tsx ([e74713d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e74713d208417b035b35b258f990972c29e25926))
+
+
+### Features
+
+* add excel/csv import and export for rules ([6ef480e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/6ef480e45df8718d868a69b3b6551919703a016f))
+* Add Excel/CSV Import/Export with Preview and UI enhancements ([1abafb6](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1abafb6822cd83b8b25f74bb1f269d726ada9533))
+* Add Excel/CSV Import/Export with Preview, UI enhancements, and sample files ([0e1c8ab](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0e1c8ab7878e56d4f8228b193ee30f2dde598775))
+* enhance import/export with excel/csv support and preview ([cf51629](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/cf516297af803da406e5f035a9d958a0b8f002ba))
+* enhance import/export with excel/csv support and preview ([7adf619](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/7adf61985d537591932f2e88d4ea189719689861))
+
 ## [2.7.3](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.2...v2.7.3) (2025-12-01)
 
 
