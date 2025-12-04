@@ -811,59 +811,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  const importMutation = useMutation({
-    mutationFn: async (rules: any[]) => {
-      const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
-      return await response.json();
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
-      if (data.errors && data.errors.length > 0) {
-        toast({ 
-          title: "Import mit Validierungsfehlern", 
-          description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
-          variant: "destructive"
-        });
-      } else {
-        const imported = data.imported || 0;
-        const updated = data.updated || 0;
-        toast({ 
-          title: "Import erfolgreich", 
-          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.` 
-        });
-      }
-    },
-    onError: (error: any) => {
-      // Handle authentication errors specifically
-      if (error?.status === 403 || error?.status === 401) {
-        setIsAuthenticated(false);
-        toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
-          variant: "destructive" 
-        });
-        window.location.reload();
-        return;
-      }
-
-      // Handle PayloadTooLargeError (413) specifically
-      if (error?.status === 413 || error?.message?.includes('too large')) {
-        toast({
-          title: "Datei zu groß",
-          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
-          variant: "destructive",
-          duration: 10000
-        });
-        return;
-      }
-      
-      toast({ 
-        title: "Import fehlgeschlagen", 
-        description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
-        variant: "destructive" 
-      });
-    },
-  });
 
   const importSettingsMutation = useMutation({
     mutationFn: (settings: any) => 
@@ -1240,17 +1187,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setImportPreviewData(null);
 
       if (data.errors && data.errors.length > 0) {
-        toast({ 
-          title: "Import mit Validierungsfehlern", 
+        toast({
+          title: "Import mit Validierungsfehlern",
           description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
           variant: "destructive"
         });
       } else {
         const imported = data.imported || 0;
         const updated = data.updated || 0;
-        toast({ 
-          title: "Import erfolgreich", 
-          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.` 
+        toast({
+          title: "Import erfolgreich",
+          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.`
         });
       }
     },
@@ -1258,10 +1205,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
-        toast({ 
-          title: "Authentifizierung erforderlich", 
+        toast({
+          title: "Authentifizierung erforderlich",
           description: "Bitte melden Sie sich erneut an.",
-          variant: "destructive" 
+          variant: "destructive"
         });
         window.location.reload();
         return;
@@ -1277,11 +1224,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         });
         return;
       }
-      
-      toast({ 
-        title: "Import fehlgeschlagen", 
+
+      toast({
+        title: "Import fehlgeschlagen",
         description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
-        variant: "destructive" 
+        variant: "destructive"
       });
     },
   });
@@ -1417,7 +1364,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     const rulesToImport = importPreviewData.all
       .filter(r => r.isValid)
       .map(r => r.rule);
-    
+
     importMutation.mutate(rulesToImport);
   };
 
@@ -3403,8 +3350,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Regel-Rohdaten (JSON)
                             </h3>
                             <div className="space-y-2">
-                                <Button 
-                                    className="w-full" 
+                                <Button
+                                    className="w-full"
                                     variant="outline"
                                     onClick={() => handleExport('rules', 'json')}
                                 >
@@ -3418,7 +3365,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         onChange={handleImportFile}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
-                                    <Button 
+                                    <Button
                                         className="w-full"
                                         variant="secondary"
                                         disabled={importMutation.isPending}
@@ -3443,7 +3390,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground">Systemdaten</h3>
                             <div className="space-y-2">
-                                <Button 
+                                <Button
                                     className="w-full"
                                     variant="outline"
                                     onClick={() => handleExport('settings', 'json')}
@@ -3451,7 +3398,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <Settings className="h-4 w-4 mr-2" />
                                     Einstellungen Exportieren
                                 </Button>
-                                <Button 
+                                <Button
                                     className="w-full"
                                     variant="outline"
                                     onClick={() => handleExport('statistics', 'csv')}
@@ -3466,7 +3413,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onChange={handleImportSettingsFile}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                   />
-                                  <Button 
+                                  <Button
                                     className="w-full"
                                     variant="ghost"
                                     size="sm"

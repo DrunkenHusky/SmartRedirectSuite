@@ -1,0 +1,52 @@
+[
+  {
+    "id": "1",
+    "matcher": "/sample-old-path-full",
+    "targetUrl": "https://newurlofdifferentapp.com/sample-new-path",
+    "redirectType": "wildcard",
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "matcher": "/sample-old-path",
+    "targetUrl": "/sample-new-path",
+    "redirectType": "partial",
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "4ad318f5-8fbd-40eb-83aa-83d2752246cb",
+    "matcher": "/test-import-api",
+    "targetUrl": "https://example.com/updated",
+    "redirectType": "partial",
+    "infoText": "",
+    "createdAt": "2025-12-03T16:10:57.600Z",
+    "autoRedirect": false
+  },
+  {
+    "id": "34b7f6a5-9942-4397-b5b0-b28fc3e17af2",
+    "matcher": "/test-import-api-v2",
+    "targetUrl": "https://example.com",
+    "redirectType": "partial",
+    "infoText": "",
+    "autoRedirect": false,
+    "createdAt": "2025-12-04T07:23:07.248Z"
+  },
+  {
+    "id": "1deb810b-a993-4fc9-b9bc-45bf78b612ed",
+    "matcher": "/test",
+    "targetUrl": "https://example.com",
+    "redirectType": "partial",
+    "infoText": "",
+    "autoRedirect": false,
+    "createdAt": "2025-12-04T08:45:06.163Z"
+  },
+  {
+    "id": "02f272ee-41da-4b92-9c0b-22c3b0a6e972",
+    "matcher": "/test-new-cache",
+    "targetUrl": "https://example.com/new",
+    "redirectType": "partial",
+    "infoText": "",
+    "autoRedirect": false,
+    "createdAt": "2025-12-04T08:59:11.124Z"
+  }
+]
