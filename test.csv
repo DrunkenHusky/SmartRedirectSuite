@@ -1,0 +1,2 @@
+id,matcher,targetUrl,type
+1,/old,/new,partial

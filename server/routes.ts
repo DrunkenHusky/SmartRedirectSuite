@@ -20,6 +20,7 @@ import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
+import multer from 'multer';
 
 
 
@@ -731,6 +732,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const localUploadService = new LocalFileUploadService();
   const upload = localUploadService.getMulterConfig();
   
+  // Custom upload config for imports (JSON, CSV, Excel)
+  const importUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, process.env.LOCAL_UPLOAD_PATH || './data/uploads'),
+      filename: (_req, file, cb) => cb(null, `${createHash('md5').update(Math.random().toString()).digest('hex')}${path.extname(file.originalname)}`)
+    }),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: (_req, file, cb) => {
+      // Allow specific MIME types or extensions
+      const allowedTypes = [
+        'application/json',
+        'text/csv',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+        'application/vnd.ms-excel', // xls
+        'application/csv',
+        'text/plain' // often used for csv
+      ];
+      // Also check extensions as fallback since MIME types can vary
+      const allowedExts = ['.json', '.csv', '.xlsx', '.xls'];
+      const ext = path.extname(file.originalname).toLowerCase();
+
+      if (allowedTypes.includes(file.mimetype) || allowedExts.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only JSON, CSV and Excel files are allowed.'));
+      }
+    }
+  });
+
   app.post("/api/admin/logo/upload", requireAuth, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -860,7 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- New Import/Export Routes ---
 
   // Preview import file
-  app.post("/api/admin/import/preview", requireAuth, upload.single('file'), async (req, res) => {
+  app.post("/api/admin/import/preview", requireAuth, importUpload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         res.status(400).json({ error: "No file uploaded" });
