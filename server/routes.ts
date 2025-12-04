@@ -600,7 +600,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(settings);
       }
     } catch (error) {
-      console.error("Export error:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Export error:", errorMessage);
       res.status(400).json({ error: "Invalid export request" });
     }
   });
@@ -624,7 +625,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: result.errors
       });
     } catch (error) {
-      console.error("Import error:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Import error:", errorMessage);
       res.status(400).json({ error: "Invalid import request" });
     }
   });
@@ -937,8 +939,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      console.error("Import preview error:", error);
-      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to parse file" });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Import preview error:", errorMessage);
+      res.status(400).json({ error: errorMessage });
     }
   });
 
