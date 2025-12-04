@@ -3291,9 +3291,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="text-sm text-muted-foreground space-y-2">
                                 <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
                                 <ul className="list-disc list-inside text-xs">
-                                    <li>Matcher (Pflicht) - z.B. /alte-seite</li>
-                                    <li>Target URL (Pflicht) - z.B. https://neue-seite.de</li>
-                                    <li>Description (Optional) - z.B. Eine Beschreibung der Regel</li>
+                                        <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
+                                        <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
+                                        <li><strong>Type</strong> (Optional) - 'partial' oder 'wildcard'</li>
+                                        <li><strong>Info</strong> (Optional) - Beschreibung</li>
+                                        <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
+                                        <li><strong>ID</strong> (Optional) - Nur für Updates bestehender Regeln</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
@@ -3307,7 +3310,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </a>
                                 </div>
                             </div>
-
                             {/* Import Settings - Encoding Toggle */}
                             <div className="flex items-center justify-between p-3 border rounded-md bg-background">
                               <div className="flex flex-col gap-1">
@@ -3329,13 +3331,42 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex gap-2 items-center">
                                 <div className="relative flex-1">
                                     <Input
+                                        id="rule-import-file"
                                         type="file"
                                         accept=".xlsx, .xls, .csv"
+                                        className="hidden"
                                         onChange={handlePreview}
                                         disabled={previewMutation.isPending}
                                     />
+                                    <label
+                                        htmlFor="rule-import-file"
+                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+                                            ${previewMutation.isPending
+                                                ? 'bg-muted/50 border-muted-foreground/20 cursor-not-allowed'
+                                                : 'bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-primary/50'
+                                            }`}
+                                    >
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                                            {previewMutation.isPending ? (
+                                                <div className="animate-pulse flex flex-col items-center">
+                                                    <div className="h-8 w-8 mb-3 rounded-full bg-muted"></div>
+                                                    <div className="text-sm text-muted-foreground">Analysiere Datei...</div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
+                                                    <p className="mb-1 text-sm text-foreground font-medium">
+                                                        Klicken zum Auswählen
+                                                        <span className="text-muted-foreground font-normal"> oder Datei hierher ziehen</span>
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Excel (.xlsx) oder CSV
+                                                    </p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </label>
                                 </div>
-                                {previewMutation.isPending && <span className="text-xs text-muted-foreground">Lade...</span>}
                             </div>
                         </div>
 
@@ -3417,25 +3448,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                          </div>
 
-                         {/* Settings & Stats */}
+                         {/* Settings Import/Export */}
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Systemdaten</h3>
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <Settings className="h-4 w-4" />
+                                System-Einstellungen
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.
+                            </p>
                             <div className="space-y-2">
                                 <Button
                                     className="w-full"
                                     variant="outline"
                                     onClick={() => handleExport('settings', 'json')}
                                 >
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Einstellungen Exportieren
-                                </Button>
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleExport('statistics', 'csv')}
-                                >
-                                    <BarChart3 className="h-4 w-4 mr-2" />
-                                    Statistiken (CSV)
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Einstellungen Exportieren (JSON)
                                 </Button>
                                 <div className="relative">
                                   <input
@@ -3446,14 +3475,34 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   />
                                   <Button
                                     className="w-full"
-                                    variant="ghost"
-                                    size="sm"
+                                    variant="secondary"
                                     disabled={importSettingsMutation.isPending}
                                   >
-                                    <Upload className="h-3 w-3 mr-2" />
-                                    Einstellungen importieren
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Einstellungen Importieren
                                   </Button>
                                 </div>
+                            </div>
+                         </div>
+
+                         {/* Statistics Export */}
+                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4" />
+                                Statistiken
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.
+                            </p>
+                            <div className="space-y-2">
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => handleExport('statistics', 'csv')}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Statistiken Exportieren (CSV)
+                                </Button>
                             </div>
                          </div>
                     </div>
