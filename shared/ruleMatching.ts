@@ -136,8 +136,28 @@ export function findMatchingRule(
           wildcards++;
           continue;
         }
+        // Partial wildcard support (e.g. "prefix*")
+        if (seg.endsWith("*") && seg.length > 1) {
+          const prefix = seg.slice(0, -1);
+          if (reqSeg.startsWith(prefix)) {
+             wildcards++; // Treat as wildcard for scoring
+             continue;
+          }
+        }
+
         if (seg === reqSeg) {
-          staticMatches++;
+          staticMatches++; // Exact segment match: full weight (1.0)
+        } else if (reqSeg.startsWith(seg)) {
+          // Implicit prefix match (e.g. rule "/team" matches request "/teamwork")
+          // We count this as a match for the segment count (so we consume the segment),
+          // but we give it slightly less weight in the score calculation to prioritize exact matches.
+          // Since staticMatches is used for BOTH scoring AND length, we must keep it as integer (1)
+          // but adjust the score separately.
+          // Wait, 'staticMatches' variable is used for score calculation below: `staticMatches * WEIGHT`.
+          // If we want less weight, we cannot simply increment by 1.
+          // Let's split the concepts: `matchedSegmentsCount` vs `score`.
+          // Refactoring loop state:
+          staticMatches += 0.9; // Using float for scoring distinction
         } else {
           pathMismatch = true;
           break;
@@ -190,21 +210,32 @@ export function findMatchingRule(
       if (
         !best ||
         score > best.score ||
-        (score === best.score && staticMatches > best.staticSegments) ||
+        (score === best.score && start < best.start) || // Prioritize matches that start earlier in the path
+        (score === best.score && start === best.start && staticMatches > best.scoreComponents.staticMatches) || // Compare scores
+        // Specificity Tie-Breaker: Matcher Length
+        // If scores are equal, but one rule has a longer matcher string, it is more specific.
+        // e.g. "/sample-full" vs "/sample" matching "/sample-full". Both match. Both start at 0.
+        // "/sample-full" (longer) should win.
+        (score === best.score && start === best.start && rule.matcher.length > best.rule.matcher.length) ||
+
         (score === best.score &&
-          staticMatches === best.staticSegments &&
+          start === best.start &&
+          staticMatches === best.scoreComponents.staticMatches && // Compare float scores for equality
           queryPairs > best.queryPairs) ||
         (score === best.score &&
-          staticMatches === best.staticSegments &&
+          start === best.start &&
+          staticMatches === best.scoreComponents.staticMatches &&
           queryPairs === best.queryPairs &&
           wildcards < best.wildcards) ||
         (score === best.score &&
-          staticMatches === best.staticSegments &&
+          start === best.start &&
+          staticMatches === best.scoreComponents.staticMatches &&
           queryPairs === best.queryPairs &&
           wildcards === best.wildcards &&
           (rule.createdAt || "") < (best.rule.createdAt || "")) ||
         (score === best.score &&
-          staticMatches === best.staticSegments &&
+          start === best.start &&
+          staticMatches === best.scoreComponents.staticMatches &&
           queryPairs === best.queryPairs &&
           wildcards === best.wildcards &&
           (rule.createdAt || "") === (best.rule.createdAt || "") &&
@@ -213,11 +244,18 @@ export function findMatchingRule(
         best = {
           rule,
           score,
-          staticSegments: staticMatches,
+          // We need to store the integer segment count for length calculation,
+          // but we only have the float `staticMatches`.
+          // However, wildcards are integers. `rulePath.length` is the total segments.
+          // Since we matched the whole rule path (loop completed),
+          // the number of matched segments IS `rulePath.length`.
+          // We don't need to rely on `staticMatches` accumulation for length.
+          matchedSegmentCount: rulePath.length,
           queryPairs,
           wildcards,
           start,
-          ruleQuery
+          ruleQuery,
+          scoreComponents: { staticMatches } // Store the score component for comparison
         };
       }
     }
@@ -228,7 +266,8 @@ export function findMatchingRule(
   // Calculate Match Quality
   let quality = 100;
   const start = best.start;
-  const matchLength = best.staticSegments + best.wildcards;
+  // Use the explicit segment count derived from rule length
+  const matchLength = best.matchedSegmentCount;
   const ruleQuery = best.ruleQuery;
 
   // Check for extra query params
@@ -310,15 +349,29 @@ export function constructTargetUrl(
 
   const { rule, matchStartIndex, matchLength } = matchDetails;
 
-  if (rule.mode === "COMPLETE") {
+  // Note: UrlRule schema uses `redirectType: "wildcard" | "partial"`
+  // "wildcard" corresponds to "COMPLETE" mode logic in this context
+  if (rule.redirectType === "wildcard") {
     // Complete mode: completely replace with targetUrl
-    return rule.targetUrl!;
+    // If targetUrl is relative, prepend the default new domain
+    const target = rule.targetUrl!;
+    if (!target.match(/^https?:\/\//) && !target.startsWith('//')) {
+      const base = defaultNewDomain.replace(/\/$/, "");
+      const path = target.startsWith('/') ? target : '/' + target;
+      return base + path;
+    }
+    return target;
   }
 
   // Partial mode
   // We need to reconstruct the path based on the match
   const reqUrl = new URL(requestUrl, "http://example.com");
-  const reqPathSegments = normalizePath(reqUrl.pathname, config);
+
+  // We want to preserve the original casing of the request segments for the output,
+  // even if matching was case-insensitive.
+  // So we parse the request path with case sensitivity forced to true.
+  const outputConfig = { ...config, CASE_SENSITIVITY_PATH: true };
+  const reqPathSegments = normalizePath(reqUrl.pathname, outputConfig);
 
   // Use explicit match details from finding process
   const start = matchStartIndex;

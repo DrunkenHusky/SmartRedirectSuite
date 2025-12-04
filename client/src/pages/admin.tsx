@@ -766,7 +766,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  const importMutation = useMutation({
+  const importRulesFileMutation = useMutation({
     mutationFn: async (rules: any[]) => {
       const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
       return await response.json();
@@ -1155,26 +1155,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  // Import/Export mutations
-  const importRulesMutation = useMutation({
-    mutationFn: async (rules: any[]) => {
-      return await apiRequest("/api/admin/import", "POST", { rules });
-    },
-    onSuccess: (data: any) => {
-      toast({
-        title: "Import erfolgreich",
-        description: `${data.imported} Regeln wurden importiert.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Import fehlgeschlagen",
-        description: error.message || "Ein Fehler ist aufgetreten",
-        variant: "destructive",
-      });
-    },
-  });
+  // This mutation was redundant with importRulesFileMutation above, keeping the more detailed one
+  // and renaming it to avoid conflict if both were kept.
+  // Since I renamed the first one to importRulesFileMutation, I can remove this one or consolidate.
+  // The first one handles validation errors better.
+  // I will just remove this duplicate block entirely or keep it if it points to a different endpoint?
+  // First one: /api/admin/import/rules (Robust import)
+  // Second one: /api/admin/import (Simple import)
+  // I should probably use the robust one.
+  // Wait, the error was "The symbol 'importMutation' has already been declared".
+  // So there were two `const importMutation = ...`.
+  // I renamed the first one to `importRulesFileMutation`.
+  // Now I need to update the usage site to use `importRulesFileMutation`.
 
   // Cache rebuild mutation
   const rebuildCacheMutation = useMutation({
@@ -1308,7 +1300,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
 
       // Import the rules
-      importMutation.mutate(importData);
+      importRulesFileMutation.mutate(importData);
       
       // Reset file input
       event.target.value = '';
@@ -3185,10 +3177,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <Button 
                             variant="secondary" 
                             className="w-full"
-                            disabled={importMutation.isPending}
+                            disabled={importRulesFileMutation.isPending}
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            {importMutation.isPending ? 'Importiere...' : 'Regeln importieren'}
+                            {importRulesFileMutation.isPending ? 'Importiere...' : 'Regeln importieren'}
                           </Button>
                         </div>
                         <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/50 rounded-lg">
