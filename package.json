@@ -29,7 +29,6 @@
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
-    "cross-env": "^10.1.0",
     "csv-parse": "^6.1.0",
     "csv-stringify": "^6.6.0",
     "dotenv": "^17.2.1",
@@ -39,6 +38,7 @@
     "helmet": "^8.1.0",
     "lucide-react": "^0.453.0",
     "multer": "^2.0.2",
+    "playwright": "^1.57.0",
     "postcss": "^8.4.47",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -61,6 +61,7 @@
     "@types/node": "20.16.11",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
+    "cross-env": "^10.1.0",
     "semantic-release": "^25.0.2",
     "tsx": "^4.21.0",
     "typescript": "5.6.3"

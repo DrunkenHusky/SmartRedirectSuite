@@ -31,7 +31,7 @@ export function generateNewUrl(oldUrl: string, newDomain?: string): string {
 
 export function generateUrlWithRule(
   oldUrl: string, 
-  rule: { matcher: string; targetUrl?: string; redirectType?: 'wildcard' | 'partial' }, 
+  rule: { matcher: string; targetUrl?: string; redirectType?: 'wildcard' | 'partial' | 'domain' },
   newDomain?: string
 ): string {
   try {
@@ -40,6 +40,33 @@ export function generateUrlWithRule(
     if (redirectType === 'wildcard' && rule.targetUrl) {
       // Vollständig: Replace entire URL with target URL - no original URL parts are preserved
       return rule.targetUrl;
+    } else if (redirectType === 'domain') {
+      // Domain Replacement: Keep the path exactly as is, just swap the domain
+
+      let targetDomain = newDomain || 'https://thisisthenewurl.com/';
+
+      if (rule.targetUrl && (rule.targetUrl.startsWith('http://') || rule.targetUrl.startsWith('https://'))) {
+        try {
+          const targetUrlObj = new URL(rule.targetUrl);
+          targetDomain = targetUrlObj.origin;
+        } catch (e) {
+          // If invalid URL, fall back to default logic or keep current targetDomain
+        }
+      } else if (rule.targetUrl && !rule.targetUrl.startsWith('/')) {
+         targetDomain = rule.targetUrl;
+         if (!targetDomain.startsWith('http')) {
+             targetDomain = 'https://' + targetDomain;
+         }
+      }
+
+      const cleanDomain = targetDomain.replace(/\/$/, '');
+      const path = extractPath(oldUrl);
+
+      // Ensure path starts with /
+      const cleanPath = path.startsWith('/') ? path : '/' + path;
+
+      return cleanDomain + cleanPath;
+
     } else if (redirectType === 'partial' && rule.targetUrl) {
       // Teilweise: Replace path segments from matcher onwards, preserve additional segments/params/anchors
       const baseDomain = newDomain || 'https://thisisthenewurl.com/';

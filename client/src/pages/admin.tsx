@@ -199,13 +199,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matcher: "",
     targetUrl: "",
     infoText: "",
-    redirectType: "partial" as "wildcard" | "partial",
+    redirectType: "partial" as "wildcard" | "partial" | "domain",
     autoRedirect: false,
   });
   const targetUrlPlaceholder =
     ruleForm.redirectType === "wildcard"
       ? "https://beispiel.com/neue-seite"
-      : "/neue-seite";
+      : ruleForm.redirectType === "domain"
+        ? "https://neue-domain.com"
+        : "/neue-seite";
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [rulesSearchQuery, setRulesSearchQuery] = useState("");
@@ -2700,8 +2702,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   )}
                                 </td>
                                 <td className="py-3 px-4">
-                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : 'default'}>
-                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : 'Teilweise'}
+                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : (rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
+                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : (rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
                                   </Badge>
                                 </td>
                                 <td className="py-3 px-4">
@@ -2823,8 +2825,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   {rule.matcher}
                                 </Badge>
                                 <div className="flex flex-wrap gap-2">
-                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : 'default'} className="text-xs">
-                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : 'Teilweise'}
+                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : (rule as any).redirectType === 'domain' ? 'outline' : 'default'} className="text-xs">
+                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : (rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
                                   </Badge>
                                   <Badge variant={rule.autoRedirect ? 'default' : 'secondary'} className="text-xs">
                                     {rule.autoRedirect ? '✓ Auto-Redirect' : '✗ Manuell'}
@@ -3679,7 +3681,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               </label>
               <Select
                 value={ruleForm.redirectType}
-                onValueChange={(value: "wildcard" | "partial") =>
+                onValueChange={(value: "wildcard" | "partial" | "domain") =>
                   setRuleForm(prev => ({ ...prev, redirectType: value }))
                 }
               >
@@ -3687,6 +3689,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <SelectValue>
                     {ruleForm.redirectType === "partial" && "Teilweise"}
                     {ruleForm.redirectType === "wildcard" && "Vollständig"}
+                    {ruleForm.redirectType === "domain" && "Domain-Ersatz"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
@@ -3703,6 +3706,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <span className="font-medium text-sm">Vollständig</span>
                       <span className="text-xs text-muted-foreground leading-relaxed">
                         Alte Links werden komplett auf die neue Ziel-URL umgeleitet. Keine Bestandteile der alten URL werden übernommen – weder Pfadsegmente noch Parameter oder Anker.
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
+                    <div className="flex flex-col space-y-1">
+                      <span className="font-medium text-sm">Domain-Ersatz</span>
+                      <span className="text-xs text-muted-foreground leading-relaxed">
+                        Ersetzt nur die Domain (Host) der URL. Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Wenn eine Ziel-URL angegeben ist, wird deren Domain verwendet.
                       </span>
                     </div>
                   </SelectItem>
