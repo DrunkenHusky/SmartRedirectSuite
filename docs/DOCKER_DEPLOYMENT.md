@@ -53,6 +53,7 @@ Die Anwendung wird über Umgebungsvariablen konfiguriert.
 | `ADMIN_PASSWORD` | Passwort für das Admin-Panel. **Dringend empfohlen.** | `Password1` | **Ja (Prod)** |
 | `LOGIN_MAX_ATTEMPTS` | Max. Login-Versuche vor temporärer Sperre. | `5` | Nein |
 | `LOGIN_BLOCK_DURATION_MS` | Sperrdauer in ms nach Fehlversuchen. | `86400000` (24h) | Nein |
+| `IMPORT_PREVIEW_LIMIT` | Maximale Anzahl an Regeln für Import-Vorschau. | `1000` | Nein |
 
 ## 💾 Datenpersistenz
 

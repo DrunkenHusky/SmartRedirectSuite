@@ -53,12 +53,45 @@ import {
   ArrowRightLeft,
   AlertTriangle,
   Info,
+  CheckCircle,
+  FileSpreadsheet
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import { CardDescription } from "@/components/ui/card";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
+
+// --- Types ---
+
+interface ParsedRuleResult {
+  rule: Partial<UrlRule>;
+  isValid: boolean;
+  errors: string[];
+  status: 'new' | 'update' | 'invalid';
+}
+
+interface ImportPreviewData {
+  total: number;
+  limit: number;
+  isLimited: boolean;
+  preview: ParsedRuleResult[];
+  all: ParsedRuleResult[];
+  counts: {
+    new: number;
+    update: number;
+    invalid: number;
+  };
+}
 
 interface AdminPageProps {
   onClose: () => void;
@@ -193,6 +226,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Import Preview State
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState<ImportPreviewData | null>(null);
 
   const [generalSettings, setGeneralSettings] = useState({
     headerTitle: "URL Migration Tool",
@@ -776,59 +813,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  const importMutation = useMutation({
-    mutationFn: async (rules: any[]) => {
-      const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
-      return await response.json();
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
-      if (data.errors && data.errors.length > 0) {
-        toast({ 
-          title: "Import mit Validierungsfehlern", 
-          description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
-          variant: "destructive"
-        });
-      } else {
-        const imported = data.imported || 0;
-        const updated = data.updated || 0;
-        toast({ 
-          title: "Import erfolgreich", 
-          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.` 
-        });
-      }
-    },
-    onError: (error: any) => {
-      // Handle authentication errors specifically
-      if (error?.status === 403 || error?.status === 401) {
-        setIsAuthenticated(false);
-        toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
-          variant: "destructive" 
-        });
-        window.location.reload();
-        return;
-      }
-
-      // Handle PayloadTooLargeError (413) specifically
-      if (error?.status === 413 || error?.message?.includes('too large')) {
-        toast({
-          title: "Datei zu groß",
-          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
-          variant: "destructive",
-          duration: 10000
-        });
-        return;
-      }
-      
-      toast({ 
-        title: "Import fehlgeschlagen", 
-        description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
-        variant: "destructive" 
-      });
-    },
-  });
 
   const importSettingsMutation = useMutation({
     mutationFn: (settings: any) => 
@@ -1166,22 +1150,87 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   // Import/Export mutations
-  const importRulesMutation = useMutation({
-    mutationFn: async (rules: any[]) => {
-      return await apiRequest("/api/admin/import", "POST", { rules });
-    },
-    onSuccess: (data: any) => {
-      toast({
-        title: "Import erfolgreich",
-        description: `${data.imported} Regeln wurden importiert.`,
+  const previewMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch("/api/admin/import/preview", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to preview file");
+      }
+      return await response.json();
+    },
+    onSuccess: (data: ImportPreviewData) => {
+      setImportPreviewData(data);
+      setShowPreviewDialog(true);
     },
     onError: (error: any) => {
       toast({
-        title: "Import fehlgeschlagen",
-        description: error.message || "Ein Fehler ist aufgetreten",
+        title: "Vorschau fehlgeschlagen",
+        description: error.message || "Die Datei konnte nicht gelesen werden.",
         variant: "destructive",
+      });
+    }
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (rules: any[]) => {
+      const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      setShowPreviewDialog(false);
+      setImportPreviewData(null);
+
+      if (data.errors && data.errors.length > 0) {
+        toast({
+          title: "Import mit Validierungsfehlern",
+          description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
+          variant: "destructive"
+        });
+      } else {
+        const imported = data.imported || 0;
+        const updated = data.updated || 0;
+        toast({
+          title: "Import erfolgreich",
+          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.`
+        });
+      }
+    },
+    onError: (error: any) => {
+      // Handle authentication errors specifically
+      if (error?.status === 403 || error?.status === 401) {
+        setIsAuthenticated(false);
+        toast({
+          title: "Authentifizierung erforderlich",
+          description: "Bitte melden Sie sich erneut an.",
+          variant: "destructive"
+        });
+        window.location.reload();
+        return;
+      }
+
+      // Handle PayloadTooLargeError (413) specifically
+      if (error?.status === 413 || error?.message?.includes('too large')) {
+        toast({
+          title: "Datei zu groß",
+          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
+          variant: "destructive",
+          duration: 10000
+        });
+        return;
+      }
+
+      toast({
+        title: "Import fehlgeschlagen",
+        description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
+        variant: "destructive"
       });
     },
   });
@@ -1304,9 +1353,32 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const maxCount = statsData?.topUrls[0]?.count || 1;
 
+  const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    previewMutation.mutate(file);
+    event.target.value = ''; // Reset input
+  };
+
+  const handleExecuteImport = () => {
+    if (!importPreviewData) return;
+    // Map parsed results to the format expected by the API
+    const rulesToImport = importPreviewData.all
+      .filter(r => r.isValid)
+      .map(r => r.rule);
+
+    importMutation.mutate(rulesToImport);
+  };
+
+  // Old JSON Import (Advanced)
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!window.confirm("ACHTUNG: Dies ist der Experten-Import. Bestehende Regeln mit gleicher ID werden überschrieben. Fortfahren?")) {
+      event.target.value = '';
+      return;
+    }
 
     try {
       const fileContent = await file.text();
@@ -3185,177 +3257,281 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
             </TabsContent>
 
-            {/* Export Tab */}
+            {/* Export Tab - REDESIGNED */}
             <TabsContent value="export">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Daten exportieren</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-6">
-                    Exportieren Sie Ihre Tracking-Daten und Konfigurationen für weitere Analysen oder Backups.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-4 border border-border rounded-lg">
-                      <h3 className="font-medium text-foreground mb-2 flex items-center">
-                        <BarChart3 className="text-primary mr-2" />
-                        Statistiken exportieren
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Alle Tracking-Daten und URL-Aufrufe
-                      </p>
-                      <div className="space-y-2">
-                        <Button 
-                          className="w-full" 
-                          onClick={() => handleExport('statistics', 'csv')}
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Als CSV herunterladen
-                        </Button>
-                        <Button 
-                          variant="secondary" 
-                          className="w-full"
-                          onClick={() => handleExport('statistics', 'json')}
-                        >
-                          <FileJson className="h-4 w-4 mr-2" />
-                          Als JSON herunterladen
-                        </Button>
-                      </div>
+              <div className="space-y-6">
+                {/* Standard Import/Export Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-6 w-6 text-primary" />
+                        <CardTitle>Standard Import / Export (Excel, CSV)</CardTitle>
                     </div>
+                    <CardDescription>
+                        Benutzerfreundlicher Import und Export für Redirect Rules. Unterstützt Excel (.xlsx) und CSV.
+                        Mit Vorschau-Funktion vor dem Import.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Import Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                            <h3 className="font-medium text-foreground">Regeln Importieren</h3>
+                            <div className="text-sm text-muted-foreground space-y-2">
+                                <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
+                                <ul className="list-disc list-inside text-xs">
+                                    <li>Matcher (Pflicht) - z.B. /alte-seite</li>
+                                    <li>Target URL (Pflicht) - z.B. https://neue-seite.de</li>
+                                    <li>Description (Optional) - z.B. Eine Beschreibung der Regel</li>
+                                </ul>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Musterdatei (Excel)
+                                  </a>
+                                  <span className="text-muted-foreground">|</span>
+                                  <a href="/sample-rules-import.csv" download className="text-xs text-primary hover:underline flex items-center">
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Musterdatei (CSV)
+                                  </a>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                                <div className="relative flex-1">
+                                    <Input
+                                        type="file"
+                                        accept=".xlsx, .xls, .csv"
+                                        onChange={handlePreview}
+                                        disabled={previewMutation.isPending}
+                                    />
+                                </div>
+                                {previewMutation.isPending && <span className="text-xs text-muted-foreground">Lade...</span>}
+                            </div>
+                        </div>
 
-                    <div className="p-4 border border-border rounded-lg">
-                      <h3 className="font-medium text-foreground mb-2 flex items-center">
-                        <Settings className="text-primary mr-2" />
-                        URL-Regeln exportieren
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Alle konfigurierten URL-Transformationsregeln. 
-                        <a 
-                          href="/sample-rules-import.json" 
-                          download 
-                          className="text-primary hover:underline ml-1"
-                        >
-                          Beispieldatei herunterladen
-                        </a>
-                      </p>
-                      <div className="space-y-2">
-                        <Button 
-                          className="w-full"
-                          onClick={() => handleExport('rules')}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Regeln exportieren
-                        </Button>
-                        <div className="relative">
-                          <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleImportFile}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            id="import-rules-file"
-                          />
-                          <Button 
-                            variant="secondary" 
-                            className="w-full"
-                            disabled={importMutation.isPending}
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {importMutation.isPending ? 'Importiere...' : 'Regeln importieren'}
-                          </Button>
+                        {/* Export Section */}
+                        <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                            <h3 className="font-medium text-foreground">Regeln Exportieren</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
+                                Die Dateien können später wieder importiert werden.
+                            </p>
+                            <div className="flex gap-2">
+                                <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Excel Export
+                                </Button>
+                                <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    CSV Export
+                                </Button>
+                            </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="font-medium mb-1">Import-Verhalten:</div>
-                          <ul className="space-y-1">
-                            <li>• <strong>Mit ID:</strong> Bestehende Regel mit gleicher ID wird aktualisiert</li>
-                            <li>• <strong>Ohne ID:</strong> Prüfung auf gleichen Matcher - bei Übereinstimmung wird aktualisiert, sonst neue Regel erstellt</li>
-                            <li>• <strong>Bestehende Regeln:</strong> Bleiben erhalten (kein Überschreiben oder Löschen)</li>
-                            <li>• <strong>Ergebnis:</strong> Additive Ergänzung + Updates bei Übereinstimmungen</li>
-                          </ul>
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mt-6">
-                    <div className="p-4 border border-border rounded-lg">
-                      <h3 className="font-medium text-foreground mb-2 flex items-center">
-                        <Settings className="text-primary mr-2" />
-                        Allgemeine Einstellungen exportieren
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Alle Texte, Icons und Styling-Einstellungen der Migration-Anwendung
-                      </p>
-                      <div className="space-y-2">
-                        <Button 
-                          className="w-full"
-                          onClick={() => handleExport('settings')}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Einstellungen exportieren
-                        </Button>
-                        <div className="relative">
-                          <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleImportSettingsFile}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            id="import-settings-file"
-                          />
-                          <Button 
-                            variant="secondary" 
-                            className="w-full"
-                            disabled={importSettingsMutation.isPending}
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {importSettingsMutation.isPending ? 'Importiere...' : 'Einstellungen importieren'}
-                          </Button>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="font-medium mb-1">Import-Verhalten:</div>
-                          <ul className="space-y-1">
-                            <li>• <strong>Vollständiger Import:</strong> Alle Einstellungen werden komplett überschrieben</li>
-                            <li>• <strong>Texte & Styling:</strong> Titel, Beschreibungen, Farben, Icons werden ersetzt</li>
-                            <li>• <strong>Bestehende Werte:</strong> Werden vollständig durch importierte Werte ersetzt</li>
-                            <li>• <strong>Backup empfohlen:</strong> Exportieren Sie vorher Ihre aktuellen Einstellungen</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mt-6">
-                    <div className="p-4 border border-border rounded-lg bg-red-50 dark:bg-red-900/10">
-                      <h3 className="font-medium text-foreground mb-2 flex items-center text-red-600 dark:text-red-400">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Wartung
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Aktionen zur Wartung und Fehlerbehebung.
-                      </p>
-                      <div className="space-y-2">
-                        <Button
+                {/* Advanced Import/Export Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <FileJson className="h-6 w-6 text-orange-600" />
+                        <CardTitle>Advanced JSON Import / Export</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         {/* JSON Rules */}
+                         <div className="space-y-4 border rounded-lg p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <Settings className="h-4 w-4" />
+                                Regel-Rohdaten (JSON)
+                            </h3>
+                            <div className="space-y-2">
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => handleExport('rules', 'json')}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    JSON Exportieren
+                                </Button>
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        onChange={handleImportFile}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <Button
+                                        className="w-full"
+                                        variant="secondary"
+                                        disabled={importMutation.isPending}
+                                    >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        JSON Importieren (Experte)
+                                    </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  <a href="/sample-rules-import.json" download className="text-xs text-primary hover:underline flex items-center">
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Musterdatei (JSON)
+                                  </a>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    <strong>Warnung:</strong> Keine Vorschau. Überschreibt bestehende Regeln bei ID-Konflikt sofort.
+                                </p>
+                            </div>
+                         </div>
+
+                         {/* Settings & Stats */}
+                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                            <h3 className="font-medium text-foreground">Systemdaten</h3>
+                            <div className="space-y-2">
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => handleExport('settings', 'json')}
+                                >
+                                    <Settings className="h-4 w-4 mr-2" />
+                                    Einstellungen Exportieren
+                                </Button>
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => handleExport('statistics', 'csv')}
+                                >
+                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                    Statistiken (CSV)
+                                </Button>
+                                <div className="relative">
+                                  <input
+                                    type="file"
+                                    accept=".json"
+                                    onChange={handleImportSettingsFile}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                  />
+                                  <Button
+                                    className="w-full"
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={importSettingsMutation.isPending}
+                                  >
+                                    <Upload className="h-3 w-3 mr-2" />
+                                    Einstellungen importieren
+                                  </Button>
+                                </div>
+                            </div>
+                         </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Maintenance Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <CardTitle className="text-red-500">Wartung</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                      <Button
                           variant="destructive"
-                          className="w-full"
                           onClick={() => rebuildCacheMutation.mutate()}
                           disabled={rebuildCacheMutation.isPending}
-                        >
+                      >
                           {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
-                        </Button>
-                        <div className="text-xs text-muted-foreground mt-2">
-                          <p>
-                            <strong>Hinweis:</strong> Dies ist normalerweise nicht erforderlich. Verwenden Sie dies nur, wenn Sie nach dem Ändern oder Importieren von Regeln Probleme mit Weiterleitungen feststellen.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                          Nur bei Problemen mit der Regelerkennung notwendig.
+                      </p>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
       </main>
+
+      {/* Import Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Import Vorschau</DialogTitle>
+                <DialogDescription>
+                    Überprüfen Sie die zu importierenden Regeln. {importPreviewData?.isLimited && `(Vorschau auf ${importPreviewData.limit} Einträge begrenzt)`}
+                </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-auto py-4">
+                {importPreviewData && (
+                    <div className="space-y-4">
+                        <div className="flex gap-4 text-sm">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Neu: {importPreviewData.counts.new}
+                            </Badge>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                Update: {importPreviewData.counts.update}
+                            </Badge>
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                Ungültig: {importPreviewData.counts.invalid}
+                            </Badge>
+                            <span className="text-muted-foreground">
+                                Zeige {importPreviewData.preview.length} von {importPreviewData.total}
+                            </span>
+                        </div>
+
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Matcher</TableHead>
+                                    <TableHead>Target</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Auto</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {importPreviewData.preview.map((item, i) => (
+                                    <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
+                                        <TableCell className="font-mono text-xs">
+                                          {item.rule.matcher || '-'}
+                                          {!item.isValid && item.errors.length > 0 && (
+                                            <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                        <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
+                                        <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
+                                    </TableRow>
+                                ))}
+                                {importPreviewData.total > importPreviewData.limit && (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center text-muted-foreground text-xs py-2">
+                                            ... {importPreviewData.total - importPreviewData.limit} weitere Einträge nicht angezeigt (Limit: {importPreviewData.limit})
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </div>
+
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Abbrechen</Button>
+                <Button
+                    onClick={handleExecuteImport}
+                    disabled={importMutation.isPending || !importPreviewData?.all.some(r => r.isValid)}
+                >
+                    {importMutation.isPending ? "Importiere..." : `${importPreviewData?.all.filter(r => r.isValid).length || 0} Regeln Importieren`}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rule Editing Dialog - Moved outside TabsContent to be accessible from all tabs */}
       <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>

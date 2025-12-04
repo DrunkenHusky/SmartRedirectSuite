@@ -1,0 +1,3 @@
+Matcher,Target URL
+/old-page,https://example.com/new-page
+/legacy-section,https://example.com/modern-section

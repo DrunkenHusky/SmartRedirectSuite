@@ -19,6 +19,8 @@ import path from "path";
 import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
+import { ImportExportService } from "./import-export";
+import multer from 'multer';
 
 
 
@@ -32,6 +34,9 @@ declare module 'express-session' {
 
 // Admin-Passwort aus Umgebungsvariable oder Standard
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Password1";
+
+// Import Preview Limit from environment variable (default 1000)
+const IMPORT_PREVIEW_LIMIT = parseInt(process.env.IMPORT_PREVIEW_LIMIT || "1000", 10);
 
 // Middleware to check admin authentication
 const requireAuth = (req: any, res: any, next: any) => {
@@ -136,6 +141,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve sample import file
   app.get("/sample-rules-import.json", (_req, res) => {
     res.sendFile("sample-rules-import.json", { root: process.cwd() });
+  });
+
+  app.get("/sample-rules-import.csv", (_req, res) => {
+    res.sendFile("sample-rules-import.csv", { root: process.cwd() });
+  });
+
+  app.get("/sample-rules-import.xlsx", (_req, res) => {
+    res.sendFile("sample-rules-import.xlsx", { root: process.cwd() });
   });
   
   // URL-Tracking endpoint
@@ -620,7 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import rules
+  // Import rules (Old route kept for compatibility but it clears all rules)
   app.post("/api/admin/import", requireAuth, async (req, res) => {
     try {
       const { rules } = req.body;
@@ -722,6 +735,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const localUploadService = new LocalFileUploadService();
   const upload = localUploadService.getMulterConfig();
   
+  // Custom upload config for imports (JSON, CSV, Excel)
+  const importUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, process.env.LOCAL_UPLOAD_PATH || './data/uploads'),
+      filename: (_req, file, cb) => cb(null, `${createHash('md5').update(Math.random().toString()).digest('hex')}${path.extname(file.originalname)}`)
+    }),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: (_req, file, cb) => {
+      // Allow specific MIME types or extensions
+      const allowedTypes = [
+        'application/json',
+        'text/csv',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+        'application/vnd.ms-excel', // xls
+        'application/csv',
+        'text/plain' // often used for csv
+      ];
+      // Also check extensions as fallback since MIME types can vary
+      const allowedExts = ['.json', '.csv', '.xlsx', '.xls'];
+      const ext = path.extname(file.originalname).toLowerCase();
+
+      if (allowedTypes.includes(file.mimetype) || allowedExts.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only JSON, CSV and Excel files are allowed.'));
+      }
+    }
+  });
+
   app.post("/api/admin/logo/upload", requireAuth, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -848,6 +890,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- New Import/Export Routes ---
+
+  // Preview import file
+  app.post("/api/admin/import/preview", requireAuth, importUpload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+
+      const buffer = await import('fs/promises').then(fs => fs.readFile(req.file!.path));
+      const rawRules = ImportExportService.parseFile(buffer, req.file.originalname);
+      const parsedResults = ImportExportService.normalizeRules(rawRules);
+
+      // Clean up temp file
+      await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
+
+      // Limit preview results based on configuration, but return ALL for import logic
+      const previewResults = parsedResults.slice(0, IMPORT_PREVIEW_LIMIT);
+
+      res.json({
+        total: parsedResults.length,
+        limit: IMPORT_PREVIEW_LIMIT,
+        isLimited: parsedResults.length > IMPORT_PREVIEW_LIMIT,
+        preview: previewResults, // Limited subset for UI
+        all: parsedResults, // Full set for import logic
+        counts: {
+          new: parsedResults.filter(r => r.status === 'new').length,
+          update: parsedResults.filter(r => r.status === 'update').length,
+          invalid: parsedResults.filter(r => r.status === 'invalid').length
+        }
+      });
+    } catch (error) {
+      console.error("Import preview error:", error);
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to parse file" });
+    }
+  });
+
+  // Export rules as CSV/Excel
+  app.get("/api/admin/export/rules", requireAuth, async (req, res) => {
+    try {
+      const format = (req.query.format as string || 'json').toLowerCase();
+      const rules = await storage.getUrlRules();
+
+      if (format === 'csv') {
+        const csv = ImportExportService.generateCSV(rules);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="rules.csv"');
+        res.send(csv);
+      } else if (format === 'xlsx' || format === 'excel') {
+        const buffer = ImportExportService.generateExcel(rules);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="rules.xlsx"');
+        res.send(buffer);
+      } else {
+        // Default to JSON
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
+        res.json(rules);
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      res.status(500).json({ error: "Failed to export rules" });
+    }
+  });
 
 
   const httpServer = createServer(app);
