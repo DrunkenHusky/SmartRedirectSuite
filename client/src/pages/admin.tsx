@@ -3382,11 +3382,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
-                                    Excel Export
+                                    Herunterladen (Excel)
                                 </Button>
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
                                     <FileText className="h-4 w-4 mr-2" />
-                                    CSV Export
+                                    Herunterladen (CSV)
                                 </Button>
                             </div>
                         </div>
@@ -3399,7 +3399,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileJson className="h-6 w-6 text-orange-600" />
-                        <CardTitle>Advanced JSON Import / Export</CardTitle>
+                        <CardTitle>Erweiterter Regel-Import/Export</CardTitle>
                     </div>
                     <CardDescription>
                         Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.
@@ -3420,7 +3420,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('rules', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    JSON Exportieren
+                                    Herunterladen (JSON)
                                 </Button>
                                 <div className="relative">
                                     <input
@@ -3435,7 +3435,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         disabled={importMutation.isPending}
                                     >
                                         <Upload className="h-4 w-4 mr-2" />
-                                        JSON Importieren (Experte)
+                                        Importieren (JSON)
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -3449,7 +3449,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </p>
                             </div>
                          </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
+                {/* System & Statistics Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Settings className="h-6 w-6 text-blue-600" />
+                        <CardTitle>System & Statistiken</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Verwaltung von Systemeinstellungen und Statistiken.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          {/* Settings Import/Export */}
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
@@ -3466,7 +3482,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('settings', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Einstellungen Exportieren (JSON)
+                                    Herunterladen (JSON)
                                 </Button>
                                 <div className="relative">
                                   <input
@@ -3481,7 +3497,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     disabled={importSettingsMutation.isPending}
                                   >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    Einstellungen Importieren
+                                    Importieren (JSON)
                                   </Button>
                                 </div>
                             </div>
@@ -3503,7 +3519,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('statistics', 'csv')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Statistiken Exportieren (CSV)
+                                    Herunterladen (CSV)
                                 </Button>
                             </div>
                          </div>
