@@ -34,3 +34,8 @@ console.log('Generated sample-rules-import.csv');
 const excelBuffer = ImportExportService.generateExcel(sampleRules);
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.xlsx'), excelBuffer);
 console.log('Generated sample-rules-import.xlsx');
+
+// Generate JSON
+const jsonContent = JSON.stringify(sampleRules, null, 2);
+fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.json'), jsonContent);
+console.log('Generated sample-rules-import.json');
