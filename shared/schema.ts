@@ -25,7 +25,7 @@ export const COLOR_OPTIONS = [
 export const POPUP_MODES = ["active", "inline", "disabled"] as const;
 
 export const REDIRECT_TYPES = ["wildcard", "partial", "domain"] as const;
-export const EXPORT_FORMATS = ["csv", "json"] as const;
+export const EXPORT_FORMATS = ["csv", "json", "xlsx"] as const;
 export const TIME_RANGES = ["24h", "7d", "all"] as const;
 
 /**
