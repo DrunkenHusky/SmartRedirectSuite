@@ -160,7 +160,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         let generatedNewUrl = "";
         
         if (ruleResponse.ok) {
-          const { rule, hasMatch, matchQuality: quality, matchLevel: level, redirectUrl: serverRedirectUrl } = await ruleResponse.json();
+          const { rule, hasMatch, matchQuality: quality, matchLevel: level } = await ruleResponse.json();
           
           if (hasMatch && rule) {
             foundRule = rule;
@@ -168,18 +168,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             setMatchLevel(level || 'red');
             // Determine explanation
             if (quality >= 90) {
-              setMatchExplanation("Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.");
+              setMatchExplanation(settings.matchHighExplanation || "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.");
             } else if (quality >= 60) {
-              setMatchExplanation("Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).");
+              setMatchExplanation(settings.matchMediumExplanation || "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).");
             } else {
-              setMatchExplanation("Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).");
+              setMatchExplanation(settings.matchLowExplanation || "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).");
             }
 
             // Check rule-specific auto-redirect first, then fall back to global setting
             shouldAutoRedirect = rule.autoRedirect || settings.autoRedirect || false;
-
-            // Use server-provided redirect URL
-            redirectUrl = serverRedirectUrl;
+            redirectUrl = generateUrlWithRule(url, rule, settings.defaultNewDomain);
             generatedNewUrl = redirectUrl;
           } else {
             // No match
@@ -187,19 +185,21 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 // Root URL case - 100% match equivalent
                 setMatchQuality(100);
                 setMatchLevel('green');
-                setMatchExplanation("Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
+                setMatchExplanation(settings.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
             } else {
                 setMatchQuality(0);
                 setMatchLevel('red');
-                setMatchExplanation("Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
+                setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
             }
 
-            // If server returned a redirect URL (fallback), use it. Otherwise generate fallback locally.
-            redirectUrl = serverRedirectUrl || generateNewUrl(url, settings.defaultNewDomain);
-            generatedNewUrl = redirectUrl;
-
             if (settings.autoRedirect) {
+               // No matching rule, but global auto-redirect is enabled
                shouldAutoRedirect = true;
+               redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
+               generatedNewUrl = redirectUrl;
+            } else {
+               // No auto-redirect, generate URL for display
+               generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
             }
           }
         } else if (settings.autoRedirect) {
@@ -215,16 +215,21 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         // Handle auto-redirect
         if (shouldAutoRedirect && redirectUrl && redirectUrl !== url) {
           // Track the redirect before redirecting
+          const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
+          const safeOldUrl = url.substring(0, 8000);
+          const safeRedirectUrl = redirectUrl.substring(0, 8000);
+          const safePath = path.substring(0, 8000);
+
           await fetch("/api/track", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              oldUrl: url,
-              newUrl: redirectUrl,
-              path: path,
+              oldUrl: safeOldUrl,
+              newUrl: safeRedirectUrl,
+              path: safePath,
               timestamp: new Date().toISOString(),
-              userAgent: navigator.userAgent,
-              ruleId: foundRule?.id,
+              userAgent: safeUserAgent,
+              ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
             }),
           });
           
@@ -241,16 +246,22 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         setNewUrl(generatedNewUrl);
 
         // Track URL access - only track once per page load
+        // Truncate values to match schema limits
+        const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
+        const safeOldUrl = url.substring(0, 8000);
+        const safeNewUrl = generatedNewUrl.substring(0, 8000);
+        const safePath = path.substring(0, 8000);
+
         await fetch("/api/track", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            oldUrl: url,
-            newUrl: generatedNewUrl,
-            path: path,
+            oldUrl: safeOldUrl,
+            newUrl: safeNewUrl,
+            path: safePath,
             timestamp: new Date().toISOString(),
-            userAgent: navigator.userAgent,
-            ruleId: foundRule?.id,
+            userAgent: safeUserAgent,
+            ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
           }),
         });
 
