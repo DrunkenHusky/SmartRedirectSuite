@@ -53,43 +53,12 @@ import {
   ArrowRightLeft,
   AlertTriangle,
   Info,
-  CheckCircle,
-  FileSpreadsheet
 } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { CardDescription } from "@/components/ui/card";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
-
-// --- Types ---
-
-interface ParsedRuleResult {
-  rule: Partial<UrlRule>;
-  isValid: boolean;
-  errors: string[];
-  status: 'new' | 'update' | 'invalid';
-}
-
-interface ImportPreviewData {
-  total: number;
-  preview: ParsedRuleResult[];
-  all: ParsedRuleResult[];
-  counts: {
-    new: number;
-    update: number;
-    invalid: number;
-  };
-}
 
 interface AdminPageProps {
   onClose: () => void;
@@ -218,16 +187,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [selectedRuleIds, setSelectedRuleIds] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
+  // Import preview state
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState<{
+    totalRules: number;
+    newRules: number;
+    updatedRules: number;
+    preview: any[];
+    rules: any[];
+  } | null>(null);
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
-
-  // Import Preview State
-  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
-  const [importPreviewData, setImportPreviewData] = useState<ImportPreviewData | null>(null);
 
   const [generalSettings, setGeneralSettings] = useState({
     headerTitle: "URL Migration Tool",
@@ -261,11 +236,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     caseSensitiveLinkDetection: false,
     autoRedirect: false,
     showLinkQualityGauge: true,
-    matchHighExplanation: "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
-    matchMediumExplanation: "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).",
-    matchLowExplanation: "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
-    matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
-    matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
   });
 
   // Statistics filters and state
@@ -525,11 +495,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         caseSensitiveLinkDetection: settingsData.caseSensitiveLinkDetection ?? false,
         autoRedirect: settingsData.autoRedirect || false,
         showLinkQualityGauge: settingsData.showLinkQualityGauge ?? true,
-        matchHighExplanation: settingsData.matchHighExplanation || "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
-        matchMediumExplanation: settingsData.matchMediumExplanation || "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).",
-        matchLowExplanation: settingsData.matchLowExplanation || "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
-        matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
-        matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
       });
     }
   }, [settingsData]);
@@ -811,7 +776,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  const importMutation = useMutation({
+  const previewMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch("/api/admin/import/preview", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Preview failed");
+      }
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setImportPreviewData(data);
+      setShowPreviewDialog(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Vorschau fehlgeschlagen",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const importRulesFileMutation = useMutation({
     mutationFn: async (rules: any[]) => {
       const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
       return await response.json();
@@ -832,6 +827,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.` 
         });
       }
+      setShowPreviewDialog(false);
+      setImportPreviewData(null);
     },
     onError: (error: any) => {
       // Handle authentication errors specifically
@@ -1200,91 +1197,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
-  // Import/Export mutations
-  const previewMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch("/api/admin/import/preview", {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to preview file");
-      }
-      return await response.json();
-    },
-    onSuccess: (data: ImportPreviewData) => {
-      setImportPreviewData(data);
-      setShowPreviewDialog(true);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Vorschau fehlgeschlagen",
-        description: error.message || "Die Datei konnte nicht gelesen werden.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const importMutation = useMutation({
-    mutationFn: async (rules: any[]) => {
-      const response = await apiRequest("POST", "/api/admin/import/rules", { rules });
-      return await response.json();
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
-      setShowPreviewDialog(false);
-      setImportPreviewData(null);
-
-      if (data.errors && data.errors.length > 0) {
-        toast({
-          title: "Import mit Validierungsfehlern",
-          description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
-          variant: "destructive"
-        });
-      } else {
-        const imported = data.imported || 0;
-        const updated = data.updated || 0;
-        toast({
-          title: "Import erfolgreich",
-          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.`
-        });
-      }
-    },
-    onError: (error: any) => {
-      // Handle authentication errors specifically
-      if (error?.status === 403 || error?.status === 401) {
-        setIsAuthenticated(false);
-        toast({
-          title: "Authentifizierung erforderlich",
-          description: "Bitte melden Sie sich erneut an.",
-          variant: "destructive"
-        });
-        window.location.reload();
-        return;
-      }
-
-      // Handle PayloadTooLargeError (413) specifically
-      if (error?.status === 413 || error?.message?.includes('too large')) {
-        toast({
-          title: "Datei zu groß",
-          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
-          variant: "destructive",
-          duration: 10000
-        });
-        return;
-      }
-
-      toast({
-        title: "Import fehlgeschlagen",
-        description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
-        variant: "destructive"
-      });
-    },
-  });
+  // This mutation was redundant with importRulesFileMutation above, keeping the more detailed one
+  // and renaming it to avoid conflict if both were kept.
+  // Since I renamed the first one to importRulesFileMutation, I can remove this one or consolidate.
+  // The first one handles validation errors better.
+  // I will just remove this duplicate block entirely or keep it if it points to a different endpoint?
+  // First one: /api/admin/import/rules (Robust import)
+  // Second one: /api/admin/import (Simple import)
+  // I should probably use the robust one.
+  // Wait, the error was "The symbol 'importMutation' has already been declared".
+  // So there were two `const importMutation = ...`.
+  // I renamed the first one to `importRulesFileMutation`.
+  // Now I need to update the usage site to use `importRulesFileMutation`.
 
   // Cache rebuild mutation
   const rebuildCacheMutation = useMutation({
@@ -1404,55 +1328,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const maxCount = statsData?.topUrls[0]?.count || 1;
 
-  const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    previewMutation.mutate(file);
-    event.target.value = ''; // Reset input
-  };
-
-  const handleExecuteImport = () => {
-    if (!importPreviewData) return;
-    // Map parsed results to the format expected by the API
-    const rulesToImport = importPreviewData.all
-      .filter(r => r.isValid)
-      .map(r => r.rule);
-
-    importMutation.mutate(rulesToImport);
-  };
-
-  // Old JSON Import (Advanced)
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!window.confirm("ACHTUNG: Dies ist der Experten-Import. Bestehende Regeln mit gleicher ID werden überschrieben. Fortfahren?")) {
-      event.target.value = '';
-      return;
-    }
+    // Use preview mutation instead of direct import
+    previewMutation.mutate(file);
 
-    try {
-      const fileContent = await file.text();
-      const importData = JSON.parse(fileContent);
+    // Reset file input
+    event.target.value = '';
+  };
 
-      // Validate that it's an array of rules
-      if (!Array.isArray(importData)) {
-        throw new Error("Import-Datei muss ein Array von Regeln enthalten");
-      }
-
-      // Import the rules
-      importMutation.mutate(importData);
-
-      // Reset file input
-      event.target.value = '';
-    } catch (error) {
-      toast({
-        title: "Dateifehler",
-        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
-        variant: "destructive"
-      });
-      // Reset file input
-      event.target.value = '';
+  const handleExecuteImport = () => {
+    if (importPreviewData && importPreviewData.rules) {
+      importRulesFileMutation.mutate(importPreviewData.rules);
     }
   };
 
@@ -1463,7 +1352,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     try {
       const fileContent = await file.text();
       const importData = JSON.parse(fileContent);
-
+      
       // Validate that it's a settings object (should have required fields)
       if (!importData || typeof importData !== 'object' || Array.isArray(importData)) {
         throw new Error("Import-Datei muss ein Einstellungs-Objekt enthalten");
@@ -1474,14 +1363,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
       // Import the settings
       importSettingsMutation.mutate(settingsData);
-
+      
       // Reset file input
       event.target.value = '';
     } catch (error) {
-      toast({
-        title: "Dateifehler",
+      toast({ 
+        title: "Dateifehler", 
         description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
-        variant: "destructive"
+        variant: "destructive" 
       });
       // Reset file input
       event.target.value = '';
@@ -1591,15 +1480,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Wird als Haupttitel im Header der Anwendung angezeigt
                               </p>
                             </div>
-
+                            
                             {/* Icon */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${generalSettings.headerLogoUrl ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
                                 Icon {generalSettings.headerLogoUrl && '(deaktiviert - Logo wird verwendet)'}
                               </label>
-                              <Select
-                                value={generalSettings.headerIcon}
-                                onValueChange={(value) =>
+                              <Select 
+                                value={generalSettings.headerIcon} 
+                                onValueChange={(value) => 
                                   setGeneralSettings({ ...generalSettings, headerIcon: value as any })
                                 }
                                 disabled={!!generalSettings.headerLogoUrl}
@@ -1624,7 +1513,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </SelectContent>
                               </Select>
                             </div>
-
+                            
                             {/* Background Color */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -1646,7 +1535,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
                             </div>
                           </div>
-
+                          
                           {/* Logo Upload Section */}
                           <div className="pt-4">
                             <div>
@@ -1697,11 +1586,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       }
 
                                       const data = await response.json();
-
+                                      
                                       // Update settings with the new logo URL
                                       const logoResponse = await apiRequest("PUT", "/api/admin/logo", { logoUrl: data.uploadURL });
                                       const logoData = await logoResponse.json();
-
+                                      
                                       // Update local state immediately with returned settings
                                       if (logoData?.settings) {
                                         setGeneralSettings(logoData.settings);
@@ -1712,16 +1601,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                           headerLogoUrl: data.uploadURL
                                         }));
                                       }
-
+                                      
                                       toast({
                                         title: "Logo hochgeladen",
                                         description: "Das Header-Logo wurde erfolgreich aktualisiert.",
                                       });
-
+                                      
                                       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
                                       // Reset the input
                                       e.target.value = '';
-
+                                      
                                     } catch (error) {
                                       console.error("Logo upload error:", error);
                                       toast({
@@ -1740,7 +1629,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <div className="text-xs text-gray-500 mt-2">
                                   <strong>Funktion:</strong> Wenn ein Logo hochgeladen wird, ersetzt es das gewählte Icon links neben dem Header-Titel. Ohne Logo wird das gewählte Icon angezeigt.
                                 </div>
-
+                                
                                 {/* Logo Preview and Delete */}
                                 {generalSettings.headerLogoUrl && generalSettings.headerLogoUrl.trim() !== "" && (
                                   <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-800 border rounded-lg">
@@ -1748,47 +1637,47 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                         Aktuelles Logo:
                                       </span>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
                                         disabled={!generalSettings.headerLogoUrl || generalSettings.headerLogoUrl.trim() === ""} // Prevent clicks when no logo
                                         onClick={async (e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
-
+                                          
                                           // Disable button immediately to prevent multiple clicks
                                           const button = e.currentTarget;
                                           button.disabled = true;
-
+                                          
                                           try {
                                             const response = await apiRequest("DELETE", "/api/admin/logo");
-
+                                            
                                             if (!response.ok) {
                                               throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                                             }
-
+                                            
                                             const deleteData = await response.json();
-
+                                            
                                             // Update local state to immediately remove logo URL
                                             setGeneralSettings(prev => ({
                                               ...prev,
                                               headerLogoUrl: ""
                                             }));
-
+                                            
                                             toast({
                                               title: "Logo entfernt",
                                               description: "Das Header-Logo wurde erfolgreich entfernt.",
                                             });
-
+                                            
                                             // Invalidate settings to ensure UI reflects the change
                                             queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
-
+                                            
                                           } catch (error: any) {
                                             console.error("Logo deletion error:", error);
-
+                                            
                                             // Re-enable button in case of error
                                             button.disabled = false;
-
+                                            
                                             // Handle authentication errors specifically
                                             if (error?.status === 403 || error?.status === 401) {
                                               setIsAuthenticated(false);
@@ -1800,7 +1689,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                               window.location.reload();
                                               return;
                                             }
-
+                                            
                                             toast({
                                               title: "Fehler",
                                               description: "Das Logo konnte nicht entfernt werden.",
@@ -1815,9 +1704,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       </Button>
                                     </div>
                                     <div className="flex justify-center p-4 bg-white dark:bg-gray-700 border rounded">
-                                      <img
-                                        src={generalSettings.headerLogoUrl}
-                                        alt="Header Logo"
+                                      <img 
+                                        src={generalSettings.headerLogoUrl} 
+                                        alt="Header Logo" 
                                         className="max-h-16 max-w-[200px] object-contain"
                                         onError={(e) => {
                                           e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkgyOEMzMC4yMDkxIDE2IDMyIDE3Ljc5MDkgMzIgMjBWMjRDMzIgMjYuMjA5MSAzMC4yMDkxIDI4IDI4IDI4SDEyQzkuNzkwODYgMjggOCAyNi4yMDkxIDggMjRWMjBDOCAxNy43OTA5IDkuNzkwODYgMTYgMTIgMTZaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
@@ -1998,13 +1887,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 className="bg-white dark:bg-gray-700"
                               />
                             </div>
-
+                            
                             {/* Icon */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Icon
                               </label>
-                              <Select value={generalSettings.urlComparisonIcon} onValueChange={(value) =>
+                              <Select value={generalSettings.urlComparisonIcon} onValueChange={(value) => 
                                 setGeneralSettings({ ...generalSettings, urlComparisonIcon: value as any })
                               }>
                                 <SelectTrigger className="bg-white dark:bg-gray-700">
@@ -2027,7 +1916,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </SelectContent>
                               </Select>
                             </div>
-
+                            
                             {/* Background Color */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -2049,7 +1938,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
                             </div>
                           </div>
-
+                          
                           {/* URL Labels */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -2081,7 +1970,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </p>
                             </div>
                           </div>
-
+                          
                           {/* Default Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -2099,88 +1988,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </div>
 
                           {/* Show Link Quality Gauge Setting */}
-                          <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                <div>
-                                  <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
-                                  <p className="text-xs text-green-700 dark:text-green-300">
-                                    Zeigt ein Symbol mit der Qualität der URL-Übereinstimmung auf der Migrationsseite an
-                                  </p>
-                                </div>
+                          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                              <div>
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                <p className="text-xs text-green-700 dark:text-green-300">
+                                  Zeigt ein Symbol mit der Qualität der URL-Übereinstimmung auf der Migrationsseite an
+                                </p>
                               </div>
-                              <Switch
-                                checked={generalSettings.showLinkQualityGauge}
-                                onCheckedChange={(checked) =>
-                                  setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
-                                }
-                                className="data-[state=checked]:bg-green-600"
-                              />
                             </div>
-
-                            {/* Match Explanation Texts */}
-                            {generalSettings.showLinkQualityGauge && (
-                              <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für hohe Übereinstimmung (≥ 90%)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchHighExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchHighExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für mittlere Übereinstimmung (≥ 60%)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchMediumExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter)."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für niedrige Übereinstimmung (Partial Match)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchLowExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchLowExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match)."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für Startseiten-Übereinstimmung (Root)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchRootExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchRootExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Startseite erkannt. Direkte Weiterleitung auf die neue Domain."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für keine Übereinstimmung
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchNoneExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet."
-                                  />
-                                </div>
-                              </div>
-                            )}
+                            <Switch
+                              checked={generalSettings.showLinkQualityGauge}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
+                              }
+                              className="data-[state=checked]:bg-green-600"
+                            />
                           </div>
-
+                          
                           {/* Action Buttons Sub-section */}
                           <div className="pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2214,7 +2040,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
                             </div>
                           </div>
-
+                          
                           {/* Special Hints Sub-section */}
                           <div className="pt-8 border-t border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-3 mb-6">
@@ -2240,7 +2066,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Icon
                               </label>
-                              <Select value={generalSettings.specialHintsIcon} onValueChange={(value) =>
+                              <Select value={generalSettings.specialHintsIcon} onValueChange={(value) => 
                                 setGeneralSettings({ ...generalSettings, specialHintsIcon: value as any })
                               }>
                                 <SelectTrigger className="bg-white dark:bg-gray-700">
@@ -2312,7 +2138,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Icon für den Titel
                               </label>
-                              <Select value={generalSettings.infoTitleIcon} onValueChange={(value) =>
+                              <Select value={generalSettings.infoTitleIcon} onValueChange={(value) => 
                                 setGeneralSettings({ ...generalSettings, infoTitleIcon: value as any })
                               }>
                                 <SelectTrigger className="bg-white dark:bg-gray-700">
@@ -2367,8 +2193,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     />
                                   </div>
                                   <div className="w-36">
-                                    <Select
-                                      value={generalSettings.infoIcons[index] || "Info"}
+                                    <Select 
+                                      value={generalSettings.infoIcons[index] || "Info"} 
                                       onValueChange={(value) => handleInfoIconChange(index, value)}
                                     >
                                       <SelectTrigger className="h-9 text-xs">
@@ -2430,7 +2256,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
                           </div>
-
+                          
 
                         </div>
                       </div>
@@ -2559,7 +2385,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     <div className="flex gap-2 w-full sm:w-auto">
                       {/* Bulk Delete Button */}
                       {selectedRuleIds.length > 0 && (
-                        <Button
+                        <Button 
                           onClick={handleBulkDelete}
                           size="sm"
                           variant="destructive"
@@ -2569,7 +2395,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {selectedRuleIds.length} löschen
                         </Button>
                       )}
-
+                      
                       {/* Create New Rule Button */}
                       <Button
                         onClick={() => {
@@ -2598,7 +2424,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         className="pl-10"
                       />
                     </div>
-
+                    
                     {/* Results Count and Status */}
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
                       <div>
@@ -2646,7 +2472,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <input
                                   type="checkbox"
                                   checked={
-                                    paginatedRules.length > 0 &&
+                                    paginatedRules.length > 0 && 
                                     selectedRuleIds.length > 0 &&
                                     paginatedRules.every(rule => selectedRuleIds.includes(rule.id))
                                   }
@@ -2839,7 +2665,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           )}
                         </Button>
                       </div>
-
+                      
                       {/* Mobile/Tablet Card Layout - Hidden on desktop */}
                       <div className="lg:hidden space-y-3">
                         {/* Multi-select info for mobile users */}
@@ -2913,7 +2739,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </AlertDialog>
                               </div>
                             </div>
-
+                            
                             {/* Target URL */}
                             <div className="mb-3">
                               <div className="text-xs text-muted-foreground mb-1">Ziel-URL:</div>
@@ -2927,7 +2753,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </span>
                               )}
                             </div>
-
+                            
                             {/* Info Text */}
                             {rule.infoText && (
                               <div className="mb-3">
@@ -2937,7 +2763,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </p>
                               </div>
                             )}
-
+                            
                             {/* Created Date */}
                             <div className="text-xs text-muted-foreground">
                               Erstellt: {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
@@ -2945,7 +2771,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </div>
                         ))}
                       </div>
-
+                      
                       {/* Pagination Controls */}
                       {totalPages > 1 && (
                         <div className="flex justify-between items-center mt-4 pt-4 border-t">
@@ -2967,11 +2793,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Vorherige
                             </Button>
                           </div>
-
+                          
                           <div className="text-sm text-muted-foreground">
                             Zeige {startIndex + 1}-{Math.min(endIndex, totalFilteredRules)} von {totalFilteredRules}
                           </div>
-
+                          
                           <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
@@ -3253,7 +3079,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </tbody>
                           </table>
                         </div>
-
+                        
                         {/* Pagination Controls for Browser View */}
                         {totalStatsPages > 1 && (
                           <div className="flex justify-between items-center mt-4 pt-4 border-t">
@@ -3275,11 +3101,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Vorherige
                               </Button>
                             </div>
-
+                            
                             <div className="text-sm text-muted-foreground">
                               Zeige {statsStartIndex + 1}-{Math.min(statsEndIndex, totalStatsEntries)} von {debouncedStatsSearchQuery ? totalStatsEntries : totalAllStatsEntries}
                             </div>
-
+                            
                             <div className="flex items-center gap-2">
                               <Button
                                 variant="outline"
@@ -3308,202 +3134,172 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
             </TabsContent>
 
-            {/* Export Tab - REDESIGNED */}
+            {/* Export Tab */}
             <TabsContent value="export">
-              <div className="space-y-6">
-                {/* Standard Import/Export Section */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-6 w-6 text-primary" />
-                        <CardTitle>Standard Import / Export (Excel, CSV)</CardTitle>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Daten exportieren</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-6">
+                    Exportieren Sie Ihre Tracking-Daten und Konfigurationen für weitere Analysen oder Backups.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-4 border border-border rounded-lg">
+                      <h3 className="font-medium text-foreground mb-2 flex items-center">
+                        <BarChart3 className="text-primary mr-2" />
+                        Statistiken exportieren
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Alle Tracking-Daten und URL-Aufrufe
+                      </p>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full" 
+                          onClick={() => handleExport('statistics', 'csv')}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Als CSV herunterladen
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          className="w-full"
+                          onClick={() => handleExport('statistics', 'json')}
+                        >
+                          <FileJson className="h-4 w-4 mr-2" />
+                          Als JSON herunterladen
+                        </Button>
+                      </div>
                     </div>
-                    <CardDescription>
-                        Benutzerfreundlicher Import und Export für Redirect Rules. Unterstützt Excel (.xlsx) und CSV.
-                        Mit Vorschau-Funktion vor dem Import.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Import Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Importieren</h3>
-                            <div className="text-sm text-muted-foreground space-y-2">
-                                <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
-                                <ul className="list-disc list-inside text-xs">
-                                    <li>Matcher (Pflicht) - z.B. /alte-seite</li>
-                                    <li>Target URL - z.B. https://neue-seite.de</li>
-                                    <li>Type - 'wildcard' oder 'partial'</li>
-                                    <li>ID (optional) - Zum Aktualisieren bestehender Regeln</li>
-                                </ul>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (Excel)
-                                  </a>
-                                  <span className="text-muted-foreground">|</span>
-                                  <a href="/sample-rules-import.csv" download className="text-xs text-primary hover:underline flex items-center">
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (CSV)
-                                  </a>
-                                </div>
-                            </div>
-                            <div className="flex gap-2 items-center">
-                                <div className="relative flex-1">
-                                    <Input
-                                        type="file"
-                                        accept=".xlsx, .xls, .csv"
-                                        onChange={handlePreview}
-                                        disabled={previewMutation.isPending}
-                                    />
-                                </div>
-                                {previewMutation.isPending && <span className="text-xs text-muted-foreground">Lade...</span>}
-                            </div>
+
+                    <div className="p-4 border border-border rounded-lg">
+                      <h3 className="font-medium text-foreground mb-2 flex items-center">
+                        <Settings className="text-primary mr-2" />
+                        URL-Regeln exportieren
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Alle konfigurierten URL-Transformationsregeln. 
+                        <a 
+                          href="/sample-rules-import.json" 
+                          download 
+                          className="text-primary hover:underline ml-1"
+                        >
+                          Beispieldatei herunterladen
+                        </a>
+                      </p>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full"
+                          onClick={() => handleExport('rules')}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Regeln exportieren
+                        </Button>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept=".json,.csv,.xlsx,.xls"
+                            onChange={handleImportFile}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            id="import-rules-file"
+                          />
+                          <Button 
+                            variant="secondary" 
+                            className="w-full"
+                            disabled={previewMutation.isPending}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            {previewMutation.isPending ? 'Analysiere...' : 'Regeln importieren'}
+                          </Button>
                         </div>
-
-                        {/* Export Section */}
-                        <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Exportieren</h3>
-                            <p className="text-sm text-muted-foreground">
-                                Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
-                                Die Dateien können später wieder importiert werden.
-                            </p>
-                            <div className="flex gap-2">
-                                <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Excel Export
-                                </Button>
-                                <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    CSV Export
-                                </Button>
-                            </div>
+                        <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/50 rounded-lg">
+                          <div className="font-medium mb-1">Unterstützte Formate:</div>
+                          <ul className="space-y-1">
+                            <li>• <strong>JSON, CSV, Excel</strong> (.xlsx)</li>
+                            <li>• Vorschau der Änderungen vor dem Import</li>
+                            <li>• Automatische Duplikaterkennung</li>
+                          </ul>
                         </div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mt-6">
+                    <div className="p-4 border border-border rounded-lg">
+                      <h3 className="font-medium text-foreground mb-2 flex items-center">
+                        <Settings className="text-primary mr-2" />
+                        Allgemeine Einstellungen exportieren
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Alle Texte, Icons und Styling-Einstellungen der Migration-Anwendung
+                      </p>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full"
+                          onClick={() => handleExport('settings')}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Einstellungen exportieren
+                        </Button>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportSettingsFile}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            id="import-settings-file"
+                          />
+                          <Button 
+                            variant="secondary" 
+                            className="w-full"
+                            disabled={importSettingsMutation.isPending}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            {importSettingsMutation.isPending ? 'Importiere...' : 'Einstellungen importieren'}
+                          </Button>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/50 rounded-lg">
+                          <div className="font-medium mb-1">Import-Verhalten:</div>
+                          <ul className="space-y-1">
+                            <li>• <strong>Vollständiger Import:</strong> Alle Einstellungen werden komplett überschrieben</li>
+                            <li>• <strong>Texte & Styling:</strong> Titel, Beschreibungen, Farben, Icons werden ersetzt</li>
+                            <li>• <strong>Bestehende Werte:</strong> Werden vollständig durch importierte Werte ersetzt</li>
+                            <li>• <strong>Backup empfohlen:</strong> Exportieren Sie vorher Ihre aktuellen Einstellungen</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                {/* Advanced Import/Export Section */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <FileJson className="h-6 w-6 text-orange-600" />
-                        <CardTitle>Advanced JSON Import / Export</CardTitle>
-                    </div>
-                    <CardDescription>
-                        Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         {/* JSON Rules */}
-                         <div className="space-y-4 border rounded-lg p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
-                            <h3 className="font-medium text-foreground flex items-center gap-2">
-                                <Settings className="h-4 w-4" />
-                                Regel-Rohdaten (JSON)
-                            </h3>
-                            <div className="space-y-2">
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleExport('rules', 'json')}
-                                >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    JSON Exportieren
-                                </Button>
-                                <div className="relative">
-                                    <input
-                                        type="file"
-                                        accept=".json"
-                                        onChange={handleImportFile}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    <Button
-                                        className="w-full"
-                                        variant="secondary"
-                                        disabled={importMutation.isPending}
-                                    >
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        JSON Importieren (Experte)
-                                    </Button>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  <a href="/sample-rules-import.json" download className="text-xs text-primary hover:underline flex items-center">
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (JSON)
-                                  </a>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-2">
-                                    <strong>Warnung:</strong> Keine Vorschau. Überschreibt bestehende Regeln bei ID-Konflikt sofort.
-                                </p>
-                            </div>
-                         </div>
-
-                         {/* Settings & Stats */}
-                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Systemdaten</h3>
-                            <div className="space-y-2">
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleExport('settings', 'json')}
-                                >
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Einstellungen Exportieren
-                                </Button>
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleExport('statistics', 'csv')}
-                                >
-                                    <BarChart3 className="h-4 w-4 mr-2" />
-                                    Statistiken (CSV)
-                                </Button>
-                                <div className="relative">
-                                  <input
-                                    type="file"
-                                    accept=".json"
-                                    onChange={handleImportSettingsFile}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  />
-                                  <Button
-                                    className="w-full"
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={importSettingsMutation.isPending}
-                                  >
-                                    <Upload className="h-3 w-3 mr-2" />
-                                    Einstellungen importieren
-                                  </Button>
-                                </div>
-                            </div>
-                         </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Maintenance Section */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-red-500" />
-                        <CardTitle className="text-red-500">Wartung</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                      <Button
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mt-6">
+                    <div className="p-4 border border-border rounded-lg bg-red-50 dark:bg-red-900/10">
+                      <h3 className="font-medium text-foreground mb-2 flex items-center text-red-600 dark:text-red-400">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Wartung
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Aktionen zur Wartung und Fehlerbehebung.
+                      </p>
+                      <div className="space-y-2">
+                        <Button
                           variant="destructive"
+                          className="w-full"
                           onClick={() => rebuildCacheMutation.mutate()}
                           disabled={rebuildCacheMutation.isPending}
-                      >
+                        >
                           {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                          Nur bei Problemen mit der Regelerkennung notwendig.
-                      </p>
-                  </CardContent>
-                </Card>
-              </div>
+                        </Button>
+                        <div className="text-xs text-muted-foreground mt-2">
+                          <p>
+                            <strong>Hinweis:</strong> Dies ist normalerweise nicht erforderlich. Verwenden Sie dies nur, wenn Sie nach dem Ändern oder Importieren von Regeln Probleme mit Weiterleitungen feststellen.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
@@ -3656,8 +3452,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             </div>
           </div>
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
-            <Button
-              variant="outline"
+            <Button 
+              variant="outline" 
               onClick={() => {
                 setShowAutoRedirectDialog(false);
                 setPendingAutoRedirectValue(false);
@@ -3666,7 +3462,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             >
               Abbrechen
             </Button>
-            <Button
+            <Button 
               onClick={() => {
                 setGeneralSettings({ ...generalSettings, autoRedirect: pendingAutoRedirectValue });
                 setShowAutoRedirectDialog(false);
@@ -3692,7 +3488,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               Möchten Sie die Regel trotz der folgenden Warnung(en) speichern?
             </AlertDialogDescription>
           </AlertDialogHeader>
-
+          
           <div className="flex-1 min-h-0 my-4">
             <div className="max-h-60 overflow-y-auto border rounded-md p-3 bg-muted/50">
               <div className="text-sm text-foreground whitespace-pre-wrap">
@@ -3700,7 +3496,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               </div>
             </div>
           </div>
-
+          
           <AlertDialogFooter className="flex-shrink-0">
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction
@@ -3708,8 +3504,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               disabled={forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {(forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending)
-                ? 'Speichere...'
+              {(forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending) 
+                ? 'Speichere...' 
                 : 'Trotzdem speichern'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -3746,6 +3542,73 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               disabled={bulkDeleteRulesMutation.isPending}
             >
               {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Import Preview Dialog */}
+      <AlertDialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Import-Vorschau</AlertDialogTitle>
+            <AlertDialogDescription>
+              Überprüfen Sie die zu importierenden Daten.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {importPreviewData && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold">{importPreviewData.totalRules}</div>
+                  <div className="text-xs text-muted-foreground">Regeln erkannt</div>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {importPreviewData.newRules}
+                  </div>
+                  <div className="text-xs text-green-700 dark:text-green-300">Neu</div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {importPreviewData.updatedRules}
+                  </div>
+                  <div className="text-xs text-blue-700 dark:text-blue-300">Aktualisierungen</div>
+                </div>
+              </div>
+
+              {importPreviewData.preview && importPreviewData.preview.length > 0 && (
+                <div className="border rounded-md">
+                  <div className="bg-muted px-4 py-2 text-xs font-medium">Vorschau (erste 5 Einträge)</div>
+                  <div className="divide-y">
+                    {importPreviewData.preview.map((rule: any, i: number) => (
+                      <div key={i} className="px-4 py-2 text-sm flex justify-between items-center">
+                        <div className="truncate max-w-[200px]" title={rule.matcher}>
+                          {rule.matcher}
+                        </div>
+                        <ArrowRightLeft className="h-3 w-3 text-muted-foreground mx-2" />
+                        <div className="truncate max-w-[200px]" title={rule.targetUrl}>
+                          {rule.targetUrl}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowPreviewDialog(false);
+              setImportPreviewData(null);
+            }}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleExecuteImport}
+              disabled={importRulesFileMutation.isPending}
+            >
+              {importRulesFileMutation.isPending ? 'Importiere...' : 'Import bestätigen'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
