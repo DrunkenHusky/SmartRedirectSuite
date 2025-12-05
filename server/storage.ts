@@ -193,6 +193,7 @@ export class FileStorage implements IStorage {
         normalizedTarget,
         isRegex,
         regex,
+        isDomainMatcher,
         ...cleanRule
       } = rule as any;
       return cleanRule as UrlRule;
