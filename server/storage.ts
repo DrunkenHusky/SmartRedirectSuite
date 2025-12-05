@@ -315,18 +315,8 @@ export class FileStorage implements IStorage {
       }
 
       // Check for overlapping patterns
-      for (const existingRule of rules) {
-        if (
-          urlUtils.areMatchersOverlapping(
-            insertRule.matcher,
-            existingRule.matcher,
-          )
-        ) {
-          validationErrors.push(
-            `Überlappender URL-Matcher (Match an beliebiger Pfadposition): "${insertRule.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`,
-          );
-        }
-      }
+      // Overlapping matchers are allowed and resolved by specificity (length/specificity of match)
+      // So we don't block them here.
 
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
@@ -380,19 +370,8 @@ export class FileStorage implements IStorage {
       }
 
       // Check for overlapping patterns (excluding the current rule being updated)
-      for (const existingRule of rules) {
-        if (existingRule.id === id) continue; // Skip current rule
-        if (
-          urlUtils.areMatchersOverlapping(
-            updateData.matcher,
-            existingRule.matcher,
-          )
-        ) {
-          validationErrors.push(
-            `Überlappender URL-Matcher (Match an beliebiger Pfadposition): "${updateData.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`,
-          );
-        }
-      }
+      // Overlapping matchers are allowed and resolved by specificity
+      // So we don't block them here.
 
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
