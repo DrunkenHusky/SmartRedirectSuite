@@ -109,12 +109,11 @@ export function findMatchingRule(
   config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
 ): MatchDetails | null {
   // Ensure requestUrl has a protocol for URL parsing
-  // If it starts with /, assume it's a path and prepend a dummy host
-  const fullRequestUrl = requestUrl.startsWith('http')
-    ? requestUrl
-    : requestUrl.startsWith('/')
-      ? `http://example.com${requestUrl}`
-      : `http://${requestUrl}`;
+  // If requestUrl starts with /, it's a relative path, so we prepend a dummy host to parse correctly.
+  // Otherwise, if it has no protocol, we assume http.
+  const fullRequestUrl = requestUrl.startsWith('/')
+    ? `http://example.com${requestUrl}`
+    : (requestUrl.startsWith('http') ? requestUrl : `http://${requestUrl}`);
   const reqUrl = new URL(fullRequestUrl);
 
   const reqPath = normalizePath(reqUrl.pathname, config);
@@ -248,8 +247,8 @@ export function findMatchingRule(
 
         if (seg === reqSeg) {
           staticMatches++;
-        } else if (rule.redirectType === 'partial' && reqSeg && reqSeg.startsWith(seg)) {
-          // Implicit partial match for 'partial' type rules
+        } else if ((rule.redirectType === 'partial' || rule.redirectType === 'domain') && reqSeg && reqSeg.startsWith(seg)) {
+          // Implicit partial match for 'partial' and 'domain' type rules
           staticMatches++;
           hasPartialSegmentMatch = true;
         } else {
