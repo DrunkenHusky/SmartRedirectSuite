@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import applicationPackage from "../package.json" assert { type: "json" };
-import { APPLICATION_METADATA } from "./appMetadata";
+import applicationPackage from "../../package.json" assert { type: "json" };
+import { APPLICATION_METADATA } from "../../shared/appMetadata";
 
 (() => {
   assert.equal(
