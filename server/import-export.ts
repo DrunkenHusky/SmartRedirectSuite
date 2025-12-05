@@ -55,7 +55,15 @@ export class ImportExportService {
   /**
    * Normalize parsed data to internal Rule structure
    */
-  static normalizeRules(rawRules: any[], options: { encodeImportedUrls?: boolean } = { encodeImportedUrls: true }): ParsedRuleResult[] {
+  static normalizeRules(
+    rawRules: any[],
+    options: { encodeImportedUrls?: boolean } = { encodeImportedUrls: true },
+    existingRules: UrlRule[] = []
+  ): ParsedRuleResult[] {
+    // Create lookup map for faster matching by matcher
+    const existingRulesByMatcher = new Map(existingRules.map(r => [r.matcher, r]));
+    const existingRulesById = new Map(existingRules.map(r => [r.id, r]));
+
     return rawRules.map(row => {
       const rule: any = {};
       const errors: string[] = [];
@@ -137,11 +145,31 @@ export class ImportExportService {
         }
       }
 
+      // Determine status based on ID or Matcher existence
+      let status: 'new' | 'update' | 'invalid' = 'new';
+
+      if (!isValid) {
+        status = 'invalid';
+      } else {
+        if (rule.id && existingRulesById.has(rule.id)) {
+          status = 'update';
+        } else if (existingRulesByMatcher.has(rule.matcher)) {
+          status = 'update';
+        } else if (rule.id && !existingRulesById.has(rule.id)) {
+           // ID provided but not found -> treat as new (with specific ID)
+           // But waiting, storage.importUrlRules says:
+           // "ID provided but not found - create new"
+           status = 'new';
+        } else {
+           status = 'new';
+        }
+      }
+
       return {
         rule,
         isValid,
         errors,
-        status: isValid ? (rule.id ? 'update' : 'new') : 'invalid'
+        status
       };
     });
   }

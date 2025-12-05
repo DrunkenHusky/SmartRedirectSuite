@@ -919,7 +919,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rawRules = ImportExportService.parseFile(buffer, req.file.originalname);
 
       const settings = await storage.getGeneralSettings();
-      const parsedResults = ImportExportService.normalizeRules(rawRules, { encodeImportedUrls: settings.encodeImportedUrls });
+      // Use getCleanUrlRules to avoid passing internal cache properties, although UrlRule type is compatible
+      const existingRules = await storage.getCleanUrlRules();
+
+      const parsedResults = ImportExportService.normalizeRules(
+        rawRules,
+        { encodeImportedUrls: settings.encodeImportedUrls },
+        existingRules
+      );
 
       // Clean up temp file
       await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
