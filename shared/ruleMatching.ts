@@ -21,6 +21,7 @@ export interface RuleMatchingConfig {
 export interface ProcessedUrlRule extends UrlRule {
   normalizedPath: string[];
   normalizedQuery: Map<string, string[]>;
+  hostname?: string;
 }
 
 export interface MatchDetails {
@@ -72,10 +73,31 @@ export function normalizeQuery(
 
 export function preprocessRule(rule: UrlRule, config: RuleMatchingConfig): ProcessedUrlRule {
   const [matcherPath, matcherQuery] = rule.matcher.split("?");
+
+  let hostname: string | undefined;
+  let pathPart = matcherPath;
+
+  // If matcher doesn't start with '/', assume it might be a domain rule
+  if (!matcherPath.startsWith("/")) {
+    try {
+      // Try to parse as URL to extract hostname
+      // We prepend http:// to parse domain-like strings
+      const u = new URL("http://" + matcherPath);
+      // Verify it looks like a valid hostname (not just a path without leading slash that URL parser accepted)
+      if (u.hostname && u.hostname !== "localhost") {
+         hostname = u.hostname;
+         pathPart = u.pathname;
+      }
+    } catch(e) {
+      // Ignore parsing errors, treat as path
+    }
+  }
+
   return {
     ...rule,
-    normalizedPath: normalizePath(matcherPath, config),
+    normalizedPath: normalizePath(pathPart, config),
     normalizedQuery: normalizeQuery(matcherQuery ? "?" + matcherQuery : "", config),
+    hostname
   };
 }
 
@@ -91,6 +113,8 @@ export function findMatchingRule(
   const reqUrl = new URL(requestUrl, "http://example.com");
   const reqPath = normalizePath(reqUrl.pathname, config);
   const reqQuery = normalizeQuery(reqUrl.search, config);
+  // Check if we have a real hostname (not the dummy one)
+  const hasRealHost = requestUrl.startsWith("http");
 
   let best: {
     rule: UrlRule;
@@ -105,13 +129,28 @@ export function findMatchingRule(
   for (const rule of rules) {
     let rulePath: string[];
     let ruleQuery: Map<string, string[]>;
+    let ruleHostname: string | undefined;
 
     if (isProcessedRule(rule)) {
       rulePath = rule.normalizedPath;
       ruleQuery = rule.normalizedQuery;
+      ruleHostname = rule.hostname;
     } else {
       const [matcherPath, matcherQuery] = rule.matcher.split("?");
-      rulePath = normalizePath(matcherPath, config);
+
+      // Dynamic domain extraction for non-processed rules
+      let pathPart = matcherPath;
+      if (!matcherPath.startsWith("/")) {
+        try {
+          const u = new URL("http://" + matcherPath);
+          if (u.hostname && u.hostname !== "localhost") {
+             ruleHostname = u.hostname;
+             pathPart = u.pathname;
+          }
+        } catch(e) {}
+      }
+
+      rulePath = normalizePath(pathPart, config);
       // Pre-check length to avoid unnecessary query processing
       if (rulePath.length > reqPath.length) continue;
 
@@ -119,6 +158,14 @@ export function findMatchingRule(
         matcherQuery ? "?" + matcherQuery : "",
         config,
       );
+    }
+
+    // Domain matching check
+    if (ruleHostname) {
+       // If rule has a specific hostname, request MUST match it
+       if (!hasRealHost || reqUrl.hostname !== ruleHostname) {
+         continue;
+       }
     }
 
     if (rulePath.length > reqPath.length) continue;

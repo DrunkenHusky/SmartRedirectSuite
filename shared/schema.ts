@@ -5,7 +5,7 @@ import { z } from "zod";
  */
 
 // URL validation patterns
-const URL_MATCHER_PATTERN = /^\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/;
+const URL_MATCHER_PATTERN = /^[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/;
 
 // Icon enums for better type safety and maintainability
 export const ICON_OPTIONS = [

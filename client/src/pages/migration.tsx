@@ -151,7 +151,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         const ruleResponse = await fetch("/api/check-rules", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path }),
+          body: JSON.stringify({ path, url }),
         });
         
         let shouldAutoRedirect = false;

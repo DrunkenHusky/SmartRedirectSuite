@@ -179,7 +179,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // URL-Regel Matching endpoint
   app.post("/api/check-rules", apiRateLimiter, async (req, res) => {
     try {
-      const { path } = z.object({ path: z.string() }).parse(req.body);
+      const schema = z.object({
+        path: z.string(),
+        url: z.string().optional()
+      });
+      const { path, url } = schema.parse(req.body);
+
       // Removed direct getUrlRules call to use processed version below
       const settings = await storage.getGeneralSettings();
 
@@ -192,7 +197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rules = await storage.getProcessedUrlRules(config);
 
       // Normalization and specificity prioritization handled by findMatchingRule
-      const matchDetails = findMatchingRule(path, rules, config);
+      // If full URL is provided, use it (enables domain matching), otherwise fallback to path
+      const matchDetails = findMatchingRule(url || path, rules, config);
 
       res.json({
         rule: matchDetails?.rule || null,
