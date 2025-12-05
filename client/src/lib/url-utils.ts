@@ -52,6 +52,7 @@ export function generateUrlWithRule(
         try {
           const oldUrlObj = new URL(oldUrl);
           if (oldUrlObj.search) {
+             const targetUrlObj = new URL(finalUrl.startsWith('http') ? finalUrl : 'https://dummy' + finalUrl);
              // If target already has params, merge? Or just append?
              // Logic: Append if params exist, or create new.
              // Simplest approach: Use URL object
