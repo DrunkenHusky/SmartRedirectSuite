@@ -1095,7 +1095,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${type}.${format === 'csv' ? 'csv' : 'json'}`;
+        const extension = format === 'csv' ? 'csv' : (format === 'xlsx' || format === 'excel' ? 'xlsx' : 'json');
+        a.download = `${type}.${extension}`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
