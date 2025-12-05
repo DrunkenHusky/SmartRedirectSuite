@@ -109,7 +109,12 @@ export function findMatchingRule(
   config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
 ): MatchDetails | null {
   // Ensure requestUrl has a protocol for URL parsing
-  const fullRequestUrl = requestUrl.startsWith('http') ? requestUrl : `http://${requestUrl}`;
+  // If it starts with /, assume it's a path and prepend a dummy host
+  const fullRequestUrl = requestUrl.startsWith('http')
+    ? requestUrl
+    : requestUrl.startsWith('/')
+      ? `http://example.com${requestUrl}`
+      : `http://${requestUrl}`;
   const reqUrl = new URL(fullRequestUrl);
 
   const reqPath = normalizePath(reqUrl.pathname, config);
