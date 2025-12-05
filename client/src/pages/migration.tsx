@@ -157,13 +157,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         let shouldAutoRedirect = false;
         let redirectUrl = "";
         let foundRule: UrlRule | null = null;
+        let foundRules: UrlRule[] = [];
         let generatedNewUrl = "";
         
         if (ruleResponse.ok) {
-          const { rule, hasMatch, matchQuality: quality, matchLevel: level } = await ruleResponse.json();
+          const { rule, hasMatch, matchQuality: quality, matchLevel: level, matchingRules } = await ruleResponse.json();
           
           if (hasMatch && rule) {
             foundRule = rule;
+            foundRules = matchingRules || [rule];
             setMatchQuality(quality || 0);
             setMatchLevel(level || 'red');
             // Determine explanation
@@ -262,6 +264,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             timestamp: new Date().toISOString(),
             userAgent: safeUserAgent,
             ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
+            ruleIds: foundRules.map(r => r.id).filter(id => typeof id === 'string' && id.length > 0),
           }),
         });
 

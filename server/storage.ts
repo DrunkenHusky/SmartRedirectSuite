@@ -78,7 +78,7 @@ export interface IStorage {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
   ): Promise<{
-    entries: (UrlTracking & { rule?: UrlRule })[];
+    entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
     totalPages: number;
     currentPage: number;
@@ -456,6 +456,7 @@ export class FileStorage implements IStorage {
       return {
         ...insertTracking,
         id: randomUUID(),
+        ruleIds: insertTracking.ruleIds || [],
       };
     }
 
@@ -466,6 +467,7 @@ export class FileStorage implements IStorage {
     const tracking: UrlTracking = {
       ...insertTracking,
       id: randomUUID(),
+      ruleIds: insertTracking.ruleIds || [],
     };
     trackingData.push(tracking);
     await this.writeJsonFile(TRACKING_FILE, trackingData);
@@ -609,7 +611,7 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
   ): Promise<{
-    entries: (UrlTracking & { rule?: UrlRule })[];
+    entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
     totalPages: number;
     currentPage: number;
@@ -671,10 +673,26 @@ export class FileStorage implements IStorage {
     const rulesMap = new Map(rules.map((r) => [r.id, r]));
 
     const enrichedEntries = paginatedEntries.map((entry) => {
+      const enriched: UrlTracking & { rule?: UrlRule; rules?: UrlRule[] } = { ...entry };
+
+      // Legacy single rule support
       if (entry.ruleId && rulesMap.has(entry.ruleId)) {
-        return { ...entry, rule: rulesMap.get(entry.ruleId) };
+        enriched.rule = rulesMap.get(entry.ruleId);
       }
-      return entry;
+
+      // Multiple rules support
+      if (entry.ruleIds && entry.ruleIds.length > 0) {
+        enriched.rules = entry.ruleIds
+          .map(id => rulesMap.get(id))
+          .filter((r): r is UrlRule => r !== undefined);
+      } else if (entry.ruleId && rulesMap.has(entry.ruleId)) {
+        // Fallback: populate rules array from single ruleId for consistent UI handling
+        enriched.rules = [rulesMap.get(entry.ruleId)!];
+      } else {
+        enriched.rules = [];
+      }
+
+      return enriched;
     });
 
     return {
