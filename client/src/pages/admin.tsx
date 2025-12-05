@@ -3765,7 +3765,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       </TableHead>
                                       <TableHead>Typ</TableHead>
                                       <TableHead>Auto-Redirect</TableHead>
-                                      <TableHead>Parameter</TableHead>
+                                      <TableHead>Query Parameter</TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
