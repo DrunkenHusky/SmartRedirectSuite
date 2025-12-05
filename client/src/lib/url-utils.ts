@@ -75,7 +75,36 @@ export function generateUrlWithRule(
       // Extract the full path with query params and hash  
       const oldPath = extractPath(oldUrl);
       
-      // Clean up matcher and target
+      // Check if matcher is a domain rule
+      const isDomainMatcher = !rule.matcher.startsWith('/');
+
+      if (isDomainMatcher) {
+         // If matcher is a domain, handle redirect
+         let targetBase = cleanDomain;
+         // Ensure targetUrl is treated as a string to prevent null/undefined errors
+         const targetUrl = rule.targetUrl || '';
+         let targetPath = targetUrl.replace(/\/$/, ''); // Remove trailing slash if present
+
+         // If targetUrl is an absolute URL, use it as the new base
+         if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+             // For domain matcher, we essentially just want to swap the domain but potentially append a path prefix
+             targetBase = targetPath;
+         } else {
+             // targetUrl is relative path, append to cleanDomain
+             targetBase = cleanDomain + (targetPath.startsWith('/') ? targetPath : '/' + targetPath);
+         }
+
+         // oldPath includes initial slash usually.
+         // Ensure we don't double slash if targetBase ends with slash (it shouldn't)
+         // or oldPath starts with slash.
+
+         const normalizedOldPath = oldPath.startsWith('/') ? oldPath : '/' + oldPath;
+
+         // If targetBase already contains a path, we append oldPath to it
+         return targetBase + normalizedOldPath;
+      }
+
+      // Standard Path Matcher Logic
       const cleanMatcher = rule.matcher.replace(/\/$/, '');
       const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, '');
       

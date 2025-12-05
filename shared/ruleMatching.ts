@@ -21,6 +21,7 @@ export interface RuleMatchingConfig {
 export interface ProcessedUrlRule extends UrlRule {
   normalizedPath: string[];
   normalizedQuery: Map<string, string[]>;
+  isDomainMatcher: boolean;
 }
 
 export interface MatchDetails {
@@ -37,7 +38,15 @@ export interface MatchDetails {
 
 export function normalizePath(path: string, cfg: RuleMatchingConfig): string[] {
   // Remove fragment and normalize slashes
-  const url = new URL(path, "http://example.com");
+  // If path is empty or just /, return empty array for root
+  if (!path || path === '/') return [];
+
+  // Handle relative paths (which domain matchers essentially are if passed here)
+  // But normalizePath expects a path-like string.
+  // If it doesn't start with /, preprend it for URL parsing purposes if needed,
+  // but wait, new URL(path, base) handles it.
+
+  const url = new URL(path.startsWith('/') ? path : '/' + path, "http://example.com");
   let pathname = url.pathname;
   if (cfg.TRAILING_SLASH_POLICY === "ignore") {
     pathname = pathname.replace(/\/+$/, "");
@@ -71,11 +80,22 @@ export function normalizeQuery(
 }
 
 export function preprocessRule(rule: UrlRule, config: RuleMatchingConfig): ProcessedUrlRule {
-  const [matcherPath, matcherQuery] = rule.matcher.split("?");
+  const [matcherPart, matcherQuery] = rule.matcher.split("?");
+  const isDomainMatcher = !matcherPart.startsWith('/');
+
+  // If it's a domain matcher, we still normalize it as a "path" of segments for consistency in storage,
+  // but we flag it.
+  // Actually, for domain matcher, we might want to store it differently?
+  // But to keep it simple, we treat domain segments as path segments for matching purposes?
+  // No, domain matching is fundamentally different (host vs path).
+  // But let's just store normalizedPath for paths.
+  // For domain matchers, we can store the domain string.
+
   return {
     ...rule,
-    normalizedPath: normalizePath(matcherPath, config),
+    normalizedPath: isDomainMatcher ? [] : normalizePath(matcherPart, config),
     normalizedQuery: normalizeQuery(matcherQuery ? "?" + matcherQuery : "", config),
+    isDomainMatcher
   };
 }
 
@@ -88,9 +108,13 @@ export function findMatchingRule(
   rules: UrlRule[] | ProcessedUrlRule[],
   config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
 ): MatchDetails | null {
-  const reqUrl = new URL(requestUrl, "http://example.com");
+  // Ensure requestUrl has a protocol for URL parsing
+  const fullRequestUrl = requestUrl.startsWith('http') ? requestUrl : `http://${requestUrl}`;
+  const reqUrl = new URL(fullRequestUrl);
+
   const reqPath = normalizePath(reqUrl.pathname, config);
   const reqQuery = normalizeQuery(reqUrl.search, config);
+  const reqHostname = reqUrl.hostname.toLowerCase(); // Hostnames are always case-insensitive
 
   let best: {
     rule: UrlRule;
@@ -106,22 +130,89 @@ export function findMatchingRule(
   for (const rule of rules) {
     let rulePath: string[];
     let ruleQuery: Map<string, string[]>;
+    let isDomainMatcher = false;
 
     if (isProcessedRule(rule)) {
       rulePath = rule.normalizedPath;
       ruleQuery = rule.normalizedQuery;
+      isDomainMatcher = rule.isDomainMatcher;
     } else {
-      const [matcherPath, matcherQuery] = rule.matcher.split("?");
-      rulePath = normalizePath(matcherPath, config);
-      // Pre-check length to avoid unnecessary query processing
-      if (rulePath.length > reqPath.length) continue;
+      const [matcherPart, matcherQuery] = rule.matcher.split("?");
+      isDomainMatcher = !matcherPart.startsWith('/');
 
+      rulePath = isDomainMatcher ? [] : normalizePath(matcherPart, config);
       ruleQuery = normalizeQuery(
         matcherQuery ? "?" + matcherQuery : "",
         config,
       );
     }
 
+    // Logic for Domain Matcher
+    if (isDomainMatcher) {
+      // Check if domain matches
+      // Simple exact domain match for now, or maybe endsWith for subdomains?
+      // User said "e.g. www.google.ch".
+      // Let's assume exact match or partial match on domain?
+      // "works in matcher not only for paths. It should also accept a domain"
+      const [matcherDomain] = rule.matcher.split("?");
+      if (reqHostname !== matcherDomain.toLowerCase()) {
+         continue;
+      }
+
+      // Domain matched!
+      // Treat it as a high score match.
+      // We need to calculate a score comparable to path matching.
+      // Let's give it a score based on domain length/specificity?
+      // Or just treat it as a "root" match with specificity?
+
+      // For domain matchers, we don't do path matching logic here.
+      // But we should check query params if present.
+
+      // Query matching
+      let queryPairs = 0;
+      let queryMismatch = false;
+      for (const [key, vals] of ruleQuery) {
+        const reqVals = reqQuery.get(key);
+        if (!reqVals) {
+          queryMismatch = true;
+          break;
+        }
+        for (const v of vals) {
+          if (!reqVals.includes(v)) {
+            queryMismatch = true;
+            break;
+          }
+          queryPairs++;
+        }
+        if (queryMismatch) break;
+      }
+      if (queryMismatch) continue;
+
+      const score = 1000 + (queryPairs * config.WEIGHT_QUERY_PAIR); // High base score for domain match
+
+       if (
+        !best ||
+        score > best.score ||
+        (score === best.score && queryPairs > best.queryPairs) ||
+        (score === best.score &&
+          queryPairs === best.queryPairs &&
+          (rule.createdAt || "") < (best.rule.createdAt || ""))
+      ) {
+        best = {
+          rule,
+          score,
+          staticSegments: 0, // Not relevant for domain match
+          queryPairs,
+          wildcards: 0,
+          start: 0,
+          ruleQuery
+        };
+      }
+      continue;
+    }
+
+    // Standard Path Matching
+    // Pre-check length to avoid unnecessary query processing
     if (rulePath.length > reqPath.length) continue;
 
     for (let start = 0; start <= reqPath.length - rulePath.length; start++) {
@@ -271,14 +362,25 @@ export function findMatchingRule(
   // Check if it's a deep partial match (rule found in middle of path)
   // If start > 0, it means the rule matched starting at a later segment (substring match)
   // If (staticSegments + wildcards) < reqPath.length, it means the rule is shorter than the requested path (prefix match)
-  // If hasPartialSegmentMatch is true, it means we matched a segment partially (prefix match), so quality should be lower
-  const rulePathLength = best.staticSegments + best.wildcards;
-  if (start > 0 || rulePathLength < reqPath.length || hasPartialSegmentMatch) {
-    quality = 50;
-  } else if (hasExtraQuery) {
-    quality = 75;
+  const isDomainRule = !best.rule.matcher.startsWith('/');
+
+  if (isDomainRule) {
+      // For domain rules, quality is high if it matched
+      if (hasExtraQuery) {
+          quality = 90;
+      } else {
+          quality = 100;
+      }
+  } else {
+      // If hasPartialSegmentMatch is true, it means we matched a segment partially (prefix match), so quality should be lower
+      const rulePathLength = best.staticSegments + best.wildcards;
+      if (start > 0 || rulePathLength < reqPath.length || hasPartialSegmentMatch) {
+        quality = 50;
+      } else if (hasExtraQuery) {
+        quality = 75;
+      }
+      // Default is 100 (start === 0 && !hasExtraQuery && !hasPartialSegmentMatch)
   }
-  // Default is 100 (start === 0 && !hasExtraQuery && !hasPartialSegmentMatch)
 
   let level: 'red' | 'yellow' | 'green' = 'green';
   if (quality < 60) level = 'red'; // Changed 50% to red based on user requirement "Red is when only the main url is replaced"
@@ -293,7 +395,7 @@ export function findMatchingRule(
     debug: {
         start,
         hasExtraQuery,
-        isExact: start === 0 && !hasExtraQuery && best.staticSegments === reqPath.length
+        isExact: start === 0 && !hasExtraQuery && (!isDomainRule ? best.staticSegments === reqPath.length : true)
     }
   };
 }

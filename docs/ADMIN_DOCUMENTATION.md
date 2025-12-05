@@ -26,3 +26,19 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 - Gewichtungen und Normalisierung befinden sich in `shared/constants.ts` (`RULE_MATCHING_CONFIG`).
 - Aktivieren Sie `DEBUG` in dieser Konfiguration, um pro Anfrage Score, angewandte Tie‑Breaker und die gewählte Regel zu protokollieren.
 - Die Groß-/Kleinschreibung der Link-Erkennung lässt sich im Admin-Tab „Einstellungen → Link-Erkennung“ über den Schalter "Groß-/Kleinschreibung beachten" steuern (Standard: aus).
+
+## Domain-Regeln
+Neben den klassischen Pfad-Regeln werden auch Domain-Regeln unterstützt.
+
+### Matcher
+Der Matcher kann nun entweder ein Pfad (beginnend mit `/`) oder eine Domain sein (z.B. `www.google.ch`).
+- **Pfad-Matcher**: `/news` matcht auf `http://anydomain.com/news`.
+- **Domain-Matcher**: `www.google.ch` matcht auf `http://www.google.ch/any/path`.
+
+### Redirect Typ: Domain-Ersatz
+Der Typ "Domain-Ersatz" (`domain`) ermöglicht flexible Weiterleitungen:
+1. **Pfad-Erhalt**: Der ursprüngliche Pfad und alle Query-Parameter bleiben erhalten. Es wird lediglich die Domain ausgetauscht.
+2. **Kombination mit Pfad-Matchern**: Wenn ein Pfad-Matcher (z.B. `/altes-verzeichnis`) verwendet wird, aber der Typ `domain` gewählt ist, wird der Matcher im Pfad ignoriert und der gesamte ursprüngliche Pfad an die neue Domain angehängt (analog zu einer Wildcard-Domain-Weiterleitung für diesen speziellen Pfad).
+3. **Domain-Matcher**: Wenn der Matcher eine Domain ist (z.B. `old-site.com`), werden alle Anfragen an diese Domain auf die `Target URL` umgeleitet, wobei der Pfad erhalten bleibt.
+
+Dies ermöglicht komplexe Migrationsszenarien, bei denen ganze Domains oder Subdomains umgezogen werden, ohne für jeden Pfad eine eigene Regel erstellen zu müssen.

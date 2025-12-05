@@ -4,6 +4,10 @@
 
 import { z } from 'zod';
 
+// Consistent URL matcher pattern that matches shared/schema.ts
+const URL_MATCHER_PATTERN = /^(\/|[a-zA-Z0-9])([a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*)$/;
+const URL_MATCHER_ERROR_MSG = "URL-Muster muss mit '/' beginnen oder eine Domain sein (z.B. example.com)";
+
 /**
  * Validates target URL based on redirect type
  * - "wildcard": Must be a full HTTP/HTTPS URL
@@ -41,7 +45,7 @@ export const urlRuleSchemaWithValidation = z.object({
   matcher: z.string()
     .min(1, "URL-Muster darf nicht leer sein")
     .max(500, "URL-Muster ist zu lang")
-    .regex(/^\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/, "URL-Muster muss mit '/' beginnen und gültige Zeichen enthalten")
+    .regex(URL_MATCHER_PATTERN, URL_MATCHER_ERROR_MSG)
     .transform(val => val.toLowerCase().trim()),
   targetUrl: z.string()
     .max(2000, "Ziel-URL ist zu lang")
@@ -90,7 +94,7 @@ export const updateUrlRuleSchemaWithValidation = z.object({
   matcher: z.string()
     .min(1, "URL-Muster darf nicht leer sein")
     .max(500, "URL-Muster ist zu lang")
-    .regex(/^\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/, "Ungültiges URL-Muster Format")
+    .regex(URL_MATCHER_PATTERN, URL_MATCHER_ERROR_MSG)
     .transform(val => val.toLowerCase().trim())
     .optional(),
   targetUrl: z.string()
@@ -141,7 +145,7 @@ export const importUrlRuleSchemaWithValidation = z.object({
   matcher: z.string()
     .min(1, "URL-Muster darf nicht leer sein")
     .max(500, "URL-Muster ist zu lang")
-    .regex(/^\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/, "URL-Muster muss mit '/' beginnen")
+    .regex(URL_MATCHER_PATTERN, URL_MATCHER_ERROR_MSG)
     .transform(val => val.toLowerCase().trim()),
   targetUrl: z.string()
     .max(2000, "Ziel-URL ist zu lang"),
