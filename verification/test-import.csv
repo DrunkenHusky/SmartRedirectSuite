@@ -1,0 +1,4 @@
+matcher,targetUrl,discardQueryParams,keepQueryParams,type,autoRedirect
+/test-discard,https://example.com,true,false,partial,true
+/test-keep,https://example.com,false,true,wildcard,false
+/test-default,https://example.com,false,false,domain,false

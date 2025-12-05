@@ -3763,9 +3763,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Target {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
-                                      <TableHead>Type</TableHead>
-                                      <TableHead>Auto</TableHead>
-                                      <TableHead>Query Params</TableHead>
+                                      <TableHead>Typ</TableHead>
+                                      <TableHead>Auto-Redirect</TableHead>
+                                      <TableHead>Parameter</TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -3789,16 +3789,24 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             )}
                                           </TableCell>
                                           <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
-                                          <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
-                                          <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
+                                          <TableCell className="text-xs">
+                                              <Badge variant={(item.rule as any).redirectType === 'wildcard' ? 'destructive' : (item.rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
+                                                {(item.rule as any).redirectType === 'wildcard' ? 'Vollständig' : (item.rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
+                                              </Badge>
+                                          </TableCell>
+                                          <TableCell className="text-xs">
+                                              <Badge variant={item.rule.autoRedirect ? 'default' : 'secondary'}>
+                                                {item.rule.autoRedirect ? '✓ Aktiv' : '✗ Inaktiv'}
+                                              </Badge>
+                                          </TableCell>
                                           <TableCell className="text-xs">
                                             {item.rule.discardQueryParams ? (
                                               <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
-                                                Discard
+                                                Entfernen
                                               </Badge>
                                             ) : item.rule.forwardQueryParams ? (
                                               <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
-                                                Keep
+                                                Behalten
                                               </Badge>
                                             ) : (
                                               <span className="text-muted-foreground">-</span>
