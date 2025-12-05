@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.8.0...v2.9.0) (2025-12-04)
+
+
+### Features
+
+* support implicit partial segment matching ([b14fe96](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b14fe965b984344d8114b16972fa063e20c50646))
+
 # [2.8.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.7.3...v2.8.0) (2025-12-04)
 
 

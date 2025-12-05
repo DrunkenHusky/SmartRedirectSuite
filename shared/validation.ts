@@ -12,14 +12,25 @@ const URL_MATCHER_ERROR_MSG = "URL-Muster muss mit '/' beginnen oder eine Domain
  * Validates target URL based on redirect type
  * - "wildcard": Must be a full HTTP/HTTPS URL
  * - "partial": Can be a path fragment or full URL
- * - "domain": Must be a full HTTP/HTTPS URL (to extract domain)
+ * - "domain": Must be a full HTTP/HTTPS URL (to extract domain) and contain no path
  */
 export function validateTargetUrl(targetUrl: string, redirectType: 'wildcard' | 'partial' | 'domain'): boolean {
   if (!targetUrl) return false;
   
-  if (redirectType === 'wildcard' || redirectType === 'domain') {
-    // Wildcard and Domain require full URL
+  if (redirectType === 'wildcard') {
+    // Wildcard requires full URL
     return targetUrl.startsWith('http://') || targetUrl.startsWith('https://');
+  } else if (redirectType === 'domain') {
+    // Domain requires full URL and no path segments
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      return false;
+    }
+    try {
+      const url = new URL(targetUrl);
+      return url.pathname === '/' || url.pathname === '';
+    } catch {
+      return false;
+    }
   } else {
     // Partial allows path fragments or full URLs
     return targetUrl.startsWith('/') || targetUrl.startsWith('http://') || targetUrl.startsWith('https://');
@@ -60,6 +71,15 @@ export const urlRuleSchemaWithValidation = z.object({
     } else if (data.redirectType === 'domain') {
       if (!data.targetUrl.startsWith('http://') && !data.targetUrl.startsWith('https://')) {
         throw new Error("Bei Typ 'Domain-Ersatz' muss die Ziel-URL eine vollständige URL mit http:// oder https:// sein (z.B. https://neue-domain.com)");
+      }
+      try {
+        const url = new URL(data.targetUrl);
+        if (url.pathname !== '/' && url.pathname !== '') {
+          throw new Error("Bei Typ 'Domain-Ersatz' darf die Ziel-URL keine Unterordner enthalten (nur https://domain.com)");
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes("keine Unterordner")) throw e;
+        // Ignore URL parsing errors if startsWith passed, though technically unlikely
       }
     }
   }
@@ -104,6 +124,14 @@ export const updateUrlRuleSchemaWithValidation = z.object({
       if (!data.targetUrl.startsWith('http://') && !data.targetUrl.startsWith('https://')) {
         throw new Error("Bei 'Domain-Ersatz' muss die Ziel-URL mit http:// oder https:// beginnen");
       }
+      try {
+        const url = new URL(data.targetUrl);
+        if (url.pathname !== '/' && url.pathname !== '') {
+          throw new Error("Bei 'Domain-Ersatz' darf die Ziel-URL keine Unterordner enthalten");
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes("keine Unterordner")) throw e;
+      }
     }
   }
   return data;
@@ -140,6 +168,14 @@ export const importUrlRuleSchemaWithValidation = z.object({
   } else if (data.redirectType === 'domain') {
     if (!data.targetUrl.startsWith('http://') && !data.targetUrl.startsWith('https://')) {
       throw new Error("Bei Typ 'Domain-Ersatz' muss die Ziel-URL eine vollständige URL mit http:// oder https:// sein");
+    }
+    try {
+      const url = new URL(data.targetUrl);
+      if (url.pathname !== '/' && url.pathname !== '') {
+        throw new Error("Bei Typ 'Domain-Ersatz' darf die Ziel-URL keine Unterordner enthalten");
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("keine Unterordner")) throw e;
     }
   }
   return data;
