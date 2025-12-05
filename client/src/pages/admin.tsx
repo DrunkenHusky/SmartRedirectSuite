@@ -230,6 +230,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Import Preview State
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState<ImportPreviewData | null>(null);
+  const [previewLimit, setPreviewLimit] = useState(50);
+  const [showAllPreview, setShowAllPreview] = useState(false);
 
   const [generalSettings, setGeneralSettings] = useState({
     headerTitle: "URL Migration Tool",
@@ -1151,10 +1153,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Import/Export mutations
   const previewMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, all = false }: { file: File; all?: boolean }) => {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch("/api/admin/import/preview", {
+      const response = await fetch(`/api/admin/import/preview?all=${all}`, {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -1168,6 +1170,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     onSuccess: (data: ImportPreviewData) => {
       setImportPreviewData(data);
       setShowPreviewDialog(true);
+      setShowAllPreview(false); // Reset to default view
+      setPreviewLimit(50);
     },
     onError: (error: any) => {
       toast({
@@ -1356,7 +1360,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    previewMutation.mutate(file);
+    previewMutation.mutate({ file });
+    // Keep file for re-upload if needed for "Show All" or implement state.
+    // However, since server doesn't keep state, we need to re-upload to get all if we didn't fetch all initially.
+    // Wait, the API returns everything if we ask? No, API slices.
+    // Actually, I modified the server to return 'all' array always or sliced?
+    // Let's check server logic. Server currently slices 'preview' but returns 'all'.
+    // So we have all data in 'importPreviewData.all' already! We don't need to re-fetch.
+
     event.target.value = ''; // Reset input
   };
 
@@ -3280,9 +3291,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="text-sm text-muted-foreground space-y-2">
                                 <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
                                 <ul className="list-disc list-inside text-xs">
-                                    <li>Matcher (Pflicht) - z.B. /alte-seite</li>
-                                    <li>Target URL (Pflicht) - z.B. https://neue-seite.de</li>
-                                    <li>Description (Optional) - z.B. Eine Beschreibung der Regel</li>
+                                        <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
+                                        <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
+                                        <li><strong>Type</strong> (Optional) - 'partial' oder 'wildcard'</li>
+                                        <li><strong>Info</strong> (Optional) - Beschreibung</li>
+                                        <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
+                                        <li><strong>ID</strong> (Optional) - Nur für Updates bestehender Regeln</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
@@ -3296,16 +3310,45 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </a>
                                 </div>
                             </div>
-                            <div className="flex gap-2 items-center">
-                                <div className="relative flex-1">
-                                    <Input
+                            <div className="flex flex-col gap-2">
+                                <div className="relative">
+                                    <input
+                                        id="rule-import-file"
                                         type="file"
                                         accept=".xlsx, .xls, .csv"
+                                        className="hidden"
                                         onChange={handlePreview}
                                         disabled={previewMutation.isPending}
                                     />
+                                    <label
+                                        htmlFor="rule-import-file"
+                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+                                            ${previewMutation.isPending
+                                                ? 'bg-muted/50 border-muted-foreground/20 cursor-not-allowed'
+                                                : 'bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-primary/50'
+                                            }`}
+                                    >
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                                            {previewMutation.isPending ? (
+                                                <div className="animate-pulse flex flex-col items-center">
+                                                    <div className="h-8 w-8 mb-3 rounded-full bg-muted"></div>
+                                                    <div className="text-sm text-muted-foreground">Analysiere Datei...</div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
+                                                    <p className="mb-1 text-sm text-foreground font-medium">
+                                                        Klicken zum Auswählen
+                                                        <span className="text-muted-foreground font-normal"> oder Datei hierher ziehen</span>
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Excel (.xlsx) oder CSV
+                                                    </p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </label>
                                 </div>
-                                {previewMutation.isPending && <span className="text-xs text-muted-foreground">Lade...</span>}
                             </div>
                         </div>
 
@@ -3387,25 +3430,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                          </div>
 
-                         {/* Settings & Stats */}
+                         {/* Settings Import/Export */}
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Systemdaten</h3>
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <Settings className="h-4 w-4" />
+                                System-Einstellungen
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.
+                            </p>
                             <div className="space-y-2">
                                 <Button
                                     className="w-full"
                                     variant="outline"
                                     onClick={() => handleExport('settings', 'json')}
                                 >
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Einstellungen Exportieren
-                                </Button>
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleExport('statistics', 'csv')}
-                                >
-                                    <BarChart3 className="h-4 w-4 mr-2" />
-                                    Statistiken (CSV)
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Einstellungen Exportieren (JSON)
                                 </Button>
                                 <div className="relative">
                                   <input
@@ -3416,14 +3457,34 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   />
                                   <Button
                                     className="w-full"
-                                    variant="ghost"
-                                    size="sm"
+                                    variant="secondary"
                                     disabled={importSettingsMutation.isPending}
                                   >
-                                    <Upload className="h-3 w-3 mr-2" />
-                                    Einstellungen importieren
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Einstellungen Importieren
                                   </Button>
                                 </div>
+                            </div>
+                         </div>
+
+                         {/* Statistics Export */}
+                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4" />
+                                Statistiken
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.
+                            </p>
+                            <div className="space-y-2">
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => handleExport('statistics', 'csv')}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Statistiken Exportieren (CSV)
+                                </Button>
                             </div>
                          </div>
                     </div>
@@ -3470,53 +3531,81 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             <div className="flex-1 overflow-auto py-4">
                 {importPreviewData && (
                     <div className="space-y-4">
-                        <div className="flex gap-4 text-sm">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Neu: {importPreviewData.counts.new}
-                            </Badge>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                Update: {importPreviewData.counts.update}
-                            </Badge>
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                Ungültig: {importPreviewData.counts.invalid}
-                            </Badge>
-                            <span className="text-muted-foreground">
-                                Zeige {importPreviewData.preview.length} von {importPreviewData.total}
-                            </span>
+                        <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+                            <div className="flex gap-2">
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  Neu: {importPreviewData.counts.new}
+                              </Badge>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  Update: {importPreviewData.counts.update}
+                              </Badge>
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                  Ungültig: {importPreviewData.counts.invalid}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">
+                                  Zeige {Math.min(previewLimit, importPreviewData.total)} von {importPreviewData.total}
+                              </span>
+                              {importPreviewData.total > 50 && !showAllPreview && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs text-blue-600 hover:text-blue-800"
+                                  onClick={() => {
+                                    setShowAllPreview(true);
+                                    setPreviewLimit(100); // Start with more
+                                  }}
+                                >
+                                  Alle anzeigen
+                                </Button>
+                              )}
+                            </div>
                         </div>
 
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Matcher</TableHead>
-                                    <TableHead>Target</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Auto</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {importPreviewData.preview.map((item, i) => (
-                                    <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
-                                        <TableCell className="font-mono text-xs">
-                                          {item.rule.matcher || '-'}
-                                          {!item.isValid && item.errors.length > 0 && (
-                                            <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
-                                          )}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
-                                    </TableRow>
-                                ))}
-                                {importPreviewData.total > importPreviewData.limit && (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="text-center text-muted-foreground text-xs py-2">
-                                            ... {importPreviewData.total - importPreviewData.limit} weitere Einträge nicht angezeigt (Limit: {importPreviewData.limit})
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                        <div className="border rounded-md">
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Matcher</TableHead>
+                                      <TableHead>Target</TableHead>
+                                      <TableHead>Type</TableHead>
+                                      <TableHead>Auto</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {/* Use either the limited preview or slice from 'all' if available */}
+                                  {(showAllPreview ? importPreviewData.all : importPreviewData.preview)
+                                    .slice(0, previewLimit)
+                                    .map((item, i) => (
+                                      <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
+                                          <TableCell className="font-mono text-xs">
+                                            {item.rule.matcher || '-'}
+                                            {!item.isValid && item.errors.length > 0 && (
+                                              <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Pagination / Load More for "Show All" mode */}
+                        {showAllPreview && previewLimit < importPreviewData.total && (
+                          <div className="flex justify-center pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPreviewLimit(prev => Math.min(prev + 100, importPreviewData.total))}
+                            >
+                              Mehr laden (+100)
+                            </Button>
+                          </div>
+                        )}
                     </div>
                 )}
             </div>
