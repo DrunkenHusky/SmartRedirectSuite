@@ -14,18 +14,6 @@ import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
-// Helper to ensure only relevant flags are stored
-function sanitizeRuleFlags(rule: any): any {
-  if (rule.redirectType === "wildcard") {
-    // Wildcard rules only use forwardQueryParams
-    delete rule.discardQueryParams;
-  } else if (rule.redirectType === "partial" || rule.redirectType === "domain") {
-    // Partial and domain rules only use discardQueryParams
-    delete rule.forwardQueryParams;
-  }
-  return rule;
-}
-
 const DATA_DIR = path.join(process.cwd(), "data");
 const RULES_FILE = path.join(DATA_DIR, "rules.json");
 const TRACKING_FILE = path.join(DATA_DIR, "tracking.json");
@@ -205,7 +193,6 @@ export class FileStorage implements IStorage {
         normalizedTarget,
         isRegex,
         regex,
-        isDomainMatcher,
         ...cleanRule
       } = rule as any;
       return cleanRule as UrlRule;
@@ -342,9 +329,6 @@ export class FileStorage implements IStorage {
       createdAt: new Date().toISOString(),
     };
 
-    // Sanitize flags based on redirect type
-    sanitizeRuleFlags(rawRule);
-
     // Process the new rule using current config (or default if not loaded, but ensureRulesLoaded called above ensures we have one)
     const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
     const processedRule = preprocessRule(rawRule, config);
@@ -399,9 +383,6 @@ export class FileStorage implements IStorage {
 
     // Create updated rule
     const updatedRaw = { ...newRules[index], ...updateData };
-
-    // Sanitize flags based on redirect type
-    sanitizeRuleFlags(updatedRaw);
 
     // Re-process the updated rule
     const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
@@ -794,8 +775,6 @@ export class FileStorage implements IStorage {
           "partial", // Handle both field names
         infoText: rawRule.infoText || "",
         autoRedirect: rawRule.autoRedirect ?? false,
-        discardQueryParams: rawRule.discardQueryParams ?? false,
-        forwardQueryParams: rawRule.forwardQueryParams ?? false,
       };
 
       if (importRule.id && rulesById.has(importRule.id)) {
@@ -816,12 +795,7 @@ export class FileStorage implements IStorage {
           infoText: importRule.infoText || "",
           createdAt: existingRule.createdAt,
           autoRedirect: importRule.autoRedirect,
-          discardQueryParams: importRule.discardQueryParams,
-          forwardQueryParams: importRule.forwardQueryParams,
         };
-
-        // Sanitize flags
-        sanitizeRuleFlags(updatedRule);
 
         newRules[index] = preprocessRule(updatedRule, config);
         // Update matcher index
@@ -836,13 +810,8 @@ export class FileStorage implements IStorage {
           redirectType: importRule.redirectType,
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
-          discardQueryParams: importRule.discardQueryParams,
-          forwardQueryParams: importRule.forwardQueryParams,
           createdAt: new Date().toISOString(),
         };
-        // Sanitize flags
-        sanitizeRuleFlags(newRule);
-
         const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
         rulesById.set(newRule.id, newIndex);
         rulesByMatcher.set(newRule.matcher, newIndex);
@@ -860,12 +829,7 @@ export class FileStorage implements IStorage {
            infoText: importRule.infoText || "",
            createdAt: existingRule.createdAt,
            autoRedirect: importRule.autoRedirect,
-           discardQueryParams: importRule.discardQueryParams,
-           forwardQueryParams: importRule.forwardQueryParams,
          };
-
-         // Sanitize flags
-         sanitizeRuleFlags(updatedRule);
 
          newRules[index] = preprocessRule(updatedRule, config);
          // Matcher index is already correct
@@ -879,13 +843,8 @@ export class FileStorage implements IStorage {
           redirectType: importRule.redirectType,
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
-          discardQueryParams: importRule.discardQueryParams,
-          forwardQueryParams: importRule.forwardQueryParams,
           createdAt: new Date().toISOString(),
         };
-        // Sanitize flags
-        sanitizeRuleFlags(newRule);
-
         const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
         rulesById.set(newRule.id, newIndex);
         rulesByMatcher.set(newRule.matcher, newIndex);

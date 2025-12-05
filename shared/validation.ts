@@ -54,9 +54,6 @@ export const urlRuleSchemaWithValidation = z.object({
     .max(5000, "Info-Text ist zu lang")
     .optional(),
   redirectType: z.enum(['wildcard', 'partial', 'domain']).default('partial'),
-  autoRedirect: z.boolean().default(false),
-  discardQueryParams: z.boolean().default(false),
-  forwardQueryParams: z.boolean().default(false),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
   // Validate targetUrl based on redirectType with German error messages
@@ -108,8 +105,6 @@ export const updateUrlRuleSchemaWithValidation = z.object({
     .optional(),
   redirectType: z.enum(['wildcard', 'partial', 'domain']).optional(),
   autoRedirect: z.boolean().optional(),
-  discardQueryParams: z.boolean().optional(),
-  forwardQueryParams: z.boolean().optional(),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
   // Pre-validation transformation
@@ -158,9 +153,6 @@ export const importUrlRuleSchemaWithValidation = z.object({
   infoText: z.string()
     .max(5000, "Info-Text ist zu lang")
     .optional(),
-  autoRedirect: z.boolean().default(false),
-  discardQueryParams: z.boolean().default(false),
-  forwardQueryParams: z.boolean().default(false),
 }).transform((data) => {
   // Validate targetUrl based on redirectType with German error messages
   if (data.redirectType === 'wildcard') {
