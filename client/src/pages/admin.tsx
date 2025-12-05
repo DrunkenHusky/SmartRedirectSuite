@@ -261,6 +261,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     infoIcons: ["Bookmark", "Share2", "Clock"] as ("Bookmark" | "Share2" | "Clock" | "Info" | "CheckCircle" | "Star" | "Heart" | "Bell")[],
     footerCopyright: "",
     caseSensitiveLinkDetection: false,
+    encodeImportedUrls: true,
     autoRedirect: false,
     showLinkQualityGauge: true,
     matchHighExplanation: "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
@@ -525,6 +526,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         infoIcons: settingsData.infoIcons || ["Bookmark", "Share2", "Clock"],
         footerCopyright: settingsData.footerCopyright || "",
         caseSensitiveLinkDetection: settingsData.caseSensitiveLinkDetection ?? false,
+        encodeImportedUrls: settingsData.encodeImportedUrls ?? true,
         autoRedirect: settingsData.autoRedirect || false,
         showLinkQualityGauge: settingsData.showLinkQualityGauge ?? true,
         matchHighExplanation: settingsData.matchHighExplanation || "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
@@ -769,7 +771,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", "/api/admin/settings", settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
-      toast({ title: "Einstellungen gespeichert", description: "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert." });
     },
     onError: (error: any) => {
       console.error("Settings save error:", error);
@@ -1115,7 +1116,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettingsMutation.mutate(generalSettings);
+    updateSettingsMutation.mutate(generalSettings, {
+      onSuccess: () => {
+        toast({ title: "Einstellungen gespeichert", description: "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert." });
+      }
+    });
   };
 
   // Logout mutation
@@ -3306,6 +3311,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     />
                                 </div>
                                 {previewMutation.isPending && <span className="text-xs text-muted-foreground">Lade...</span>}
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    <div>
+                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">URLs automatisch kodieren</p>
+                                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                                            Sonderzeichen in URLs automatisch konvertieren (encodeURI)
+                                        </p>
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={generalSettings.encodeImportedUrls}
+                                    onCheckedChange={(checked) => {
+                                        const newSettings = { ...generalSettings, encodeImportedUrls: checked };
+                                        setGeneralSettings(newSettings);
+                                        updateSettingsMutation.mutate(newSettings);
+                                    }}
+                                    className="data-[state=checked]:bg-blue-600"
+                                />
                             </div>
                         </div>
 

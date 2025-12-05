@@ -55,7 +55,7 @@ export class ImportExportService {
   /**
    * Normalize parsed data to internal Rule structure
    */
-  static normalizeRules(rawRules: any[]): ParsedRuleResult[] {
+  static normalizeRules(rawRules: any[], encodeUrls: boolean = true): ParsedRuleResult[] {
     return rawRules.map(row => {
       const rule: any = {};
       const errors: string[] = [];
@@ -74,11 +74,13 @@ export class ImportExportService {
       rule.targetUrl = getValue(COLUMN_MAPPING.targetUrl);
 
       // Encode matcher and targetUrl to handle special characters and spaces
-      if (typeof rule.matcher === 'string') {
-        rule.matcher = encodeURI(rule.matcher);
-      }
-      if (typeof rule.targetUrl === 'string') {
-        rule.targetUrl = encodeURI(rule.targetUrl);
+      if (encodeUrls) {
+        if (typeof rule.matcher === 'string') {
+          rule.matcher = encodeURI(rule.matcher);
+        }
+        if (typeof rule.targetUrl === 'string') {
+          rule.targetUrl = encodeURI(rule.targetUrl);
+        }
       }
 
       rule.redirectType = getValue(COLUMN_MAPPING.redirectType);
@@ -113,15 +115,17 @@ export class ImportExportService {
         const result = importUrlRuleSchema.safeParse(rule);
         if (!result.success) {
            // We extract friendly error messages
-           result.error.errors.forEach(err => {
-             // Skip ID errors as we handle them separately (optional vs uuid)
-             if (err.path.includes('id') && !rule.id) return;
-             if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
-               errors.push('Invalid ID format');
-               return;
-             }
-             errors.push(`${err.path.join('.')}: ${err.message}`);
-           });
+           if (result.error && result.error.errors) {
+              result.error.errors.forEach(err => {
+                // Skip ID errors as we handle them separately (optional vs uuid)
+                if (err.path.includes('id') && !rule.id) return;
+                if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
+                  errors.push('Invalid ID format');
+                  return;
+                }
+                errors.push(`${err.path.join('.')}: ${err.message}`);
+              });
+           }
            if (errors.length > 0) isValid = false;
         } else {
           // Use the transformed values
