@@ -2713,11 +2713,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     ) : (
                       <>
                       {/* Desktop Table View - Hidden on mobile/tablet */}
-                      <div className="hidden lg:block overflow-x-auto">
-                        <table className="w-full">
+                      <div className="hidden lg:block w-full">
+                        <table className="w-full table-fixed">
                           <thead>
                             <tr className="border-b border-border">
-                              <th className="text-left py-3 px-4 w-12">
+                              <th className="text-left py-3 px-4 w-[50px]">
                                 <input
                                   type="checkbox"
                                   checked={
@@ -2730,7 +2730,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   title="Alle Regeln auf dieser Seite auswählen/abwählen"
                                 />
                               </th>
-                              <th className="text-left py-3 px-4">
+                              <th className="text-left py-3 px-4 w-[19%]">
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -2745,7 +2745,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </span>
                                 </Button>
                               </th>
-                              <th className="text-left py-3 px-4">
+                              <th className="text-left py-3 px-4 w-[19%]">
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -2760,19 +2760,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </span>
                                 </Button>
                               </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
                                 Typ
                               </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
                                 Auto-Redirect
                               </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
                                 Query Parameter
                               </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[14%]">
                                 Info-Text
                               </th>
-                              <th className="text-left py-3 px-4">
+                              <th className="text-left py-3 px-4 w-[9%]">
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -2787,7 +2787,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </span>
                                 </Button>
                               </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[80px]">
                                 Aktionen
                               </th>
                             </tr>
@@ -2804,15 +2804,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   />
                                 </td>
                                 <td className="py-3 px-4">
-                                  <div className="max-w-[200px]" title={rule.matcher}>
-                                    <Badge variant="secondary" className="truncate max-w-full">
+                                  <div className="w-full" title={rule.matcher}>
+                                    <Badge variant="secondary" className="truncate max-w-full inline-block align-middle">
                                       {rule.matcher}
                                     </Badge>
                                   </div>
                                 </td>
                                 <td className="py-3 px-4 text-sm">
                                   {rule.targetUrl ? (
-                                    <div className="max-w-[200px]" title={rule.targetUrl}>
+                                    <div className="w-full" title={rule.targetUrl}>
                                       <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
                                         {rule.targetUrl}
                                       </code>
@@ -3825,27 +3825,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
 
                         <div className="border rounded-md">
-                          <Table>
+                          <Table className="table-fixed">
                               <TableHeader>
                                   <TableRow>
-                                      <TableHead className="w-24">
+                                      <TableHead className="w-[100px]">
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('status')}>
                                             Status {previewSortBy === 'status' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
-                                      <TableHead>
+                                      <TableHead className="w-[25%]">
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
                                             URL-Pfad Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
-                                      <TableHead>
+                                      <TableHead className="w-[25%]">
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
                                             Ziel-URL {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
-                                      <TableHead>Typ</TableHead>
-                                      <TableHead>Auto-Redirect</TableHead>
-                                      <TableHead>Query Parameter</TableHead>
+                                      <TableHead className="w-[12%]">Typ</TableHead>
+                                      <TableHead className="w-[12%]">Auto-Redirect</TableHead>
+                                      <TableHead className="w-[12%]">Query Parameter</TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -3863,9 +3863,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                               </Badge>
                                           </TableCell>
                                           <TableCell className="font-mono text-xs">
-                                            <div className="max-w-[200px]" title={item.rule.matcher || ''}>
+                                            <div className="w-full" title={item.rule.matcher || ''}>
                                               {item.rule.matcher ? (
-                                                <Badge variant="secondary" className="truncate max-w-full">
+                                                <Badge variant="secondary" className="truncate max-w-full inline-block align-middle">
                                                   {item.rule.matcher}
                                                 </Badge>
                                               ) : (
@@ -3878,7 +3878,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                           </TableCell>
                                           <TableCell>
                                             {item.rule.targetUrl ? (
-                                              <div className="max-w-[200px]" title={item.rule.targetUrl}>
+                                              <div className="w-full" title={item.rule.targetUrl}>
                                                 <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
                                                   {item.rule.targetUrl}
                                                 </code>
