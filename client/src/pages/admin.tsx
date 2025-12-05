@@ -3753,12 +3753,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       </TableHead>
                                       <TableHead>
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
-                                            URL-Pfad Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                            Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
                                       <TableHead>
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
-                                            Ziel-URL {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                            Target {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
                                       <TableHead>Type</TableHead>
@@ -3780,55 +3780,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                               </Badge>
                                           </TableCell>
                                           <TableCell className="font-mono text-xs">
-                                            <div className="max-w-[200px]" title={item.rule.matcher || ''}>
-                                              {item.rule.matcher ? (
-                                                <Badge variant="secondary" className="truncate max-w-full">
-                                                  {item.rule.matcher}
-                                                </Badge>
-                                              ) : (
-                                                '-'
-                                              )}
-                                            </div>
+                                            {item.rule.matcher || '-'}
                                             {!item.isValid && item.errors.length > 0 && (
                                               <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
                                             )}
                                           </TableCell>
-                                          <TableCell>
-                                            {item.rule.targetUrl ? (
-                                              <div className="max-w-[200px]" title={item.rule.targetUrl}>
-                                                <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
-                                                  {item.rule.targetUrl}
-                                                </code>
-                                              </div>
-                                            ) : (
-                                              <span className="text-xs italic text-muted-foreground">
-                                                -
-                                              </span>
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                              <Badge variant={(item.rule as any).redirectType === 'wildcard' ? 'destructive' : (item.rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
-                                                {(item.rule as any).redirectType === 'wildcard' ? 'Vollständig' : (item.rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
-                                              </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                              <Badge variant={item.rule.autoRedirect ? 'default' : 'secondary'}>
-                                                {item.rule.autoRedirect ? '✓ Aktiv' : '✗ Inaktiv'}
-                                              </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                            {item.rule.discardQueryParams ? (
-                                              <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
-                                                Entfernen
-                                              </Badge>
-                                            ) : item.rule.forwardQueryParams ? (
-                                              <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
-                                                Behalten
-                                              </Badge>
-                                            ) : (
-                                              <span className="text-muted-foreground">-</span>
-                                            )}
-                                          </TableCell>
+                                          <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
                                       </TableRow>
                                   ))}
                               </TableBody>
