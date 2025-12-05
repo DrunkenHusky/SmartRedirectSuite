@@ -87,6 +87,10 @@ export class ImportExportService {
       rule.infoText = getValue(COLUMN_MAPPING.infoText);
       rule.autoRedirect = getValue(COLUMN_MAPPING.autoRedirect);
       rule.id = getValue(COLUMN_MAPPING.id);
+      // Handle empty string IDs as undefined (common in Excel/CSV imports)
+      if (rule.id === '' || (typeof rule.id === 'string' && rule.id.trim() === '')) {
+        rule.id = undefined;
+      }
 
       // Normalize Types
       if (rule.redirectType) {
@@ -117,7 +121,7 @@ export class ImportExportService {
         const result = importUrlRuleSchema.safeParse(rule);
         if (!result.success) {
            // We extract friendly error messages
-           result.error.errors.forEach(err => {
+           result.error.issues.forEach(err => {
              // Skip ID errors as we handle them separately (optional vs uuid)
              if (err.path.includes('id') && !rule.id) return;
              if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
