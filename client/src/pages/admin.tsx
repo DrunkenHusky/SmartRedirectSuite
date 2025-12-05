@@ -3755,12 +3755,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       </TableHead>
                                       <TableHead>
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
-                                            Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                            URL-Pfad Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
                                       <TableHead>
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
-                                            Target {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                            Ziel-URL {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
                                       <TableHead>Typ</TableHead>
@@ -3782,13 +3782,33 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                 {item.status === 'new' ? 'Neu' : item.status === 'update' ? 'Update' : 'Ungültig'}
                                               </Badge>
                                           </TableCell>
-                                          <TableCell className="font-mono text-xs truncate max-w-[200px]" title={item.rule.matcher || ''}>
-                                            {item.rule.matcher || '-'}
+                                          <TableCell>
+                                            <div className="max-w-[200px]" title={item.rule.matcher || ''}>
+                                              {item.rule.matcher ? (
+                                                <Badge variant="secondary" className="truncate max-w-full">
+                                                  {item.rule.matcher}
+                                                </Badge>
+                                              ) : (
+                                                '-'
+                                              )}
+                                            </div>
                                             {!item.isValid && item.errors.length > 0 && (
                                               <div className="text-red-600 text-[10px] mt-1 whitespace-normal">{item.errors[0]}</div>
                                             )}
                                           </TableCell>
-                                          <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                          <TableCell>
+                                            {item.rule.targetUrl ? (
+                                              <div className="max-w-[200px]" title={item.rule.targetUrl}>
+                                                <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
+                                                  {item.rule.targetUrl}
+                                                </code>
+                                              </div>
+                                            ) : (
+                                              <span className="text-xs italic text-muted-foreground">
+                                                -
+                                              </span>
+                                            )}
+                                          </TableCell>
                                           <TableCell className="text-xs">
                                               <Badge variant={(item.rule as any).redirectType === 'wildcard' ? 'destructive' : (item.rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
                                                 {(item.rule as any).redirectType === 'wildcard' ? 'Vollständig' : (item.rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
