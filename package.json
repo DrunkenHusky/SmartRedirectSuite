@@ -64,5 +64,8 @@
     "semantic-release": "^25.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "semver-diff": "4.0.0"
   }
 }
