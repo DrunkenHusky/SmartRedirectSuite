@@ -478,6 +478,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all rules
+  app.delete("/api/admin/all-rules", requireAuth, async (_req, res) => {
+    try {
+      console.log("Deleting all rules request received");
+      await storage.clearAllRules();
+      // Ensure cache is rebuilt/cleared properly
+      await storage.forceCacheRebuild();
+
+      console.log("All rules deleted successfully");
+      res.json({ success: true, message: "Alle Regeln wurden erfolgreich gelöscht." });
+    } catch (error) {
+      console.error("Delete all rules error:", error);
+      res.status(500).json({ error: "Fehler beim Löschen aller Regeln" });
+    }
+  });
+
   // Statistiken
   app.get("/api/admin/stats/all", requireAuth, async (req, res) => {
     try {
