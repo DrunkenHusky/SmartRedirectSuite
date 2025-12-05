@@ -182,7 +182,27 @@ export class FileStorage implements IStorage {
 
   // Strip computed properties for saving to disk
   private cleanRulesForSave(rules: ProcessedUrlRule[]): UrlRule[] {
-    return rules.map(({ normalizedPath, normalizedQuery, ...rule }) => rule);
+    // Also strip internal properties like normalizedPath, queryMap, etc.
+    // We use a destructuring approach to remove known internal properties
+    return rules.map(rule => {
+      // Create a shallow copy to avoid mutation issues if any
+      const {
+        normalizedPath,
+        normalizedQuery,
+        queryMap,
+        normalizedTarget,
+        isRegex,
+        regex,
+        ...cleanRule
+      } = rule as any;
+      return cleanRule as UrlRule;
+    });
+  }
+
+  // Public method to get clean rules for export
+  async getCleanUrlRules(): Promise<UrlRule[]> {
+    const rules = await this.ensureRulesLoaded();
+    return this.cleanRulesForSave(rules);
   }
 
   // URL-Regeln implementierung

@@ -577,7 +577,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.json(trackingData);
         }
       } else if (exportRequest.type === 'rules') {
-        const rules = await storage.getUrlRules();
+        // Use getCleanUrlRules to ensure internal cache properties are stripped
+        const rules = await storage.getCleanUrlRules();
         if (exportRequest.format === 'csv') {
           const csv = ImportExportService.generateCSV(rules);
           res.setHeader('Content-Type', 'text/csv');
@@ -951,7 +952,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/export/rules", requireAuth, async (req, res) => {
     try {
       const format = (req.query.format as string || 'json').toLowerCase();
-      const rules = await storage.getUrlRules();
+      // Use getCleanUrlRules to ensure internal cache properties are stripped
+      const rules = await storage.getCleanUrlRules();
 
       if (format === 'csv') {
         const csv = ImportExportService.generateCSV(rules);
