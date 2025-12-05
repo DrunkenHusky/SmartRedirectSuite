@@ -3765,6 +3765,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       </TableHead>
                                       <TableHead>Type</TableHead>
                                       <TableHead>Auto</TableHead>
+                                      <TableHead>Query Params</TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -3790,6 +3791,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                           <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
                                           <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
                                           <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
+                                          <TableCell className="text-xs">
+                                            {item.rule.discardQueryParams ? (
+                                              <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
+                                                Discard
+                                              </Badge>
+                                            ) : item.rule.forwardQueryParams ? (
+                                              <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
+                                                Keep
+                                              </Badge>
+                                            ) : (
+                                              <span className="text-muted-foreground">-</span>
+                                            )}
+                                          </TableCell>
                                       </TableRow>
                                   ))}
                               </TableBody>
