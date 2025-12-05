@@ -117,15 +117,17 @@ export class ImportExportService {
         const result = importUrlRuleSchema.safeParse(rule);
         if (!result.success) {
            // We extract friendly error messages
-           result.error.errors.forEach(err => {
-             // Skip ID errors as we handle them separately (optional vs uuid)
-             if (err.path.includes('id') && !rule.id) return;
-             if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
-               errors.push('Invalid ID format');
-               return;
-             }
-             errors.push(`${err.path.join('.')}: ${err.message}`);
-           });
+           if (result.error && result.error.errors) {
+              result.error.errors.forEach(err => {
+                // Skip ID errors as we handle them separately (optional vs uuid)
+                if (err.path.includes('id') && !rule.id) return;
+                if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
+                  errors.push('Invalid ID format');
+                  return;
+                }
+                errors.push(`${err.path.join('.')}: ${err.message}`);
+              });
+           }
            if (errors.length > 0) isValid = false;
         } else {
           // Use the transformed values
