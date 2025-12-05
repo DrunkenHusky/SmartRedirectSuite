@@ -3495,7 +3495,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
                                 Die Dateien können später wieder importiert werden.
                             </p>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
                                     Herunterladen (Excel)
@@ -3782,10 +3782,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                 {item.status === 'new' ? 'Neu' : item.status === 'update' ? 'Update' : 'Ungültig'}
                                               </Badge>
                                           </TableCell>
-                                          <TableCell className="font-mono text-xs">
+                                          <TableCell className="font-mono text-xs truncate max-w-[200px]" title={item.rule.matcher || ''}>
                                             {item.rule.matcher || '-'}
                                             {!item.isValid && item.errors.length > 0 && (
-                                              <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
+                                              <div className="text-red-600 text-[10px] mt-1 whitespace-normal">{item.errors[0]}</div>
                                             )}
                                           </TableCell>
                                           <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
