@@ -1423,7 +1423,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     }
   };
 
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
     if (!importPreviewData) return;
 
     let allRules = importPreviewData.all;
