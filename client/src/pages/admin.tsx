@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,8 @@ import {
   AlertTriangle,
   Info,
   CheckCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Filter
 } from "lucide-react";
 import {
   Table,
@@ -234,6 +235,43 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [importPreviewData, setImportPreviewData] = useState<ImportPreviewData | null>(null);
   const [previewLimit, setPreviewLimit] = useState(50);
   const [showAllPreview, setShowAllPreview] = useState(false);
+
+  // Import Preview Sorting & Filtering
+  const [previewSortBy, setPreviewSortBy] = useState<'status' | 'matcher' | 'targetUrl'>('status');
+  const [previewSortOrder, setPreviewSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [previewStatusFilter, setPreviewStatusFilter] = useState<'all' | 'new' | 'update' | 'invalid'>('all');
+
+  const filteredPreviewData = useMemo(() => {
+    if (!importPreviewData) return [];
+
+    let filtered = [...importPreviewData.all]; // Copy to sort
+
+    // Filter
+    if (previewStatusFilter !== 'all') {
+      filtered = filtered.filter(r => r.status === previewStatusFilter);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      let valA = '', valB = '';
+      if (previewSortBy === 'status') {
+         valA = a.status;
+         valB = b.status;
+      } else if (previewSortBy === 'matcher') {
+         valA = a.rule.matcher || '';
+         valB = b.rule.matcher || '';
+      } else if (previewSortBy === 'targetUrl') {
+         valA = a.rule.targetUrl || '';
+         valB = b.rule.targetUrl || '';
+      }
+
+      if (valA < valB) return previewSortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return previewSortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [importPreviewData, previewStatusFilter, previewSortBy, previewSortOrder]);
 
   const [generalSettings, setGeneralSettings] = useState({
     headerTitle: "URL Migration Tool",
@@ -1377,6 +1415,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     // So we have all data in 'importPreviewData.all' already! We don't need to re-fetch.
 
     event.target.value = ''; // Reset input
+  };
+
+  const handlePreviewSort = (column: 'status' | 'matcher' | 'targetUrl') => {
+    if (previewSortBy === column) {
+      setPreviewSortOrder(previewSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPreviewSortBy(column);
+      setPreviewSortOrder('asc');
+    }
   };
 
   const handleExecuteImport = () => {
@@ -3615,21 +3662,44 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     <div className="space-y-4">
                         <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
                             <div className="flex gap-2">
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              <Badge
+                                  variant={previewStatusFilter === 'new' ? "default" : "outline"}
+                                  className={`cursor-pointer ${previewStatusFilter === 'new' ? 'bg-green-600 hover:bg-green-700' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
+                                  onClick={() => setPreviewStatusFilter(previewStatusFilter === 'new' ? 'all' : 'new')}
+                              >
                                   Neu: {importPreviewData.counts.new}
                               </Badge>
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              <Badge
+                                  variant={previewStatusFilter === 'update' ? "default" : "outline"}
+                                  className={`cursor-pointer ${previewStatusFilter === 'update' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'}`}
+                                  onClick={() => setPreviewStatusFilter(previewStatusFilter === 'update' ? 'all' : 'update')}
+                              >
                                   Update: {importPreviewData.counts.update}
                               </Badge>
-                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                              <Badge
+                                  variant={previewStatusFilter === 'invalid' ? "default" : "outline"}
+                                  className={`cursor-pointer ${previewStatusFilter === 'invalid' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
+                                  onClick={() => setPreviewStatusFilter(previewStatusFilter === 'invalid' ? 'all' : 'invalid')}
+                              >
                                   Ungültig: {importPreviewData.counts.invalid}
                               </Badge>
+                              {previewStatusFilter !== 'all' && (
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-6 px-2 text-xs"
+                                     onClick={() => setPreviewStatusFilter('all')}
+                                   >
+                                     <Filter className="h-3 w-3 mr-1" />
+                                     Filter löschen
+                                   </Button>
+                                )}
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-muted-foreground">
-                                  Zeige {Math.min(previewLimit, importPreviewData.total)} von {importPreviewData.total}
+                                  Zeige {Math.min(previewLimit, filteredPreviewData.length)} von {filteredPreviewData.length} (Gesamt: {importPreviewData.total})
                               </span>
-                              {importPreviewData.total > 50 && !showAllPreview && (
+                              {filteredPreviewData.length > 50 && !showAllPreview && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -3649,18 +3719,39 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <Table>
                               <TableHeader>
                                   <TableRow>
-                                      <TableHead>Matcher</TableHead>
-                                      <TableHead>Target</TableHead>
+                                      <TableHead className="w-24">
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('status')}>
+                                            Status {previewSortBy === 'status' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                          </Button>
+                                      </TableHead>
+                                      <TableHead>
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
+                                            Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                          </Button>
+                                      </TableHead>
+                                      <TableHead>
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
+                                            Target {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                          </Button>
+                                      </TableHead>
                                       <TableHead>Type</TableHead>
                                       <TableHead>Auto</TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
-                                  {/* Use either the limited preview or slice from 'all' if available */}
-                                  {(showAllPreview ? importPreviewData.all : importPreviewData.preview)
+                                  {filteredPreviewData
                                     .slice(0, previewLimit)
                                     .map((item, i) => (
                                       <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
+                                          <TableCell>
+                                              <Badge variant="outline" className={
+                                                item.status === 'new' ? "bg-green-50 text-green-700 border-green-200" :
+                                                item.status === 'update' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                                "bg-red-50 text-red-700 border-red-200"
+                                              }>
+                                                {item.status === 'new' ? 'Neu' : item.status === 'update' ? 'Update' : 'Ungültig'}
+                                              </Badge>
+                                          </TableCell>
                                           <TableCell className="font-mono text-xs">
                                             {item.rule.matcher || '-'}
                                             {!item.isValid && item.errors.length > 0 && (
