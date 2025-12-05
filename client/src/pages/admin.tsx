@@ -265,6 +265,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     infoIcons: ["Bookmark", "Share2", "Clock"] as ("Bookmark" | "Share2" | "Clock" | "Info" | "CheckCircle" | "Star" | "Heart" | "Bell")[],
     footerCopyright: "",
     caseSensitiveLinkDetection: false,
+    encodeImportedUrls: true,
     autoRedirect: false,
     showLinkQualityGauge: true,
     matchHighExplanation: "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
