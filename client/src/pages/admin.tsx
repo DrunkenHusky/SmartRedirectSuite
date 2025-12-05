@@ -3729,8 +3729,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
                     <div className="flex flex-col space-y-1">
                       <span className="font-medium text-sm">Domain-Ersatz</span>
-                      <span className="text-xs text-muted-foreground leading-relaxed">
-                        Ersetzt nur die Domain (Host) der URL. Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Wenn eine Ziel-URL angegeben ist, wird deren Domain verwendet.
+                      <span className="text-xs text-muted-foreground leading-relaxed whitespace-normal">
+                        Ersetzt nur die Domain (Host) der URL. Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Wenn eine Ziel-URL angegeben ist, wird deren Domain verwendet.<br/><br/>
+                        Der Matcher kann hier auch eine Domain sein (z.B. "www.alteseite.ch"). Bei Verwendung eines Pfad-Matchers ("/news") mit diesem Typ wird nur die Domain ersetzt, während der Pfad erhalten bleibt.
                       </span>
                     </div>
                   </SelectItem>
