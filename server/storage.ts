@@ -78,7 +78,7 @@ export interface IStorage {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
   ): Promise<{
-    entries: (UrlTracking & { rule?: UrlRule })[];
+    entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
     totalPages: number;
     currentPage: number;
@@ -182,7 +182,27 @@ export class FileStorage implements IStorage {
 
   // Strip computed properties for saving to disk
   private cleanRulesForSave(rules: ProcessedUrlRule[]): UrlRule[] {
-    return rules.map(({ normalizedPath, normalizedQuery, ...rule }) => rule);
+    // Also strip internal properties like normalizedPath, queryMap, etc.
+    // We use a destructuring approach to remove known internal properties
+    return rules.map(rule => {
+      // Create a shallow copy to avoid mutation issues if any
+      const {
+        normalizedPath,
+        normalizedQuery,
+        queryMap,
+        normalizedTarget,
+        isRegex,
+        regex,
+        ...cleanRule
+      } = rule as any;
+      return cleanRule as UrlRule;
+    });
+  }
+
+  // Public method to get clean rules for export
+  async getCleanUrlRules(): Promise<UrlRule[]> {
+    const rules = await this.ensureRulesLoaded();
+    return this.cleanRulesForSave(rules);
   }
 
   // URL-Regeln implementierung
@@ -295,18 +315,8 @@ export class FileStorage implements IStorage {
       }
 
       // Check for overlapping patterns
-      for (const existingRule of rules) {
-        if (
-          urlUtils.areMatchersOverlapping(
-            insertRule.matcher,
-            existingRule.matcher,
-          )
-        ) {
-          validationErrors.push(
-            `Überlappender URL-Matcher (Match an beliebiger Pfadposition): "${insertRule.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`,
-          );
-        }
-      }
+      // Overlapping matchers are allowed and resolved by specificity (length/specificity of match)
+      // So we don't block them here.
 
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
@@ -360,19 +370,8 @@ export class FileStorage implements IStorage {
       }
 
       // Check for overlapping patterns (excluding the current rule being updated)
-      for (const existingRule of rules) {
-        if (existingRule.id === id) continue; // Skip current rule
-        if (
-          urlUtils.areMatchersOverlapping(
-            updateData.matcher,
-            existingRule.matcher,
-          )
-        ) {
-          validationErrors.push(
-            `Überlappender URL-Matcher (Match an beliebiger Pfadposition): "${updateData.matcher}" überschneidet sich mit "${existingRule.matcher}" (Regel-ID: ${existingRule.id})`,
-          );
-        }
-      }
+      // Overlapping matchers are allowed and resolved by specificity
+      // So we don't block them here.
 
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
@@ -456,6 +455,7 @@ export class FileStorage implements IStorage {
       return {
         ...insertTracking,
         id: randomUUID(),
+        ruleIds: insertTracking.ruleIds || [],
       };
     }
 
@@ -466,6 +466,7 @@ export class FileStorage implements IStorage {
     const tracking: UrlTracking = {
       ...insertTracking,
       id: randomUUID(),
+      ruleIds: insertTracking.ruleIds || [],
     };
     trackingData.push(tracking);
     await this.writeJsonFile(TRACKING_FILE, trackingData);
@@ -609,7 +610,7 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
   ): Promise<{
-    entries: (UrlTracking & { rule?: UrlRule })[];
+    entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
     totalPages: number;
     currentPage: number;
@@ -671,10 +672,26 @@ export class FileStorage implements IStorage {
     const rulesMap = new Map(rules.map((r) => [r.id, r]));
 
     const enrichedEntries = paginatedEntries.map((entry) => {
+      const enriched: UrlTracking & { rule?: UrlRule; rules?: UrlRule[] } = { ...entry };
+
+      // Legacy single rule support
       if (entry.ruleId && rulesMap.has(entry.ruleId)) {
-        return { ...entry, rule: rulesMap.get(entry.ruleId) };
+        enriched.rule = rulesMap.get(entry.ruleId);
       }
-      return entry;
+
+      // Multiple rules support
+      if (entry.ruleIds && entry.ruleIds.length > 0) {
+        enriched.rules = entry.ruleIds
+          .map(id => rulesMap.get(id))
+          .filter((r): r is UrlRule => r !== undefined);
+      } else if (entry.ruleId && rulesMap.has(entry.ruleId)) {
+        // Fallback: populate rules array from single ruleId for consistent UI handling
+        enriched.rules = [rulesMap.get(entry.ruleId)!];
+      } else {
+        enriched.rules = [];
+      }
+
+      return enriched;
     });
 
     return {

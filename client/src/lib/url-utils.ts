@@ -31,7 +31,7 @@ export function generateNewUrl(oldUrl: string, newDomain?: string): string {
 
 export function generateUrlWithRule(
   oldUrl: string, 
-  rule: { matcher: string; targetUrl?: string; redirectType?: 'wildcard' | 'partial' }, 
+  rule: { matcher: string; targetUrl?: string; redirectType?: 'wildcard' | 'partial' | 'domain' },
   newDomain?: string
 ): string {
   try {
@@ -40,6 +40,33 @@ export function generateUrlWithRule(
     if (redirectType === 'wildcard' && rule.targetUrl) {
       // Vollständig: Replace entire URL with target URL - no original URL parts are preserved
       return rule.targetUrl;
+    } else if (redirectType === 'domain') {
+      // Domain Replacement: Keep the path exactly as is, just swap the domain
+
+      let targetDomain = newDomain || 'https://thisisthenewurl.com/';
+
+      if (rule.targetUrl && (rule.targetUrl.startsWith('http://') || rule.targetUrl.startsWith('https://'))) {
+        try {
+          const targetUrlObj = new URL(rule.targetUrl);
+          targetDomain = targetUrlObj.origin;
+        } catch (e) {
+          // If invalid URL, fall back to default logic or keep current targetDomain
+        }
+      } else if (rule.targetUrl && !rule.targetUrl.startsWith('/')) {
+         targetDomain = rule.targetUrl;
+         if (!targetDomain.startsWith('http')) {
+             targetDomain = 'https://' + targetDomain;
+         }
+      }
+
+      const cleanDomain = targetDomain.replace(/\/$/, '');
+      const path = extractPath(oldUrl);
+
+      // Ensure path starts with /
+      const cleanPath = path.startsWith('/') ? path : '/' + path;
+
+      return cleanDomain + cleanPath;
+
     } else if (redirectType === 'partial' && rule.targetUrl) {
       // Teilweise: Replace path segments from matcher onwards, preserve additional segments/params/anchors
       const baseDomain = newDomain || 'https://thisisthenewurl.com/';
@@ -48,7 +75,36 @@ export function generateUrlWithRule(
       // Extract the full path with query params and hash  
       const oldPath = extractPath(oldUrl);
       
-      // Clean up matcher and target
+      // Check if matcher is a domain rule
+      const isDomainMatcher = !rule.matcher.startsWith('/');
+
+      if (isDomainMatcher) {
+         // If matcher is a domain, handle redirect
+         let targetBase = cleanDomain;
+         // Ensure targetUrl is treated as a string to prevent null/undefined errors
+         const targetUrl = rule.targetUrl || '';
+         let targetPath = targetUrl.replace(/\/$/, ''); // Remove trailing slash if present
+
+         // If targetUrl is an absolute URL, use it as the new base
+         if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+             // For domain matcher, we essentially just want to swap the domain but potentially append a path prefix
+             targetBase = targetPath;
+         } else {
+             // targetUrl is relative path, append to cleanDomain
+             targetBase = cleanDomain + (targetPath.startsWith('/') ? targetPath : '/' + targetPath);
+         }
+
+         // oldPath includes initial slash usually.
+         // Ensure we don't double slash if targetBase ends with slash (it shouldn't)
+         // or oldPath starts with slash.
+
+         const normalizedOldPath = oldPath.startsWith('/') ? oldPath : '/' + oldPath;
+
+         // If targetBase already contains a path, we append oldPath to it
+         return targetBase + normalizedOldPath;
+      }
+
+      // Standard Path Matcher Logic
       const cleanMatcher = rule.matcher.replace(/\/$/, '');
       const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, '');
       

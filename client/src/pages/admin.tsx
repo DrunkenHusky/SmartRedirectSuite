@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,8 @@ import {
   AlertTriangle,
   Info,
   CheckCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Filter
 } from "lucide-react";
 import {
   Table,
@@ -85,7 +86,7 @@ interface ImportPreviewData {
   limit: number;
   isLimited: boolean;
   preview: ParsedRuleResult[];
-  all: ParsedRuleResult[];
+  all?: ParsedRuleResult[];
   counts: {
     new: number;
     update: number;
@@ -199,13 +200,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matcher: "",
     targetUrl: "",
     infoText: "",
-    redirectType: "partial" as "wildcard" | "partial",
+    redirectType: "partial" as "wildcard" | "partial" | "domain",
     autoRedirect: false,
   });
   const targetUrlPlaceholder =
     ruleForm.redirectType === "wildcard"
       ? "https://beispiel.com/neue-seite"
-      : "/neue-seite";
+      : ruleForm.redirectType === "domain"
+        ? "https://neue-domain.com"
+        : "/neue-seite";
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [rulesSearchQuery, setRulesSearchQuery] = useState("");
@@ -230,6 +233,48 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Import Preview State
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState<ImportPreviewData | null>(null);
+  const [previewLimit, setPreviewLimit] = useState(50);
+  const [showAllPreview, setShowAllPreview] = useState(false);
+  const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
+
+  // Import Preview Sorting & Filtering
+  const [previewSortBy, setPreviewSortBy] = useState<'status' | 'matcher' | 'targetUrl'>('status');
+  const [previewSortOrder, setPreviewSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [previewStatusFilter, setPreviewStatusFilter] = useState<'all' | 'new' | 'update' | 'invalid'>('all');
+
+  const filteredPreviewData = useMemo(() => {
+    if (!importPreviewData) return [];
+
+    // Use all data if available, otherwise fallback to preview data (for initial limited view)
+    const sourceData = importPreviewData.all || importPreviewData.preview || [];
+    let filtered = [...sourceData]; // Copy to sort
+
+    // Filter
+    if (previewStatusFilter !== 'all') {
+      filtered = filtered.filter(r => r.status === previewStatusFilter);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      let valA = '', valB = '';
+      if (previewSortBy === 'status') {
+         valA = a.status;
+         valB = b.status;
+      } else if (previewSortBy === 'matcher') {
+         valA = a.rule.matcher || '';
+         valB = b.rule.matcher || '';
+      } else if (previewSortBy === 'targetUrl') {
+         valA = a.rule.targetUrl || '';
+         valB = b.rule.targetUrl || '';
+      }
+
+      if (valA < valB) return previewSortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return previewSortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [importPreviewData, previewStatusFilter, previewSortBy, previewSortOrder]);
 
   const [generalSettings, setGeneralSettings] = useState({
     headerTitle: "URL Migration Tool",
@@ -1091,7 +1136,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${type}.${format === 'csv' ? 'csv' : 'json'}`;
+        const extension = format === 'csv' ? 'csv' : (format === 'xlsx' || format === 'excel' ? 'xlsx' : 'json');
+        a.download = `${type}.${extension}`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -1156,10 +1202,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Import/Export mutations
   const previewMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, all = false }: { file: File; all?: boolean }) => {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch("/api/admin/import/preview", {
+      const response = await fetch(`/api/admin/import/preview?all=${all}`, {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -1173,6 +1219,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     onSuccess: (data: ImportPreviewData) => {
       setImportPreviewData(data);
       setShowPreviewDialog(true);
+      setShowAllPreview(false); // Reset to default view
+      setPreviewLimit(50);
     },
     onError: (error: any) => {
       toast({
@@ -1361,14 +1409,55 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    previewMutation.mutate(file);
+
+    setSelectedImportFile(file);
+    previewMutation.mutate({ file, all: false });
+
     event.target.value = ''; // Reset input
   };
 
-  const handleExecuteImport = () => {
+  const handlePreviewSort = (column: 'status' | 'matcher' | 'targetUrl') => {
+    if (previewSortBy === column) {
+      setPreviewSortOrder(previewSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPreviewSortBy(column);
+      setPreviewSortOrder('asc');
+    }
+  };
+
+  const handleExecuteImport = async () => {
     if (!importPreviewData) return;
+
+    let allRules = importPreviewData.all;
+
+    // If we don't have the full dataset yet (because we only fetched a preview),
+    // we need to fetch it now before importing.
+    if (!allRules && selectedImportFile) {
+      try {
+        const fullData = await previewMutation.mutateAsync({
+          file: selectedImportFile,
+          all: true
+        });
+        allRules = fullData.all;
+        // Update state to reflect we have all data now
+        setImportPreviewData(fullData);
+      } catch (error) {
+        // Error handling is done in mutation
+        return;
+      }
+    }
+
+    if (!allRules) {
+      toast({
+        title: "Import Fehler",
+        description: "Konnte die vollständigen Daten für den Import nicht laden.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Map parsed results to the format expected by the API
-    const rulesToImport = importPreviewData.all
+    const rulesToImport = allRules
       .filter(r => r.isValid)
       .map(r => r.rule);
 
@@ -2680,13 +2769,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   />
                                 </td>
                                 <td className="py-3 px-4">
-                                  <Badge variant="secondary">{rule.matcher}</Badge>
+                                  <div className="max-w-[200px]" title={rule.matcher}>
+                                    <Badge variant="secondary" className="truncate max-w-full">
+                                      {rule.matcher}
+                                    </Badge>
+                                  </div>
                                 </td>
                                 <td className="py-3 px-4 text-sm">
                                   {rule.targetUrl ? (
-                                    <code className="text-xs bg-muted px-2 py-1 rounded">
-                                      {rule.targetUrl}
-                                    </code>
+                                    <div className="max-w-[200px]" title={rule.targetUrl}>
+                                      <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
+                                        {rule.targetUrl}
+                                      </code>
+                                    </div>
                                   ) : (
                                     <span className="italic text-muted-foreground">
                                       Automatisch generiert
@@ -2694,8 +2789,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   )}
                                 </td>
                                 <td className="py-3 px-4">
-                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : 'default'}>
-                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : 'Teilweise'}
+                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : (rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
+                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : (rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
                                   </Badge>
                                 </td>
                                 <td className="py-3 px-4">
@@ -2817,8 +2912,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   {rule.matcher}
                                 </Badge>
                                 <div className="flex flex-wrap gap-2">
-                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : 'default'} className="text-xs">
-                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : 'Teilweise'}
+                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : (rule as any).redirectType === 'domain' ? 'outline' : 'default'} className="text-xs">
+                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : (rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
                                   </Badge>
                                   <Badge variant={rule.autoRedirect ? 'default' : 'secondary'} className="text-xs">
                                     {rule.autoRedirect ? '✓ Auto-Redirect' : '✗ Manuell'}
@@ -3187,7 +3282,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <code className="text-sm text-foreground">{entry.path}</code>
                                   </td>
                                   <td className="p-3">
-                                    {entry.rule ? (
+                                    {entry.rules && entry.rules.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {entry.rules.map((rule: UrlRule) => (
+                                          <Button
+                                            key={rule.id}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 mb-1"
+                                            onClick={() => handleEditRule(rule)}
+                                            title={`Regel bearbeiten: ${rule.redirectType}`}
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            {rule.matcher}
+                                            <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4">
+                                                {rule.redirectType === 'domain' ? 'D' : rule.redirectType === 'wildcard' ? 'W' : 'P'}
+                                            </Badge>
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    ) : entry.rule ? (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -3285,9 +3399,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="text-sm text-muted-foreground space-y-2">
                                 <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
                                 <ul className="list-disc list-inside text-xs">
-                                    <li>Matcher (Pflicht) - z.B. /alte-seite</li>
-                                    <li>Target URL (Pflicht) - z.B. https://neue-seite.de</li>
-                                    <li>Description (Optional) - z.B. Eine Beschreibung der Regel</li>
+                                        <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
+                                        <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
+                                        <li><strong>Type</strong> (Optional) - 'partial' oder 'wildcard'</li>
+                                        <li><strong>Info</strong> (Optional) - Beschreibung</li>
+                                        <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
+                                        <li><strong>ID</strong> (Optional) - Nur für Updates bestehender Regeln</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
@@ -3304,13 +3421,42 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex gap-2 items-center">
                                 <div className="relative flex-1">
                                     <Input
+                                        id="rule-import-file"
                                         type="file"
                                         accept=".xlsx, .xls, .csv"
+                                        className="hidden"
                                         onChange={handlePreview}
                                         disabled={previewMutation.isPending}
                                     />
+                                    <label
+                                        htmlFor="rule-import-file"
+                                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+                                            ${previewMutation.isPending
+                                                ? 'bg-muted/50 border-muted-foreground/20 cursor-not-allowed'
+                                                : 'bg-background hover:bg-muted/50 border-muted-foreground/20 hover:border-primary/50'
+                                            }`}
+                                    >
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                                            {previewMutation.isPending ? (
+                                                <div className="animate-pulse flex flex-col items-center">
+                                                    <div className="h-8 w-8 mb-3 rounded-full bg-muted"></div>
+                                                    <div className="text-sm text-muted-foreground">Analysiere Datei...</div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
+                                                    <p className="mb-1 text-sm text-foreground font-medium">
+                                                        Klicken zum Auswählen
+                                                        <span className="text-muted-foreground font-normal"> oder Datei hierher ziehen</span>
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Excel (.xlsx) oder CSV
+                                                    </p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </label>
                                 </div>
-                                {previewMutation.isPending && <span className="text-xs text-muted-foreground">Lade...</span>}
                             </div>
 
                             <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -3333,6 +3479,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     className="data-[state=checked]:bg-blue-600"
                                 />
                             </div>
+
                         </div>
 
                         {/* Export Section */}
@@ -3345,11 +3492,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
-                                    Excel Export
+                                    Herunterladen (Excel)
                                 </Button>
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
                                     <FileText className="h-4 w-4 mr-2" />
-                                    CSV Export
+                                    Herunterladen (CSV)
                                 </Button>
                             </div>
                         </div>
@@ -3362,7 +3509,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileJson className="h-6 w-6 text-orange-600" />
-                        <CardTitle>Advanced JSON Import / Export</CardTitle>
+                        <CardTitle>Erweiterter Regel-Import/Export</CardTitle>
                     </div>
                     <CardDescription>
                         Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.
@@ -3383,7 +3530,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('rules', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    JSON Exportieren
+                                    Herunterladen (JSON)
                                 </Button>
                                 <div className="relative">
                                     <input
@@ -3398,7 +3545,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         disabled={importMutation.isPending}
                                     >
                                         <Upload className="h-4 w-4 mr-2" />
-                                        JSON Importieren (Experte)
+                                        Importieren (JSON)
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -3412,26 +3559,40 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </p>
                             </div>
                          </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                         {/* Settings & Stats */}
+                {/* System & Statistics Section */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Settings className="h-6 w-6 text-blue-600" />
+                        <CardTitle>System & Statistiken</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Verwaltung von Systemeinstellungen und Statistiken.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         {/* Settings Import/Export */}
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Systemdaten</h3>
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <Settings className="h-4 w-4" />
+                                System-Einstellungen
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.
+                            </p>
                             <div className="space-y-2">
                                 <Button
                                     className="w-full"
                                     variant="outline"
                                     onClick={() => handleExport('settings', 'json')}
                                 >
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Einstellungen Exportieren
-                                </Button>
-                                <Button
-                                    className="w-full"
-                                    variant="outline"
-                                    onClick={() => handleExport('statistics', 'csv')}
-                                >
-                                    <BarChart3 className="h-4 w-4 mr-2" />
-                                    Statistiken (CSV)
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Herunterladen (JSON)
                                 </Button>
                                 <div className="relative">
                                   <input
@@ -3442,14 +3603,34 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   />
                                   <Button
                                     className="w-full"
-                                    variant="ghost"
-                                    size="sm"
+                                    variant="secondary"
                                     disabled={importSettingsMutation.isPending}
                                   >
-                                    <Upload className="h-3 w-3 mr-2" />
-                                    Einstellungen importieren
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Importieren (JSON)
                                   </Button>
                                 </div>
+                            </div>
+                         </div>
+
+                         {/* Statistics Export */}
+                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                            <h3 className="font-medium text-foreground flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4" />
+                                Statistiken
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.
+                            </p>
+                            <div className="space-y-2">
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => handleExport('statistics', 'csv')}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Herunterladen (CSV)
+                                </Button>
                             </div>
                          </div>
                     </div>
@@ -3496,53 +3677,131 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             <div className="flex-1 overflow-auto py-4">
                 {importPreviewData && (
                     <div className="space-y-4">
-                        <div className="flex gap-4 text-sm">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Neu: {importPreviewData.counts.new}
-                            </Badge>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                Update: {importPreviewData.counts.update}
-                            </Badge>
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                Ungültig: {importPreviewData.counts.invalid}
-                            </Badge>
-                            <span className="text-muted-foreground">
-                                Zeige {importPreviewData.preview.length} von {importPreviewData.total}
-                            </span>
+                        <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+                            <div className="flex gap-2">
+                              <Badge
+                                  variant={previewStatusFilter === 'new' ? "default" : "outline"}
+                                  className={`cursor-pointer ${previewStatusFilter === 'new' ? 'bg-green-600 hover:bg-green-700' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
+                                  onClick={() => setPreviewStatusFilter(previewStatusFilter === 'new' ? 'all' : 'new')}
+                              >
+                                  Neu: {importPreviewData.counts.new}
+                              </Badge>
+                              <Badge
+                                  variant={previewStatusFilter === 'update' ? "default" : "outline"}
+                                  className={`cursor-pointer ${previewStatusFilter === 'update' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'}`}
+                                  onClick={() => setPreviewStatusFilter(previewStatusFilter === 'update' ? 'all' : 'update')}
+                              >
+                                  Update: {importPreviewData.counts.update}
+                              </Badge>
+                              <Badge
+                                  variant={previewStatusFilter === 'invalid' ? "default" : "outline"}
+                                  className={`cursor-pointer ${previewStatusFilter === 'invalid' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
+                                  onClick={() => setPreviewStatusFilter(previewStatusFilter === 'invalid' ? 'all' : 'invalid')}
+                              >
+                                  Ungültig: {importPreviewData.counts.invalid}
+                              </Badge>
+                              {previewStatusFilter !== 'all' && (
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-6 px-2 text-xs"
+                                     onClick={() => setPreviewStatusFilter('all')}
+                                   >
+                                     <Filter className="h-3 w-3 mr-1" />
+                                     Filter löschen
+                                   </Button>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">
+                                  Zeige {Math.min(previewLimit, filteredPreviewData.length)} von {filteredPreviewData.length} (Gesamt: {importPreviewData.total})
+                              </span>
+                              {filteredPreviewData.length > 50 && !showAllPreview && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs text-blue-600 hover:text-blue-800"
+                                  onClick={() => {
+                                    setShowAllPreview(true);
+                                    setPreviewLimit(100); // Start with more
+
+                                    // If we don't have all data yet, fetch it
+                                    if (!importPreviewData.all && selectedImportFile) {
+                                      previewMutation.mutate({ file: selectedImportFile, all: true });
+                                    }
+                                  }}
+                                  disabled={previewMutation.isPending}
+                                >
+                                  {previewMutation.isPending ? "Lade..." : "Alle anzeigen"}
+                                </Button>
+                              )}
+                            </div>
                         </div>
 
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Matcher</TableHead>
-                                    <TableHead>Target</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Auto</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {importPreviewData.preview.map((item, i) => (
-                                    <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
-                                        <TableCell className="font-mono text-xs">
-                                          {item.rule.matcher || '-'}
-                                          {!item.isValid && item.errors.length > 0 && (
-                                            <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
-                                          )}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
-                                        <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
-                                    </TableRow>
-                                ))}
-                                {importPreviewData.total > importPreviewData.limit && (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="text-center text-muted-foreground text-xs py-2">
-                                            ... {importPreviewData.total - importPreviewData.limit} weitere Einträge nicht angezeigt (Limit: {importPreviewData.limit})
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                        <div className="border rounded-md">
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead className="w-24">
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('status')}>
+                                            Status {previewSortBy === 'status' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                          </Button>
+                                      </TableHead>
+                                      <TableHead>
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
+                                            Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                          </Button>
+                                      </TableHead>
+                                      <TableHead>
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
+                                            Target {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                          </Button>
+                                      </TableHead>
+                                      <TableHead>Type</TableHead>
+                                      <TableHead>Auto</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {filteredPreviewData
+                                    .slice(0, previewLimit)
+                                    .map((item, i) => (
+                                      <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
+                                          <TableCell>
+                                              <Badge variant="outline" className={
+                                                item.status === 'new' ? "bg-green-50 text-green-700 border-green-200" :
+                                                item.status === 'update' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                                "bg-red-50 text-red-700 border-red-200"
+                                              }>
+                                                {item.status === 'new' ? 'Neu' : item.status === 'update' ? 'Update' : 'Ungültig'}
+                                              </Badge>
+                                          </TableCell>
+                                          <TableCell className="font-mono text-xs">
+                                            {item.rule.matcher || '-'}
+                                            {!item.isValid && item.errors.length > 0 && (
+                                              <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
+                                            )}
+                                          </TableCell>
+                                          <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
+                                          <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Pagination / Load More for "Show All" mode */}
+                        {showAllPreview && importPreviewData.all && previewLimit < importPreviewData.total && (
+                          <div className="flex justify-center pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPreviewLimit(prev => Math.min(prev + 100, importPreviewData.total))}
+                            >
+                              Mehr laden (+100)
+                            </Button>
+                          </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -3551,9 +3810,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Abbrechen</Button>
                 <Button
                     onClick={handleExecuteImport}
-                    disabled={importMutation.isPending || !importPreviewData?.all.some(r => r.isValid)}
+                    disabled={importMutation.isPending || previewMutation.isPending || (importPreviewData?.all ? !importPreviewData.all.some(r => r.isValid) : !importPreviewData?.preview.some(r => r.isValid))}
                 >
-                    {importMutation.isPending ? "Importiere..." : `${importPreviewData?.all.filter(r => r.isValid).length || 0} Regeln Importieren`}
+                    {importMutation.isPending || previewMutation.isPending
+                      ? "Verarbeite..."
+                      : `${importPreviewData?.total || 0} Regeln Importieren`
+                    }
                 </Button>
             </DialogFooter>
         </DialogContent>
@@ -3598,7 +3860,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               </label>
               <Select
                 value={ruleForm.redirectType}
-                onValueChange={(value: "wildcard" | "partial") =>
+                onValueChange={(value: "wildcard" | "partial" | "domain") =>
                   setRuleForm(prev => ({ ...prev, redirectType: value }))
                 }
               >
@@ -3606,6 +3868,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <SelectValue>
                     {ruleForm.redirectType === "partial" && "Teilweise"}
                     {ruleForm.redirectType === "wildcard" && "Vollständig"}
+                    {ruleForm.redirectType === "domain" && "Domain-Ersatz"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
@@ -3622,6 +3885,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <span className="font-medium text-sm">Vollständig</span>
                       <span className="text-xs text-muted-foreground leading-relaxed">
                         Alte Links werden komplett auf die neue Ziel-URL umgeleitet. Keine Bestandteile der alten URL werden übernommen – weder Pfadsegmente noch Parameter oder Anker.
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
+                    <div className="flex flex-col space-y-1">
+                      <span className="font-medium text-sm">Domain-Ersatz</span>
+                      <span className="text-xs text-muted-foreground leading-relaxed whitespace-normal">
+                        Ersetzt nur die Domain (Host) der URL. Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Wenn eine Ziel-URL angegeben ist, wird deren Domain verwendet.<br/><br/>
+                        Der Matcher kann hier auch eine Domain sein (z.B. "www.alteseite.ch"). Bei Verwendung eines Pfad-Matchers ("/news") mit diesem Typ wird nur die Domain ersetzt, während der Pfad erhalten bleibt.
                       </span>
                     </div>
                   </SelectItem>

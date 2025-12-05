@@ -15,3 +15,7 @@ test_cookies.txt
 /data
 /data/
 /Impressions
+server.log
+server-log.txt
+test-results-folder
+test-results/

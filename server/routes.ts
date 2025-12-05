@@ -16,7 +16,7 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { findMatchingRule } from "@shared/ruleMatching";
+import { findMatchingRule, findAllMatchingRules } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
@@ -179,7 +179,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // URL-Regel Matching endpoint
   app.post("/api/check-rules", apiRateLimiter, async (req, res) => {
     try {
-      const { path } = z.object({ path: z.string() }).parse(req.body);
+      const { path, url } = z.object({
+        path: z.string(),
+        url: z.string().optional()
+      }).parse(req.body);
       // Removed direct getUrlRules call to use processed version below
       const settings = await storage.getGeneralSettings();
 
@@ -192,7 +195,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rules = await storage.getProcessedUrlRules(config);
 
       // Normalization and specificity prioritization handled by findMatchingRule
-      const matchDetails = findMatchingRule(path, rules, config);
+      // We prefer the full URL to enable domain matching, but fallback to path if not provided
+      const matchDetails = findMatchingRule(url || path, rules, config);
 
       res.json({
         rule: matchDetails?.rule || null,
@@ -577,10 +581,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.json(trackingData);
         }
       } else if (exportRequest.type === 'rules') {
-        const rules = await storage.getUrlRules();
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
-        res.json(rules);
+        // Use getCleanUrlRules to ensure internal cache properties are stripped
+        const rules = await storage.getCleanUrlRules();
+        if (exportRequest.format === 'csv') {
+          const csv = ImportExportService.generateCSV(rules);
+          res.setHeader('Content-Type', 'text/csv');
+          res.setHeader('Content-Disposition', 'attachment; filename="rules.csv"');
+          res.send(csv);
+        } else if (exportRequest.format === 'xlsx') {
+          const buffer = ImportExportService.generateExcel(rules);
+          res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+          res.setHeader('Content-Disposition', 'attachment; filename="rules.xlsx"');
+          res.send(buffer);
+        } else {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
+          res.json(rules);
+        }
       } else if (exportRequest.type === 'settings') {
         const settings = await storage.getGeneralSettings();
         res.setHeader('Content-Type', 'application/json');
@@ -588,7 +605,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(settings);
       }
     } catch (error) {
-      console.error("Export error:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Export error:", errorMessage);
       res.status(400).json({ error: "Invalid export request" });
     }
   });
@@ -612,7 +630,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: result.errors
       });
     } catch (error) {
-      console.error("Import error:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Import error:", errorMessage);
       res.status(400).json({ error: "Invalid import request" });
     }
   });
@@ -903,22 +922,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const buffer = await import('fs/promises').then(fs => fs.readFile(req.file!.path));
       const rawRules = ImportExportService.parseFile(buffer, req.file.originalname);
 
-      // Get settings to determine if URLs should be encoded
       const settings = await storage.getGeneralSettings();
-      const parsedResults = ImportExportService.normalizeRules(rawRules, settings.encodeImportedUrls);
+      // Use getCleanUrlRules to avoid passing internal cache properties, although UrlRule type is compatible
+      const existingRules = await storage.getCleanUrlRules();
+
+      const parsedResults = ImportExportService.normalizeRules(
+        rawRules,
+        { encodeImportedUrls: settings.encodeImportedUrls },
+        existingRules
+      );
 
       // Clean up temp file
       await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
 
-      // Limit preview results based on configuration, but return ALL for import logic
-      const previewResults = parsedResults.slice(0, IMPORT_PREVIEW_LIMIT);
+      // If "all" query param is set, return all results, otherwise limit
+      const showAll = req.query.all === 'true';
+      const limit = showAll ? parsedResults.length : IMPORT_PREVIEW_LIMIT;
+      const previewResults = parsedResults.slice(0, limit);
 
       res.json({
         total: parsedResults.length,
-        limit: IMPORT_PREVIEW_LIMIT,
-        isLimited: parsedResults.length > IMPORT_PREVIEW_LIMIT,
-        preview: previewResults, // Limited subset for UI
-        all: parsedResults, // Full set for import logic
+        limit: limit,
+        isLimited: parsedResults.length > limit,
+        preview: previewResults, // Limited subset for UI (or full if requested)
+        all: showAll ? parsedResults : undefined, // Full set for import logic (only if requested)
         counts: {
           new: parsedResults.filter(r => r.status === 'new').length,
           update: parsedResults.filter(r => r.status === 'update').length,
@@ -926,8 +953,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      console.error("Import preview error:", error);
-      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to parse file" });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Import preview error:", errorMessage);
+      res.status(400).json({ error: errorMessage });
     }
   });
 
@@ -935,7 +963,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/export/rules", requireAuth, async (req, res) => {
     try {
       const format = (req.query.format as string || 'json').toLowerCase();
-      const rules = await storage.getUrlRules();
+      // Use getCleanUrlRules to ensure internal cache properties are stripped
+      const rules = await storage.getCleanUrlRules();
 
       if (format === 'csv') {
         const csv = ImportExportService.generateCSV(rules);
@@ -954,7 +983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(rules);
       }
     } catch (error) {
-      console.error("Export error:", error);
+      console.error("Export error:", error instanceof Error ? error.message : "Unknown error");
       res.status(500).json({ error: "Failed to export rules" });
     }
   });

@@ -1,7 +1,7 @@
 
 import { ImportExportService } from '../../server/import-export';
 import { strict as assert } from 'assert';
-import { utils, write } from 'xlsx';
+import { utils, write } from '@e965/xlsx';
 
 async function testCsvParsing() {
   console.log('Testing CSV Parsing...');

@@ -5,7 +5,8 @@ import { z } from "zod";
  */
 
 // URL validation patterns
-const URL_MATCHER_PATTERN = /^\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/;
+// Updated to allow domains (no leading slash required) and paths
+const URL_MATCHER_PATTERN = /^(\/|[a-zA-Z0-9])([a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*)$/;
 
 // Icon enums for better type safety and maintainability
 export const ICON_OPTIONS = [
@@ -24,8 +25,8 @@ export const COLOR_OPTIONS = [
 
 export const POPUP_MODES = ["active", "inline", "disabled"] as const;
 
-export const REDIRECT_TYPES = ["wildcard", "partial"] as const;
-export const EXPORT_FORMATS = ["csv", "json"] as const;
+export const REDIRECT_TYPES = ["wildcard", "partial", "domain"] as const;
+export const EXPORT_FORMATS = ["csv", "json", "xlsx"] as const;
 export const TIME_RANGES = ["24h", "7d", "all"] as const;
 
 /**
@@ -76,6 +77,9 @@ export const urlTrackingSchema = z.object({
     .uuid("Invalid rule ID")
     .optional()
     .catch(undefined),
+  ruleIds: z.array(z.string().uuid())
+    .optional()
+    .default([]),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
@@ -240,6 +244,9 @@ export const generalSettingsSchema = z.object({
 
   // Link detection behavior
   caseSensitiveLinkDetection: z.boolean().default(false),
+
+  // Import settings
+  encodeImportedUrls: z.boolean().default(true),
 
   // Auto-redirect functionality
   autoRedirect: z.boolean()

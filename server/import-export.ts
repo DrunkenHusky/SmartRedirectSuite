@@ -1,4 +1,4 @@
-import { read, utils, write } from 'xlsx';
+import { read, utils, write } from '@e965/xlsx';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import { UrlRule, importUrlRuleSchema } from '@shared/schema';
@@ -55,7 +55,15 @@ export class ImportExportService {
   /**
    * Normalize parsed data to internal Rule structure
    */
-  static normalizeRules(rawRules: any[], encodeUrls: boolean = true): ParsedRuleResult[] {
+  static normalizeRules(
+    rawRules: any[],
+    options: { encodeImportedUrls?: boolean } = { encodeImportedUrls: true },
+    existingRules: UrlRule[] = []
+  ): ParsedRuleResult[] {
+    // Create lookup map for faster matching by matcher
+    const existingRulesByMatcher = new Map(existingRules.map(r => [r.matcher, r]));
+    const existingRulesById = new Map(existingRules.map(r => [r.id, r]));
+
     return rawRules.map(row => {
       const rule: any = {};
       const errors: string[] = [];
@@ -73,8 +81,8 @@ export class ImportExportService {
       rule.matcher = getValue(COLUMN_MAPPING.matcher);
       rule.targetUrl = getValue(COLUMN_MAPPING.targetUrl);
 
-      // Encode matcher and targetUrl to handle special characters and spaces
-      if (encodeUrls) {
+      // Encode matcher and targetUrl to handle special characters and spaces if enabled
+      if (options.encodeImportedUrls) {
         if (typeof rule.matcher === 'string') {
           rule.matcher = encodeURI(rule.matcher);
         }
@@ -87,12 +95,17 @@ export class ImportExportService {
       rule.infoText = getValue(COLUMN_MAPPING.infoText);
       rule.autoRedirect = getValue(COLUMN_MAPPING.autoRedirect);
       rule.id = getValue(COLUMN_MAPPING.id);
+      // Handle empty string IDs as undefined (common in Excel/CSV imports)
+      if (rule.id === '' || (typeof rule.id === 'string' && rule.id.trim() === '')) {
+        rule.id = undefined;
+      }
 
       // Normalize Types
       if (rule.redirectType) {
         const type = String(rule.redirectType).toLowerCase();
         if (type.includes('wild') || type === 'complete') rule.redirectType = 'wildcard';
-        else if (type.includes('part')) rule.redirectType = 'partial';
+        else if (type.includes('part') || type === 'partial') rule.redirectType = 'partial';
+        else if (type.includes('domain')) rule.redirectType = 'domain';
       } else {
         rule.redirectType = 'partial'; // Default
       }
@@ -108,6 +121,7 @@ export class ImportExportService {
       // Validation using Zod schema (partially)
       // We manually check required fields because the Zod schema might be too strict for initial parsing
       if (!rule.matcher) errors.push('Matcher (Quelle) is required');
+      if (!rule.targetUrl) errors.push('Target URL (Ziel) is required');
 
       // Attempt to validate with Zod if basic checks pass
       let isValid = errors.length === 0;
@@ -115,17 +129,15 @@ export class ImportExportService {
         const result = importUrlRuleSchema.safeParse(rule);
         if (!result.success) {
            // We extract friendly error messages
-           if (result.error && result.error.errors) {
-              result.error.errors.forEach(err => {
-                // Skip ID errors as we handle them separately (optional vs uuid)
-                if (err.path.includes('id') && !rule.id) return;
-                if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
-                  errors.push('Invalid ID format');
-                  return;
-                }
-                errors.push(`${err.path.join('.')}: ${err.message}`);
-              });
-           }
+           result.error.issues.forEach(err => {
+             // Skip ID errors as we handle them separately (optional vs uuid)
+             if (err.path.includes('id') && !rule.id) return;
+             if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
+               errors.push('Invalid ID format');
+               return;
+             }
+             errors.push(`${err.path.join('.')}: ${err.message}`);
+           });
            if (errors.length > 0) isValid = false;
         } else {
           // Use the transformed values
@@ -133,11 +145,31 @@ export class ImportExportService {
         }
       }
 
+      // Determine status based on ID or Matcher existence
+      let status: 'new' | 'update' | 'invalid' = 'new';
+
+      if (!isValid) {
+        status = 'invalid';
+      } else {
+        if (rule.id && existingRulesById.has(rule.id)) {
+          status = 'update';
+        } else if (existingRulesByMatcher.has(rule.matcher)) {
+          status = 'update';
+        } else if (rule.id && !existingRulesById.has(rule.id)) {
+           // ID provided but not found -> treat as new (with specific ID)
+           // But waiting, storage.importUrlRules says:
+           // "ID provided but not found - create new"
+           status = 'new';
+        } else {
+           status = 'new';
+        }
+      }
+
       return {
         rule,
         isValid,
         errors,
-        status: isValid ? (rule.id ? 'update' : 'new') : 'invalid'
+        status
       };
     });
   }
@@ -174,6 +206,9 @@ export class ImportExportService {
     const workbook = utils.book_new();
     const worksheet = utils.json_to_sheet(data);
     utils.book_append_sheet(workbook, worksheet, 'Rules');
-    return write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Explicitly using type 'buffer' which returns a Buffer in Node.js
+    const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return buffer as unknown as Buffer;
   }
 }

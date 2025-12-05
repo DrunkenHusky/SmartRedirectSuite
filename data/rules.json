@@ -1,1 +1,32 @@
-
+[
+  {
+    "id": "2ac434d9-9831-4c7b-b93c-9159e93f5096",
+    "matcher": "/sample-old-path-full",
+    "targetUrl": "https://newurlofdifferentapp.com/sample-new-path",
+    "redirectType": "wildcard",
+    "infoText": "Wildcard redirect",
+    "autoRedirect": false,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "isDomainMatcher": false
+  },
+  {
+    "id": "0a92d7a0-8ed5-4398-a8ec-2a10f240fd20",
+    "matcher": "/sample-old-path",
+    "targetUrl": "/sample-new-path",
+    "redirectType": "partial",
+    "infoText": "Partial redirect",
+    "autoRedirect": false,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "isDomainMatcher": false
+  },
+  {
+    "id": "ce499dc5-49f2-4391-b4e9-7514db860b74",
+    "matcher": "/sample-old-url-to-match-different-domain",
+    "targetUrl": "https://newother.app.com",
+    "redirectType": "domain",
+    "infoText": "Domain redirect",
+    "autoRedirect": false,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "isDomainMatcher": false
+  }
+]
