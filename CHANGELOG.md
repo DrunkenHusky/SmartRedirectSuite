@@ -1,3 +1,41 @@
+# [2.10.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.9.0...v2.10.0) (2025-12-05)
+
+
+### Bug Fixes
+
+* **admin:** add missing async keyword to handleExecuteImport ([3b481e8](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3b481e847249cff5326ea06ecb98fcb1382a5eaf))
+* **admin:** optimize import preview endpoint payload size ([171f7e9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/171f7e9504583f7442811188cd8bc6fc9136ca30))
+* allow xlsx format in export request schema ([abcb18d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/abcb18dd2f24fd83b2456af16c6913096da6b049))
+* **deps:** sync package-lock.json and replace xlsx with @e965/xlsx ([aa68ee9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/aa68ee9eeb6876cee5a870929859f4f04c1576e0))
+* ensure excel export uses .xlsx extension in admin panel ([82250d2](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/82250d261414d36d6d1fad7ded5e642d0472608c))
+* **export:** strip internal cache properties from exported rules ([015d634](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/015d634daee3f4b9e851dad584337acbf5581f11))
+* **frontend:** prevent crash when import preview response lacks 'all' data ([5a3adc9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5a3adc9c6f314f3c9326f713c941721dac823e53))
+* **import:** correct status detection for existing matchers and enhance preview UI ([dd7a759](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/dd7a7597a1c83e62fa0e7ce385d432ea4c3a0b79))
+* **import:** handle undefined ID and fix Zod compatibility ([159cfeb](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/159cfebce2d4f3217fe34764038727d4797f8c6a))
+* **rule-matching:** fix domain replacement rule matching logic ([2a548de](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/2a548de8abd5551e84ff4310998ca1a0ce9d371e))
+* **rule-matching:** handle root-relative paths in matcher ([6a36c2b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/6a36c2b4303cbcbcb4021ea13117a1d36ad301ab))
+* **rules:** allow overlapping URL matchers ([78b85b0](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/78b85b0db8166239cd0acf97424d6ba4873e9c0d))
+* **rules:** support domain matching in check-rules endpoint ([0be4b3a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0be4b3a5d3edb2ab31dd44920a81ea0bab1fc001))
+* **server:** prevent crash in export error handling ([8dd3fe9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/8dd3fe90273c2a8e6e250c63e9010dfe8752d1fb))
+* **ui:** prevent horizontal scroll in admin rules table ([e949756](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e949756c209858da66f6d9ba5ef61ffd031ec0c8))
+* **ui:** remove duplicate unstyled 'URLs automatisch kodieren' toggle ([072e73b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/072e73b8a7d4b72b706e718ae7b108682f3d4bb9))
+* **validation:** add support for domain redirect type ([9b01dfc](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/9b01dfcd593de9714ecf41c72a7433202c4958cb))
+
+
+### Features
+
+* add domain replacement option for partial redirects ([f09cd1a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f09cd1ad5a5a05e371c0382bfe02f5246a4c0e9b))
+* **admin:** refactor import/export tab structure and button naming ([ad5ba6e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ad5ba6e27d2197b1a49f14efc09004ddd7a856a8))
+* **admin:** set encodeImportedUrls to default true and silence toast on toggle ([5e84ae4](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5e84ae4a3a391474191990e10ad66e660498267b))
+* enforce strict domain validation for domain redirects ([a247cb4](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/a247cb462288b4412427e97261275399ae41e190))
+* enhance domain rule matcher logic and documentation ([cf3b34a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/cf3b34a1dce6e4dc0396b2dc189036ff0871e4f7))
+* enhance import preview with status tooltip ([89c331f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/89c331f59d723106f2848e54eae9dfd57e976f91))
+* make URL encoding during import configurable ([3d36743](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3d367435137a86c238c1f9807eb687786b8f0ec9))
+* Optimize Importer/Exporter and Fix Crashes ([22addc4](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/22addc490cea267ef7d738864fdad56f07039b20))
+* optimize importer/exporter, fix export bugs, and improve UI ([48f5806](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/48f5806ed06b911f6608913f38fa765e7a331053))
+* suppress toast for encode url toggle ([1343f38](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1343f384d66c5f75bcd1d289829f030df0d8993c))
+* track and display all matching rules in statistics ([088ce30](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/088ce307918088e88612d8a6216ad54a839f24fc))
+
 # [2.9.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.8.0...v2.9.0) (2025-12-04)
 
 
