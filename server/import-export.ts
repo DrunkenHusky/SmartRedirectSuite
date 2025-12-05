@@ -138,6 +138,24 @@ export class ImportExportService {
         rule.forwardQueryParams = false;
       }
 
+      // Cross-validation for query params settings
+      if (rule.discardQueryParams && rule.forwardQueryParams) {
+        errors.push('Parameters cannot be both discarded and kept / Parameter können nicht gleichzeitig entfernt und behalten werden');
+      }
+
+      // Type-specific query params validation
+      // Validate that the correct flags are used for the rule type to avoid ambiguity
+      if (rule.redirectType === 'wildcard') {
+        if (rule.discardQueryParams) {
+          errors.push('Wildcard rules discard parameters by default. Use "Keep Query Params" to preserve them.');
+        }
+      } else if (rule.redirectType === 'partial' || rule.redirectType === 'domain') {
+        if (rule.forwardQueryParams) {
+           const typeName = rule.redirectType === 'domain' ? 'Domain' : 'Partial';
+           errors.push(`${typeName} rules keep parameters by default. Use "Discard Query Params" to remove them.`);
+        }
+      }
+
       // Validation using Zod schema (partially)
       // We manually check required fields because the Zod schema might be too strict for initial parsing
       if (!rule.matcher) errors.push('Matcher (Quelle) is required');
