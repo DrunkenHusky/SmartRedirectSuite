@@ -3755,12 +3755,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       </TableHead>
                                       <TableHead>
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
-                                            Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                            URL-Pfad Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
                                       <TableHead>
                                           <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
-                                            Target {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                            Ziel-URL {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
                                           </Button>
                                       </TableHead>
                                       <TableHead>Typ</TableHead>
