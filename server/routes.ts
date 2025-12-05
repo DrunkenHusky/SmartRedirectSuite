@@ -902,7 +902,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const buffer = await import('fs/promises').then(fs => fs.readFile(req.file!.path));
       const rawRules = ImportExportService.parseFile(buffer, req.file.originalname);
-      const parsedResults = ImportExportService.normalizeRules(rawRules);
+
+      // Get settings to determine if URLs should be encoded
+      const settings = await storage.getGeneralSettings();
+      const parsedResults = ImportExportService.normalizeRules(rawRules, settings.encodeImportedUrls);
 
       // Clean up temp file
       await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
