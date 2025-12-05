@@ -3408,6 +3408,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         <li><strong>Type</strong> (Optional) - 'partial' oder 'wildcard'</li>
                                         <li><strong>Info</strong> (Optional) - Beschreibung</li>
                                         <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
+                                        <li><strong>Discard Query Params</strong> (Optional) - 'true'/'false'</li>
+                                        <li><strong>Keep Query Params</strong> (Optional) - 'true'/'false'</li>
                                         <li><strong>ID</strong> (Optional) - Nur für Updates bestehender Regeln</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
