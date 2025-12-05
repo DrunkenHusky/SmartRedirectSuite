@@ -202,6 +202,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     infoText: "",
     redirectType: "partial" as "wildcard" | "partial" | "domain",
     autoRedirect: false,
+    discardQueryParams: false,
+    forwardQueryParams: false,
   });
   const targetUrlPlaceholder =
     ruleForm.redirectType === "wildcard"
@@ -892,7 +894,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
-    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false });
+    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, forwardQueryParams: false });
     setEditingRule(null);
     setValidationError(null);
     setShowValidationDialog(false);
@@ -1028,6 +1030,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       infoText: rule.infoText || "",
       redirectType: rule.redirectType || "partial",
       autoRedirect: rule.autoRedirect || false,
+      discardQueryParams: rule.discardQueryParams || false,
+      forwardQueryParams: rule.forwardQueryParams || false,
     });
     setIsRuleDialogOpen(true);
   };
@@ -3911,6 +3915,46 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 rows={3}
               />
             </div>
+
+            {/* Parameter Handling Options */}
+            {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain') && (
+              <div className="border-t pt-4">
+                <div className="flex items-start space-x-3">
+                  <Switch
+                    checked={ruleForm.discardQueryParams}
+                    onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, discardQueryParams: checked }))}
+                  />
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Alle Link-Parameter entfernen
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Wenn aktiviert, werden alle Query-Parameter (z.B. ?id=123) aus der URL entfernt. Standard ist deaktiviert (Parameter werden beibehalten).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {ruleForm.redirectType === 'wildcard' && (
+              <div className="border-t pt-4">
+                <div className="flex items-start space-x-3">
+                  <Switch
+                    checked={ruleForm.forwardQueryParams}
+                    onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, forwardQueryParams: checked }))}
+                  />
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Link-Parameter beibehalten
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Wenn aktiviert, werden die ursprünglichen Query-Parameter an die Ziel-URL angehängt. Standard ist deaktiviert (Parameter werden verworfen).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="border-t pt-4">
               <div className="flex items-start space-x-3">
                 <Switch

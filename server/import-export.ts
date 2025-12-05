@@ -10,6 +10,8 @@ const COLUMN_MAPPING = {
   redirectType: ['Type', 'redirectType', 'Typ'],
   infoText: ['Info', 'infoText', 'Beschreibung'],
   autoRedirect: ['Auto Redirect', 'autoRedirect', 'Automatisch'],
+  discardQueryParams: ['Discard Query Params', 'discardQueryParams', 'Parameter entfernen'],
+  forwardQueryParams: ['Keep Query Params', 'forwardQueryParams', 'Parameter behalten'],
   id: ['ID', 'id']
 };
 
@@ -94,6 +96,8 @@ export class ImportExportService {
       rule.redirectType = getValue(COLUMN_MAPPING.redirectType);
       rule.infoText = getValue(COLUMN_MAPPING.infoText);
       rule.autoRedirect = getValue(COLUMN_MAPPING.autoRedirect);
+      rule.discardQueryParams = getValue(COLUMN_MAPPING.discardQueryParams);
+      rule.forwardQueryParams = getValue(COLUMN_MAPPING.forwardQueryParams);
       rule.id = getValue(COLUMN_MAPPING.id);
       // Handle empty string IDs as undefined (common in Excel/CSV imports)
       if (rule.id === '' || (typeof rule.id === 'string' && rule.id.trim() === '')) {
@@ -116,6 +120,22 @@ export class ImportExportService {
         rule.autoRedirect = ['true', '1', 'yes', 'ja', 'on'].includes(ar);
       } else {
         rule.autoRedirect = false;
+      }
+
+      // Normalize discardQueryParams
+      if (rule.discardQueryParams !== undefined) {
+        const dqp = String(rule.discardQueryParams).toLowerCase();
+        rule.discardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(dqp);
+      } else {
+        rule.discardQueryParams = false;
+      }
+
+      // Normalize forwardQueryParams
+      if (rule.forwardQueryParams !== undefined) {
+        const fqp = String(rule.forwardQueryParams).toLowerCase();
+        rule.forwardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(fqp);
+      } else {
+        rule.forwardQueryParams = false;
       }
 
       // Validation using Zod schema (partially)
@@ -184,7 +204,9 @@ export class ImportExportService {
       'Target URL': rule.targetUrl,
       Type: rule.redirectType,
       Info: rule.infoText,
-      'Auto Redirect': rule.autoRedirect ? 'true' : 'false'
+      'Auto Redirect': rule.autoRedirect ? 'true' : 'false',
+      'Discard Query Params': rule.discardQueryParams ? 'true' : 'false',
+      'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false'
     }));
 
     return stringify(data, { header: true });
@@ -200,7 +222,9 @@ export class ImportExportService {
       'Target URL': rule.targetUrl,
       Type: rule.redirectType,
       Info: rule.infoText,
-      'Auto Redirect': rule.autoRedirect
+      'Auto Redirect': rule.autoRedirect,
+      'Discard Query Params': rule.discardQueryParams,
+      'Keep Query Params': rule.forwardQueryParams
     }));
 
     const workbook = utils.book_new();
