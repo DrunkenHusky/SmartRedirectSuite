@@ -225,6 +225,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [selectedRuleIds, setSelectedRuleIds] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
+  // Delete all rules state
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [deleteAllConfirmationText, setDeleteAllConfirmationText] = useState("");
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
@@ -1308,6 +1312,30 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       toast({
         title: "Fehler beim Cache-Neuaufbau",
         description: error.message || "Der Cache konnte nicht neu erstellt werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete all rules mutation
+  const deleteAllRulesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/admin/all-rules");
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      setShowDeleteAllDialog(false);
+      setDeleteAllConfirmationText("");
+      toast({
+        title: "Alle Regeln gelöscht",
+        description: "Alle URL-Regeln wurden erfolgreich gelöscht.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fehler",
+        description: error.message || "Fehler beim Löschen aller Regeln.",
         variant: "destructive",
       });
     },
@@ -3648,20 +3676,47 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5 text-red-500" />
-                        <CardTitle className="text-red-500">Wartung</CardTitle>
+                        <CardTitle className="text-red-500">Danger-Zone!</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
-                      <Button
-                          variant="destructive"
-                          onClick={() => rebuildCacheMutation.mutate()}
-                          disabled={rebuildCacheMutation.isPending}
-                      >
-                          {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                          Nur bei Problemen mit der Regelerkennung notwendig.
-                      </p>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-2">
+                            <h4 className="font-medium text-sm">Cache Wartung</h4>
+                            <div className="flex items-center gap-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => rebuildCacheMutation.mutate()}
+                                    disabled={rebuildCacheMutation.isPending}
+                                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                >
+                                    {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
+                                </Button>
+                                <p className="text-xs text-muted-foreground">
+                                    Nur bei Problemen mit der Regelerkennung notwendig.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-4 flex flex-col gap-2">
+                            <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
+                            <div className="flex items-center gap-4">
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => {
+                                        setDeleteAllConfirmationText("");
+                                        setShowDeleteAllDialog(true);
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Alle Regeln löschen
+                                </Button>
+                                <p className="text-xs text-muted-foreground">
+                                    Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
+                                </p>
+                            </div>
+                        </div>
+                      </div>
                   </CardContent>
                 </Card>
               </div>
@@ -4140,6 +4195,59 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete All Rules Confirmation Dialog */}
+      <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Alle Regeln löschen?
+            </DialogTitle>
+            <DialogDescription>
+              Dies löscht alle vorhandenen Regeln unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+               Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.
+            </div>
+
+            <Button
+                variant="outline"
+                onClick={() => handleExport('rules', 'json')}
+                className="w-full"
+            >
+                <Download className="h-4 w-4 mr-2" />
+                Backup herunterladen (JSON)
+            </Button>
+
+            <div className="space-y-2">
+                <label className="text-sm font-medium">
+                    Bestätigung erforderlich
+                </label>
+                <Input
+                    value={deleteAllConfirmationText}
+                    onChange={(e) => setDeleteAllConfirmationText(e.target.value)}
+                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    className={deleteAllConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
+                />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)}>Abbrechen</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAllRulesMutation.mutate()}
+              disabled={deleteAllConfirmationText !== "DELETE" || deleteAllRulesMutation.isPending}
+            >
+              {deleteAllRulesMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Toaster />
     </div>
