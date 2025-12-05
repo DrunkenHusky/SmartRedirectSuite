@@ -3495,7 +3495,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
                                 Die Dateien können später wieder importiert werden.
                             </p>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
                                     Herunterladen (Excel)
