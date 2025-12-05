@@ -596,9 +596,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);

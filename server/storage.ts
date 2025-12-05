@@ -275,9 +275,12 @@ export class FileStorage implements IStorage {
           break;
         case "createdAt":
         default:
-          const aDate = new Date(a.createdAt || "").getTime();
-          const bDate = new Date(b.createdAt || "").getTime();
-          comparison = aDate - bDate;
+          // Optimized: Use string comparison for ISO dates instead of parsing Date objects
+          const aDate = a.createdAt || "";
+          const bDate = b.createdAt || "";
+          if (aDate < bDate) comparison = -1;
+          else if (aDate > bDate) comparison = 1;
+          else comparison = 0;
           break;
       }
 
@@ -566,39 +569,32 @@ export class FileStorage implements IStorage {
 
     // Sort data
     filteredData.sort((a, b) => {
-      let aValue: any, bValue: any;
+      let comparison = 0;
 
       switch (sortBy) {
         case "timestamp":
-          aValue = new Date(a.timestamp);
-          bValue = new Date(b.timestamp);
-          break;
-        case "oldUrl":
-          aValue = a.oldUrl.toLowerCase();
-          bValue = b.oldUrl.toLowerCase();
-          break;
-        case "newUrl":
-          aValue = ((a as any).newUrl || "").toLowerCase();
-          bValue = ((b as any).newUrl || "").toLowerCase();
-          break;
-        case "path":
-          aValue = a.path.toLowerCase();
-          bValue = b.path.toLowerCase();
-          break;
-        case "userAgent":
-          aValue = (a.userAgent || "").toLowerCase();
-          bValue = (b.userAgent || "").toLowerCase();
-          break;
         default:
-          aValue = a.timestamp;
-          bValue = b.timestamp;
+           // Optimized: Use string comparison for ISO dates
+           const tA = a.timestamp || "";
+           const tB = b.timestamp || "";
+           if (tA < tB) comparison = -1;
+           else if (tA > tB) comparison = 1;
+           break;
+        case "oldUrl":
+           comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
+           break;
+        case "newUrl":
+           comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
+           break;
+        case "path":
+           comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+           break;
+        case "userAgent":
+           comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
+           break;
       }
 
-      if (sortOrder === "asc") {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
+      return sortOrder === "asc" ? comparison : -comparison;
     });
 
     return filteredData;
@@ -647,35 +643,29 @@ export class FileStorage implements IStorage {
     if (!search || !search.trim()) {
       // Only sort if not already sorted by searchTrackingEntries
       filteredEntries.sort((a, b) => {
-        let aValue: any, bValue: any;
+        let comparison = 0;
 
         switch (sortBy) {
           case "timestamp":
-            aValue = new Date(a.timestamp);
-            bValue = new Date(b.timestamp);
+          default:
+            // Optimized: Use string comparison for ISO dates
+            const tA = a.timestamp || "";
+            const tB = b.timestamp || "";
+            if (tA < tB) comparison = -1;
+            else if (tA > tB) comparison = 1;
             break;
           case "oldUrl":
-            aValue = a.oldUrl.toLowerCase();
-            bValue = b.oldUrl.toLowerCase();
+            comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
             break;
           case "newUrl":
-            aValue = ((a as any).newUrl || "").toLowerCase();
-            bValue = ((b as any).newUrl || "").toLowerCase();
+            comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
             break;
           case "path":
-            aValue = a.path.toLowerCase();
-            bValue = b.path.toLowerCase();
+            comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
             break;
-          default:
-            aValue = a.timestamp;
-            bValue = b.timestamp;
         }
 
-        if (sortOrder === "asc") {
-          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-        } else {
-          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-        }
+        return sortOrder === "asc" ? comparison : -comparison;
       });
     }
 
