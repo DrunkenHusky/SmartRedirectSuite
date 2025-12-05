@@ -86,7 +86,7 @@ interface ImportPreviewData {
   limit: number;
   isLimited: boolean;
   preview: ParsedRuleResult[];
-  all: ParsedRuleResult[];
+  all?: ParsedRuleResult[];
   counts: {
     new: number;
     update: number;
@@ -245,7 +245,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const filteredPreviewData = useMemo(() => {
     if (!importPreviewData) return [];
 
-    let filtered = [...importPreviewData.all]; // Copy to sort
+    // Use all data if available, otherwise fallback to preview data (for initial limited view)
+    const sourceData = importPreviewData.all || importPreviewData.preview || [];
+    let filtered = [...sourceData]; // Copy to sort
 
     // Filter
     if (previewStatusFilter !== 'all') {
