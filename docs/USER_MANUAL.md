@@ -19,6 +19,9 @@ Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-A
 
 ## Regeln verwalten
 1. **Neue Regel** anlegen: URL-Matcher, Ziel-URL, Redirect-Typ (*Teilweise*, *Vollständig* oder *Domain*), optionaler Info-Text und automatische Weiterleitung konfigurieren.
+   - **Parameter-Behandlung**:
+     - Bei *Teilweise/Domain*: Option "Alle Link-Parameter entfernen" (Standard: Aus/Parameter behalten).
+     - Bei *Vollständig*: Option "Link-Parameter beibehalten" (Standard: Aus/Parameter entfernen).
 2. **Regeln suchen, sortieren und paginieren**: Eingabe im Suchfeld, Sortierung nach Quelle, Ziel oder Erstellungsdatum.
 3. **Regeln bearbeiten oder löschen**: Einzelne Einträge per Aktionen oder mehrere markierte Regeln gesammelt entfernen.
 4. **Bulk-Löschung**: Mehrere Regeln auf der aktuellen Seite markieren und gemeinsam löschen.
@@ -42,6 +45,8 @@ Dieser Bereich ist für die tägliche Pflege von Weiterleitungen optimiert.
     - `Type` / `Typ` (Optional): 'partial' (Teilweise), 'wildcard' (Vollständig) oder 'domain'. Standard ist 'partial'.
     - `Info` / `Beschreibung` (Optional): Interner Notiztext.
     - `Auto Redirect` (Optional): 'true'/'false' oder '1'/'0'.
+    - `Discard Query Params` / `Parameter entfernen` (Optional): 'true'/'false'. Entfernt alle Parameter bei Partial/Domain-Regeln.
+    - `Keep Query Params` / `Parameter behalten` (Optional): 'true'/'false'. Behält Parameter bei Wildcard-Regeln.
     - `ID` (Optional): Wird nur benötigt, um explizit bestehende Regeln zu aktualisieren.
   - **Option: URLs automatisch kodieren**: Wenn aktiviert (Standard), werden Sonderzeichen in URLs beim Import automatisch kodiert (z.B. Leerzeichen zu `%20`).
   - **Musterdateien**: Im UI können Vorlagen für Excel und CSV heruntergeladen werden.
