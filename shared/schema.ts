@@ -5,8 +5,8 @@ import { z } from "zod";
  */
 
 // URL validation patterns
-// Updated to allow domains (no leading slash required) and paths
-const URL_MATCHER_PATTERN = /^(\/|[a-zA-Z0-9])([a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]*)$/;
+// Updated to allow domains (no leading slash required) and paths, including spaces
+const URL_MATCHER_PATTERN = /^(\/|[a-zA-Z0-9])([a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=% ]*)$/;
 
 // Icon enums for better type safety and maintainability
 export const ICON_OPTIONS = [
