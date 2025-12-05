@@ -578,7 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // JSON-Export
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Content-Disposition', 'attachment; filename="statistics.json"');
-          res.json(trackingData);
+          res.send(JSON.stringify(trackingData, null, 2));
         }
       } else if (exportRequest.type === 'rules') {
         // Use getCleanUrlRules to ensure internal cache properties are stripped
@@ -596,13 +596,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
-          res.json(rules);
+          res.send(JSON.stringify(rules, null, 2));
         }
       } else if (exportRequest.type === 'settings') {
         const settings = await storage.getGeneralSettings();
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', 'attachment; filename="settings.json"');
-        res.json(settings);
+        res.send(JSON.stringify(settings, null, 2));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -693,7 +693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settings = await storage.getGeneralSettings();
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', 'attachment; filename="settings.json"');
-      res.json(settings);
+      res.send(JSON.stringify(settings, null, 2));
     } catch (error) {
       console.error("Settings export error:", error);  
       res.status(500).json({ error: "Settings Export fehlgeschlagen" });
@@ -980,7 +980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Default to JSON
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
-        res.json(rules);
+        res.send(JSON.stringify(rules, null, 2));
       }
     } catch (error) {
       console.error("Export error:", error instanceof Error ? error.message : "Unknown error");
