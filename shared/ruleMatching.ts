@@ -275,3 +275,137 @@ export function selectMostSpecificRule(
   const match = findMatchingRule(requestUrl, rules, config);
   return match ? match.rule : null;
 }
+
+export function findAllMatchingRules(
+  requestUrl: string,
+  rules: UrlRule[] | ProcessedUrlRule[],
+  config: RuleMatchingConfig = RULE_MATCHING_CONFIG,
+): MatchDetails[] {
+  const reqUrl = new URL(requestUrl, "http://example.com");
+  const reqPath = normalizePath(reqUrl.pathname, config);
+  const reqQuery = normalizeQuery(reqUrl.search, config);
+
+  const matches: MatchDetails[] = [];
+
+  for (const rule of rules) {
+    let rulePath: string[];
+    let ruleQuery: Map<string, string[]>;
+
+    if (isProcessedRule(rule)) {
+      rulePath = rule.normalizedPath;
+      ruleQuery = rule.normalizedQuery;
+    } else {
+      const [matcherPath, matcherQuery] = rule.matcher.split("?");
+      rulePath = normalizePath(matcherPath, config);
+      if (rulePath.length > reqPath.length) continue;
+      ruleQuery = normalizeQuery(matcherQuery ? "?" + matcherQuery : "", config);
+    }
+
+    if (rulePath.length > reqPath.length) continue;
+
+    for (let start = 0; start <= reqPath.length - rulePath.length; start++) {
+      // Path matching
+      let staticMatches = 0;
+      let wildcards = 0;
+      let pathMismatch = false;
+      for (let i = 0; i < rulePath.length; i++) {
+        const seg = rulePath[i];
+        const reqSeg = reqPath[start + i];
+        if (seg === "*" || seg.startsWith(":")) {
+          wildcards++;
+          continue;
+        }
+        if (seg === reqSeg) {
+          staticMatches++;
+        } else {
+          pathMismatch = true;
+          break;
+        }
+      }
+      if (pathMismatch) continue;
+
+      // Query matching
+      let queryPairs = 0;
+      let queryMismatch = false;
+      for (const [key, vals] of ruleQuery) {
+        const reqVals = reqQuery.get(key);
+        if (!reqVals) {
+          queryMismatch = true;
+          break;
+        }
+        for (const v of vals) {
+          if (!reqVals.includes(v)) {
+            queryMismatch = true;
+            break;
+          }
+          queryPairs++;
+        }
+        if (queryMismatch) break;
+      }
+      if (queryMismatch) continue;
+
+      // Exact match bonus
+      let exact = false;
+      if (
+        start === 0 &&
+        rulePath.length === reqPath.length &&
+        ruleQuery.size === reqQuery.size
+      ) {
+        exact = true;
+      }
+
+      const score =
+        staticMatches * config.WEIGHT_PATH_SEGMENT +
+        queryPairs * config.WEIGHT_QUERY_PAIR +
+        wildcards * config.PENALTY_WILDCARD +
+        (exact ? config.BONUS_EXACT_MATCH : 0);
+
+      // Calculate Match Quality for this match
+      let quality = 100;
+
+      // Check for extra query params
+      let hasExtraQuery = false;
+      for (const key of reqQuery.keys()) {
+        if (!ruleQuery.has(key)) {
+          hasExtraQuery = true;
+          break;
+        }
+      }
+
+      const rulePathLength = staticMatches + wildcards;
+      if (start > 0 || rulePathLength < reqPath.length) {
+        quality = 50;
+      } else if (hasExtraQuery) {
+        quality = 75;
+      }
+
+      let level: 'red' | 'yellow' | 'green' = 'green';
+      if (quality < 60) level = 'red';
+      if (quality >= 60 && quality < 90) level = 'yellow';
+      if (quality >= 90) level = 'green';
+
+      matches.push({
+        rule,
+        score,
+        quality,
+        level,
+        debug: {
+          start,
+          hasExtraQuery,
+          isExact: start === 0 && !hasExtraQuery && staticMatches === reqPath.length
+        }
+      });
+
+      // We found a match for this rule, no need to check other start positions for the same rule
+      break;
+    }
+  }
+
+  // Sort matches by score descending
+  matches.sort((a, b) => {
+    if (a.score !== b.score) return b.score - a.score;
+    return 0; // Keep stability
+  });
+
+  return matches;
+}

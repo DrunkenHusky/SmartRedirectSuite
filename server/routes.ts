@@ -16,7 +16,7 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { findMatchingRule } from "@shared/ruleMatching";
+import { findMatchingRule, findAllMatchingRules } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";

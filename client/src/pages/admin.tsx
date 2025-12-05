@@ -3197,7 +3197,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <code className="text-sm text-foreground">{entry.path}</code>
                                   </td>
                                   <td className="p-3">
-                                    {entry.rule ? (
+                                    {entry.rules && entry.rules.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {entry.rules.map((rule: UrlRule) => (
+                                          <Button
+                                            key={rule.id}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 mb-1"
+                                            onClick={() => handleEditRule(rule)}
+                                            title={`Regel bearbeiten: ${rule.redirectType}`}
+                                          >
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            {rule.matcher}
+                                            <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4">
+                                                {rule.redirectType === 'domain' ? 'D' : rule.redirectType === 'wildcard' ? 'W' : 'P'}
+                                            </Badge>
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    ) : entry.rule ? (
                                       <Button
                                         variant="ghost"
                                         size="sm"
