@@ -2720,13 +2720,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   />
                                 </td>
                                 <td className="py-3 px-4">
-                                  <Badge variant="secondary">{rule.matcher}</Badge>
+                                  <div className="max-w-[200px]" title={rule.matcher}>
+                                    <Badge variant="secondary" className="truncate max-w-full">
+                                      {rule.matcher}
+                                    </Badge>
+                                  </div>
                                 </td>
                                 <td className="py-3 px-4 text-sm">
                                   {rule.targetUrl ? (
-                                    <code className="text-xs bg-muted px-2 py-1 rounded">
-                                      {rule.targetUrl}
-                                    </code>
+                                    <div className="max-w-[200px]" title={rule.targetUrl}>
+                                      <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
+                                        {rule.targetUrl}
+                                      </code>
+                                    </div>
                                   ) : (
                                     <span className="italic text-muted-foreground">
                                       Automatisch generiert
