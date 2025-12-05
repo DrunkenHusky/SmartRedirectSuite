@@ -3782,13 +3782,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                 {item.status === 'new' ? 'Neu' : item.status === 'update' ? 'Update' : 'Ungültig'}
                                               </Badge>
                                           </TableCell>
-                                          <TableCell className="font-mono text-xs">
+                                          <TableCell className="font-mono text-xs truncate max-w-[200px]" title={item.rule.matcher || ''}>
                                             {item.rule.matcher || '-'}
                                             {!item.isValid && item.errors.length > 0 && (
-                                              <div className="text-red-600 text-[10px] mt-1">{item.errors[0]}</div>
+                                              <div className="text-red-600 text-[10px] mt-1 whitespace-normal">{item.errors[0]}</div>
                                             )}
                                           </TableCell>
-                                          <TableCell className="font-mono text-xs truncate max-w-[200px]">{item.rule.targetUrl || '-'}</TableCell>
+                                          <TableCell className="font-mono text-xs truncate max-w-[200px]" title={item.rule.targetUrl || ''}>{item.rule.targetUrl || '-'}</TableCell>
                                           <TableCell className="text-xs">{item.rule.redirectType}</TableCell>
                                           <TableCell className="text-xs">{item.rule.autoRedirect ? 'Ja' : 'Nein'}</TableCell>
                                           <TableCell className="text-xs">
