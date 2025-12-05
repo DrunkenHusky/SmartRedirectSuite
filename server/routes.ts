@@ -21,6 +21,7 @@ import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
 import multer from 'multer';
+import fs from 'fs';
 
 
 
@@ -755,9 +756,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upload = localUploadService.getMulterConfig();
   
   // Custom upload config for imports (JSON, CSV, Excel)
+  const uploadDir = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
+
+  // Ensure upload directory exists for imports
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
   const importUpload = multer({
     storage: multer.diskStorage({
-      destination: (_req, _file, cb) => cb(null, process.env.LOCAL_UPLOAD_PATH || './data/uploads'),
+      destination: (_req, _file, cb) => cb(null, uploadDir),
       filename: (_req, file, cb) => cb(null, `${createHash('md5').update(Math.random().toString()).digest('hex')}${path.extname(file.originalname)}`)
     }),
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
