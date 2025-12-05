@@ -2767,6 +2767,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Auto-Redirect
                               </th>
                               <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
+                                Query Parameter
+                              </th>
+                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground">
                                 Info-Text
                               </th>
                               <th className="text-left py-3 px-4">
@@ -2829,6 +2832,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <Badge variant={rule.autoRedirect ? 'default' : 'secondary'}>
                                     {rule.autoRedirect ? '✓ Aktiv' : '✗ Inaktiv'}
                                   </Badge>
+                                </td>
+                                <td className="py-3 px-4 text-xs">
+                                  {rule.discardQueryParams ? (
+                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
+                                      Entfernen
+                                    </Badge>
+                                  ) : rule.forwardQueryParams ? (
+                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
+                                      Behalten
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
                                 </td>
                                 <td className="py-3 px-4 text-sm text-muted-foreground">
                                   {rule.infoText ? rule.infoText.substring(0, 50) + "..." : "-"}
@@ -2950,6 +2966,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <Badge variant={rule.autoRedirect ? 'default' : 'secondary'} className="text-xs">
                                     {rule.autoRedirect ? '✓ Auto-Redirect' : '✗ Manuell'}
                                   </Badge>
+                                  {rule.discardQueryParams ? (
+                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
+                                      Params Entfernen
+                                    </Badge>
+                                  ) : rule.forwardQueryParams ? (
+                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
+                                      Params Behalten
+                                    </Badge>
+                                  ) : null}
                                 </div>
                               </div>
                               <div className="flex space-x-1 flex-shrink-0">
