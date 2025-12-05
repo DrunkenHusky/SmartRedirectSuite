@@ -8,12 +8,13 @@ import { z } from 'zod';
  * Validates target URL based on redirect type
  * - "wildcard": Must be a full HTTP/HTTPS URL
  * - "partial": Can be a path fragment or full URL
+ * - "domain": Must be a full HTTP/HTTPS URL (to extract domain)
  */
-export function validateTargetUrl(targetUrl: string, redirectType: 'wildcard' | 'partial'): boolean {
+export function validateTargetUrl(targetUrl: string, redirectType: 'wildcard' | 'partial' | 'domain'): boolean {
   if (!targetUrl) return false;
   
-  if (redirectType === 'wildcard') {
-    // Wildcard requires full URL
+  if (redirectType === 'wildcard' || redirectType === 'domain') {
+    // Wildcard and Domain require full URL
     return targetUrl.startsWith('http://') || targetUrl.startsWith('https://');
   } else {
     // Partial allows path fragments or full URLs
@@ -37,7 +38,7 @@ export const urlRuleSchemaWithValidation = z.object({
   infoText: z.string()
     .max(5000, "Info-Text ist zu lang")
     .optional(),
-  redirectType: z.enum(['wildcard', 'partial']).default('partial'),
+  redirectType: z.enum(['wildcard', 'partial', 'domain']).default('partial'),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
   // Validate targetUrl based on redirectType with German error messages
@@ -51,6 +52,10 @@ export const urlRuleSchemaWithValidation = z.object({
           !data.targetUrl.startsWith('http://') && 
           !data.targetUrl.startsWith('https://')) {
         throw new Error("Bei Typ 'Teilweise' muss die Ziel-URL mit '/' beginnen (z.B. /neue-sektion/) oder eine vollständige URL sein");
+      }
+    } else if (data.redirectType === 'domain') {
+      if (!data.targetUrl.startsWith('http://') && !data.targetUrl.startsWith('https://')) {
+        throw new Error("Bei Typ 'Domain-Ersatz' muss die Ziel-URL eine vollständige URL mit http:// oder https:// sein (z.B. https://neue-domain.com)");
       }
     }
   }
@@ -74,7 +79,7 @@ export const updateUrlRuleSchemaWithValidation = z.object({
   infoText: z.string()
     .max(5000, "Info-Text ist zu lang")
     .optional(),
-  redirectType: z.enum(['wildcard', 'partial']).optional(),
+  redirectType: z.enum(['wildcard', 'partial', 'domain']).optional(),
   autoRedirect: z.boolean().optional(),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
@@ -90,6 +95,10 @@ export const updateUrlRuleSchemaWithValidation = z.object({
           !data.targetUrl.startsWith('http://') && 
           !data.targetUrl.startsWith('https://')) {
         throw new Error("Bei 'Teilweise' muss die Ziel-URL mit '/' beginnen oder eine vollständige URL sein");
+      }
+    } else if (data.redirectType === 'domain') {
+      if (!data.targetUrl.startsWith('http://') && !data.targetUrl.startsWith('https://')) {
+        throw new Error("Bei 'Domain-Ersatz' muss die Ziel-URL mit http:// oder https:// beginnen");
       }
     }
   }
@@ -108,7 +117,7 @@ export const importUrlRuleSchemaWithValidation = z.object({
     .transform(val => val.toLowerCase().trim()),
   targetUrl: z.string()
     .max(2000, "Ziel-URL ist zu lang"),
-  redirectType: z.enum(['wildcard', 'partial']).default('partial'),
+  redirectType: z.enum(['wildcard', 'partial', 'domain']).default('partial'),
   infoText: z.string()
     .max(5000, "Info-Text ist zu lang")
     .optional(),
@@ -123,6 +132,10 @@ export const importUrlRuleSchemaWithValidation = z.object({
         !data.targetUrl.startsWith('http://') && 
         !data.targetUrl.startsWith('https://')) {
       throw new Error("Bei Typ 'Teilweise' muss die Ziel-URL mit '/' beginnen oder eine vollständige URL sein");
+    }
+  } else if (data.redirectType === 'domain') {
+    if (!data.targetUrl.startsWith('http://') && !data.targetUrl.startsWith('https://')) {
+      throw new Error("Bei Typ 'Domain-Ersatz' muss die Ziel-URL eine vollständige URL mit http:// oder https:// sein");
     }
   }
   return data;
