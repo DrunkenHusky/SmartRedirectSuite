@@ -776,6 +776,8 @@ export class FileStorage implements IStorage {
           "partial", // Handle both field names
         infoText: rawRule.infoText || "",
         autoRedirect: rawRule.autoRedirect ?? false,
+        discardQueryParams: rawRule.discardQueryParams ?? false,
+        forwardQueryParams: rawRule.forwardQueryParams ?? false,
       };
 
       if (importRule.id && rulesById.has(importRule.id)) {
@@ -796,6 +798,8 @@ export class FileStorage implements IStorage {
           infoText: importRule.infoText || "",
           createdAt: existingRule.createdAt,
           autoRedirect: importRule.autoRedirect,
+          discardQueryParams: importRule.discardQueryParams,
+          forwardQueryParams: importRule.forwardQueryParams,
         };
 
         newRules[index] = preprocessRule(updatedRule, config);
@@ -811,6 +815,8 @@ export class FileStorage implements IStorage {
           redirectType: importRule.redirectType,
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
+          discardQueryParams: importRule.discardQueryParams,
+          forwardQueryParams: importRule.forwardQueryParams,
           createdAt: new Date().toISOString(),
         };
         const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
@@ -830,6 +836,8 @@ export class FileStorage implements IStorage {
            infoText: importRule.infoText || "",
            createdAt: existingRule.createdAt,
            autoRedirect: importRule.autoRedirect,
+           discardQueryParams: importRule.discardQueryParams,
+           forwardQueryParams: importRule.forwardQueryParams,
          };
 
          newRules[index] = preprocessRule(updatedRule, config);
@@ -844,6 +852,8 @@ export class FileStorage implements IStorage {
           redirectType: importRule.redirectType,
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
+          discardQueryParams: importRule.discardQueryParams,
+          forwardQueryParams: importRule.forwardQueryParams,
           createdAt: new Date().toISOString(),
         };
         const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
