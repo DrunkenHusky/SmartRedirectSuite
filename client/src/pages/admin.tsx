@@ -235,6 +235,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [importPreviewData, setImportPreviewData] = useState<ImportPreviewData | null>(null);
   const [previewLimit, setPreviewLimit] = useState(50);
   const [showAllPreview, setShowAllPreview] = useState(false);
+  const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
 
   // Import Preview Sorting & Filtering
   const [previewSortBy, setPreviewSortBy] = useState<'status' | 'matcher' | 'targetUrl'>('status');
@@ -1406,13 +1407,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    previewMutation.mutate({ file });
-    // Keep file for re-upload if needed for "Show All" or implement state.
-    // However, since server doesn't keep state, we need to re-upload to get all if we didn't fetch all initially.
-    // Wait, the API returns everything if we ask? No, API slices.
-    // Actually, I modified the server to return 'all' array always or sliced?
-    // Let's check server logic. Server currently slices 'preview' but returns 'all'.
-    // So we have all data in 'importPreviewData.all' already! We don't need to re-fetch.
+
+    setSelectedImportFile(file);
+    previewMutation.mutate({ file, all: false });
 
     event.target.value = ''; // Reset input
   };
@@ -1428,8 +1425,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const handleExecuteImport = () => {
     if (!importPreviewData) return;
+
+    let allRules = importPreviewData.all;
+
+    // If we don't have the full dataset yet (because we only fetched a preview),
+    // we need to fetch it now before importing.
+    if (!allRules && selectedImportFile) {
+      try {
+        const fullData = await previewMutation.mutateAsync({
+          file: selectedImportFile,
+          all: true
+        });
+        allRules = fullData.all;
+        // Update state to reflect we have all data now
+        setImportPreviewData(fullData);
+      } catch (error) {
+        // Error handling is done in mutation
+        return;
+      }
+    }
+
+    if (!allRules) {
+      toast({
+        title: "Import Fehler",
+        description: "Konnte die vollständigen Daten für den Import nicht laden.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Map parsed results to the format expected by the API
-    const rulesToImport = importPreviewData.all
+    const rulesToImport = allRules
       .filter(r => r.isValid)
       .map(r => r.rule);
 
@@ -3384,24 +3410,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </a>
                                 </div>
                             </div>
-                            {/* Import Settings - Encoding Toggle */}
-                            <div className="flex items-center justify-between p-3 border rounded-md bg-background">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-sm font-medium">URLs automatisch kodieren</span>
-                                <span className="text-xs text-muted-foreground">Sonderzeichen in URLs automatisch konvertieren (encodeURI)</span>
-                              </div>
-                              <Switch
-                                checked={generalSettings.encodeImportedUrls}
-                                onCheckedChange={(checked) => {
-                                  // Update local state
-                                  const newSettings = { ...generalSettings, encodeImportedUrls: checked };
-                                  setGeneralSettings(newSettings);
-                                  // Immediately persist to server
-                                  updateSettingsMutation.mutate(newSettings);
-                                }}
-                              />
-                            </div>
-
                             <div className="flex gap-2 items-center">
                                 <div className="relative flex-1">
                                     <Input
@@ -3463,6 +3471,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     className="data-[state=checked]:bg-blue-600"
                                 />
                             </div>
+
                         </div>
 
                         {/* Export Section */}
@@ -3707,9 +3716,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   onClick={() => {
                                     setShowAllPreview(true);
                                     setPreviewLimit(100); // Start with more
+
+                                    // If we don't have all data yet, fetch it
+                                    if (!importPreviewData.all && selectedImportFile) {
+                                      previewMutation.mutate({ file: selectedImportFile, all: true });
+                                    }
                                   }}
+                                  disabled={previewMutation.isPending}
                                 >
-                                  Alle anzeigen
+                                  {previewMutation.isPending ? "Lade..." : "Alle anzeigen"}
                                 </Button>
                               )}
                             </div>
@@ -3768,7 +3783,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
 
                         {/* Pagination / Load More for "Show All" mode */}
-                        {showAllPreview && previewLimit < importPreviewData.total && (
+                        {showAllPreview && importPreviewData.all && previewLimit < importPreviewData.total && (
                           <div className="flex justify-center pt-2">
                             <Button
                               variant="outline"
@@ -3787,9 +3802,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Abbrechen</Button>
                 <Button
                     onClick={handleExecuteImport}
-                    disabled={importMutation.isPending || !importPreviewData?.all.some(r => r.isValid)}
+                    disabled={importMutation.isPending || previewMutation.isPending || (importPreviewData?.all ? !importPreviewData.all.some(r => r.isValid) : !importPreviewData?.preview.some(r => r.isValid))}
                 >
-                    {importMutation.isPending ? "Importiere..." : `${importPreviewData?.all.filter(r => r.isValid).length || 0} Regeln Importieren`}
+                    {importMutation.isPending || previewMutation.isPending
+                      ? "Verarbeite..."
+                      : `${importPreviewData?.total || 0} Regeln Importieren`
+                    }
                 </Button>
             </DialogFooter>
         </DialogContent>

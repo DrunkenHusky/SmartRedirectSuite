@@ -941,7 +941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit: limit,
         isLimited: parsedResults.length > limit,
         preview: previewResults, // Limited subset for UI (or full if requested)
-        all: parsedResults, // Full set for import logic (always returned currently, but frontend should prefer 'preview' for display)
+        all: showAll ? parsedResults : undefined, // Full set for import logic (only if requested)
         counts: {
           new: parsedResults.filter(r => r.status === 'new').length,
           update: parsedResults.filter(r => r.status === 'update').length,

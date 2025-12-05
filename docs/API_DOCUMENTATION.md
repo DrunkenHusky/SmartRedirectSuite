@@ -205,7 +205,7 @@ Content-Type: application/json
 
 - `matcher`: Must start with `/`, be unique, and matches at any position in the path
 - `targetUrl`: Must be valid HTTP/HTTPS URL
-- `redirectType`: Either "wildcard" or "partial"
+- `redirectType`: Either "wildcard", "partial" or "domain"
 - `infoText`: Optional, max 5000 characters
 
 **Response**
@@ -285,7 +285,52 @@ Content-Type: application/json
 }
 ```
 
+#### Import Preview
+
+Upload a file to preview changes before importing. Supports CSV, XLSX.
+
+```http
+POST /api/admin/import/preview
+Content-Type: multipart/form-data
+```
+
+**Form Data:**
+
+- `file`: The file to upload (CSV or XLSX)
+
+**Query Parameters:**
+- `all`: (optional) `true` to return all rules instead of a limited preview
+
+**Response**
+
+```json
+{
+  "total": 150,
+  "limit": 50,
+  "isLimited": true,
+  "counts": {
+    "new": 100,
+    "update": 45,
+    "invalid": 5
+  },
+  "preview": [
+    {
+      "rule": {
+        "matcher": "/blog/",
+        "targetUrl": "https://newsite.com/news/",
+        "redirectType": "partial"
+      },
+      "isValid": true,
+      "status": "new",
+      "errors": []
+    }
+  ]
+}
+```
+
 #### Import Rules
+
+Executes the import of rules (upsert).
 
 ```http
 POST /api/admin/rules/import
@@ -313,7 +358,7 @@ Content-Type: application/json
 {
   "success": true,
   "imported": 2,
-  "skipped": 0,
+  "updated": 0,
   "errors": []
 }
 ```
@@ -522,7 +567,7 @@ Content-Type: application/json
 **Parameters:**
 
 - `type`: "statistics", "rules", or "settings"
-- `format`: "csv" or "json"
+- `format`: "csv", "xlsx" (for rules), or "json"
 - `timeRange`: "24h", "7d", "30d", or "all" (for statistics only)
 
 **Response (CSV)**
@@ -533,6 +578,13 @@ Content-Disposition: attachment; filename="url-statistics-20250106.csv"
 
 Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Referrer
 "https://oldsite.com/news/","https://newsite.com/articles/","/news/","2025-01-06T17:30:00.000Z","Mozilla/5.0...","https://google.com"
+```
+
+**Response (Excel)**
+
+```
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Content-Disposition: attachment; filename="rules.xlsx"
 ```
 
 **Response (JSON)**
