@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1446,7 +1446,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     return new Date(timestamp).toLocaleString('de-DE');
   };
 
-  const maxCount = statsData?.topUrls[0]?.count || 1;
+  const maxCount = statsData?.topUrls?.[0]?.count || 1;
 
   const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -2911,7 +2911,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <tbody>
                               {topUrlsData.map((url, index) => {
                                 const rank = index + 1;
-                                const maxCount = topUrlsData[0]?.count || 1;
+                                const maxCount = topUrlsData?.[0]?.count || 1;
                                 return (
                                   <tr key={index} className="border-b hover:bg-muted/50">
                                     <td className="p-3 text-sm font-medium">#{rank}</td>
