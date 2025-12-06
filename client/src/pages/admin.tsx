@@ -69,6 +69,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { CardDescription } from "@/components/ui/card";
+import { RulesTable } from "@/components/admin/RulesTable";
+import { RulesCardList } from "@/components/admin/RulesCardList";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -235,6 +237,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Responsive state
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
+  useEffect(() => {
+    const checkScreen = () => setIsLargeScreen(window.matchMedia("(min-width: 1024px)").matches);
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
+  }, []);
 
   // Import Preview State
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
@@ -1005,14 +1016,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     setStatsPage(1);
   }, [debouncedStatsSearchQuery]);
 
-  const handleRulesSort = (column: 'matcher' | 'targetUrl' | 'createdAt') => {
+  const handleRulesSort = useCallback((column: 'matcher' | 'targetUrl' | 'createdAt') => {
     if (rulesSortBy === column) {
       setRulesSortOrder(rulesSortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setRulesSortBy(column);
       setRulesSortOrder('asc');
     }
-  };
+  }, [rulesSortBy, rulesSortOrder]);
 
   const handleSubmitRule = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1023,7 +1034,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     }
   };
 
-  const handleEditRule = (rule: UrlRule) => {
+  const handleEditRule = useCallback((rule: UrlRule) => {
     setEditingRule(rule);
     setRuleForm({
       matcher: rule.matcher,
@@ -1035,20 +1046,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       forwardQueryParams: rule.forwardQueryParams || false,
     });
     setIsRuleDialogOpen(true);
-  };
+  }, []);
 
-
+  const handleDeleteRule = useCallback((ruleId: string) => {
+    deleteRuleMutation.mutate(ruleId);
+  }, [deleteRuleMutation]);
 
   // Multi-select handlers
-  const handleSelectRule = (ruleId: string) => {
+  const handleSelectRule = useCallback((ruleId: string) => {
     setSelectedRuleIds(prev => 
       prev.includes(ruleId) 
         ? prev.filter(id => id !== ruleId)
         : [...prev, ruleId]
     );
-  };
+  }, []);
 
-  const handleSelectAllRules = (checked: boolean) => {
+  const handleSelectAllRules = useCallback((checked: boolean) => {
     if (checked) {
       // Only select rules from the current page to avoid selecting all rules in storage
       const currentPageRuleIds = paginatedRules.map((rule: UrlRule) => rule.id);
@@ -1065,7 +1078,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         prevIds.filter(id => !currentPageRuleIds.includes(id))
       );
     }
-  };
+  }, [paginatedRules]);
 
   const handleBulkDelete = () => {
     if (selectedRuleIds.length === 0) return;
@@ -2709,345 +2722,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                     ) : (
                       <>
-                      {/* Desktop Table View - Hidden on mobile/tablet */}
-                      <div className="hidden lg:block w-full">
-                        <table className="w-full table-fixed">
-                          <thead>
-                            <tr className="border-b border-border">
-                              <th className="text-left py-3 px-4 w-[50px]">
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    paginatedRules.length > 0 && 
-                                    selectedRuleIds.length > 0 &&
-                                    paginatedRules.every(rule => selectedRuleIds.includes(rule.id))
-                                  }
-                                  onChange={(e) => handleSelectAllRules(e.target.checked)}
-                                  className="rounded border border-gray-300 focus:ring-2 focus:ring-blue-500"
-                                  title="Alle Regeln auf dieser Seite auswählen/abwählen"
-                                />
-                              </th>
-                              <th className="text-left py-3 px-4 w-[19%]">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-auto p-0 font-medium text-sm hover:bg-transparent"
-                                  onClick={() => handleRulesSort('matcher')}
-                                >
-                                  <span className="flex items-center gap-1">
-                                    URL-Pfad Matcher
-                                    {rulesSortBy === 'matcher' && (
-                                      rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                                    )}
-                                  </span>
-                                </Button>
-                              </th>
-                              <th className="text-left py-3 px-4 w-[19%]">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-auto p-0 font-medium text-sm hover:bg-transparent"
-                                  onClick={() => handleRulesSort('targetUrl')}
-                                >
-                                  <span className="flex items-center gap-1">
-                                    Ziel-URL
-                                    {rulesSortBy === 'targetUrl' && (
-                                      rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                                    )}
-                                  </span>
-                                </Button>
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
-                                Typ
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
-                                Auto-Redirect
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
-                                Query Parameter
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[14%]">
-                                Info-Text
-                              </th>
-                              <th className="text-left py-3 px-4 w-[9%]">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-auto p-0 font-medium text-sm hover:bg-transparent"
-                                  onClick={() => handleRulesSort('createdAt')}
-                                >
-                                  <span className="flex items-center gap-1">
-                                    Erstellt am
-                                    {rulesSortBy === 'createdAt' && (
-                                      rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                                    )}
-                                  </span>
-                                </Button>
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[80px]">
-                                Aktionen
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {paginatedRules.map((rule: UrlRule) => (
-                              <tr key={rule.id} className="border-b border-border hover:bg-muted/50">
-                                <td className="py-3 px-4 w-12">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedRuleIds.includes(rule.id)}
-                                    onChange={() => handleSelectRule(rule.id)}
-                                    className="rounded border border-gray-300 focus:ring-2 focus:ring-blue-500"
-                                  />
-                                </td>
-                                <td className="py-3 px-4">
-                                  <div className="w-full" title={rule.matcher}>
-                                    <Badge variant="secondary" className="truncate max-w-full inline-block align-middle">
-                                      {rule.matcher}
-                                    </Badge>
-                                  </div>
-                                </td>
-                                <td className="py-3 px-4 text-sm">
-                                  {rule.targetUrl ? (
-                                    <div className="w-full" title={rule.targetUrl}>
-                                      <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
-                                        {rule.targetUrl}
-                                      </code>
-                                    </div>
-                                  ) : (
-                                    <span className="italic text-muted-foreground">
-                                      Automatisch generiert
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">
-                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : (rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
-                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : (rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
-                                  </Badge>
-                                </td>
-                                <td className="py-3 px-4">
-                                  <Badge variant={rule.autoRedirect ? 'default' : 'secondary'}>
-                                    {rule.autoRedirect ? '✓ Aktiv' : '✗ Inaktiv'}
-                                  </Badge>
-                                </td>
-                                <td className="py-3 px-4 text-xs">
-                                  {rule.discardQueryParams ? (
-                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
-                                      Entfernen
-                                    </Badge>
-                                  ) : rule.forwardQueryParams ? (
-                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
-                                      Behalten
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4 text-sm text-muted-foreground">
-                                  {rule.infoText ? rule.infoText.substring(0, 50) + "..." : "-"}
-                                </td>
-                                <td className="py-3 px-4 text-xs text-muted-foreground">
-                                  {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
-                                </td>
-                                <td className="py-3 px-4">
-                                  <div className="flex space-x-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditRule(rule)}
-                                      title="Bearbeiten"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-destructive hover:text-destructive"
-                                          title="Löschen"
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Regel löschen</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Sind Sie sicher, dass Sie diese Regel löschen möchten?
-                                            Diese Aktion kann nicht rückgängig gemacht werden.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => deleteRuleMutation.mutate(rule.id)}
-                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                          >
-                                            Löschen
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Mobile/Tablet Sort Controls - Hidden on desktop */}
-                      <div className="lg:hidden flex flex-wrap gap-2 pb-4 border-b border-border">
-                        <Button
-                          variant={rulesSortBy === 'matcher' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleRulesSort('matcher')}
-                          className="text-xs"
-                        >
-                          URL-Pfad
-                          {rulesSortBy === 'matcher' && (
-                            rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
-                          )}
-                        </Button>
-                        <Button
-                          variant={rulesSortBy === 'targetUrl' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleRulesSort('targetUrl')}
-                          className="text-xs"
-                        >
-                          Ziel-URL
-                          {rulesSortBy === 'targetUrl' && (
-                            rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
-                          )}
-                        </Button>
-                        <Button
-                          variant={rulesSortBy === 'createdAt' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleRulesSort('createdAt')}
-                          className="text-xs"
-                        >
-                          Erstellt am
-                          {rulesSortBy === 'createdAt' && (
-                            rulesSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
-                          )}
-                        </Button>
-                      </div>
-                      
-                      {/* Mobile/Tablet Card Layout - Hidden on desktop */}
-                      <div className="lg:hidden space-y-3">
-                        {/* Multi-select info for mobile users */}
-                        {paginatedRules.length > 1 && (
-                          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-                            <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
-                              <Info className="h-4 w-4 flex-shrink-0" />
-                              <span>
-                                <strong>Hinweis:</strong> Das Auswählen und Löschen mehrerer Regeln ist nur auf Desktop-Geräten verfügbar.
-                              </span>
-                            </div>
-                          </div>
+                        {isLargeScreen ? (
+                          <RulesTable
+                            rules={paginatedRules}
+                            selectedRuleIds={selectedRuleIds}
+                            sortConfig={{ by: rulesSortBy, order: rulesSortOrder }}
+                            onSort={handleRulesSort}
+                            onSelectRule={handleSelectRule}
+                            onSelectAll={handleSelectAllRules}
+                            onEditRule={handleEditRule}
+                            onDeleteRule={handleDeleteRule}
+                          />
+                        ) : (
+                          <RulesCardList
+                            rules={paginatedRules}
+                            sortConfig={{ by: rulesSortBy, order: rulesSortOrder }}
+                            onSort={handleRulesSort}
+                            onEditRule={handleEditRule}
+                            onDeleteRule={handleDeleteRule}
+                          />
                         )}
-
-                        {paginatedRules.map((rule: UrlRule) => (
-                          <div key={rule.id} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                            {/* Header with Matcher and Actions */}
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <div className="flex-1 min-w-0">
-                                <Badge variant="secondary" className="mb-2 text-xs">
-                                  {rule.matcher}
-                                </Badge>
-                                <div className="flex flex-wrap gap-2">
-                                  <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : (rule as any).redirectType === 'domain' ? 'outline' : 'default'} className="text-xs">
-                                    {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : (rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
-                                  </Badge>
-                                  <Badge variant={rule.autoRedirect ? 'default' : 'secondary'} className="text-xs">
-                                    {rule.autoRedirect ? '✓ Auto-Redirect' : '✗ Manuell'}
-                                  </Badge>
-                                  {rule.discardQueryParams ? (
-                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
-                                      Params Entfernen
-                                    </Badge>
-                                  ) : rule.forwardQueryParams ? (
-                                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
-                                      Params Behalten
-                                    </Badge>
-                                  ) : null}
-                                </div>
-                              </div>
-                              <div className="flex space-x-1 flex-shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditRule(rule)}
-                                  title="Bearbeiten"
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive h-8 w-8 p-0"
-                                      title="Löschen"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Regel löschen</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Sind Sie sicher, dass Sie diese Regel löschen möchten?
-                                        Diese Aktion kann nicht rückgängig gemacht werden.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => deleteRuleMutation.mutate(rule.id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Löschen
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </div>
-                            
-                            {/* Target URL */}
-                            <div className="mb-3">
-                              <div className="text-xs text-muted-foreground mb-1">Ziel-URL:</div>
-                              {rule.targetUrl ? (
-                                <code className="text-xs bg-muted px-2 py-1 rounded block break-all">
-                                  {rule.targetUrl}
-                                </code>
-                              ) : (
-                                <span className="text-xs italic text-muted-foreground">
-                                  Automatisch generiert
-                                </span>
-                              )}
-                            </div>
-                            
-                            {/* Info Text */}
-                            {rule.infoText && (
-                              <div className="mb-3">
-                                <div className="text-xs text-muted-foreground mb-1">Info-Text:</div>
-                                <p className="text-xs text-foreground break-words">
-                                  {rule.infoText.length > 100 ? rule.infoText.substring(0, 100) + "..." : rule.infoText}
-                                </p>
-                              </div>
-                            )}
-                            
-                            {/* Created Date */}
-                            <div className="text-xs text-muted-foreground">
-                              Erstellt: {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                       
                       {/* Pagination Controls */}
                       {totalPages > 1 && (
