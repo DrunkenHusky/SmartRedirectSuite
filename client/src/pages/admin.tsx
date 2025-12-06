@@ -3179,7 +3179,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <ul className="list-disc list-inside text-xs">
                                         <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
                                         <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
-                                        <li><strong>Type</strong> (Optional) - 'partial' oder 'wildcard'</li>
+                                        <li><strong>Type</strong> (Pflicht) - 'partial', 'wildcard' oder 'domain'</li>
                                         <li><strong>Info</strong> (Optional) - Beschreibung</li>
                                         <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
                                         <li><strong>Discard Query Params</strong> (Optional) - 'true'/'false'</li>

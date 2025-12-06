@@ -42,7 +42,7 @@ Dieser Bereich ist für die tägliche Pflege von Weiterleitungen optimiert.
   - **Spalten**: Die Import-Datei sollte folgende Spalten enthalten (Groß-/Kleinschreibung der Header ist egal, Deutsch/Englisch unterstützt):
     - `Matcher` / `Quelle` (Pflicht): Der Quell-Pfad oder die Domain.
     - `Target URL` / `Ziel` (Pflicht): Das Ziel der Weiterleitung.
-    - `Type` / `Typ` (Optional): 'partial' (Teilweise), 'wildcard' (Vollständig) oder 'domain'. Standard ist 'partial'.
+    - `Type` / `Typ` (Pflicht): 'partial' (Teilweise), 'wildcard' (Vollständig) oder 'domain'.
     - `Info` / `Beschreibung` (Optional): Interner Notiztext.
     - `Auto Redirect` (Optional): 'true'/'false' oder '1'/'0'.
     - `Discard Query Params` / `Parameter entfernen` (Optional): 'true'/'false'. Entfernt alle Parameter bei Partial/Domain-Regeln.
