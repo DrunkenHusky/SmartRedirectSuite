@@ -1,3 +1,37 @@
+# [2.11.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.10.0...v2.11.0) (2025-12-06)
+
+
+### Bug Fixes
+
+* **admin:** optimize standard export buttons for mobile view ([a60bac0](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/a60bac04094c436b0c65f9be4d085ad5d30959a3))
+* **admin:** pretty print JSON exports for rules and settings ([cd5333e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/cd5333e4c2356c54996e9a9a6615c22e3cb25e17))
+* **admin:** prevent side scrolling in import popup ([21c34ab](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/21c34ab71387f216cf16d0a5f2acc6e19633a9c9))
+* **admin:** remove side scroll from Rules and Import Preview tables ([7f9a1df](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/7f9a1dfcb89ccdbc9c03c33061ff8eb6723de1aa))
+* ensure upload directory exists for import feature ([0e224e7](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0e224e733e7011f5ee1814f1cc52ef1cd53bb3e6))
+* **frontend:** send full url to check-rules endpoint ([b5544c6](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b5544c6d1773c0d773f16b8f972c34e67d358651))
+* import and update logic for query params options ([039533c](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/039533c4fa551fc4796d9fbd00e7d5e804b3892e))
+* **validation:** add query params flags to validation schema ([3801992](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/38019923fc55c54e78d17e4dfd31fbfbe3913944))
+
+
+### Features
+
+* add options for granular query param handling in rules ([f28b53d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f28b53d56022c67e6d9cce4596928c7ca6449c32))
+* add options for granular query param handling in rules ([c8a9e0b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/c8a9e0b4920ead9bf42ada3029aeaeff1d9c3166))
+* add Query Parameter column to Admin Rules table ([eb53366](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/eb53366dde8c4351a47d4b6b305fb546aa7f516c))
+* add Query Params column to Import Preview ([d15af14](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d15af1479357441dd4daeb97ab4b987234b422a5))
+* add validation for query params settings in import ([512c8c3](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/512c8c33084211b4d3825b0db2c353b29da44183))
+* **admin:** optimize rules list rendering with memoization and conditional rendering ([c37c6d4](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/c37c6d4a54cfd1b85983c0e785192eb8f66661ce))
+* ensure only relevant redirect flags are stored ([f5a40ca](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f5a40caf4be31869d7fe1d51675c7b64f57418bb))
+* rename "Parameter" column to "Query Parameter" in import preview ([10ba84b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/10ba84b3656dd9a6d632669d8c198c233fbf344a))
+* rename Maintenance to Danger-Zone and add Delete All Rules feature ([558f993](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/558f993856b22e57a8d43cacf36af4ddc1ea9e00))
+* update import preview column titles ([022da5f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/022da5f953adef55ba8fa7fb8260a001d8405531))
+* update import preview table labels and badges ([e21eb84](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e21eb84a075f8e569a617bb784481b96a5bf371a))
+
+
+### Performance Improvements
+
+* optimize sorting in admin endpoints and remove redundant invalidations ([fb88a8e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/fb88a8eaad28b41f0d136a1100695774d55eae66))
+
 # [2.10.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.9.0...v2.10.0) (2025-12-05)
 
 
