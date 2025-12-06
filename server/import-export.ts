@@ -110,8 +110,6 @@ export class ImportExportService {
         if (type.includes('wild') || type === 'complete') rule.redirectType = 'wildcard';
         else if (type.includes('part') || type === 'partial') rule.redirectType = 'partial';
         else if (type.includes('domain')) rule.redirectType = 'domain';
-      } else {
-        rule.redirectType = 'partial'; // Default
       }
 
       // Normalize AutoRedirect
@@ -160,6 +158,7 @@ export class ImportExportService {
       // We manually check required fields because the Zod schema might be too strict for initial parsing
       if (!rule.matcher) errors.push('Matcher (Quelle) is required');
       if (!rule.targetUrl) errors.push('Target URL (Ziel) is required');
+      if (!rule.redirectType) errors.push('Type (Typ) is required');
 
       // Attempt to validate with Zod if basic checks pass
       let isValid = errors.length === 0;

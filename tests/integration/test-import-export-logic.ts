@@ -69,6 +69,15 @@ async function testValidation() {
   assert.equal(normalized[0].isValid, false);
   assert.ok(normalized[0].errors.some(e => e.includes('Matcher')));
 
+  // Test missing Type
+  console.log('Testing Missing Type Validation...');
+  const rulesMissingType = [
+    { Matcher: '/valid', 'Target URL': 'https://valid.com' } // Missing Type
+  ];
+  const normalizedMissingType = ImportExportService.normalizeRules(rulesMissingType);
+  assert.equal(normalizedMissingType[0].isValid, false);
+  assert.ok(normalizedMissingType[0].errors.some(e => e.includes('Type')));
+
   console.log('Validation passed!');
 }
 
