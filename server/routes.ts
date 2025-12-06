@@ -495,6 +495,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all statistics
+  app.delete("/api/admin/all-stats", requireAuth, async (_req, res) => {
+    try {
+      console.log("Deleting all statistics request received");
+      await storage.clearAllTracking();
+
+      console.log("All statistics deleted successfully");
+      res.json({ success: true, message: "Alle Statistiken wurden erfolgreich gelöscht." });
+    } catch (error) {
+      console.error("Delete all stats error:", error);
+      res.status(500).json({ error: "Fehler beim Löschen aller Statistiken" });
+    }
+  });
+
   // Statistiken
   app.get("/api/admin/stats/all", requireAuth, async (req, res) => {
     try {
