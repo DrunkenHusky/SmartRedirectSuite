@@ -231,6 +231,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [deleteAllConfirmationText, setDeleteAllConfirmationText] = useState("");
 
+  // Delete all stats state
+  const [showDeleteAllStatsDialog, setShowDeleteAllStatsDialog] = useState(false);
+  const [deleteAllStatsConfirmationText, setDeleteAllStatsConfirmationText] = useState("");
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
@@ -752,6 +756,32 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         title: "Fehler", 
         description: "Die Regel konnte nicht gelöscht werden.",
         variant: "destructive" 
+      });
+    },
+  });
+
+  // Delete all stats mutation
+  const deleteAllStatsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/admin/all-stats");
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/top100"] });
+      setShowDeleteAllStatsDialog(false);
+      setDeleteAllStatsConfirmationText("");
+      toast({
+        title: "Alle Statistiken gelöscht",
+        description: "Alle Tracking-Daten wurden erfolgreich gelöscht.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fehler",
+        description: error.message || "Fehler beim Löschen aller Statistiken.",
+        variant: "destructive",
       });
     },
   });
@@ -3416,20 +3446,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                         <div className="border-t pt-4 flex flex-col gap-2">
                             <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => {
-                                        setDeleteAllConfirmationText("");
-                                        setShowDeleteAllDialog(true);
-                                    }}
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Alle Regeln löschen
-                                </Button>
-                                <p className="text-xs text-muted-foreground">
-                                    Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
-                                </p>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => {
+                                            setDeleteAllConfirmationText("");
+                                            setShowDeleteAllDialog(true);
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Alle Regeln löschen
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => {
+                                            setDeleteAllStatsConfirmationText("");
+                                            setShowDeleteAllStatsDialog(true);
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Alle Statistiken löschen
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Löscht alle erfassten Tracking-Daten unwiderruflich.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                       </div>
@@ -3856,6 +3903,59 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700"
             >
               Ich habe verstanden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete All Statistics Confirmation Dialog */}
+      <Dialog open={showDeleteAllStatsDialog} onOpenChange={setShowDeleteAllStatsDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Alle Statistiken löschen?
+            </DialogTitle>
+            <DialogDescription>
+              Dies löscht alle erfassten Tracking-Daten unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+               Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.
+            </div>
+
+            <Button
+                variant="outline"
+                onClick={() => handleExport('statistics', 'csv')}
+                className="w-full"
+            >
+                <Download className="h-4 w-4 mr-2" />
+                Backup herunterladen (CSV)
+            </Button>
+
+            <div className="space-y-2">
+                <label className="text-sm font-medium">
+                    Bestätigung erforderlich
+                </label>
+                <Input
+                    value={deleteAllStatsConfirmationText}
+                    onChange={(e) => setDeleteAllStatsConfirmationText(e.target.value)}
+                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    className={deleteAllStatsConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
+                />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>Abbrechen</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAllStatsMutation.mutate()}
+              disabled={deleteAllStatsConfirmationText !== "DELETE" || deleteAllStatsMutation.isPending}
+            >
+              {deleteAllStatsMutation.isPending ? 'Lösche...' : 'Alles löschen'}
             </Button>
           </DialogFooter>
         </DialogContent>

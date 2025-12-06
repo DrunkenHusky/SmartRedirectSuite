@@ -61,6 +61,7 @@ export interface IStorage {
   clearAllRules(): Promise<void>;
 
   // URL-Tracking
+  clearAllTracking(): Promise<void>;
   trackUrlAccess(tracking: InsertUrlTracking): Promise<UrlTracking>;
   getTrackingData(timeRange?: "24h" | "7d" | "all"): Promise<UrlTracking[]>;
   getTopUrls(
@@ -469,6 +470,10 @@ export class FileStorage implements IStorage {
   }
 
   // URL-Tracking implementierung
+  async clearAllTracking(): Promise<void> {
+    await this.writeJsonFile(TRACKING_FILE, []);
+  }
+
   async trackUrlAccess(
     insertTracking: InsertUrlTracking,
   ): Promise<UrlTracking> {
