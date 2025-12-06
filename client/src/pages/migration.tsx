@@ -347,7 +347,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 py-8 px-4">
+      <main className="flex-1 py-8 px-4 pb-20">
         <div className="max-w-4xl mx-auto space-y-6">
           
           {/* Loading State */}
@@ -542,7 +542,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-surface border-t border-border py-4">
+      <footer className="fixed bottom-0 w-full z-50 bg-background border-t border-border py-4">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             {settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
