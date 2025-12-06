@@ -48,6 +48,10 @@ export const urlRuleSchema = z.object({
   redirectType: z.enum(REDIRECT_TYPES).default('partial'),
   autoRedirect: z.boolean()
     .default(false),
+  discardQueryParams: z.boolean()
+    .default(false),
+  forwardQueryParams: z.boolean()
+    .default(false),
   createdAt: z.string().datetime("Invalid datetime format"),
 }).strict(); // Prevent extra properties
 
@@ -122,6 +126,10 @@ export const importUrlRuleSchema = z.object({
     .max(5000, "Info text too long")
     .optional(),
   autoRedirect: z.boolean()
+    .default(false),
+  discardQueryParams: z.boolean()
+    .default(false),
+  forwardQueryParams: z.boolean()
     .default(false),
 }).strict();
 

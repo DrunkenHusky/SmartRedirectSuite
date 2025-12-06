@@ -21,6 +21,7 @@ import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
 import multer from 'multer';
+import fs from 'fs';
 
 
 
@@ -478,6 +479,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all rules
+  app.delete("/api/admin/all-rules", requireAuth, async (_req, res) => {
+    try {
+      console.log("Deleting all rules request received");
+      await storage.clearAllRules();
+      // Ensure cache is rebuilt/cleared properly
+      await storage.forceCacheRebuild();
+
+      console.log("All rules deleted successfully");
+      res.json({ success: true, message: "Alle Regeln wurden erfolgreich gelöscht." });
+    } catch (error) {
+      console.error("Delete all rules error:", error);
+      res.status(500).json({ error: "Fehler beim Löschen aller Regeln" });
+    }
+  });
+
   // Statistiken
   app.get("/api/admin/stats/all", requireAuth, async (req, res) => {
     try {
@@ -578,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // JSON-Export
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Content-Disposition', 'attachment; filename="statistics.json"');
-          res.json(trackingData);
+          res.send(JSON.stringify(trackingData, null, 2));
         }
       } else if (exportRequest.type === 'rules') {
         // Use getCleanUrlRules to ensure internal cache properties are stripped
@@ -596,13 +613,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
-          res.json(rules);
+          res.send(JSON.stringify(rules, null, 2));
         }
       } else if (exportRequest.type === 'settings') {
         const settings = await storage.getGeneralSettings();
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', 'attachment; filename="settings.json"');
-        res.json(settings);
+        res.send(JSON.stringify(settings, null, 2));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -693,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settings = await storage.getGeneralSettings();
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', 'attachment; filename="settings.json"');
-      res.json(settings);
+      res.send(JSON.stringify(settings, null, 2));
     } catch (error) {
       console.error("Settings export error:", error);  
       res.status(500).json({ error: "Settings Export fehlgeschlagen" });
@@ -755,9 +772,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upload = localUploadService.getMulterConfig();
   
   // Custom upload config for imports (JSON, CSV, Excel)
+  const uploadDir = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
+
+  // Ensure upload directory exists for imports
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
   const importUpload = multer({
     storage: multer.diskStorage({
-      destination: (_req, _file, cb) => cb(null, process.env.LOCAL_UPLOAD_PATH || './data/uploads'),
+      destination: (_req, _file, cb) => cb(null, uploadDir),
       filename: (_req, file, cb) => cb(null, `${createHash('md5').update(Math.random().toString()).digest('hex')}${path.extname(file.originalname)}`)
     }),
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
@@ -980,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Default to JSON
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', 'attachment; filename="rules.json"');
-        res.json(rules);
+        res.send(JSON.stringify(rules, null, 2));
       }
     } catch (error) {
       console.error("Export error:", error instanceof Error ? error.message : "Unknown error");

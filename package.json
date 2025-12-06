@@ -63,6 +63,7 @@
     "@types/react-dom": "^19.2.3",
     "semantic-release": "^25.0.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "uvu": "^0.5.6"
   }
 }

@@ -31,15 +31,50 @@ export function generateNewUrl(oldUrl: string, newDomain?: string): string {
 
 export function generateUrlWithRule(
   oldUrl: string, 
-  rule: { matcher: string; targetUrl?: string; redirectType?: 'wildcard' | 'partial' | 'domain' },
+  rule: {
+    matcher: string;
+    targetUrl?: string;
+    redirectType?: 'wildcard' | 'partial' | 'domain';
+    discardQueryParams?: boolean;
+    forwardQueryParams?: boolean;
+  },
   newDomain?: string
 ): string {
   try {
     const redirectType = rule.redirectType || 'partial';
     
     if (redirectType === 'wildcard' && rule.targetUrl) {
-      // Vollständig: Replace entire URL with target URL - no original URL parts are preserved
-      return rule.targetUrl;
+      // Vollständig: Replace entire URL with target URL
+      let finalUrl = rule.targetUrl;
+
+      // If forwardQueryParams is set, append query params from oldUrl
+      if (rule.forwardQueryParams) {
+        try {
+          const oldUrlObj = new URL(oldUrl);
+          if (oldUrlObj.search) {
+             const targetUrlObj = new URL(finalUrl.startsWith('http') ? finalUrl : 'https://dummy' + finalUrl);
+             // If target already has params, merge? Or just append?
+             // Logic: Append if params exist, or create new.
+             // Simplest approach: Use URL object
+             // But finalUrl might be just a path or invalid URL if relative
+             if (finalUrl.startsWith('http')) {
+                const finalObj = new URL(finalUrl);
+                oldUrlObj.searchParams.forEach((val, key) => {
+                    finalObj.searchParams.append(key, val);
+                });
+                finalUrl = finalObj.toString();
+             } else {
+                 // It's likely a relative URL or opaque string
+                 // Just append ?query or &query
+                 const hasQuery = finalUrl.includes('?');
+                 finalUrl += (hasQuery ? '&' : '?') + oldUrlObj.search.substring(1);
+             }
+          }
+        } catch (e) {
+          // Ignore if oldUrl invalid
+        }
+      }
+      return finalUrl;
     } else if (redirectType === 'domain') {
       // Domain Replacement: Keep the path exactly as is, just swap the domain
 
@@ -60,7 +95,39 @@ export function generateUrlWithRule(
       }
 
       const cleanDomain = targetDomain.replace(/\/$/, '');
-      const path = extractPath(oldUrl);
+      let path = extractPath(oldUrl);
+
+      // Handle discardQueryParams for domain rules
+      if (rule.discardQueryParams) {
+         try {
+             // extractPath returns path+query+hash. We need to strip query.
+             // We can reconstruct it.
+             // But extractPath is robust.
+             // Let's just use URL parsing if possible, or split by ?
+             const [pathPart, ...rest] = path.split('?');
+             // If hash exists in rest, preserve it? "Remove all link-parameters" usually means query string.
+             // User said "remove all link-parameters". Hash is usually client-side but part of link.
+             // Let's assume we remove query params (everything after ?) but hash?
+             // Usually hash is preserved by browser anyway on redirect if not specified,
+             // but here we are generating the target URL string.
+             // Let's remove query params only.
+             if (path.includes('#')) {
+                 const hashIndex = path.indexOf('#');
+                 const queryIndex = path.indexOf('?');
+                 if (queryIndex !== -1 && queryIndex < hashIndex) {
+                     // Query is before hash
+                     path = path.substring(0, queryIndex) + path.substring(hashIndex);
+                 } else if (queryIndex !== -1) {
+                     // Query is after hash (unusual but possible in some frameworks)
+                     path = path.substring(0, queryIndex);
+                 }
+             } else {
+                 path = pathPart;
+             }
+         } catch (e) {
+             // fallback
+         }
+      }
 
       // Ensure path starts with /
       const cleanPath = path.startsWith('/') ? path : '/' + path;
@@ -73,7 +140,20 @@ export function generateUrlWithRule(
       const cleanDomain = baseDomain.replace(/\/$/, '');
       
       // Extract the full path with query params and hash  
-      const oldPath = extractPath(oldUrl);
+      let oldPath = extractPath(oldUrl);
+
+       // Handle discardQueryParams for partial rules
+      if (rule.discardQueryParams) {
+           if (oldPath.includes('?')) {
+               const queryIndex = oldPath.indexOf('?');
+               const hashIndex = oldPath.indexOf('#');
+               if (hashIndex !== -1 && hashIndex > queryIndex) {
+                    oldPath = oldPath.substring(0, queryIndex) + oldPath.substring(hashIndex);
+               } else {
+                    oldPath = oldPath.substring(0, queryIndex);
+               }
+           }
+      }
       
       // Check if matcher is a domain rule
       const isDomainMatcher = !rule.matcher.startsWith('/');
