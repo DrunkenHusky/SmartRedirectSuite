@@ -1,0 +1,49 @@
+# Fly.io Deployment Workflow
+#
+# ZWECK:
+# Automatisches Deployment der Anwendung auf fly.io.
+#
+# TRIGGER:
+# - Push auf Branch 'NextRelease': Fuehrt Build und Deployment durch.
+# - Pull Request auf 'NextRelease': Fuehrt nur einen Build-Check durch (Dry Run).
+#
+# VORAUSSETZUNGEN:
+# - GitHub Repository Secret: FLY_API_TOKEN (API Token von fly.io)
+# - Existierende fly.toml im Root-Verzeichnis.
+# - Existierendes Dockerfile.demo im Root-Verzeichnis.
+
+name: Fly Deploy
+
+on:
+  push:
+    branches:
+      - NextRelease
+  pull_request:
+    branches:
+      - NextRelease
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Build Check (Pull Request)
+        if: github.event_name == 'pull_request'
+        # Bei PRs bauen wir nur das Image, um sicherzustellen, dass das Dockerfile valide ist.
+        # Ein echtes Deployment wird hier vermieden.
+        run: docker build -f Dockerfile.demo .
+
+      - name: Deploy to Fly.io (Push to NextRelease)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/NextRelease'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        # Deployment mit flyctl:
+        # --remote-only: Baut das Image auf dem Fly.io Builder (spart GitHub Runner Ressourcen)
+        # --dockerfile: Verwendet explizit das Dockerfile.demo
+        run: flyctl deploy --remote-only --dockerfile Dockerfile.demo
