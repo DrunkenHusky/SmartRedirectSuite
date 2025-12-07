@@ -28,5 +28,14 @@
     "autoRedirect": false,
     "discardQueryParams": false,
     "createdAt": "2025-12-05T20:42:27.114Z"
+  },
+  {
+    "matcher": "/test-rule",
+    "targetUrl": "https://example.com",
+    "redirectType": "partial",
+    "autoRedirect": false,
+    "discardQueryParams": false,
+    "id": "15094425-6aa0-4a6c-a1e4-be74c8ba9c95",
+    "createdAt": "2025-12-07T14:38:50.954Z"
   }
 ]
