@@ -106,7 +106,7 @@ try {
   // Create a new URL rule
   {
     const newRule = {
-      matcher: "/test-rule",
+      matcher: "/integration-test-rule",
       targetUrl: "/new-url",
       redirectType: "partial",
     };
