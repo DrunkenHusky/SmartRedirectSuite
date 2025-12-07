@@ -564,9 +564,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const search = req.query.search as string || undefined;
       const sortBy = req.query.sortBy as string || 'timestamp';
       const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'desc';
-      const excludeNoRule = req.query.excludeNoRule === 'true';
       
-      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, excludeNoRule);
+      // Backward compatibility handling:
+      // If ruleFilter is provided, use it.
+      // If not, check excludeNoRule: true -> 'with_rule', false -> 'all'
+      let ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all';
+
+      if (req.query.ruleFilter && ['all', 'with_rule', 'no_rule'].includes(req.query.ruleFilter as string)) {
+        ruleFilter = req.query.ruleFilter as 'all' | 'with_rule' | 'no_rule';
+      } else if (req.query.excludeNoRule === 'true') {
+        ruleFilter = 'with_rule';
+      }
+
+      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, ruleFilter);
       res.json(result);
     } catch (error) {
       console.error("Paginated tracking entries error:", error);

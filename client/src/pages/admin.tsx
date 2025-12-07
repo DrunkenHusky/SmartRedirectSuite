@@ -240,7 +240,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsPerPage] = useState(50); // Fixed page size for performance
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
-  const [statsExcludeNoRule, setStatsExcludeNoRule] = useState(false);
+  const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -509,7 +509,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsExcludeNoRule],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -518,7 +518,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         limit: statsPerPage.toString(),
         sortBy: sortBy,
         sortOrder: sortOrder,
-        excludeNoRule: statsExcludeNoRule.toString(),
+        ruleFilter: statsRuleFilter,
       });
       
       if (debouncedStatsSearchQuery.trim()) {
@@ -2878,16 +2878,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
                       />
                     </div>
-                    <div className="flex items-center gap-2 px-2 py-2 border rounded-md bg-background">
-                      <Switch
-                        id="exclude-no-rule"
-                        checked={statsExcludeNoRule}
-                        onCheckedChange={setStatsExcludeNoRule}
-                        className="h-5 w-9"
-                      />
-                      <label htmlFor="exclude-no-rule" className="text-xs text-muted-foreground whitespace-nowrap cursor-pointer select-none">
-                        Nur mit Regeln
-                      </label>
+                    <div className="flex items-center">
+                      <Select
+                        value={statsRuleFilter}
+                        onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
+                      >
+                        <SelectTrigger className="w-auto h-9 text-xs">
+                          <SelectValue placeholder="Filter" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle Einträge</SelectItem>
+                          <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
+                          <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 )}

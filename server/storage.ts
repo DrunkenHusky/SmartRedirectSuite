@@ -90,7 +90,7 @@ export interface IStorage {
     search?: string,
     sortBy?: string,
     sortOrder?: "asc" | "desc",
-    excludeNoRule?: boolean,
+    ruleFilter?: 'all' | 'with_rule' | 'no_rule',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -630,7 +630,7 @@ export class FileStorage implements IStorage {
     search?: string,
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
-    excludeNoRule: boolean = false,
+    ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -647,12 +647,18 @@ export class FileStorage implements IStorage {
         ? await this.searchTrackingEntries(search, sortBy, sortOrder)
         : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
 
-    // Filter out entries without rules if requested
-    if (excludeNoRule) {
+    // Filter based on rule presence
+    if (ruleFilter === 'with_rule') {
       filteredEntries = filteredEntries.filter((entry) => {
         const hasRuleId = !!entry.ruleId;
         const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
         return hasRuleId || hasRuleIds;
+      });
+    } else if (ruleFilter === 'no_rule') {
+      filteredEntries = filteredEntries.filter((entry) => {
+        const hasRuleId = !!entry.ruleId;
+        const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
+        return !hasRuleId && !hasRuleIds;
       });
     }
 
