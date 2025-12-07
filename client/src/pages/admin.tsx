@@ -231,11 +231,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [deleteAllConfirmationText, setDeleteAllConfirmationText] = useState("");
 
+  // Delete all stats state
+  const [showDeleteAllStatsDialog, setShowDeleteAllStatsDialog] = useState(false);
+  const [deleteAllStatsConfirmationText, setDeleteAllStatsConfirmationText] = useState("");
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
+  const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -504,7 +509,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -513,6 +518,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         limit: statsPerPage.toString(),
         sortBy: sortBy,
         sortOrder: sortOrder,
+        ruleFilter: statsRuleFilter,
       });
       
       if (debouncedStatsSearchQuery.trim()) {
@@ -752,6 +758,32 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         title: "Fehler", 
         description: "Die Regel konnte nicht gelöscht werden.",
         variant: "destructive" 
+      });
+    },
+  });
+
+  // Delete all stats mutation
+  const deleteAllStatsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/admin/all-stats");
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/top100"] });
+      setShowDeleteAllStatsDialog(false);
+      setDeleteAllStatsConfirmationText("");
+      toast({
+        title: "Alle Statistiken gelöscht",
+        description: "Alle Tracking-Daten wurden erfolgreich gelöscht.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fehler",
+        description: error.message || "Fehler beim Löschen aller Statistiken.",
+        variant: "destructive",
       });
     },
   });
@@ -2834,16 +2866,33 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                 {/* Search for browser view */}
                 {statsView === 'browser' && (
-                  <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <input
-                      ref={statsSearchInputRef}
-                      type="text"
-                      placeholder="Einträge suchen..."
-                      value={statsSearchQuery}
-                      onChange={(e) => setStatsSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
-                    />
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <input
+                        ref={statsSearchInputRef}
+                        type="text"
+                        placeholder="Einträge suchen..."
+                        value={statsSearchQuery}
+                        onChange={(e) => setStatsSearchQuery(e.target.value)}
+                        className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <Select
+                        value={statsRuleFilter}
+                        onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
+                      >
+                        <SelectTrigger className="w-auto h-9 text-xs">
+                          <SelectValue placeholder="Filter" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle Einträge</SelectItem>
+                          <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
+                          <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
 
@@ -3149,7 +3198,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <ul className="list-disc list-inside text-xs">
                                         <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
                                         <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
-                                        <li><strong>Type</strong> (Optional) - 'partial' oder 'wildcard'</li>
+                                        <li><strong>Type</strong> (Pflicht) - 'partial', 'wildcard' oder 'domain'</li>
                                         <li><strong>Info</strong> (Optional) - Beschreibung</li>
                                         <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
                                         <li><strong>Discard Query Params</strong> (Optional) - 'true'/'false'</li>
@@ -3416,20 +3465,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                         <div className="border-t pt-4 flex flex-col gap-2">
                             <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => {
-                                        setDeleteAllConfirmationText("");
-                                        setShowDeleteAllDialog(true);
-                                    }}
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Alle Regeln löschen
-                                </Button>
-                                <p className="text-xs text-muted-foreground">
-                                    Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
-                                </p>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => {
+                                            setDeleteAllConfirmationText("");
+                                            setShowDeleteAllDialog(true);
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Alle Regeln löschen
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => {
+                                            setDeleteAllStatsConfirmationText("");
+                                            setShowDeleteAllStatsDialog(true);
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Alle Statistiken löschen
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Löscht alle erfassten Tracking-Daten unwiderruflich.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                       </div>
@@ -3856,6 +3922,59 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700"
             >
               Ich habe verstanden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete All Statistics Confirmation Dialog */}
+      <Dialog open={showDeleteAllStatsDialog} onOpenChange={setShowDeleteAllStatsDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Alle Statistiken löschen?
+            </DialogTitle>
+            <DialogDescription>
+              Dies löscht alle erfassten Tracking-Daten unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+               Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.
+            </div>
+
+            <Button
+                variant="outline"
+                onClick={() => handleExport('statistics', 'csv')}
+                className="w-full"
+            >
+                <Download className="h-4 w-4 mr-2" />
+                Backup herunterladen (CSV)
+            </Button>
+
+            <div className="space-y-2">
+                <label className="text-sm font-medium">
+                    Bestätigung erforderlich
+                </label>
+                <Input
+                    value={deleteAllStatsConfirmationText}
+                    onChange={(e) => setDeleteAllStatsConfirmationText(e.target.value)}
+                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    className={deleteAllStatsConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
+                />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>Abbrechen</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAllStatsMutation.mutate()}
+              disabled={deleteAllStatsConfirmationText !== "DELETE" || deleteAllStatsMutation.isPending}
+            >
+              {deleteAllStatsMutation.isPending ? 'Lösche...' : 'Alles löschen'}
             </Button>
           </DialogFooter>
         </DialogContent>

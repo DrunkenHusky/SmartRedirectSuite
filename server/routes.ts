@@ -495,6 +495,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all statistics
+  app.delete("/api/admin/all-stats", requireAuth, async (_req, res) => {
+    try {
+      console.log("Deleting all statistics request received");
+      await storage.clearAllTracking();
+
+      console.log("All statistics deleted successfully");
+      res.json({ success: true, message: "Alle Statistiken wurden erfolgreich gelöscht." });
+    } catch (error) {
+      console.error("Delete all stats error:", error);
+      res.status(500).json({ error: "Fehler beim Löschen aller Statistiken" });
+    }
+  });
+
   // Statistiken
   app.get("/api/admin/stats/all", requireAuth, async (req, res) => {
     try {
@@ -551,7 +565,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sortBy = req.query.sortBy as string || 'timestamp';
       const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'desc';
       
-      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder);
+      // Backward compatibility handling:
+      // If ruleFilter is provided, use it.
+      // If not, check excludeNoRule: true -> 'with_rule', false -> 'all'
+      let ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all';
+
+      if (req.query.ruleFilter && ['all', 'with_rule', 'no_rule'].includes(req.query.ruleFilter as string)) {
+        ruleFilter = req.query.ruleFilter as 'all' | 'with_rule' | 'no_rule';
+      } else if (req.query.excludeNoRule === 'true') {
+        ruleFilter = 'with_rule';
+      }
+
+      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, ruleFilter);
       res.json(result);
     } catch (error) {
       console.error("Paginated tracking entries error:", error);

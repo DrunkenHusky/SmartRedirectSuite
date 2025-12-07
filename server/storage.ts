@@ -61,6 +61,7 @@ export interface IStorage {
   clearAllRules(): Promise<void>;
 
   // URL-Tracking
+  clearAllTracking(): Promise<void>;
   trackUrlAccess(tracking: InsertUrlTracking): Promise<UrlTracking>;
   getTrackingData(timeRange?: "24h" | "7d" | "all"): Promise<UrlTracking[]>;
   getTopUrls(
@@ -89,6 +90,7 @@ export interface IStorage {
     search?: string,
     sortBy?: string,
     sortOrder?: "asc" | "desc",
+    ruleFilter?: 'all' | 'with_rule' | 'no_rule',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -469,6 +471,10 @@ export class FileStorage implements IStorage {
   }
 
   // URL-Tracking implementierung
+  async clearAllTracking(): Promise<void> {
+    await this.writeJsonFile(TRACKING_FILE, []);
+  }
+
   async trackUrlAccess(
     insertTracking: InsertUrlTracking,
   ): Promise<UrlTracking> {
@@ -624,6 +630,7 @@ export class FileStorage implements IStorage {
     search?: string,
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
+    ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -639,6 +646,21 @@ export class FileStorage implements IStorage {
       search && search.trim()
         ? await this.searchTrackingEntries(search, sortBy, sortOrder)
         : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+
+    // Filter based on rule presence
+    if (ruleFilter === 'with_rule') {
+      filteredEntries = filteredEntries.filter((entry) => {
+        const hasRuleId = !!entry.ruleId;
+        const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
+        return hasRuleId || hasRuleIds;
+      });
+    } else if (ruleFilter === 'no_rule') {
+      filteredEntries = filteredEntries.filter((entry) => {
+        const hasRuleId = !!entry.ruleId;
+        const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
+        return !hasRuleId && !hasRuleIds;
+      });
+    }
 
     if (!search || !search.trim()) {
       // Only sort if not already sorted by searchTrackingEntries
