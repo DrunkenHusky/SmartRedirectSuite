@@ -240,6 +240,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsPerPage] = useState(50); // Fixed page size for performance
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
+  const [statsExcludeNoRule, setStatsExcludeNoRule] = useState(false);
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -508,7 +509,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsExcludeNoRule],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -517,6 +518,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         limit: statsPerPage.toString(),
         sortBy: sortBy,
         sortOrder: sortOrder,
+        excludeNoRule: statsExcludeNoRule.toString(),
       });
       
       if (debouncedStatsSearchQuery.trim()) {
@@ -2864,16 +2866,29 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                 {/* Search for browser view */}
                 {statsView === 'browser' && (
-                  <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <input
-                      ref={statsSearchInputRef}
-                      type="text"
-                      placeholder="Einträge suchen..."
-                      value={statsSearchQuery}
-                      onChange={(e) => setStatsSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
-                    />
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <input
+                        ref={statsSearchInputRef}
+                        type="text"
+                        placeholder="Einträge suchen..."
+                        value={statsSearchQuery}
+                        onChange={(e) => setStatsSearchQuery(e.target.value)}
+                        className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 px-2 py-2 border rounded-md bg-background">
+                      <Switch
+                        id="exclude-no-rule"
+                        checked={statsExcludeNoRule}
+                        onCheckedChange={setStatsExcludeNoRule}
+                        className="h-5 w-9"
+                      />
+                      <label htmlFor="exclude-no-rule" className="text-xs text-muted-foreground whitespace-nowrap cursor-pointer select-none">
+                        Nur mit Regeln
+                      </label>
+                    </div>
                   </div>
                 )}
 
