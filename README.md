@@ -339,6 +339,16 @@ Weitere Plattformen: Vercel, Heroku oder Docker. Details zur Docker-Installation
 
 Für Demo-Zwecke mit täglichem Reset der Daten kann das `Dockerfile.demo` genutzt werden (setzt Sessions, Uploads und Einstellungen täglich zurück).
 
+### Automatisches Deployment auf fly.io
+
+Das Repository enthält eine CI/CD-Pipeline (`.github/workflows/deploy.yml`) für das automatische Deployment auf fly.io.
+
+*   **Trigger:** Ein Push auf den Branch `NextRelease` löst das Deployment aus.
+*   **Voraussetzungen:**
+    *   Das Secret `FLY_API_TOKEN` muss in den GitHub Repository Settings hinterlegt sein.
+    *   Die Konfiguration erfolgt über die `fly.toml` und das `Dockerfile.demo`.
+*   **Ablauf:** Die GitHub Action authentifiziert sich via Token, baut das Image remote auf fly.io und deployt die neue Version.
+
 ## Entwicklung
 
 Technologie-Stack:
