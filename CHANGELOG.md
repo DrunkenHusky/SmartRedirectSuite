@@ -1,3 +1,18 @@
+# [2.12.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.11.0...v2.12.0) (2025-12-07)
+
+
+### Bug Fixes
+
+* make 'Type' column mandatory for rule imports ([d53365d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d53365d265d7c9df920b980cbb332550393140a1))
+* **ui:** make footer sticky/fixed to bottom of migration page ([dd39bb2](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/dd39bb2764a0ec75362b5fb106e116730ce9bc6f))
+
+
+### Features
+
+* Add "Delete All Statistics" to Admin Danger Zone ([43df9b9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/43df9b9c7dd1f177e9f5b636a565c4515ce58d7a))
+* Add filter for entries without rules in statistics ([ff61ae6](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ff61ae635d492f49387ea0e726e5a9df950e6680))
+* **admin:** add 'only without rules' filter to statistics ([1f8a48a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1f8a48a5785bc378df451b17db3bb298fa1ad1e1))
+
 # [2.11.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.10.0...v2.11.0) (2025-12-06)
 
 
