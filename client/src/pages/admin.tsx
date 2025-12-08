@@ -1746,7 +1746,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile-Friendly Admin Header */}
-      <header className="bg-surface shadow-sm border-b border-border">
+      <header className="bg-background shadow-sm border-b border-border">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-3">
@@ -4088,6 +4088,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             {(() => {
               // Determine effective type: explicit selection > common existing type > unknown
               const selectedRules = paginatedRules.filter(r => selectedRuleIds.includes(r.id));
+              // Safety check: ensure selectedRules is not empty before accessing index 0
+              if (selectedRules.length === 0) return null;
+
               const commonType = selectedRules.every(r => r.redirectType === selectedRules[0].redirectType) ? selectedRules[0].redirectType : null;
               const effectiveType = bulkEditForm.redirectType || commonType;
 
