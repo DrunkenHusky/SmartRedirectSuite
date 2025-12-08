@@ -5,7 +5,7 @@ Dieses Handbuch beschreibt die tägliche Nutzung der SmartRedirect Suite. Die An
 Den Admin-Bereich öffnen Sie über das Zahnrad-Symbol in der Kopfzeile oder indem Sie `?admin=true` an die URL anhängen.
 
 ## Allgemeine Einstellungen
-Nach der Anmeldung im Administrator-Bereich steht ein Menü mit vier Reitern zur Verfügung: **Allgemein**, **Regeln**, **Statistik** und **Import/Export**. Über die Schaltflächen im Kopfbereich können Sie sich abmelden oder den Admin-Bereich schließen.
+Nach der Anmeldung im Administrator-Bereich steht ein Menü mit vier Reitern zur Verfügung: **Allgemein**, **Regeln**, **Statistik** und **System & Daten**. Über die Schaltflächen im Kopfbereich können Sie sich abmelden oder den Admin-Bereich schließen.
 
 Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-Anwendung anpassen:
 
@@ -31,8 +31,8 @@ Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-A
 - **Alle Einträge**: Vollständige Liste der Tracking-Daten mit Such- und Sortierfunktion.
 - **Pagination**: Anzeige der Gesamtanzahl und Navigation zwischen Seiten.
 
-## Import und Export
-Der Bereich "Import/Export" ist in drei Bereiche unterteilt, um verschiedene Anwendungsfälle abzudecken.
+## System & Daten
+Der Bereich "System & Daten" ist in drei Bereiche unterteilt, um verschiedene Anwendungsfälle abzudecken.
 
 ### 1. Standard Import / Export (Excel, CSV)
 Dieser Bereich ist für die tägliche Pflege von Weiterleitungen optimiert.

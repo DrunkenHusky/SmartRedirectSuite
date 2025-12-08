@@ -39,6 +39,7 @@ import {
   Upload,
   Eye,
 
+  Database,
   BarChart3,
   Settings,
   FileText,
@@ -1660,8 +1661,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <span className="truncate leading-tight text-center">Statistiken</span>
                 </TabsTrigger>
                 <TabsTrigger value="export" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Import/Export</span>
+                  <Database className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate leading-tight text-center">System & Daten</span>
                 </TabsTrigger>
               </TabsList>
             </div>
