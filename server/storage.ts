@@ -91,6 +91,7 @@ export interface IStorage {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
     ruleFilter?: 'all' | 'with_rule' | 'no_rule',
+    minQuality?: number,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -598,6 +599,9 @@ export class FileStorage implements IStorage {
         case "userAgent":
            comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
            break;
+        case "matchQuality":
+           comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
+           break;
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
@@ -631,6 +635,7 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
+    minQuality: number = 0,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -684,6 +689,9 @@ export class FileStorage implements IStorage {
             break;
           case "path":
             comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+            break;
+          case "matchQuality":
+            comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
             break;
         }
 

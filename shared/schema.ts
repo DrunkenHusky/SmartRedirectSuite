@@ -77,6 +77,11 @@ export const urlTrackingSchema = z.object({
   userAgent: z.string()
     .max(2000, "User agent too long")
     .optional(),
+  matchQuality: z.number()
+    .min(0)
+    .max(100)
+    .optional()
+    .default(0),
   ruleId: z.string()
     .uuid("Invalid rule ID")
     .optional()
@@ -252,9 +257,6 @@ export const generalSettingsSchema = z.object({
 
   // Link detection behavior
   caseSensitiveLinkDetection: z.boolean().default(false),
-
-  // Import settings
-  encodeImportedUrls: z.boolean().default(true),
 
   // Auto-redirect functionality
   autoRedirect: z.boolean()
