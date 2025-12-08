@@ -225,9 +225,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [rulesPerPage] = useState(50); // Fixed page size for performance
   const rulesSearchInputRef = useRef<HTMLInputElement>(null);
   
-  // Multi-select state for bulk delete
+  // Multi-select state for bulk actions
   const [selectedRuleIds, setSelectedRuleIds] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [isBulkEditDialogOpen, setIsBulkEditDialogOpen] = useState(false);
+  const [bulkEditForm, setBulkEditForm] = useState<{
+    redirectType?: "wildcard" | "partial" | "domain";
+    autoRedirect?: boolean;
+    discardQueryParams?: boolean;
+    forwardQueryParams?: boolean;
+    infoText?: string;
+    updateInfoText: boolean; // flag to indicate if infoText should be updated
+  }>({
+    redirectType: undefined,
+    autoRedirect: undefined,
+    discardQueryParams: undefined,
+    forwardQueryParams: undefined,
+    infoText: undefined,
+    updateInfoText: false,
+  });
 
   // Delete all rules state
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
@@ -781,6 +797,55 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
+  const bulkUpdateRulesMutation = useMutation({
+    mutationFn: async (data: { ruleIds: string[], updates: any }) => {
+      // Filter updates to remove undefined values
+      const updates: any = {};
+      if (data.updates.redirectType !== undefined) updates.redirectType = data.updates.redirectType;
+      if (data.updates.autoRedirect !== undefined) updates.autoRedirect = data.updates.autoRedirect;
+      if (data.updates.discardQueryParams !== undefined) updates.discardQueryParams = data.updates.discardQueryParams;
+      if (data.updates.forwardQueryParams !== undefined) updates.forwardQueryParams = data.updates.forwardQueryParams;
+      if (data.updates.updateInfoText && data.updates.infoText !== undefined) updates.infoText = data.updates.infoText;
+
+      return apiRequest("PUT", "/api/admin/rules/bulk", {
+        ruleIds: data.ruleIds,
+        updates
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      setIsBulkEditDialogOpen(false);
+      setSelectedRuleIds([]);
+      toast({
+        title: "Regeln aktualisiert",
+        description: "Die ausgewählten Regeln wurden erfolgreich aktualisiert."
+      });
+    },
+    onError: (error: any) => {
+      if (error?.status === 403 || error?.status === 401) {
+        setIsAuthenticated(false);
+        toast({
+          title: "Authentifizierung erforderlich",
+          description: "Bitte melden Sie sich erneut an.",
+          variant: "destructive"
+        });
+        window.location.reload();
+        return;
+      }
+
+      let errorMessage = "Die Regeln konnten nicht aktualisiert werden.";
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      toast({
+        title: "Fehler",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    },
+  });
+
   // Delete all stats mutation
   const deleteAllStatsMutation = useMutation({
     mutationFn: async () => {
@@ -1178,6 +1243,29 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     }
     
     setShowBulkDeleteDialog(true);
+  };
+
+  const handleBulkEdit = () => {
+    if (selectedRuleIds.length === 0) return;
+
+    // Get selected rules data
+    const selectedRules = paginatedRules.filter(r => selectedRuleIds.includes(r.id));
+    if (selectedRules.length === 0) return;
+
+    // Determine common values
+    const firstRule = selectedRules[0];
+    const allSameType = selectedRules.every(r => r.redirectType === firstRule.redirectType);
+
+    setBulkEditForm({
+      redirectType: allSameType ? firstRule.redirectType as any : undefined,
+      autoRedirect: undefined,
+      discardQueryParams: undefined,
+      forwardQueryParams: undefined,
+      infoText: "",
+      updateInfoText: false,
+    });
+
+    setIsBulkEditDialogOpen(true);
   };
 
   const handleExport = async (type: string, format: string = 'json') => {
@@ -2693,17 +2781,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                      {/* Bulk Delete Button */}
+                      {/* Bulk Actions */}
                       {selectedRuleIds.length > 0 && (
-                        <Button 
-                          onClick={handleBulkDelete}
-                          size="sm"
-                          variant="destructive"
-                          className="flex-1 sm:flex-initial"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          {selectedRuleIds.length} löschen
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleBulkEdit}
+                            size="sm"
+                            variant="secondary"
+                            className="flex-1 sm:flex-initial"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            {selectedRuleIds.length} bearbeiten
+                          </Button>
+                          <Button
+                            onClick={handleBulkDelete}
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 sm:flex-initial"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {selectedRuleIds.length} löschen
+                          </Button>
+                        </div>
                       )}
                       
                       {/* Create New Rule Button */}
@@ -3740,6 +3839,187 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     }
                 </Button>
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Edit Dialog */}
+      <Dialog open={isBulkEditDialogOpen} onOpenChange={setIsBulkEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">
+              Regeln bearbeiten ({selectedRuleIds.length} ausgewählt)
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Änderungen werden auf alle ausgewählten Regeln angewendet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 sm:space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Redirect-Typ
+              </label>
+              <Select
+                value={bulkEditForm.redirectType || "no_change"}
+                onValueChange={(value) =>
+                  setBulkEditForm(prev => ({
+                    ...prev,
+                    redirectType: value === "no_change" ? undefined : value as any,
+                    // Reset query params toggles when type changes to ensure consistency
+                    discardQueryParams: undefined,
+                    forwardQueryParams: undefined
+                  }))
+                }
+              >
+                <SelectTrigger className="h-auto min-h-[40px]">
+                  <SelectValue placeholder="Keine Änderung" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no_change">Keine Änderung</SelectItem>
+                  <SelectItem value="partial">Teilweise</SelectItem>
+                  <SelectItem value="wildcard">Vollständig</SelectItem>
+                  <SelectItem value="domain">Domain-Ersatz</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Auto-Redirect
+              </label>
+              <Select
+                value={bulkEditForm.autoRedirect === undefined ? "no_change" : bulkEditForm.autoRedirect ? "active" : "inactive"}
+                onValueChange={(value) =>
+                  setBulkEditForm(prev => ({
+                    ...prev,
+                    autoRedirect: value === "no_change" ? undefined : value === "active"
+                  }))
+                }
+              >
+                <SelectTrigger className="h-auto min-h-[40px]">
+                  <SelectValue placeholder="Keine Änderung" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no_change">Keine Änderung</SelectItem>
+                  <SelectItem value="active">Aktivieren</SelectItem>
+                  <SelectItem value="inactive">Deaktivieren</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Query Params Logic */}
+            {(() => {
+              // Determine effective type: explicit selection > common existing type > unknown
+              const selectedRules = paginatedRules.filter(r => selectedRuleIds.includes(r.id));
+              const commonType = selectedRules.every(r => r.redirectType === selectedRules[0].redirectType) ? selectedRules[0].redirectType : null;
+              const effectiveType = bulkEditForm.redirectType || commonType;
+
+              if (!effectiveType) {
+                 return (
+                   <div className="p-3 bg-muted rounded-md text-sm text-muted-foreground">
+                     <Info className="h-4 w-4 inline-block mr-2" />
+                     Query Parameter können nur bearbeitet werden, wenn alle ausgewählten Regeln den gleichen Typ haben oder ein neuer Typ gewählt wird.
+                   </div>
+                 );
+              }
+
+              if (effectiveType === 'partial' || effectiveType === 'domain') {
+                 return (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Link-Parameter entfernen
+                      </label>
+                      <Select
+                        value={bulkEditForm.discardQueryParams === undefined ? "no_change" : bulkEditForm.discardQueryParams ? "yes" : "no"}
+                        onValueChange={(value) =>
+                          setBulkEditForm(prev => ({
+                            ...prev,
+                            discardQueryParams: value === "no_change" ? undefined : value === "yes"
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-auto min-h-[40px]">
+                          <SelectValue placeholder="Keine Änderung" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no_change">Keine Änderung</SelectItem>
+                          <SelectItem value="yes">Ja (Entfernen)</SelectItem>
+                          <SelectItem value="no">Nein (Behalten)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                 );
+              }
+
+              if (effectiveType === 'wildcard') {
+                 return (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Link-Parameter beibehalten
+                      </label>
+                      <Select
+                        value={bulkEditForm.forwardQueryParams === undefined ? "no_change" : bulkEditForm.forwardQueryParams ? "yes" : "no"}
+                        onValueChange={(value) =>
+                          setBulkEditForm(prev => ({
+                            ...prev,
+                            forwardQueryParams: value === "no_change" ? undefined : value === "yes"
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-auto min-h-[40px]">
+                          <SelectValue placeholder="Keine Änderung" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no_change">Keine Änderung</SelectItem>
+                          <SelectItem value="yes">Ja (Behalten)</SelectItem>
+                          <SelectItem value="no">Nein (Verwerfen)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                 );
+              }
+            })()}
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="update-info"
+                  checked={bulkEditForm.updateInfoText}
+                  onCheckedChange={(checked) => setBulkEditForm(prev => ({ ...prev, updateInfoText: checked }))}
+                />
+                <label htmlFor="update-info" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Info-Text aktualisieren
+                </label>
+              </div>
+
+              {bulkEditForm.updateInfoText && (
+                <Textarea
+                  placeholder="Neuer Info-Text für alle ausgewählten Regeln..."
+                  value={bulkEditForm.infoText || ""}
+                  onChange={(e) => setBulkEditForm(prev => ({ ...prev, infoText: e.target.value }))}
+                  rows={3}
+                />
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
+              <Button
+                type="button"
+                className="flex-1"
+                disabled={bulkUpdateRulesMutation.isPending}
+                onClick={() => bulkUpdateRulesMutation.mutate({ ruleIds: selectedRuleIds, updates: bulkEditForm })}
+              >
+                {bulkUpdateRulesMutation.isPending ? "Speichere..." : "Änderungen anwenden"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setIsBulkEditDialogOpen(false)}
+              >
+                Abbrechen
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
