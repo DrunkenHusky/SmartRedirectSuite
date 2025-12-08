@@ -1,5 +1,5 @@
 
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import {
   Table,
   TableHeader,
@@ -28,6 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { UrlRule } from "@shared/schema";
+import { ResizeHandle } from "@/components/ui/resize-handle";
 
 interface RulesTableProps {
   rules: UrlRule[];
@@ -56,12 +57,32 @@ const RulesTable = memo(({
 
   const allSelected = rules.length > 0 && rules.every(rule => selectedRuleIds.includes(rule.id));
 
+  // Initial widths matching the previous classNames
+  const [colWidths, setColWidths] = useState<Record<string, string | number>>({
+    checkbox: 50,
+    matcher: '19%',
+    targetUrl: '19%',
+    type: '9%',
+    autoRedirect: '9%',
+    queryParam: '9%',
+    info: '14%',
+    createdAt: '9%',
+    actions: 80
+  });
+
+  const handleResize = (key: string, newWidth: number) => {
+    setColWidths(prev => ({
+      ...prev,
+      [key]: newWidth
+    }));
+  };
+
   return (
-    <div className="hidden lg:block w-full">
-      <table className="w-full table-fixed">
+    <div className="hidden lg:block w-full overflow-x-auto">
+      <table className="w-full table-fixed min-w-[1000px]">
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 w-[50px]">
+            <th className="text-left py-3 px-4 relative" style={{ width: colWidths.checkbox }}>
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -69,73 +90,82 @@ const RulesTable = memo(({
                 className="rounded border border-gray-300 focus:ring-2 focus:ring-blue-500"
                 title="Alle Regeln auf dieser Seite auswählen/abwählen"
               />
+              <ResizeHandle onResize={(w) => handleResize('checkbox', w)} />
             </th>
-            <th className="text-left py-3 px-4 w-[19%]">
+            <th className="text-left py-3 px-4 relative" style={{ width: colWidths.matcher }}>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                className="h-auto p-0 font-medium text-sm hover:bg-transparent w-full justify-start"
                 onClick={() => onSort('matcher')}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 truncate">
                   URL-Pfad Matcher
                   {sortConfig.by === 'matcher' && (
-                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
                 </span>
               </Button>
+              <ResizeHandle onResize={(w) => handleResize('matcher', w)} />
             </th>
-            <th className="text-left py-3 px-4 w-[19%]">
+            <th className="text-left py-3 px-4 relative" style={{ width: colWidths.targetUrl }}>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                className="h-auto p-0 font-medium text-sm hover:bg-transparent w-full justify-start"
                 onClick={() => onSort('targetUrl')}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 truncate">
                   Ziel-URL
                   {sortConfig.by === 'targetUrl' && (
-                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
                 </span>
               </Button>
+              <ResizeHandle onResize={(w) => handleResize('targetUrl', w)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
-              Typ
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: colWidths.type }}>
+              <span className="truncate block">Typ</span>
+              <ResizeHandle onResize={(w) => handleResize('type', w)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
-              Auto-Redirect
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: colWidths.autoRedirect }}>
+              <span className="truncate block">Auto-Redirect</span>
+              <ResizeHandle onResize={(w) => handleResize('autoRedirect', w)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
-              Query Parameter
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: colWidths.queryParam }}>
+              <span className="truncate block">Query Parameter</span>
+              <ResizeHandle onResize={(w) => handleResize('queryParam', w)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[14%]">
-              Info-Text
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: colWidths.info }}>
+              <span className="truncate block">Info-Text</span>
+              <ResizeHandle onResize={(w) => handleResize('info', w)} />
             </th>
-            <th className="text-left py-3 px-4 w-[9%]">
+            <th className="text-left py-3 px-4 relative" style={{ width: colWidths.createdAt }}>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                className="h-auto p-0 font-medium text-sm hover:bg-transparent w-full justify-start"
                 onClick={() => onSort('createdAt')}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 truncate">
                   Erstellt am
                   {sortConfig.by === 'createdAt' && (
-                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
                 </span>
               </Button>
+              <ResizeHandle onResize={(w) => handleResize('createdAt', w)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[80px]">
-              Aktionen
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: colWidths.actions }}>
+              <span className="truncate block">Aktionen</span>
+              <ResizeHandle onResize={(w) => handleResize('actions', w)} />
             </th>
           </tr>
         </thead>
         <tbody>
           {rules.map((rule: UrlRule) => (
             <tr key={rule.id} className="border-b border-border hover:bg-muted/50">
-              <td className="py-3 px-4 w-12">
+              <td className="py-3 px-4">
                 <input
                   type="checkbox"
                   checked={selectedRuleIds.includes(rule.id)}
@@ -187,7 +217,9 @@ const RulesTable = memo(({
                 )}
               </td>
               <td className="py-3 px-4 text-sm text-muted-foreground">
-                {rule.infoText ? rule.infoText.substring(0, 50) + "..." : "-"}
+                <div className="truncate w-full" title={rule.infoText || ""}>
+                  {rule.infoText || "-"}
+                </div>
               </td>
               <td className="py-3 px-4 text-xs text-muted-foreground">
                 {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
