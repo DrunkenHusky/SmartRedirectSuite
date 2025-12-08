@@ -278,23 +278,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [showAllPreview, setShowAllPreview] = useState(false);
   const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
 
-  // Statistics table column widths state
-  const [statsColWidths, setStatsColWidths] = useState<Record<string, string | number>>({
-    timestamp: 160,
-    oldUrl: '20%',
-    newUrl: '20%',
-    path: '20%',
-    matchQuality: 100,
-    rule: '20%'
-  });
-
-  const handleStatsResize = (key: string, newWidth: number) => {
-    setStatsColWidths(prev => ({
-      ...prev,
-      [key]: newWidth
-    }));
-  };
-
   // Preview table column widths state
   const [previewColWidths, setPreviewColWidths] = useState<Record<string, string | number>>({
     status: 100,
@@ -3252,116 +3235,90 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                     ) : (
                       <>
-                        <div className="border rounded-md overflow-x-auto">
-                          <Table className="table-fixed min-w-[1000px]">
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="relative" style={{ width: statsColWidths.timestamp }}>
+                        <div className="overflow-hidden">
+                          <table className="w-full">
+                            <thead className="bg-muted/50 border-b">
+                              <tr>
+                                <th className="text-left p-3">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('timestamp')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
                                   >
-                                    <span className="truncate flex items-center">
-                                      Zeitstempel
-                                      {getSortIcon('timestamp')}
-                                    </span>
+                                    Zeitstempel
+                                    {getSortIcon('timestamp')}
                                   </Button>
-                                  <ResizeHandle onResize={(w) => handleStatsResize('timestamp', w)} />
-                                </TableHead>
-                                <TableHead className="relative" style={{ width: statsColWidths.oldUrl }}>
+                                </th>
+                                <th className="text-left p-3">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('oldUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
                                   >
-                                    <span className="truncate flex items-center">
-                                      Alte URL
-                                      {getSortIcon('oldUrl')}
-                                    </span>
+                                    Alte URL
+                                    {getSortIcon('oldUrl')}
                                   </Button>
-                                  <ResizeHandle onResize={(w) => handleStatsResize('oldUrl', w)} />
-                                </TableHead>
-                                <TableHead className="relative" style={{ width: statsColWidths.newUrl }}>
+                                </th>
+                                <th className="text-left p-3">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('newUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
                                   >
-                                    <span className="truncate flex items-center">
-                                      Neue URL
-                                      {getSortIcon('newUrl')}
-                                    </span>
+                                    Neue URL
+                                    {getSortIcon('newUrl')}
                                   </Button>
-                                  <ResizeHandle onResize={(w) => handleStatsResize('newUrl', w)} />
-                                </TableHead>
-                                <TableHead className="relative" style={{ width: statsColWidths.path }}>
+                                </th>
+                                <th className="text-left p-3">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('path')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
                                   >
-                                    <span className="truncate flex items-center">
-                                      Pfad
-                                      {getSortIcon('path')}
-                                    </span>
+                                    Pfad
+                                    {getSortIcon('path')}
                                   </Button>
-                                  <ResizeHandle onResize={(w) => handleStatsResize('path', w)} />
-                                </TableHead>
-                                <TableHead className="relative" style={{ width: statsColWidths.matchQuality }}>
+                                </th>
+                                <th className="text-left p-3">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('matchQuality')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
                                   >
-                                    <span className="truncate flex items-center">
-                                      Qualität
-                                      {getSortIcon('matchQuality')}
-                                    </span>
+                                    Qualität
+                                    {getSortIcon('matchQuality')}
                                   </Button>
-                                  <ResizeHandle onResize={(w) => handleStatsResize('matchQuality', w)} />
-                                </TableHead>
-                                <TableHead className="relative font-medium text-sm" style={{ width: statsColWidths.rule }}>
-                                  <span className="truncate block">Regel</span>
-                                  <ResizeHandle onResize={(w) => handleStatsResize('rule', w)} />
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                                </th>
+                                <th className="text-left p-3 font-medium text-sm">
+                                  Regel
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
                               {trackingEntries.map((entry: any) => (
-                                <TableRow key={entry.id}>
-                                  <TableCell className="text-sm">
-                                    <span className="truncate block" title={formatTimestamp(entry.timestamp)}>
-                                      {formatTimestamp(entry.timestamp)}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="w-full" title={entry.oldUrl}>
-                                      <code className="text-xs text-foreground bg-muted px-1.5 py-0.5 rounded inline-block max-w-full truncate align-middle">
-                                        {entry.oldUrl}
-                                      </code>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="w-full" title={entry.newUrl || 'N/A'}>
-                                      <code className="text-xs text-foreground bg-muted px-1.5 py-0.5 rounded inline-block max-w-full truncate align-middle">
-                                        {entry.newUrl || 'N/A'}
-                                      </code>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="w-full" title={entry.path}>
-                                      <code className="text-sm text-foreground bg-muted px-1.5 py-0.5 rounded inline-block max-w-full truncate align-middle">
-                                        {entry.path}
-                                      </code>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-sm">
+                                <tr key={entry.id} className="border-b hover:bg-muted/50">
+                                  <td className="p-3 text-sm">
+                                    {formatTimestamp(entry.timestamp)}
+                                  </td>
+                                  <td className="p-3">
+                                    <code className="text-xs text-foreground break-all">
+                                      {entry.oldUrl}
+                                    </code>
+                                  </td>
+                                  <td className="p-3">
+                                    <code className="text-xs text-foreground break-all">
+                                      {entry.newUrl || 'N/A'}
+                                    </code>
+                                  </td>
+                                  <td className="p-3">
+                                    <code className="text-sm text-foreground">{entry.path}</code>
+                                  </td>
+                                  <td className="p-3 text-sm">
                                     {entry.matchQuality !== undefined ? (
                                       <Badge variant={entry.matchQuality >= 90 ? "default" : entry.matchQuality >= 50 ? "secondary" : "destructive"}>
                                         {entry.matchQuality}%
@@ -3369,8 +3326,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     ) : (
                                       <span className="text-muted-foreground">-</span>
                                     )}
-                                  </TableCell>
-                                  <TableCell>
+                                  </td>
+                                  <td className="p-3">
                                     {entry.rules && entry.rules.length > 0 ? (
                                       <div className="flex flex-wrap gap-1">
                                         {entry.rules.map((rule: UrlRule) => (
@@ -3378,13 +3335,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             key={rule.id}
                                             variant="ghost"
                                             size="sm"
-                                            className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 mb-1 max-w-full"
+                                            className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 mb-1"
                                             onClick={() => handleEditRule(rule)}
                                             title={`Regel bearbeiten: ${rule.redirectType}`}
                                           >
-                                            <Edit className="h-3 w-3 mr-1 flex-shrink-0" />
-                                            <span className="truncate">{rule.matcher}</span>
-                                            <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4 flex-shrink-0">
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            {rule.matcher}
+                                            <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4">
                                                 {rule.redirectType === 'domain' ? 'D' : rule.redirectType === 'wildcard' ? 'W' : 'P'}
                                             </Badge>
                                           </Button>
@@ -3394,21 +3351,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 max-w-full"
+                                        className="h-auto p-1 text-xs bg-muted hover:bg-muted/80"
                                         onClick={() => handleEditRule(entry.rule)}
                                         title="Regel bearbeiten"
                                       >
-                                        <Edit className="h-3 w-3 mr-1 flex-shrink-0" />
-                                        <span className="truncate">{entry.rule.matcher}</span>
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        {entry.rule.matcher}
                                       </Button>
                                     ) : (
                                       <span className="text-xs text-muted-foreground">-</span>
                                     )}
-                                  </TableCell>
-                                </TableRow>
+                                  </td>
+                                </tr>
                               ))}
-                            </TableBody>
-                          </Table>
+                            </tbody>
+                          </table>
                         </div>
                         
                         {/* Pagination Controls for Browser View */}
