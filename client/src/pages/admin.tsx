@@ -353,7 +353,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const [generalSettings, setGeneralSettings] = useState({
     headerTitle: "URL Migration Tool",
-    headerIcon: "ArrowRightLeft" as "ArrowLeftRight" | "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
+    headerIcon: "ArrowRightLeft" as "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
     headerLogoUrl: "" as string | undefined,
     headerBackgroundColor: "#ffffff",
     popupMode: "active" as "active" | "inline" | "disabled",
@@ -363,7 +363,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     alertIcon: "AlertTriangle" as "AlertTriangle" | "XCircle" | "AlertCircle" | "Info",
     alertBackgroundColor: "yellow" as "yellow" | "red" | "orange" | "blue" | "gray",
     urlComparisonTitle: "URL-Vergleich",
-    urlComparisonIcon: "ArrowRightLeft" as "ArrowLeftRight" | "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
+    urlComparisonIcon: "ArrowRightLeft" as "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
     urlComparisonBackgroundColor: "#ffffff",
     oldUrlLabel: "Alte URL (veraltet)",
     newUrlLabel: "Neue URL (verwenden Sie diese)",
@@ -377,9 +377,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     popupButtonText: "Zeige mir die neue URL",
     specialHintsTitle: "Spezielle Hinweise für diese URL",
     specialHintsDescription: "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL.",
-    specialHintsIcon: "Info" as "ArrowLeftRight" | "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
+    specialHintsIcon: "Info" as "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
     infoTitle: "",
-    infoTitleIcon: "Info" as "ArrowLeftRight" | "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
+    infoTitleIcon: "Info" as "ArrowRightLeft" | "AlertTriangle" | "XCircle" | "AlertCircle" | "Info" | "Bookmark" | "Share2" | "Clock" | "CheckCircle" | "Star" | "Heart" | "Bell" | "none",
     infoItems: ["", "", ""],
     infoIcons: ["Bookmark", "Share2", "Clock"] as ("Bookmark" | "Share2" | "Clock" | "Info" | "CheckCircle" | "Star" | "Heart" | "Bell")[],
     footerCopyright: "",
@@ -420,7 +420,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   };
 
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // queryClient is imported from lib/queryClient to avoid shadowing
 
   // Save active tab to localStorage when it changes
   const handleTabChange = (newTab: string) => {
@@ -621,9 +621,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Populate general settings form when data is loaded
   useEffect(() => {
     if (settingsData) {
+      // Helper to map legacy/unsupported icons to safe defaults
+      const safeIcon = (icon: string | undefined | null, fallback: any): any => {
+        if (icon === "ArrowLeftRight") return "ArrowRightLeft"; // Legacy mapping
+        return icon || fallback;
+      };
+
       setGeneralSettings({
         headerTitle: settingsData.headerTitle || "",
-        headerIcon: settingsData.headerIcon || "ArrowRightLeft",
+        headerIcon: safeIcon(settingsData.headerIcon, "ArrowRightLeft"),
         headerLogoUrl: settingsData.headerLogoUrl || "",
         headerBackgroundColor: settingsData.headerBackgroundColor || "#ffffff",
         popupMode: settingsData.popupMode || "active",
@@ -633,7 +639,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         alertIcon: settingsData.alertIcon || "AlertTriangle",
         alertBackgroundColor: settingsData.alertBackgroundColor || "yellow",
         urlComparisonTitle: settingsData.urlComparisonTitle || "URL-Vergleich",
-        urlComparisonIcon: settingsData.urlComparisonIcon || "ArrowRightLeft",
+        urlComparisonIcon: safeIcon(settingsData.urlComparisonIcon, "ArrowRightLeft"),
         urlComparisonBackgroundColor: settingsData.urlComparisonBackgroundColor || "#ffffff",
         oldUrlLabel: settingsData.oldUrlLabel || "Alte URL (veraltet)",
         newUrlLabel: settingsData.newUrlLabel || "Neue URL (verwenden Sie diese)",
@@ -647,9 +653,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         popupButtonText: settingsData.popupButtonText || "Zeige mir die neue URL",
         specialHintsTitle: settingsData.specialHintsTitle || "Spezielle Hinweise für diese URL",
         specialHintsDescription: settingsData.specialHintsDescription || "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL.",
-        specialHintsIcon: settingsData.specialHintsIcon || "Info",
+        specialHintsIcon: safeIcon(settingsData.specialHintsIcon, "Info"),
         infoTitle: settingsData.infoTitle || "",
-        infoTitleIcon: settingsData.infoTitleIcon || "Info",
+        infoTitleIcon: safeIcon(settingsData.infoTitleIcon, "Info"),
         infoItems: settingsData.infoItems || ["", "", ""],
         infoIcons: settingsData.infoIcons || ["Bookmark", "Share2", "Clock"],
         footerCopyright: settingsData.footerCopyright || "",
@@ -4593,7 +4599,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         </DialogContent>
       </Dialog>
 
-      <Toaster />
     </div>
   );
 }
