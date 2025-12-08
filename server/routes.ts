@@ -576,7 +576,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ruleFilter = 'with_rule';
       }
 
-      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, ruleFilter);
+      const minQuality = parseInt(req.query.minQuality as string) || 0;
+
+      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, ruleFilter, minQuality);
       res.json(result);
     } catch (error) {
       console.error("Paginated tracking entries error:", error);
@@ -608,9 +610,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (exportRequest.format === 'csv') {
           // CSV-Export without referrer
-          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent\n';
+          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Match Qualität\n';
           const csvData = trackingData.map(track =>
-            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}"`
+            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${track.matchQuality || 0}%"`
           ).join('\n');
           
           res.setHeader('Content-Type', 'text/csv');

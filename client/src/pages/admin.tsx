@@ -242,6 +242,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
+  const [statsQualityFilter, setStatsQualityFilter] = useState<string>('0');
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -510,7 +511,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter, statsQualityFilter],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -520,6 +521,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         sortBy: sortBy,
         sortOrder: sortOrder,
         ruleFilter: statsRuleFilter,
+        minQuality: statsQualityFilter,
       });
       
       if (debouncedStatsSearchQuery.trim()) {
@@ -2879,7 +2881,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
                       />
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <Select
                         value={statsRuleFilter}
                         onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
@@ -2891,6 +2893,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <SelectItem value="all">Alle Einträge</SelectItem>
                           <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
                           <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={statsQualityFilter}
+                        onValueChange={setStatsQualityFilter}
+                      >
+                        <SelectTrigger className="w-auto h-9 text-xs">
+                          <SelectValue placeholder="Qualität" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Alle Qualitäten</SelectItem>
+                          <SelectItem value="90">Hohe Qualität (&ge;90%)</SelectItem>
+                          <SelectItem value="50">Mittlere Qualität (&ge;50%)</SelectItem>
+                          <SelectItem value="1">Irgendeine Qualität (&gt;0%)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -3055,6 +3071,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {getSortIcon('path')}
                                   </Button>
                                 </th>
+                                <th className="text-left p-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSort('matchQuality')}
+                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                  >
+                                    Qualität
+                                    {getSortIcon('matchQuality')}
+                                  </Button>
+                                </th>
                                 <th className="text-left p-3 font-medium text-sm">
                                   Regel
                                 </th>
@@ -3078,6 +3105,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </td>
                                   <td className="p-3">
                                     <code className="text-sm text-foreground">{entry.path}</code>
+                                  </td>
+                                  <td className="p-3 text-sm">
+                                    {entry.matchQuality !== undefined ? (
+                                      <Badge variant={entry.matchQuality >= 90 ? "default" : entry.matchQuality >= 50 ? "secondary" : "destructive"}>
+                                        {entry.matchQuality}%
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
                                   </td>
                                   <td className="p-3">
                                     {entry.rules && entry.rules.length > 0 ? (
