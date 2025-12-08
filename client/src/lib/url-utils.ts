@@ -29,6 +29,49 @@ export function generateNewUrl(oldUrl: string, newDomain?: string): string {
   }
 }
 
+export function generateSearchUrl(oldUrl: string, searchBaseUrl: string): string {
+  try {
+    const path = extractPath(oldUrl);
+    // Remove query params and hash
+    let cleanPath = path.split('?')[0].split('#')[0];
+
+    // Remove trailing slash
+    cleanPath = cleanPath.replace(/\/$/, '');
+
+    // Get last segment
+    const parts = cleanPath.split('/');
+    const lastPart = parts[parts.length - 1];
+
+    if (!lastPart) return searchBaseUrl;
+
+    // Check if searchBaseUrl ends with a query parameter (e.g. ?q=) or a slash
+    // If it ends with =, we append directly
+    // If it ends with /, we append
+    // If it doesn't end with / or =, we probably should append / unless it looks like a query param
+
+    let result = searchBaseUrl;
+    if (result.endsWith('=')) {
+        result += lastPart;
+    } else if (result.endsWith('/')) {
+        result += lastPart;
+    } else if (result.includes('?')) {
+         // e.g. /search?type=all
+         // assume we need to add another param or append to existing?
+         // User said: "dahinter wird dynamisch der letzte Teil des Links... mitgegeben"
+         // Assume simple concatenation if user provided "https://search.com?q="
+         result += lastPart;
+    } else {
+         // e.g. /search
+         result += '/' + lastPart;
+    }
+
+    return result;
+  } catch (e) {
+    console.error('Search URL generation error:', e);
+    return searchBaseUrl;
+  }
+}
+
 export function generateUrlWithRule(
   oldUrl: string, 
   rule: {

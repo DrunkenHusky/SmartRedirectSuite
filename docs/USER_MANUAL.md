@@ -12,6 +12,9 @@ Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-A
 - **Header**: Titel, Icon oder Logo sowie die Hintergrundfarbe des oberen Bereichs.
 - **Hauptbereich und Hinweis**: Überschrift, Beschreibung, Warn-Icon und Farben für die Hinweismeldung.
 - **URL-Vergleich**: Titel, Icon, Hintergrundfarbe und Bezeichnungen für alte und neue URL. Optional Standard-Domain und Button-Texte zum Kopieren oder Öffnen der neuen Adresse.
+    - **Standardverhalten bei keiner Übereinstimmung**:
+        - **Standortneue Domain**: Leitet auf eine feste Standard-Domain weiter (Pfad wird übernommen).
+        - **Standort neue App Suchfunktion**: Leitet auf eine Suchseite der neuen Applikation weiter. Der letzte Teil des URL-Pfades wird als Suchbegriff angehängt.
 - **Spezielle Hinweise**: Überschrift, Icon und Standardtext für Hinweise ohne spezifische Regel.
 - **Zusätzliche Informationen**: Titel, Icon und bis zu drei Stichpunkte.
 - **Footer**: Copyright-Hinweis.
