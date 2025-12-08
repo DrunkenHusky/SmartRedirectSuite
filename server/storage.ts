@@ -11,7 +11,7 @@ import type {
   ImportUrlRule,
 } from "@shared/schema";
 import { urlUtils } from "@shared/utils";
-import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
+import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule, findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 // Helper to ensure only relevant flags are stored
@@ -528,7 +528,7 @@ export class FileStorage implements IStorage {
   async getTopUrls(
     limit = 10,
     timeRange?: "24h" | "7d" | "all",
-  ): Promise<Array<{ path: string; count: number }>> {
+  ): Promise<Array<{ path: string; count: number; rule?: UrlRule }>> {
     const trackingData = await this.getTrackingData(timeRange);
     const pathCounts = new Map<string, number>();
 
@@ -540,10 +540,27 @@ export class FileStorage implements IStorage {
       }
     });
 
-    return Array.from(pathCounts.entries())
+    const topPaths = Array.from(pathCounts.entries())
       .map(([path, count]) => ({ path, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
+
+    // Enrich with rule information
+    const rules = await this.ensureRulesLoaded();
+    const settings = await this.getGeneralSettings();
+    const config = {
+      ...RULE_MATCHING_CONFIG,
+      CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
+    };
+
+    return topPaths.map(item => {
+      // Find matching rule for this path
+      const matchDetails = findMatchingRule(item.path, rules, config);
+      return {
+        ...item,
+        rule: matchDetails?.rule
+      };
+    });
   }
 
   // Enhanced statistics methods
@@ -739,7 +756,7 @@ export class FileStorage implements IStorage {
     limit: number = 50,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<{
-    urls: Array<{ path: string; count: number }>;
+    urls: Array<{ path: string; count: number; rule?: UrlRule }>;
     total: number;
     totalPages: number;
     currentPage: number;

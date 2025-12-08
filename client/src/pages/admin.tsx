@@ -505,7 +505,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   // Top 100 URLs - all entries (non-paginated)
-  const { data: topUrlsData, isLoading: top100Loading } = useQuery<Array<{ path: string; count: number }>>({
+  const { data: topUrlsData, isLoading: top100Loading } = useQuery<Array<{ path: string; count: number; rule?: UrlRule }>>({
     queryKey: ["/api/admin/stats/top100", statsFilter],
     enabled: isAuthenticated && statsView === 'top100',
     retry: false,
@@ -2972,6 +2972,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <tr>
                                 <th className="text-left p-3 font-medium">Rang</th>
                                 <th className="text-left p-3 font-medium">URL-Pfad</th>
+                                <th className="text-left p-3 font-medium">Regel</th>
                                 <th className="text-right p-3 font-medium">Aufrufe</th>
                                 <th className="text-left p-3 font-medium">Anteil</th>
                               </tr>
@@ -2985,6 +2986,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <td className="p-3 text-sm font-medium">#{rank}</td>
                                     <td className="p-3">
                                       <code className="text-sm text-foreground">{url.path}</code>
+                                    </td>
+                                    <td className="p-3">
+                                      {url.rule ? (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-auto p-1 text-xs bg-muted hover:bg-muted/80"
+                                          onClick={() => handleEditRule(url.rule!)}
+                                          title={`Regel bearbeiten: ${url.rule.redirectType}`}
+                                        >
+                                          <Edit className="h-3 w-3 mr-1" />
+                                          {url.rule.matcher}
+                                          <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4">
+                                              {url.rule.redirectType === 'domain' ? 'D' : url.rule.redirectType === 'wildcard' ? 'W' : 'P'}
+                                          </Badge>
+                                        </Button>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">-</span>
+                                      )}
                                     </td>
                                     <td className="p-3 text-right text-sm font-medium">{url.count}</td>
                                     <td className="p-3">
