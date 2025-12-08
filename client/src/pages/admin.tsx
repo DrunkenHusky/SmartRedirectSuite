@@ -278,6 +278,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     }));
   };
 
+  // Stats table column widths state
+  const [statsColWidths, setStatsColWidths] = useState<Record<string, string | number>>({
+    timestamp: '15%',
+    oldUrl: '25%',
+    newUrl: '25%',
+    path: '20%',
+    rule: '15%'
+  });
+
+  const handleStatsResize = (key: string, newWidth: number) => {
+    setStatsColWidths(prev => ({
+      ...prev,
+      [key]: newWidth
+    }));
+  };
+
   // Import Preview Sorting & Filtering
   const [previewSortBy, setPreviewSortBy] = useState<'status' | 'matcher' | 'targetUrl'>('status');
   const [previewSortOrder, setPreviewSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -3025,57 +3041,70 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                     ) : (
                       <>
-                        <div className="overflow-hidden">
-                          <table className="w-full">
+                        <div className="overflow-x-auto">
+                          <Table className="table-fixed min-w-[800px]">
                             <thead className="bg-muted/50 border-b">
                               <tr>
-                                <th className="text-left p-3">
+                                <TableHead className="text-left p-3 relative" style={{ width: statsColWidths.timestamp }}>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('timestamp')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
                                   >
-                                    Zeitstempel
-                                    {getSortIcon('timestamp')}
+                                    <span className="truncate flex items-center">
+                                      Zeitstempel
+                                      {getSortIcon('timestamp')}
+                                    </span>
                                   </Button>
-                                </th>
-                                <th className="text-left p-3">
+                                  <ResizeHandle onResize={(w) => handleStatsResize('timestamp', w)} />
+                                </TableHead>
+                                <TableHead className="text-left p-3 relative" style={{ width: statsColWidths.oldUrl }}>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('oldUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
                                   >
-                                    Alte URL
-                                    {getSortIcon('oldUrl')}
+                                    <span className="truncate flex items-center">
+                                      Alte URL
+                                      {getSortIcon('oldUrl')}
+                                    </span>
                                   </Button>
-                                </th>
-                                <th className="text-left p-3">
+                                  <ResizeHandle onResize={(w) => handleStatsResize('oldUrl', w)} />
+                                </TableHead>
+                                <TableHead className="text-left p-3 relative" style={{ width: statsColWidths.newUrl }}>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('newUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
                                   >
-                                    Neue URL
-                                    {getSortIcon('newUrl')}
+                                    <span className="truncate flex items-center">
+                                      Neue URL
+                                      {getSortIcon('newUrl')}
+                                    </span>
                                   </Button>
-                                </th>
-                                <th className="text-left p-3">
+                                  <ResizeHandle onResize={(w) => handleStatsResize('newUrl', w)} />
+                                </TableHead>
+                                <TableHead className="text-left p-3 relative" style={{ width: statsColWidths.path }}>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleSort('path')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
+                                    className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
                                   >
-                                    Pfad
-                                    {getSortIcon('path')}
+                                    <span className="truncate flex items-center">
+                                      Pfad
+                                      {getSortIcon('path')}
+                                    </span>
                                   </Button>
-                                </th>
-                                <th className="text-left p-3 font-medium text-sm">
-                                  Regel
-                                </th>
+                                  <ResizeHandle onResize={(w) => handleStatsResize('path', w)} />
+                                </TableHead>
+                                <TableHead className="text-left p-3 font-medium text-sm relative" style={{ width: statsColWidths.rule }}>
+                                  <span className="truncate block">Regel</span>
+                                  <ResizeHandle onResize={(w) => handleStatsResize('rule', w)} />
+                                </TableHead>
                               </tr>
                             </thead>
                             <tbody>
@@ -3085,17 +3114,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {formatTimestamp(entry.timestamp)}
                                   </td>
                                   <td className="p-3">
-                                    <code className="text-xs text-foreground break-all">
-                                      {entry.oldUrl}
-                                    </code>
+                                    <div className="w-full" title={entry.oldUrl}>
+                                      <code className="text-xs text-foreground bg-muted px-1.5 py-0.5 rounded inline-block max-w-full truncate align-middle">
+                                        {entry.oldUrl}
+                                      </code>
+                                    </div>
                                   </td>
                                   <td className="p-3">
-                                    <code className="text-xs text-foreground break-all">
-                                      {entry.newUrl || 'N/A'}
-                                    </code>
+                                    <div className="w-full" title={entry.newUrl || 'N/A'}>
+                                      <code className="text-xs text-foreground bg-muted px-1.5 py-0.5 rounded inline-block max-w-full truncate align-middle">
+                                        {entry.newUrl || 'N/A'}
+                                      </code>
+                                    </div>
                                   </td>
                                   <td className="p-3">
-                                    <code className="text-sm text-foreground">{entry.path}</code>
+                                    <div className="w-full" title={entry.path}>
+                                      <code className="text-sm text-foreground inline-block max-w-full truncate align-middle">{entry.path}</code>
+                                    </div>
                                   </td>
                                   <td className="p-3">
                                     {entry.rules && entry.rules.length > 0 ? (
@@ -3135,7 +3170,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </tr>
                               ))}
                             </tbody>
-                          </table>
+                          </Table>
                         </div>
                         
                         {/* Pagination Controls for Browser View */}
