@@ -71,6 +71,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { CardDescription } from "@/components/ui/card";
 import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
+import { ResizeHandle } from "@/components/ui/resize-handle";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -258,6 +259,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [previewLimit, setPreviewLimit] = useState(50);
   const [showAllPreview, setShowAllPreview] = useState(false);
   const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
+
+  // Preview table column widths state
+  const [previewColWidths, setPreviewColWidths] = useState<Record<string, string | number>>({
+    status: 100,
+    matcher: '25%',
+    targetUrl: '25%',
+    type: '12%',
+    autoRedirect: '12%',
+    queryParam: '12%'
+  });
+
+  const handlePreviewResize = (key: string, newWidth: number) => {
+    setPreviewColWidths(prev => ({
+      ...prev,
+      [key]: newWidth
+    }));
+  };
 
   // Import Preview Sorting & Filtering
   const [previewSortBy, setPreviewSortBy] = useState<'status' | 'matcher' | 'targetUrl'>('status');
@@ -3581,28 +3599,46 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                         </div>
 
-                        <div className="border rounded-md">
-                          <Table className="table-fixed">
+                        <div className="border rounded-md overflow-x-auto">
+                          <Table className="table-fixed min-w-[800px]">
                               <TableHeader>
                                   <TableRow>
-                                      <TableHead className="w-[100px]">
-                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('status')}>
-                                            Status {previewSortBy === 'status' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                      <TableHead className="relative" style={{ width: previewColWidths.status }}>
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium w-full justify-start" onClick={() => handlePreviewSort('status')}>
+                                            <span className="truncate flex items-center">
+                                              Status {previewSortBy === 'status' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 ml-1 flex-shrink-0" />)}
+                                            </span>
                                           </Button>
+                                          <ResizeHandle onResize={(w) => handlePreviewResize('status', w)} />
                                       </TableHead>
-                                      <TableHead className="w-[25%]">
-                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
-                                            URL-Pfad Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                      <TableHead className="relative" style={{ width: previewColWidths.matcher }}>
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium w-full justify-start" onClick={() => handlePreviewSort('matcher')}>
+                                            <span className="truncate flex items-center">
+                                              URL-Pfad Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 ml-1 flex-shrink-0" />)}
+                                            </span>
                                           </Button>
+                                          <ResizeHandle onResize={(w) => handlePreviewResize('matcher', w)} />
                                       </TableHead>
-                                      <TableHead className="w-[25%]">
-                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
-                                            Ziel-URL {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
+                                      <TableHead className="relative" style={{ width: previewColWidths.targetUrl }}>
+                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium w-full justify-start" onClick={() => handlePreviewSort('targetUrl')}>
+                                            <span className="truncate flex items-center">
+                                              Ziel-URL {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 ml-1 flex-shrink-0" />)}
+                                            </span>
                                           </Button>
+                                          <ResizeHandle onResize={(w) => handlePreviewResize('targetUrl', w)} />
                                       </TableHead>
-                                      <TableHead className="w-[12%]">Typ</TableHead>
-                                      <TableHead className="w-[12%]">Auto-Redirect</TableHead>
-                                      <TableHead className="w-[12%]">Query Parameter</TableHead>
+                                      <TableHead className="relative" style={{ width: previewColWidths.type }}>
+                                        <span className="truncate block">Typ</span>
+                                        <ResizeHandle onResize={(w) => handlePreviewResize('type', w)} />
+                                      </TableHead>
+                                      <TableHead className="relative" style={{ width: previewColWidths.autoRedirect }}>
+                                        <span className="truncate block">Auto-Redirect</span>
+                                        <ResizeHandle onResize={(w) => handlePreviewResize('autoRedirect', w)} />
+                                      </TableHead>
+                                      <TableHead className="relative" style={{ width: previewColWidths.queryParam }}>
+                                        <span className="truncate block">Query Parameter</span>
+                                        <ResizeHandle onResize={(w) => handlePreviewResize('queryParam', w)} />
+                                      </TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
