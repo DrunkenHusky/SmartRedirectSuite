@@ -449,6 +449,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk update rules
+  app.put("/api/admin/rules/bulk", requireAuth, async (req, res) => {
+    try {
+      const { ruleIds, updates } = z.object({
+        ruleIds: z.array(z.string()),
+        updates: updateUrlRuleSchemaWithValidation
+      }).parse(req.body);
+
+      if (ruleIds.length === 0) {
+        res.status(400).json({ error: "No rule IDs provided" });
+        return;
+      }
+
+      console.log(`Bulk update request: ${ruleIds.length} rules`, ruleIds.slice(0, 5));
+
+      const result = await storage.bulkUpdateUrlRules(ruleIds, updates);
+
+      console.log(`Bulk update completed: ${result.updated} updated, ${result.notFound} not found`);
+
+      res.json({
+        success: true,
+        updatedCount: result.updated,
+        notFoundCount: result.notFound,
+        totalRequested: ruleIds.length
+      });
+    } catch (error) {
+      console.error("Bulk update rules error:", error instanceof Error ? error.message : String(error));
+
+      if (error instanceof z.ZodError) {
+        const validationErrors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }));
+
+        res.status(400).json({
+          error: "Validierungsfehler",
+          validationErrors: validationErrors,
+          details: validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(500).json({ error: "Failed to update rules" });
+      }
+    }
+  });
+
   // Bulk delete rules
   app.delete("/api/admin/bulk-delete-rules", requireAuth, async (req, res) => {
     try {

@@ -55,6 +55,10 @@ export interface IStorage {
     rule: Partial<InsertUrlRule>,
   ): Promise<UrlRule | undefined>;
   deleteUrlRule(id: string): Promise<boolean>;
+  bulkUpdateUrlRules(
+    ids: string[],
+    updates: Partial<InsertUrlRule>,
+  ): Promise<{ updated: number; notFound: number }>;
   bulkDeleteUrlRules(
     ids: string[],
   ): Promise<{ deleted: number; notFound: number }>;
@@ -437,6 +441,50 @@ export class FileStorage implements IStorage {
     this.rulesCache = newRules;
 
     return true;
+  }
+
+  async bulkUpdateUrlRules(
+    ids: string[],
+    updates: Partial<InsertUrlRule>,
+  ): Promise<{ updated: number; notFound: number }> {
+    const rules = await this.ensureRulesLoaded();
+    const idsToUpdate = new Set(ids);
+    const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
+
+    // Create shallow copy of rules
+    const newRules = [...rules];
+    let updatedCount = 0;
+    let notFoundCount = 0;
+
+    for (const id of ids) {
+      const index = newRules.findIndex((r) => r.id === id);
+
+      if (index === -1) {
+        notFoundCount++;
+        continue;
+      }
+
+      // Create updated rule
+      const currentRule = newRules[index];
+
+      // Merge updates
+      const updatedRuleRaw = { ...currentRule, ...updates };
+
+      // Sanitize flags based on the redirect type (which might have changed or stayed same)
+      sanitizeRuleFlags(updatedRuleRaw);
+
+      // Re-process the rule
+      newRules[index] = preprocessRule(updatedRuleRaw as UrlRule, config);
+      updatedCount++;
+    }
+
+    if (updatedCount > 0) {
+      await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
+      // Update cache after successful write
+      this.rulesCache = newRules;
+    }
+
+    return { updated: updatedCount, notFound: notFoundCount };
   }
 
   // Atomic bulk delete to prevent race conditions
