@@ -564,8 +564,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const search = req.query.search as string || undefined;
       const sortBy = req.query.sortBy as string || 'timestamp';
       const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'desc';
+      const onlyMatched = req.query.onlyMatched === 'true';
       
-      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder);
+      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, onlyMatched);
       res.json(result);
     } catch (error) {
       console.error("Paginated tracking entries error:", error);

@@ -90,6 +90,7 @@ export interface IStorage {
     search?: string,
     sortBy?: string,
     sortOrder?: "asc" | "desc",
+    onlyMatched?: boolean,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -629,6 +630,7 @@ export class FileStorage implements IStorage {
     search?: string,
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
+    onlyMatched: boolean = false,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -644,6 +646,13 @@ export class FileStorage implements IStorage {
       search && search.trim()
         ? await this.searchTrackingEntries(search, sortBy, sortOrder)
         : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+
+    // Apply onlyMatched filter
+    if (onlyMatched) {
+      filteredEntries = filteredEntries.filter(entry =>
+        (entry.ruleIds && entry.ruleIds.length > 0) || !!entry.ruleId
+      );
+    }
 
     if (!search || !search.trim()) {
       // Only sort if not already sorted by searchTrackingEntries
