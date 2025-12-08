@@ -15,7 +15,7 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 - Regelmäßige Backups der `data/`-Verzeichnisse.
 - Abgelaufene Sessions unter `data/sessions/` bereinigen.
 - Logs und Performance-Metriken gemäß Deployment-Guides überwachen.
-- **Cache neu aufbauen**: Im Admin-Bereich unter "Import/Export" > "Wartung" kann der Regel-Cache manuell neu aufgebaut werden. Dies ist normalerweise nicht erforderlich, kann aber helfen, wenn nach umfangreichen Importen oder Updates Probleme mit Weiterleitungen auftreten.
+- **Cache neu aufbauen**: Im Admin-Bereich unter "System & Daten" > "Wartung" kann der Regel-Cache manuell neu aufgebaut werden. Dies ist normalerweise nicht erforderlich, kann aber helfen, wenn nach umfangreichen Importen oder Updates Probleme mit Weiterleitungen auftreten.
 
 ## Login-Schutz
 - Fehlgeschlagene Anmeldungen werden IP-basiert gezählt.
