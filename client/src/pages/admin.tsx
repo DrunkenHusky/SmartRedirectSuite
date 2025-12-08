@@ -334,6 +334,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     oldUrlLabel: "Alte URL (veraltet)",
     newUrlLabel: "Neue URL (verwenden Sie diese)",
     defaultNewDomain: "https://thisisthenewurl.com/",
+    defaultRedirectMode: "domain" as "domain" | "search",
+    defaultSearchUrl: "",
+    defaultSearchText: "",
     copyButtonText: "URL kopieren",
     openButtonText: "In neuem Tab öffnen",
     showUrlButtonText: "Zeige mir die neue URL",
@@ -600,6 +603,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         oldUrlLabel: settingsData.oldUrlLabel || "Alte URL (veraltet)",
         newUrlLabel: settingsData.newUrlLabel || "Neue URL (verwenden Sie diese)",
         defaultNewDomain: settingsData.defaultNewDomain || "https://thisisthenewurl.com/",
+        defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
+        defaultSearchUrl: settingsData.defaultSearchUrl || "",
+        defaultSearchText: settingsData.defaultSearchText || "",
         copyButtonText: settingsData.copyButtonText || "URL kopieren",
         openButtonText: settingsData.openButtonText || "In neuem Tab öffnen",
         showUrlButtonText: settingsData.showUrlButtonText || "Zeige mir die neue URL",
@@ -2218,20 +2224,89 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                           </div>
                           
-                          {/* Default Domain */}
+                          {/* Default Domain / Search Mode Selection */}
                           <div>
-                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Standard neue Domain
+                            <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
+                              Standardverhalten bei keiner Übereinstimmung
                             </label>
-                            <Input
-                              value={generalSettings.defaultNewDomain}
-                              onChange={(e) => setGeneralSettings({ ...generalSettings, defaultNewDomain: e.target.value })}
-                              placeholder="https://newapplicationurl.com/"
-                              className="bg-white dark:bg-gray-700"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Domain die verwendet wird wenn keine spezielle URL-Regel greift - der Pfad wird automatisch übernommen
-                            </p>
+                            <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-6 mb-4">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="mode-domain"
+                                  name="defaultRedirectMode"
+                                  value="domain"
+                                  checked={generalSettings.defaultRedirectMode === 'domain' || !generalSettings.defaultRedirectMode}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, defaultRedirectMode: 'domain' })}
+                                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="mode-domain" className="cursor-pointer font-normal text-sm text-gray-700 dark:text-gray-300">
+                                  Standortneue Domain
+                                </label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="mode-search"
+                                  name="defaultRedirectMode"
+                                  value="search"
+                                  checked={generalSettings.defaultRedirectMode === 'search'}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, defaultRedirectMode: 'search' })}
+                                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="mode-search" className="cursor-pointer font-normal text-sm text-gray-700 dark:text-gray-300">
+                                  Standort neue App Suchfunktion
+                                </label>
+                              </div>
+                            </div>
+
+                            {(!generalSettings.defaultRedirectMode || generalSettings.defaultRedirectMode === 'domain') ? (
+                              <div className="animate-fade-in space-y-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Standard neue Domain
+                                </label>
+                                <Input
+                                  value={generalSettings.defaultNewDomain}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, defaultNewDomain: e.target.value })}
+                                  placeholder="https://newapplicationurl.com/"
+                                  className="bg-white dark:bg-gray-700"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Domain die verwendet wird wenn keine spezielle URL-Regel greift - der Pfad wird automatisch übernommen
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="space-y-4 animate-fade-in p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Such-URL der neuen Applikation
+                                  </label>
+                                  <Input
+                                    value={generalSettings.defaultSearchUrl || ''}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: e.target.value })}
+                                    placeholder="https://neue-app.ch/search?q="
+                                    className="bg-white dark:bg-gray-700"
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Basis-URL für die Suche. Der letzte Teil des Pfades wird angehängt.
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Anzeigetext (Optional)
+                                  </label>
+                                  <Input
+                                    value={generalSettings.defaultSearchText || ''}
+                                    onChange={(e) => setGeneralSettings({ ...generalSettings, defaultSearchText: e.target.value })}
+                                    placeholder="Seite nicht gefunden - Suchen Sie hier weiter"
+                                    className="bg-white dark:bg-gray-700"
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Text, der auf der Migrationsseite angezeigt wird (überschreibt Standard-Erklärung).
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Show Link Quality Gauge Setting */}

@@ -22,7 +22,7 @@ import {
   Heart,
   Bell
 } from "lucide-react";
-import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
+import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard, generateSearchUrl } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordModal } from "@/components/ui/password-modal";
 import { QualityGauge } from "@/components/ui/quality-gauge";
@@ -195,24 +195,52 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
             }
 
+            // Determine redirect URL based on mode (Search or Default Domain)
+            let calculatedNewUrl = "";
+
+            if (settings.defaultRedirectMode === 'search' && settings.defaultSearchUrl) {
+                // Search Mode
+                calculatedNewUrl = generateSearchUrl(url, settings.defaultSearchUrl);
+
+                // Override explanation if specific text is set
+                if (settings.defaultSearchText) {
+                    setMatchExplanation(settings.defaultSearchText);
+                }
+            } else {
+                // Standard Mode (Domain Replacement)
+                calculatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+            }
+
             if (settings.autoRedirect) {
                // No matching rule, but global auto-redirect is enabled
                shouldAutoRedirect = true;
-               redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
+               redirectUrl = calculatedNewUrl;
                generatedNewUrl = redirectUrl;
             } else {
                // No auto-redirect, generate URL for display
-               generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+               generatedNewUrl = calculatedNewUrl;
             }
           }
-        } else if (settings.autoRedirect) {
-          // Fallback to global auto-redirect if rule check fails
-          shouldAutoRedirect = true;
-          redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
-          generatedNewUrl = redirectUrl;
         } else {
-          // No auto-redirect, generate URL for display
-          generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+          // Rule check failed or no rules logic - Determine redirect URL based on mode
+          let calculatedNewUrl = "";
+
+          if (settings.defaultRedirectMode === 'search' && settings.defaultSearchUrl) {
+              calculatedNewUrl = generateSearchUrl(url, settings.defaultSearchUrl);
+              if (settings.defaultSearchText) {
+                  setMatchExplanation(settings.defaultSearchText);
+              }
+          } else {
+              calculatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+          }
+
+          if (settings.autoRedirect) {
+            shouldAutoRedirect = true;
+            redirectUrl = calculatedNewUrl;
+            generatedNewUrl = redirectUrl;
+          } else {
+            generatedNewUrl = calculatedNewUrl;
+          }
         }
         
         // Handle auto-redirect
@@ -287,7 +315,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       if (matchingRule) {
         setNewUrl(generateUrlWithRule(currentUrl, matchingRule, settings.defaultNewDomain));
       } else {
-        setNewUrl(generateNewUrl(currentUrl, settings.defaultNewDomain));
+        // Handle Default Mode vs Search Mode update
+        if (settings.defaultRedirectMode === 'search' && settings.defaultSearchUrl) {
+            setNewUrl(generateSearchUrl(currentUrl, settings.defaultSearchUrl));
+            if (settings.defaultSearchText) {
+                setMatchExplanation(settings.defaultSearchText);
+            }
+        } else {
+            setNewUrl(generateNewUrl(currentUrl, settings.defaultNewDomain));
+        }
       }
     }
   }, [settings, currentUrl]); // Removed matchingRule from dependencies
