@@ -198,12 +198,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Normalization and specificity prioritization handled by findMatchingRule
       // We prefer the full URL to enable domain matching, but fallback to path if not provided
       const matchDetails = findMatchingRule(url || path, rules, config);
+      const allMatches = findAllMatchingRules(url || path, rules, config);
 
       res.json({
         rule: matchDetails?.rule || null,
         hasMatch: !!matchDetails,
         matchQuality: matchDetails?.quality || 0,
-        matchLevel: matchDetails?.level || 'red'
+        matchLevel: matchDetails?.level || 'red',
+        matchingRules: allMatches.map(m => m.rule)
       });
     } catch (error) {
       console.error("Rule check error:", error);

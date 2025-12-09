@@ -262,6 +262,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               userAgent: safeUserAgent,
               matchQuality: hasMatch ? (quality || 0) : (path === "/" || path === "" ? 100 : 0),
               ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
+              ruleIds: foundRules.map(r => r.id).filter(id => typeof id === 'string' && id.length > 0),
             }),
           });
           
