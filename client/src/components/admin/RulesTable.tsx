@@ -27,6 +27,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useResizableColumns } from "@/hooks/useResizableColumns";
+import { ResizeHandle } from "@/components/ui/resize-handle";
 import type { UrlRule } from "@shared/schema";
 
 interface RulesTableProps {
@@ -56,12 +58,24 @@ const RulesTable = memo(({
 
   const allSelected = rules.length > 0 && rules.every(rule => selectedRuleIds.includes(rule.id));
 
+  const { columnWidths, startResizing } = useResizableColumns({
+    select: '50px',
+    matcher: '19%',
+    targetUrl: '19%',
+    type: '9%',
+    autoRedirect: '9%',
+    queryParams: '9%',
+    info: '14%',
+    createdAt: '9%',
+    actions: '80px'
+  });
+
   return (
     <div className="hidden lg:block w-full">
-      <table className="w-full table-fixed">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 w-[50px]">
+      <Table className="w-full table-fixed">
+        <TableHeader>
+          <TableRow className="border-b border-border">
+            <TableHead className="text-left py-3 px-4 relative" style={{ width: columnWidths.select }}>
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -69,8 +83,9 @@ const RulesTable = memo(({
                 className="rounded border border-gray-300 focus:ring-2 focus:ring-blue-500"
                 title="Alle Regeln auf dieser Seite auswählen/abwählen"
               />
-            </th>
-            <th className="text-left py-3 px-4 w-[19%]">
+              <ResizeHandle onMouseDown={(e) => startResizing('select', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 relative" style={{ width: columnWidths.matcher }}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -84,8 +99,9 @@ const RulesTable = memo(({
                   )}
                 </span>
               </Button>
-            </th>
-            <th className="text-left py-3 px-4 w-[19%]">
+              <ResizeHandle onMouseDown={(e) => startResizing('matcher', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 relative" style={{ width: columnWidths.targetUrl }}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -99,20 +115,25 @@ const RulesTable = memo(({
                   )}
                 </span>
               </Button>
-            </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
+              <ResizeHandle onMouseDown={(e) => startResizing('targetUrl', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: columnWidths.type }}>
               Typ
-            </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
+              <ResizeHandle onMouseDown={(e) => startResizing('type', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: columnWidths.autoRedirect }}>
               Auto-Redirect
-            </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
+              <ResizeHandle onMouseDown={(e) => startResizing('autoRedirect', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: columnWidths.queryParams }}>
               Query Parameter
-            </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[14%]">
+              <ResizeHandle onMouseDown={(e) => startResizing('queryParams', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: columnWidths.info }}>
               Info-Text
-            </th>
-            <th className="text-left py-3 px-4 w-[9%]">
+              <ResizeHandle onMouseDown={(e) => startResizing('info', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 relative" style={{ width: columnWidths.createdAt }}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -126,31 +147,33 @@ const RulesTable = memo(({
                   )}
                 </span>
               </Button>
-            </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[80px]">
+              <ResizeHandle onMouseDown={(e) => startResizing('createdAt', e)} />
+            </TableHead>
+            <TableHead className="text-left py-3 px-4 text-sm font-medium text-foreground relative" style={{ width: columnWidths.actions }}>
               Aktionen
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+              <ResizeHandle onMouseDown={(e) => startResizing('actions', e)} />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rules.map((rule: UrlRule) => (
-            <tr key={rule.id} className="border-b border-border hover:bg-muted/50">
-              <td className="py-3 px-4 w-12">
+            <TableRow key={rule.id} className="border-b border-border hover:bg-muted/50">
+              <TableCell className="py-3 px-4">
                 <input
                   type="checkbox"
                   checked={selectedRuleIds.includes(rule.id)}
                   onChange={() => onSelectRule(rule.id)}
                   className="rounded border border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell className="py-3 px-4">
                 <div className="w-full" title={rule.matcher}>
                   <Badge variant="secondary" className="truncate max-w-full inline-block align-middle">
                     {rule.matcher}
                   </Badge>
                 </div>
-              </td>
-              <td className="py-3 px-4 text-sm">
+              </TableCell>
+              <TableCell className="py-3 px-4 text-sm">
                 {rule.targetUrl ? (
                   <div className="w-full" title={rule.targetUrl}>
                     <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
@@ -162,18 +185,18 @@ const RulesTable = memo(({
                     Automatisch generiert
                   </span>
                 )}
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell className="py-3 px-4">
                 <Badge variant={(rule as any).redirectType === 'wildcard' ? 'destructive' : (rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
                   {(rule as any).redirectType === 'wildcard' ? 'Vollständig' : (rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
                 </Badge>
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell className="py-3 px-4">
                 <Badge variant={rule.autoRedirect ? 'default' : 'secondary'}>
                   {rule.autoRedirect ? '✓ Aktiv' : '✗ Inaktiv'}
                 </Badge>
-              </td>
-              <td className="py-3 px-4 text-xs">
+              </TableCell>
+              <TableCell className="py-3 px-4 text-xs">
                 {rule.discardQueryParams ? (
                   <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
                     Entfernen
@@ -185,14 +208,14 @@ const RulesTable = memo(({
                 ) : (
                   <span className="text-muted-foreground">-</span>
                 )}
-              </td>
-              <td className="py-3 px-4 text-sm text-muted-foreground">
+              </TableCell>
+              <TableCell className="py-3 px-4 text-sm text-muted-foreground">
                 {rule.infoText ? rule.infoText.substring(0, 50) + "..." : "-"}
-              </td>
-              <td className="py-3 px-4 text-xs text-muted-foreground">
+              </TableCell>
+              <TableCell className="py-3 px-4 text-xs text-muted-foreground">
                 {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell className="py-3 px-4">
                 <div className="flex space-x-2">
                   <Button
                     variant="ghost"
@@ -233,11 +256,11 @@ const RulesTable = memo(({
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 });
