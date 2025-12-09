@@ -4,6 +4,24 @@ Diese Dokumentation richtet sich an Administratoren und DevOps-Teams. Sie bünde
 
 Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhängen von `?admin=true` an die Basis-URL erreichbar.
 
+## Fallback Strategie (Smart Search Redirect)
+Die Anwendung unterstützt zwei Strategien für den Umgang mit URLs, für die **keine spezifische Regel** gefunden wurde:
+
+1.  **Standard Domain-Ersatz (Mode A)**:
+    - Das Legacy-Verhalten. Es wird lediglich die Domain ausgetauscht (z.B. `old.com` -> `new.com`), der Rest des Pfades bleibt erhalten.
+    - Konfigurierbar über "Standard neue Domain".
+
+2.  **Smart Search Redirect (Mode B)**:
+    - Diese neue Strategie extrahiert das **letzte Pfadsegment** der angeforderten URL und nutzt es als Suchbegriff auf der neuen Plattform.
+    - Beispiel: `old.com/products/shoes/red-sneakers` -> Suche nach `red-sneakers` auf der Zielseite.
+    - Konfigurierbar unter "Allgemeine Einstellungen" > "Fallback Strategie".
+    - Benötigt eine **Such-Basis-URL** (z.B. `https://shop.com/search?q=`).
+
+### Priorisierung
+1.  **Exakte Regel**: Eine definierte Regel passt genau auf den Pfad.
+2.  **Partielle Regel**: Eine Regel passt auf einen Teil des Pfades (Prefix).
+3.  **Fallback Strategie**: Wenn keine Regel passt, greift die konfigurierte Fallback-Strategie (A oder B).
+
 ## Installations- und Deployment-Ressourcen
 - [INSTALLATION.md](./INSTALLATION.md): Schnellstart für lokale Entwicklung.
 - [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md): Leitfaden für Produktionsumgebungen.

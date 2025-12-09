@@ -2,6 +2,28 @@
  * URL-Hilfsfunktionen für die Migration
  */
 
+export function generateSearchUrl(oldUrl: string, searchBaseUrl: string): string {
+  try {
+    const path = extractPath(oldUrl);
+    // Remove query params and hash for extraction
+    const cleanPath = path.split('?')[0].split('#')[0];
+    // Remove trailing slash
+    const noTrailing = cleanPath.replace(/\/$/, '');
+    // Get last segment
+    const lastSegment = noTrailing.split('/').pop() || '';
+
+    // Ensure searchBaseUrl ends with something appropriate?
+    // "Append this term to the Search Base URL."
+    // If base is "https://new.com/search?q=", appending "shoes" works.
+    // If base is "https://new.com/search/", appending "shoes" works.
+
+    return searchBaseUrl + lastSegment;
+  } catch (error) {
+    console.error('Search URL generation error:', error);
+    return searchBaseUrl;
+  }
+}
+
 export function generateNewUrl(oldUrl: string, newDomain?: string): string {
   try {
     let url = oldUrl;

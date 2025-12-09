@@ -337,6 +337,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchLowExplanation: "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
+    fallbackStrategy: (settingsData.fallbackStrategy as "domain" | "search") || "domain",
+    searchBaseUrl: settingsData.searchBaseUrl || "",
+    fallbackMessage: settingsData.fallbackMessage || "",
   });
 
   // Statistics filters and state
@@ -603,6 +606,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         matchLowExplanation: settingsData.matchLowExplanation || "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
         matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
         matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
+        fallbackStrategy: (settingsData.fallbackStrategy as "domain" | "search") || "domain",
+        searchBaseUrl: settingsData.searchBaseUrl || "",
+        fallbackMessage: settingsData.fallbackMessage || "",
       });
     }
   }, [settingsData]);
@@ -1953,6 +1959,93 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
                             </div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* 8. Fallback Strategy Settings */}
+                      <div className="space-y-6 mt-8">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">8</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">Fallback Strategie (Kein Treffer)</h3>
+                            <p className="text-sm text-muted-foreground">Verhalten wenn keine spezifische Regel zutrifft</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="space-y-4">
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              Strategie auswählen
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div
+                                className={`border rounded-lg p-4 cursor-pointer transition-colors ${generalSettings.fallbackStrategy === 'domain' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                                onClick={() => setGeneralSettings({ ...generalSettings, fallbackStrategy: 'domain' })}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 ${generalSettings.fallbackStrategy === 'domain' ? 'border-primary' : 'border-muted-foreground'}`}>
+                                    {generalSettings.fallbackStrategy === 'domain' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium block mb-1">Standard Domain-Ersatz (Mode A)</span>
+                                    <p className="text-xs text-muted-foreground">
+                                      Ersetzt nur den Host durch die "Standard neue Domain". Der Pfad bleibt erhalten. (Legacy Verhalten)
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div
+                                className={`border rounded-lg p-4 cursor-pointer transition-colors ${generalSettings.fallbackStrategy === 'search' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                                onClick={() => setGeneralSettings({ ...generalSettings, fallbackStrategy: 'search' })}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 ${generalSettings.fallbackStrategy === 'search' ? 'border-primary' : 'border-muted-foreground'}`}>
+                                    {generalSettings.fallbackStrategy === 'search' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium block mb-1">Smart Search Redirect (Mode B)</span>
+                                    <p className="text-xs text-muted-foreground">
+                                      Extrahiert das letzte Pfadsegment und leitet auf eine Suche weiter.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {generalSettings.fallbackStrategy === 'search' && (
+                            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-4 duration-300">
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                  Such-Basis-URL <span className="text-red-500">*</span>
+                                </label>
+                                <Input
+                                  value={generalSettings.searchBaseUrl}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, searchBaseUrl: e.target.value })}
+                                  placeholder="https://new-app.com/search?q="
+                                  className={`bg-white dark:bg-gray-700 ${generalSettings.fallbackStrategy === 'search' && !generalSettings.searchBaseUrl ? 'border-red-500' : ''}`}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Der extrahierte Suchbegriff wird an diese URL angehängt. (z.B. https://shop.com/suche?q=)
+                                </p>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                  Fallback Nachricht (Optional)
+                                </label>
+                                <Input
+                                  value={generalSettings.fallbackMessage}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, fallbackMessage: e.target.value })}
+                                  placeholder="Kein direkter Treffer gefunden. Wir haben für Sie nach ähnlichen Inhalten gesucht."
+                                  className="bg-white dark:bg-gray-700"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Wird dem Benutzer angezeigt, wenn keine automatische Weiterleitung erfolgt. Überschreibt den Standard "Keine Übereinstimmung" Text.
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 

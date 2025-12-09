@@ -22,7 +22,7 @@ import {
   Heart,
   Bell
 } from "lucide-react";
-import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
+import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard, generateSearchUrl } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordModal } from "@/components/ui/password-modal";
 import { QualityGauge } from "@/components/ui/quality-gauge";
@@ -195,24 +195,46 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
             }
 
+            // Handle Fallback Strategy (Mode B) if enabled
+            if (settings.fallbackStrategy === 'search' && settings.searchBaseUrl) {
+                const searchUrl = generateSearchUrl(url, settings.searchBaseUrl);
+                generatedNewUrl = searchUrl;
+                redirectUrl = searchUrl;
+
+                // Override explanation if custom message provided
+                if (settings.fallbackMessage) {
+                    setMatchExplanation(settings.fallbackMessage);
+                } else if (settings.matchNoneExplanation) {
+                    // Fallback to matchNoneExplanation if fallbackMessage is empty, but append hint?
+                    // Actually, if strategy is search, matchNoneExplanation might be confusing if it says "Standard-Seite".
+                    // But we can't change the default explanation text dynamically easily without updating settings.
+                    // Ideally, user updates matchNoneExplanation OR provides fallbackMessage.
+                    // Priority: fallbackMessage > matchNoneExplanation
+                }
+            } else {
+                // Mode A: Simple Domain Replacement
+                generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                redirectUrl = generatedNewUrl;
+            }
+
             if (settings.autoRedirect) {
                // No matching rule, but global auto-redirect is enabled
                shouldAutoRedirect = true;
-               redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
-               generatedNewUrl = redirectUrl;
-            } else {
-               // No auto-redirect, generate URL for display
-               generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
             }
           }
-        } else if (settings.autoRedirect) {
-          // Fallback to global auto-redirect if rule check fails
-          shouldAutoRedirect = true;
-          redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
-          generatedNewUrl = redirectUrl;
         } else {
-          // No auto-redirect, generate URL for display
-          generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+          // Rule check failed or network error
+          // Fallback to local logic
+          if (settings.fallbackStrategy === 'search' && settings.searchBaseUrl) {
+             generatedNewUrl = generateSearchUrl(url, settings.searchBaseUrl);
+          } else {
+             generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+          }
+          redirectUrl = generatedNewUrl;
+
+          if (settings.autoRedirect) {
+             shouldAutoRedirect = true;
+          }
         }
         
         // Handle auto-redirect

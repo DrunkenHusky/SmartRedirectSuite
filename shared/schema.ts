@@ -260,10 +260,6 @@ export const generalSettingsSchema = z.object({
   autoRedirect: z.boolean()
     .default(false),
 
-  // Encode imported URLs
-  encodeImportedUrls: z.boolean()
-    .default(true),
-
   // Show link quality gauge
   showLinkQualityGauge: z.boolean()
     .default(true),
@@ -293,6 +289,15 @@ export const generalSettingsSchema = z.object({
     .min(1, "Text für keine Übereinstimmung darf nicht leer sein")
     .max(500, "Text für keine Übereinstimmung ist zu lang")
     .default("Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet."),
+
+  // Fallback Strategy
+  fallbackStrategy: z.enum(['domain', 'search']).default('domain'),
+  searchBaseUrl: z.string()
+    .max(2000, "Such-Basis-URL ist zu lang")
+    .optional(),
+  fallbackMessage: z.string()
+    .max(500, "Fallback-Nachricht ist zu lang")
+    .optional(),
     
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict(); // Prevent extra properties
