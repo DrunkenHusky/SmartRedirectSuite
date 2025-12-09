@@ -337,9 +337,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchLowExplanation: "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
-    fallbackStrategy: (settingsData.fallbackStrategy as "domain" | "search") || "domain",
-    searchBaseUrl: settingsData.searchBaseUrl || "",
-    fallbackMessage: settingsData.fallbackMessage || "",
+    fallbackStrategy: "domain" as "domain" | "search",
+    searchBaseUrl: "",
+    fallbackMessage: "",
   });
 
   // Statistics filters and state
