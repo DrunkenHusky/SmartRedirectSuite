@@ -52,6 +52,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vite": "^7.2.7",
     "wouter": "^3.8.1",
+    "cross-env": "^10.1.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -65,7 +66,6 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "cross-env": "^10.1.0",
     "semantic-release": "^25.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
