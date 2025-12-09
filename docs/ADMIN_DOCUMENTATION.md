@@ -11,6 +11,9 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 - [API_DOCUMENTATION.md](./API_DOCUMENTATION.md): REST-API für Automatisierung und Monitoring.
 - `Dockerfile.demo`: Demo-Container mit automatischem 24h-Reset für Tests.
 
+## Benutzeroberfläche
+- **Tabellen-Resizing**: In der "Regeln"-Ansicht und der "Import-Vorschau" können Spaltenbreiten individuell angepasst werden. Bewegen Sie dazu die Maus an den rechten Rand einer Spaltenüberschrift, bis der Cursor sich ändert, und ziehen Sie die Spalte auf die gewünschte Breite.
+
 ## Wartung
 - Regelmäßige Backups der `data/`-Verzeichnisse.
 - Abgelaufene Sessions unter `data/sessions/` bereinigen.

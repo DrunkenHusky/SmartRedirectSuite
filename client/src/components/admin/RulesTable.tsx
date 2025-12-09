@@ -1,13 +1,5 @@
 
 import React, { memo } from 'react';
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,6 +20,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { UrlRule } from "@shared/schema";
+import { useResizableColumns } from "@/hooks/useResizableColumns";
+import { ResizeHandle } from "@/components/ui/resize-handle";
 
 interface RulesTableProps {
   rules: UrlRule[];
@@ -56,12 +50,29 @@ const RulesTable = memo(({
 
   const allSelected = rules.length > 0 && rules.every(rule => selectedRuleIds.includes(rule.id));
 
+  const { columnWidths, handleResizeStart } = useResizableColumns({
+    initialWidths: {
+      checkbox: 50,
+      matcher: 250,
+      targetUrl: 250,
+      type: 120,
+      auto: 100,
+      query: 120,
+      info: 180,
+      createdAt: 130,
+      actions: 80,
+    }
+  });
+
   return (
-    <div className="hidden lg:block w-full">
-      <table className="w-full table-fixed">
+    <div className="hidden lg:block w-full overflow-x-auto">
+      <table className="w-full table-fixed border-collapse">
         <thead>
-          <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 w-[50px]">
+          <tr className="border-b border-border bg-muted/50">
+            <th
+              className="text-left py-3 px-4 relative"
+              style={{ width: columnWidths.checkbox }}
+            >
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -69,73 +80,106 @@ const RulesTable = memo(({
                 className="rounded border border-gray-300 focus:ring-2 focus:ring-blue-500"
                 title="Alle Regeln auf dieser Seite auswählen/abwählen"
               />
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('checkbox', e)} />
             </th>
-            <th className="text-left py-3 px-4 w-[19%]">
+            <th
+              className="text-left py-3 px-4 relative"
+              style={{ width: columnWidths.matcher }}
+            >
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                className="h-auto p-0 font-medium text-sm hover:bg-transparent w-full justify-start"
                 onClick={() => onSort('matcher')}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 truncate">
                   URL-Pfad Matcher
                   {sortConfig.by === 'matcher' && (
-                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
                 </span>
               </Button>
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('matcher', e)} />
             </th>
-            <th className="text-left py-3 px-4 w-[19%]">
+            <th
+              className="text-left py-3 px-4 relative"
+              style={{ width: columnWidths.targetUrl }}
+            >
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                className="h-auto p-0 font-medium text-sm hover:bg-transparent w-full justify-start"
                 onClick={() => onSort('targetUrl')}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 truncate">
                   Ziel-URL
                   {sortConfig.by === 'targetUrl' && (
-                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
                 </span>
               </Button>
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('targetUrl', e)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
+            <th
+              className="text-left py-3 px-4 text-sm font-medium text-foreground relative"
+              style={{ width: columnWidths.type }}
+            >
               Typ
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('type', e)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
+            <th
+              className="text-left py-3 px-4 text-sm font-medium text-foreground relative"
+              style={{ width: columnWidths.auto }}
+            >
               Auto-Redirect
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('auto', e)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[9%]">
+            <th
+              className="text-left py-3 px-4 text-sm font-medium text-foreground relative"
+              style={{ width: columnWidths.query }}
+            >
               Query Parameter
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('query', e)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[14%]">
+            <th
+              className="text-left py-3 px-4 text-sm font-medium text-foreground relative"
+              style={{ width: columnWidths.info }}
+            >
               Info-Text
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('info', e)} />
             </th>
-            <th className="text-left py-3 px-4 w-[9%]">
+            <th
+              className="text-left py-3 px-4 relative"
+              style={{ width: columnWidths.createdAt }}
+            >
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto p-0 font-medium text-sm hover:bg-transparent"
+                className="h-auto p-0 font-medium text-sm hover:bg-transparent w-full justify-start"
                 onClick={() => onSort('createdAt')}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 truncate">
                   Erstellt am
                   {sortConfig.by === 'createdAt' && (
-                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
                 </span>
               </Button>
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('createdAt', e)} />
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground w-[80px]">
+            <th
+              className="text-left py-3 px-4 text-sm font-medium text-foreground relative"
+              style={{ width: columnWidths.actions }}
+            >
               Aktionen
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('actions', e)} />
             </th>
           </tr>
         </thead>
         <tbody>
           {rules.map((rule: UrlRule) => (
             <tr key={rule.id} className="border-b border-border hover:bg-muted/50">
-              <td className="py-3 px-4 w-12">
+              <td className="py-3 px-4 truncate">
                 <input
                   type="checkbox"
                   checked={selectedRuleIds.includes(rule.id)}
@@ -175,21 +219,21 @@ const RulesTable = memo(({
               </td>
               <td className="py-3 px-4 text-xs">
                 {rule.discardQueryParams ? (
-                  <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
+                  <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200 inline-block max-w-full truncate">
                     Entfernen
                   </Badge>
                 ) : rule.forwardQueryParams ? (
-                  <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200 inline-block max-w-full truncate">
                     Behalten
                   </Badge>
                 ) : (
                   <span className="text-muted-foreground">-</span>
                 )}
               </td>
-              <td className="py-3 px-4 text-sm text-muted-foreground">
-                {rule.infoText ? rule.infoText.substring(0, 50) + "..." : "-"}
+              <td className="py-3 px-4 text-sm text-muted-foreground truncate" title={rule.infoText || ""}>
+                {rule.infoText ? rule.infoText : "-"}
               </td>
-              <td className="py-3 px-4 text-xs text-muted-foreground">
+              <td className="py-3 px-4 text-xs text-muted-foreground truncate">
                 {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
               </td>
               <td className="py-3 px-4">
