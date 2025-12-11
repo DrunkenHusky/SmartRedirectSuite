@@ -1962,6 +1962,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
+
                       {/* 8. Fallback Strategy Settings */}
                       <div className="space-y-6 mt-8">
                         <div className="flex items-center gap-3 border-b pb-3">
@@ -2013,9 +2014,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                           </div>
 
-                          {generalSettings.fallbackStrategy === 'search' && (
-                            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-4 duration-300">
-                              <div>
+                          <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            {generalSettings.fallbackStrategy === 'search' && (
+                              <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                   Such-Basis-URL <span className="text-red-500">*</span>
                                 </label>
@@ -2029,14 +2030,29 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   Der extrahierte Suchbegriff wird an diese URL angehängt. (z.B. https://shop.com/suche?q=)
                                 </p>
                               </div>
-                            </div>
-                          )}
+                            )}
 
+                            {/* Default Domain */}
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Standard neue Domain
+                              </label>
+                              <Input
+                                value={generalSettings.defaultNewDomain}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, defaultNewDomain: e.target.value })}
+                                placeholder="https://newapplicationurl.com/"
+                                className="bg-white dark:bg-gray-700"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Domain die verwendet wird wenn keine spezielle URL-Regel greift - der Pfad wird automatisch übernommen
+                              </p>
+                            </div>
+                          </div>
 
                           {/* Special Hints Sub-section */}
                           <div className="pt-8 border-t border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-3 mb-6">
-                              <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-semibold">3.1</div>
+                              <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-semibold">8.1</div>
                               <div>
                                 <h4 className="text-base font-semibold text-foreground">Spezielle Hinweise</h4>
                                 <p className="text-sm text-muted-foreground">Zusatzbereich der immer sichtbar ist</p>
