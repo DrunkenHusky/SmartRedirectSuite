@@ -1967,7 +1967,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">8</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Fallback Strategie (Kein Treffer)</h3>
+                            <h3 className="text-lg font-semibold text-foreground">Fallback Strategie & Standardwerte</h3>
                             <p className="text-sm text-muted-foreground">Verhalten wenn keine spezifische Regel zutrifft</p>
                           </div>
                         </div>
@@ -2029,23 +2029,75 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   Der extrahierte Suchbegriff wird an diese URL angehängt. (z.B. https://shop.com/suche?q=)
                                 </p>
                               </div>
-
-                              <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Fallback Nachricht (Optional)
-                                </label>
-                                <Input
-                                  value={generalSettings.fallbackMessage}
-                                  onChange={(e) => setGeneralSettings({ ...generalSettings, fallbackMessage: e.target.value })}
-                                  placeholder="Kein direkter Treffer gefunden. Wir haben für Sie nach ähnlichen Inhalten gesucht."
-                                  className="bg-white dark:bg-gray-700"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Wird dem Benutzer angezeigt, wenn keine automatische Weiterleitung erfolgt. Überschreibt den Standard "Keine Übereinstimmung" Text.
-                                </p>
-                              </div>
                             </div>
                           )}
+
+
+                          {/* Special Hints Sub-section */}
+                          <div className="pt-8 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-semibold">3.1</div>
+                              <div>
+                                <h4 className="text-base font-semibold text-foreground">Spezielle Hinweise</h4>
+                                <p className="text-sm text-muted-foreground">Zusatzbereich der immer sichtbar ist</p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                  Titel
+                                </label>
+                                <Input
+                                  value={generalSettings.specialHintsTitle}
+                                  onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsTitle: e.target.value })}
+                                  placeholder="Bitte beachte folgendes für diese URL:"
+                                  className="bg-white dark:bg-gray-700"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                  Icon
+                                </label>
+                                <Select value={generalSettings.specialHintsIcon} onValueChange={(value) =>
+                                  setGeneralSettings({ ...generalSettings, specialHintsIcon: value as any })
+                                }>
+                                  <SelectTrigger className="bg-white dark:bg-gray-700">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">🚫 Kein Icon</SelectItem>
+                                    <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
+                                    <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                    <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                    <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                    <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                    <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
+                                    <SelectItem value="Share2">📤 Teilen</SelectItem>
+                                    <SelectItem value="Clock">⏰ Zeit</SelectItem>
+                                    <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
+                                    <SelectItem value="Star">⭐ Stern</SelectItem>
+                                    <SelectItem value="Heart">❤️ Herz</SelectItem>
+                                    <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Standard-Beschreibung
+                              </label>
+                              <Textarea
+                                value={generalSettings.specialHintsDescription}
+                                onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsDescription: e.target.value })}
+                                placeholder="Die neue URL wurde automatisch generiert. Es kann sein, dass sie nicht wie erwartet funktioniert. Falls die URL ungültig ist, nutze bitte die Suchfunktion in der neuen Applikation, um den gewünschten Inhalt zu finden."
+                                rows={3}
+                                className={`bg-white dark:bg-gray-700 ${!generalSettings.specialHintsDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Wird angezeigt, wenn keine passende URL-Regel aktiv ist
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -2426,71 +2478,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                           </div>
                           
-                          {/* Special Hints Sub-section */}
-                          <div className="pt-8 border-t border-gray-200 dark:border-gray-700">
-                            <div className="flex items-center gap-3 mb-6">
-                              <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-semibold">3.1</div>
-                              <div>
-                                <h4 className="text-base font-semibold text-foreground">Spezielle Hinweise</h4>
-                                <p className="text-sm text-muted-foreground">Zusatzbereich der immer sichtbar ist</p>
-                              </div>
-                            </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel
-                              </label>
-                              <Input
-                                value={generalSettings.specialHintsTitle}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsTitle: e.target.value })}
-                                placeholder="Bitte beachte folgendes für diese URL:"
-                                className="bg-white dark:bg-gray-700"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon
-                              </label>
-                              <Select value={generalSettings.specialHintsIcon} onValueChange={(value) => 
-                                setGeneralSettings({ ...generalSettings, specialHintsIcon: value as any })
-                              }>
-                                <SelectTrigger className="bg-white dark:bg-gray-700">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                  <SelectItem value="Star">⭐ Stern</SelectItem>
-                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Standard-Beschreibung
-                            </label>
-                            <Textarea
-                              value={generalSettings.specialHintsDescription}
-                              onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsDescription: e.target.value })}
-                              placeholder="Die neue URL wurde automatisch generiert. Es kann sein, dass sie nicht wie erwartet funktioniert. Falls die URL ungültig ist, nutze bitte die Suchfunktion in der neuen Applikation, um den gewünschten Inhalt zu finden."
-                              rows={3}
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.specialHintsDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Wird angezeigt, wenn keine passende URL-Regel aktiv ist
-                            </p>
-                          </div>
-                          </div>
                         </div>
                       </div>
 
