@@ -1977,7 +1977,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Strategie auswählen
                             </label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div
+                              <div 
                                 className={`border rounded-lg p-4 cursor-pointer transition-colors ${generalSettings.fallbackStrategy === 'domain' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
                                 onClick={() => setGeneralSettings({ ...generalSettings, fallbackStrategy: 'domain' })}
                               >
@@ -1993,8 +1993,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </div>
                                 </div>
                               </div>
-
-                              <div
+                              
+                              <div 
                                 className={`border rounded-lg p-4 cursor-pointer transition-colors ${generalSettings.fallbackStrategy === 'search' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
                                 onClick={() => setGeneralSettings({ ...generalSettings, fallbackStrategy: 'search' })}
                               >
@@ -2029,7 +2029,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   Der extrahierte Suchbegriff wird an diese URL angehängt. (z.B. https://shop.com/suche?q=)
                                 </p>
                               </div>
-
+                              
                               <div>
                                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                   Fallback Nachricht (Optional)

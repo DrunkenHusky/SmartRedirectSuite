@@ -12,12 +12,11 @@ export function generateSearchUrl(oldUrl: string, searchBaseUrl: string): string
     // Get last segment
     const lastSegment = noTrailing.split('/').pop() || '';
 
-    // Ensure searchBaseUrl ends with something appropriate?
-    // "Append this term to the Search Base URL."
-    // If base is "https://new.com/search?q=", appending "shoes" works.
-    // If base is "https://new.com/search/", appending "shoes" works.
-
-    return searchBaseUrl + lastSegment;
+    // Decode the segment to ensure we return a human-readable string (e.g., "my file.pdf" instead of "my%20file.pdf").
+    // Browsers will handle the re-encoding when the full URL is visited.
+    let decodedSegment = decodeURIComponent(lastSegment);
+    
+    return searchBaseUrl + decodedSegment;
   } catch (error) {
     console.error('Search URL generation error:', error);
     return searchBaseUrl;

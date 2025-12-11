@@ -200,7 +200,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 const searchUrl = generateSearchUrl(url, settings.searchBaseUrl);
                 generatedNewUrl = searchUrl;
                 redirectUrl = searchUrl;
-
+                
                 // Override explanation if custom message provided
                 if (settings.fallbackMessage) {
                     setMatchExplanation(settings.fallbackMessage);
@@ -231,7 +231,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
              generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
           }
           redirectUrl = generatedNewUrl;
-
+          
           if (settings.autoRedirect) {
              shouldAutoRedirect = true;
           }
