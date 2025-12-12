@@ -74,3 +74,27 @@ export async function resetLoginAttempts(ip: string): Promise<void> {
     await writeStore(store);
   }
 }
+
+export async function resetAllLoginAttempts(): Promise<void> {
+  await writeStore({});
+}
+
+export async function getBlockedIps(): Promise<Array<{ ip: string; attempts: number; blockedUntil?: number }>> {
+  const store = await readStore();
+  const now = Date.now();
+  return Object.entries(store)
+    .filter(([_, entry]) => entry.blockedUntil && entry.blockedUntil > now)
+    .map(([ip, entry]) => ({
+      ip,
+      attempts: entry.attempts,
+      blockedUntil: entry.blockedUntil,
+    }));
+}
+
+export async function blockIp(ip: string): Promise<void> {
+  const store = await readStore();
+  const entry = store[ip] || { attempts: 0 };
+  entry.blockedUntil = Date.now() + LOGIN_BLOCK_DURATION_MS;
+  store[ip] = entry;
+  await writeStore(store);
+}
