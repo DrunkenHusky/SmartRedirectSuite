@@ -195,8 +195,11 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
             }
 
+            const isRootPath = path === "/" || path === "";
+
             // Handle Fallback Strategy (Mode B) if enabled
-            if (settings.fallbackStrategy === 'search' && settings.searchBaseUrl) {
+            // IMPORTANT: Do NOT use search fallback for Root Path (always redirect to target domain for root)
+            if (settings.fallbackStrategy === 'search' && settings.searchBaseUrl && !isRootPath) {
                 const searchUrl = generateSearchUrl(url, settings.searchBaseUrl);
                 generatedNewUrl = searchUrl;
                 redirectUrl = searchUrl;
@@ -204,15 +207,9 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 // Override explanation if custom message provided
                 if (settings.fallbackMessage) {
                     setMatchExplanation(settings.fallbackMessage);
-                } else if (settings.matchNoneExplanation) {
-                    // Fallback to matchNoneExplanation if fallbackMessage is empty, but append hint?
-                    // Actually, if strategy is search, matchNoneExplanation might be confusing if it says "Standard-Seite".
-                    // But we can't change the default explanation text dynamically easily without updating settings.
-                    // Ideally, user updates matchNoneExplanation OR provides fallbackMessage.
-                    // Priority: fallbackMessage > matchNoneExplanation
                 }
             } else {
-                // Mode A: Simple Domain Replacement
+                // Mode A: Simple Domain Replacement (or Root Path fallback for Mode B)
                 generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
                 redirectUrl = generatedNewUrl;
             }
@@ -225,7 +222,9 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         } else {
           // Rule check failed or network error
           // Fallback to local logic
-          if (settings.fallbackStrategy === 'search' && settings.searchBaseUrl) {
+          const isRootPath = path === "/" || path === "";
+
+          if (settings.fallbackStrategy === 'search' && settings.searchBaseUrl && !isRootPath) {
              generatedNewUrl = generateSearchUrl(url, settings.searchBaseUrl);
           } else {
              generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
