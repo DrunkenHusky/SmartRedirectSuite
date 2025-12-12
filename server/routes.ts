@@ -13,7 +13,7 @@ import {
 import { urlRuleSchemaWithValidation, updateUrlRuleSchemaWithValidation } from "@shared/validation";
 import { z } from "zod";
 import { LocalFileUploadService } from "./localFileUpload";
-import { bruteForceProtection, recordLoginFailure, resetLoginAttempts } from "./middleware/bruteForce";
+import { bruteForceProtection, recordLoginFailure, resetLoginAttempts, resetAllLoginAttempts, getBlockedIps, blockIp } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
 import { findMatchingRule, findAllMatchingRules } from "@shared/ruleMatching";
@@ -22,6 +22,7 @@ import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
 import multer from 'multer';
 import fs from 'fs';
+import { utils, write } from '@e965/xlsx';
 
 
 
@@ -506,6 +507,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete all stats error:", error);
       res.status(500).json({ error: "Fehler beim Löschen aller Statistiken" });
+    }
+  });
+
+  // Get all blocked IPs
+  app.get("/api/admin/blocked-ips", requireAuth, async (_req, res) => {
+    try {
+      const ips = await getBlockedIps();
+      res.json(ips);
+    } catch (error) {
+      console.error("Get blocked IPs error:", error);
+      res.status(500).json({ error: "Fehler beim Abrufen der blockierten IP-Adressen" });
+    }
+  });
+
+  // Manually block an IP
+  app.post("/api/admin/blocked-ips", requireAuth, async (req, res) => {
+    try {
+      // Use regex for IP validation to be compatible with different zod versions
+      const ipSchema = z.string().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/);
+      const { ip } = z.object({ ip: ipSchema }).parse(req.body);
+      await blockIp(ip);
+      res.json({ success: true, message: `IP ${ip} wurde blockiert.` });
+    } catch (error) {
+      console.error("Block IP error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Ungültige IP-Adresse" });
+      } else {
+        res.status(500).json({ error: "Fehler beim Blockieren der IP-Adresse" });
+      }
+    }
+  });
+
+  // Unblock specific IP
+  app.delete("/api/admin/blocked-ips/:ip", requireAuth, async (req, res) => {
+    try {
+      const { ip } = req.params;
+      const ipSchema = z.string().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/);
+      // Basic IP validation
+      if (!ipSchema.safeParse(ip).success) {
+         res.status(400).json({ error: "Ungültige IP-Adresse" });
+         return;
+      }
+
+      await resetLoginAttempts(ip);
+      res.json({ success: true, message: `IP ${ip} wurde entsperrt.` });
+    } catch (error) {
+      console.error("Unblock IP error:", error);
+      res.status(500).json({ error: "Fehler beim Entsperren der IP-Adresse" });
+    }
+  });
+
+  // Export blocked IPs as Excel
+  app.get("/api/admin/export/blocked-ips", requireAuth, async (_req, res) => {
+    try {
+      const ips = await getBlockedIps();
+
+      const data = ips.map(entry => ({
+        IP: entry.ip,
+        Attempts: entry.attempts,
+        BlockedUntil: entry.blockedUntil ? new Date(entry.blockedUntil).toISOString() : ''
+      }));
+
+      const workbook = utils.book_new();
+      const worksheet = utils.json_to_sheet(data);
+      utils.book_append_sheet(workbook, worksheet, 'Blocked IPs');
+
+      const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="blocked_ips.xlsx"');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Export blocked IPs error:", error);
+      res.status(500).json({ error: "Fehler beim Exportieren der blockierten IPs" });
+    }
+  });
+
+  // Clear all blocked IPs
+  app.delete("/api/admin/blocked-ips", requireAuth, async (_req, res) => {
+    try {
+      console.log("Clearing all blocked IPs request received");
+      await resetAllLoginAttempts();
+
+      console.log("All blocked IPs cleared successfully");
+      res.json({ success: true, message: "Alle blockierten IP-Adressen wurden erfolgreich gelöscht." });
+    } catch (error) {
+      console.error("Clear blocked IPs error:", error);
+      res.status(500).json({ error: "Fehler beim Löschen der blockierten IP-Adressen" });
     }
   });
 

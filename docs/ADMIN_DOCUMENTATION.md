@@ -24,6 +24,7 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 - Fehlgeschlagene Anmeldungen werden IP-basiert gezählt.
 - Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen (Standard: 5) wird die IP für `LOGIN_BLOCK_DURATION_MS` Millisekunden (Standard: 24h) gesperrt.
 - Werte können über Umgebungsvariablen in der `.env` angepasst werden.
+- **Sperren aufheben**: Im Admin-Bereich unter "System & Daten" > "Danger-Zone" können alle aktuell blockierten IP-Adressen über den Button "Blockierte IPs löschen" manuell entsperrt werden. Dies ermöglicht den Nutzern sofortigen erneuten Zugriff.
 
 ## Regelpriorisierung & Debugging
 - Gewichtungen und Normalisierung befinden sich in `shared/constants.ts` (`RULE_MATCHING_CONFIG`).
