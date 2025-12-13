@@ -83,6 +83,15 @@ export class LocalFileUploadService {
   deleteFile(filename: string): boolean {
     try {
       const filePath = path.join(this.uploadPath, filename);
+
+      // Security check: Prevent path traversal
+      const resolvedUploadPath = path.resolve(this.uploadPath);
+      const resolvedFilePath = path.resolve(filePath);
+      if (!resolvedFilePath.startsWith(resolvedUploadPath)) {
+        console.error(`Security Warning: Attempted path traversal in deleteFile: ${filename}`);
+        return false;
+      }
+
       console.log(`Attempting to delete file: ${filePath}`);
       
       // Update cache optimistically
@@ -112,8 +121,21 @@ export class LocalFileUploadService {
     if (this.fileCache) {
       return this.fileCache.has(filename);
     }
+
     // Fallback to disk if cache not initialized (shouldn't happen often)
     const filePath = path.join(this.uploadPath, filename);
+
+    // Security check: Prevent path traversal
+    const resolvedUploadPath = path.resolve(this.uploadPath);
+    const resolvedFilePath = path.resolve(filePath);
+
+    // Ensure the resolved path starts with the upload path + separator to prevent partial matches
+    // (e.g. /data/uploads-backup vs /data/uploads)
+    if (!resolvedFilePath.startsWith(resolvedUploadPath + path.sep)) {
+      console.error(`Security Warning: Attempted path traversal in fileExists: ${filename}`);
+      return false;
+    }
+
     return fs.existsSync(filePath);
   }
 }
