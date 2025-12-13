@@ -71,6 +71,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { CardDescription } from "@/components/ui/card";
 import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
+import { filterSafeRuleIds, validateMutationRuleIds } from "@/lib/admin-utils";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -792,17 +793,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const bulkDeleteRulesMutation = useMutation({
     mutationFn: async (ruleIds: string[]) => {
       // Critical safety check: Ensure we only delete rules from the current page
-      const currentPageRuleIds = paginatedRules.map(rule => rule.id);
-      const validRuleIds = ruleIds.filter(id => currentPageRuleIds.includes(id));
-      
-      if (validRuleIds.length === 0) {
-        throw new Error('No valid rules selected from current page for deletion');
-      }
-      
-      if (validRuleIds.length !== ruleIds.length) {
-        const invalidCount = ruleIds.length - validRuleIds.length;
-        throw new Error(`${invalidCount} selected rules are not on the current page. Only ${validRuleIds.length} will be deleted.`);
-      }
+      // Using shared validation logic
+      const validRuleIds = validateMutationRuleIds(ruleIds, paginatedRules);
       
       // Additional safety: Never delete more than what's visible on current page
       if (validRuleIds.length > paginatedRules.length) {
@@ -4033,13 +4025,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             <AlertDialogAction
               onClick={() => {
                 // Critical fix: Only delete rules that are on current page
-                const currentPageRuleIds = paginatedRules.map(rule => rule.id);
-                const safeRuleIds = selectedRuleIds.filter(id => currentPageRuleIds.includes(id));
+                // Using shared filtering logic
+                const safeRuleIds = filterSafeRuleIds(selectedRuleIds, paginatedRules);
+
+                // Debug logging for transparency
                 console.log('DIALOG DELETE: Filtering selected rules for safety', {
                   originalSelected: selectedRuleIds.length,
                   safeSelected: safeRuleIds.length,
-                  pageRules: currentPageRuleIds.length
+                  pageRules: paginatedRules.length
                 });
+
                 bulkDeleteRulesMutation.mutate(safeRuleIds);
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
