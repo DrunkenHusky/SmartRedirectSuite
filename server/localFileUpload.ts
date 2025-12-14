@@ -21,6 +21,16 @@ export class LocalFileUploadService {
     }
   }
 
+  /**
+   * Validates if the filename is safe (prevents path traversal)
+   * Ensures the resolved path is within the upload directory
+   */
+  private isSafePath(filename: string): boolean {
+    const safePath = path.resolve(this.uploadPath);
+    const targetPath = path.resolve(this.uploadPath, filename);
+    return targetPath.startsWith(safePath) && !filename.includes('/') && !filename.includes('\\');
+  }
+
   private refreshFileCache() {
     try {
       if (fs.existsSync(this.uploadPath)) {
@@ -36,7 +46,7 @@ export class LocalFileUploadService {
   }
 
   public registerFile(filename: string) {
-    if (this.fileCache) {
+    if (this.isSafePath(filename) && this.fileCache) {
       this.fileCache.add(filename);
     }
   }
@@ -81,6 +91,12 @@ export class LocalFileUploadService {
 
   // Delete a local file
   deleteFile(filename: string): boolean {
+    // Prevent path traversal
+    if (!this.isSafePath(filename)) {
+      console.error(`Blocked unsafe file deletion attempt: ${filename}`);
+      return false;
+    }
+
     try {
       const filePath = path.join(this.uploadPath, filename);
       console.log(`Attempting to delete file: ${filePath}`);
@@ -108,6 +124,11 @@ export class LocalFileUploadService {
 
   // Check if a file exists locally
   fileExists(filename: string): boolean {
+    // Prevent path traversal
+    if (!this.isSafePath(filename)) {
+      return false;
+    }
+
     // Use cache if available
     if (this.fileCache) {
       return this.fileCache.has(filename);
