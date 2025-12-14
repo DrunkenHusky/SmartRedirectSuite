@@ -243,6 +243,7 @@ const RulesTable = memo(({
                     size="sm"
                     onClick={() => onEditRule(rule)}
                     title="Bearbeiten"
+                    aria-label="Regel bearbeiten"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -253,6 +254,7 @@ const RulesTable = memo(({
                         size="sm"
                         className="text-destructive hover:text-destructive"
                         title="Löschen"
+                        aria-label="Regel löschen"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

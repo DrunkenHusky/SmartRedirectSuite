@@ -8,7 +8,8 @@ import {
   ArrowRightLeft, 
   AlertTriangle, 
   AlertCircle,
-  CheckCircle, 
+  CheckCircle,
+  Check,
   XCircle, 
   Copy, 
   ExternalLink,
@@ -76,6 +77,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [showMainDialog, setShowMainDialog] = useState(false);
   const [showUrlComparison, setShowUrlComparison] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const { toast } = useToast();
@@ -296,7 +298,11 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     try {
       await copyToClipboard(newUrl);
       setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 3000);
+      setIsCopied(true);
+      setTimeout(() => {
+        setCopySuccess(false);
+        setIsCopied(false);
+      }, 3000);
     } catch (error) {
       toast({
         title: "Kopieren fehlgeschlagen",
@@ -433,11 +439,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     <div className="flex flex-wrap gap-3">
                       <Button
                         onClick={handleCopy}
-                        className="flex items-center space-x-2"
-                        aria-label="Neue URL in Zwischenablage kopieren"
+                        className="flex items-center space-x-2 transition-all duration-200"
+                        aria-label={isCopied ? "URL kopiert" : "Neue URL in Zwischenablage kopieren"}
+                        variant={isCopied ? "outline" : "default"}
                       >
-                        <Copy className="h-4 w-4" />
-                        <span>{settings?.copyButtonText || "URL kopieren"}</span>
+                        {isCopied ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                        <span>{isCopied ? "Kopiert!" : (settings?.copyButtonText || "URL kopieren")}</span>
                       </Button>
                       <Button
                         variant="secondary"
