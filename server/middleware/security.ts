@@ -78,6 +78,68 @@ export function rateLimitMiddleware(req: Request, res: Response, next: NextFunct
   next();
 }
 
+/**
+ * CSRF Protection Middleware
+ * Verifies that state-changing requests originate from the same origin.
+ * This is a mitigation for CSRF attacks in cookie-authenticated APIs.
+ */
+export function csrfCheck(req: Request, res: Response, next: NextFunction): void {
+  // Skip check for safe methods
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  const origin = req.headers.origin;
+  const referer = req.headers.referer;
+  const host = req.get('host');
+
+  // Logic:
+  // 1. If Origin is present, it must match the host
+  // 2. If Origin is missing but Referer is present, it must match the host
+  // 3. If both are missing, block the request (unsafe for state changes)
+
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      const originHostname = originUrl.hostname;
+      const requestHostname = host?.split(':')[0]; // Host header might have port
+
+      if (originHostname !== requestHostname) {
+        res.status(403).json({ error: 'CSRF Check Failed: Origin mismatch' });
+        return;
+      }
+    } catch (e) {
+      // If Origin is 'null' or invalid URL, block it for safety
+      res.status(403).json({ error: 'CSRF Check Failed: Invalid Origin' });
+      return;
+    }
+  } else if (referer) {
+    // referer is a full URL
+    try {
+      const refererUrl = new URL(referer);
+      const refererHost = refererUrl.hostname; // .hostname does not include port
+      const requestHost = host?.split(':')[0]; // Strip port
+
+      if (refererHost !== requestHost) {
+        res.status(403).json({ error: 'CSRF Check Failed: Referer mismatch' });
+        return;
+      }
+    } catch (e) {
+      res.status(403).json({ error: 'CSRF Check Failed: Invalid referer' });
+      return;
+    }
+  } else {
+    // Neither header present - suspicious for a browser request
+    // Allow non-browser agents (like curl) if they don't send Origin/Referer?
+    // BUT this middleware is for admin routes which are session-based.
+    // So blocking is safer.
+    res.status(403).json({ error: 'CSRF Check Failed: Missing Origin/Referer' });
+    return;
+  }
+
+  next();
+}
+
 export function adminRateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
   const identifier = req.ip || req.connection.remoteAddress || 'unknown';
   // Use session ID if available for more granular control, otherwise IP
