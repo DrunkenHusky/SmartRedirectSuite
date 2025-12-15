@@ -125,6 +125,7 @@ export class FileStorage implements IStorage {
   private rulesCache: ProcessedUrlRule[] | null = null;
   private lastCacheConfig: RuleMatchingConfig | null = null;
   private settingsCache: GeneralSettings | null = null;
+  private trackingCache: UrlTracking[] | null = null;
 
   constructor() {
     this.ensureDataDirectory();
@@ -152,6 +153,16 @@ export class FileStorage implements IStorage {
 
   private async writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+  }
+
+  // Helper to ensure tracking data is loaded
+  private async ensureTrackingLoaded(): Promise<UrlTracking[]> {
+    if (this.trackingCache) {
+      return this.trackingCache;
+    }
+
+    this.trackingCache = await this.readJsonFile<UrlTracking>(TRACKING_FILE, []);
+    return this.trackingCache;
   }
 
   // Helper to ensure rules are loaded and processed
@@ -473,6 +484,7 @@ export class FileStorage implements IStorage {
   // URL-Tracking implementierung
   async clearAllTracking(): Promise<void> {
     await this.writeJsonFile(TRACKING_FILE, []);
+    this.trackingCache = [];
   }
 
   async trackUrlAccess(
@@ -487,27 +499,26 @@ export class FileStorage implements IStorage {
       };
     }
 
-    const trackingData = await this.readJsonFile<UrlTracking>(
-      TRACKING_FILE,
-      [],
-    );
+    const trackingData = await this.ensureTrackingLoaded();
     const tracking: UrlTracking = {
       ...insertTracking,
       id: randomUUID(),
       ruleIds: insertTracking.ruleIds || [],
     };
+
+    // Update cache
     trackingData.push(tracking);
+
+    // Write to file (using the cache which now includes the new item)
     await this.writeJsonFile(TRACKING_FILE, trackingData);
+
     return tracking;
   }
 
   async getTrackingData(
     timeRange?: "24h" | "7d" | "all",
   ): Promise<UrlTracking[]> {
-    const trackingData = await this.readJsonFile<UrlTracking>(
-      TRACKING_FILE,
-      [],
-    );
+    const trackingData = await this.ensureTrackingLoaded();
 
     if (!timeRange || timeRange === "all") {
       return trackingData;
@@ -548,7 +559,7 @@ export class FileStorage implements IStorage {
 
   // Enhanced statistics methods
   async getAllTrackingEntries(): Promise<UrlTracking[]> {
-    return this.readJsonFile<UrlTracking>(TRACKING_FILE, []);
+    return this.ensureTrackingLoaded();
   }
 
   async searchTrackingEntries(
@@ -1032,7 +1043,9 @@ export class FileStorage implements IStorage {
     console.log("Forcing cache rebuild...");
     this.rulesCache = null;
     this.lastCacheConfig = null;
+    this.trackingCache = null;
     await this.ensureRulesLoaded();
+    await this.ensureTrackingLoaded();
     console.log("Cache rebuild complete.");
   }
 }
