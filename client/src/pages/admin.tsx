@@ -1699,13 +1699,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
                 className="text-muted-foreground hover:text-orange-600"
+                aria-label="Abmelden"
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
                   {logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
                 </span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:text-destructive">
+              <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:text-destructive" aria-label="Schließen">
                 <X className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Schließen</span>
               </Button>
@@ -2583,6 +2584,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     size="sm"
                                     onClick={() => removeInfoItem(index)}
                                     className="h-9 w-9 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    aria-label="Info-Punkt entfernen"
                                   >
                                     <Trash className="h-4 w-4" />
                                   </Button>
@@ -4051,6 +4053,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => unblockIpMutation.mutate(entry.ip)}
                             disabled={unblockIpMutation.isPending}
+                            aria-label={`IP ${entry.ip} entsperren`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
