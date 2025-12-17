@@ -684,12 +684,18 @@ export class FileStorage implements IStorage {
     // Filter based on match quality
     if (minQuality !== undefined) {
       filteredEntries = filteredEntries.filter(
-        (entry) => (entry.matchQuality || 0) >= minQuality,
+        (entry) => {
+          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+          return q >= minQuality;
+        }
       );
     }
     if (maxQuality !== undefined) {
       filteredEntries = filteredEntries.filter(
-        (entry) => (entry.matchQuality || 0) <= maxQuality,
+        (entry) => {
+          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+          return q <= maxQuality;
+        }
       );
     }
 
