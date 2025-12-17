@@ -11,16 +11,20 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 - [API_DOCUMENTATION.md](./API_DOCUMENTATION.md): REST-API für Automatisierung und Monitoring.
 - `Dockerfile.demo`: Demo-Container mit automatischem 24h-Reset für Tests.
 
+## Benutzeroberfläche
+- **Tabellen-Resizing**: In der "Regeln"-Ansicht und der "Import-Vorschau" können Spaltenbreiten individuell angepasst werden. Bewegen Sie dazu die Maus an den rechten Rand einer Spaltenüberschrift, bis der Cursor sich ändert, und ziehen Sie die Spalte auf die gewünschte Breite.
+
 ## Wartung
 - Regelmäßige Backups der `data/`-Verzeichnisse.
 - Abgelaufene Sessions unter `data/sessions/` bereinigen.
 - Logs und Performance-Metriken gemäß Deployment-Guides überwachen.
-- **Cache neu aufbauen**: Im Admin-Bereich unter "Import/Export" > "Wartung" kann der Regel-Cache manuell neu aufgebaut werden. Dies ist normalerweise nicht erforderlich, kann aber helfen, wenn nach umfangreichen Importen oder Updates Probleme mit Weiterleitungen auftreten.
+- **Cache neu aufbauen**: Im Admin-Bereich unter "System & Daten" > "Wartung" kann der Regel-Cache manuell neu aufgebaut werden. Dies ist normalerweise nicht erforderlich, kann aber helfen, wenn nach umfangreichen Importen oder Updates Probleme mit Weiterleitungen auftreten.
 
 ## Login-Schutz
 - Fehlgeschlagene Anmeldungen werden IP-basiert gezählt.
 - Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen (Standard: 5) wird die IP für `LOGIN_BLOCK_DURATION_MS` Millisekunden (Standard: 24h) gesperrt.
 - Werte können über Umgebungsvariablen in der `.env` angepasst werden.
+- **Sperren aufheben**: Im Admin-Bereich unter "System & Daten" > "Danger-Zone" können alle aktuell blockierten IP-Adressen über den Button "Blockierte IPs löschen" manuell entsperrt werden. Dies ermöglicht den Nutzern sofortigen erneuten Zugriff.
 
 ## Regelpriorisierung & Debugging
 - Gewichtungen und Normalisierung befinden sich in `shared/constants.ts` (`RULE_MATCHING_CONFIG`).

@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import MigrationPage from "@/pages/migration";
-import AdminPage from "@/pages/admin";
 import { DocumentHeadUpdater } from "@/components/DocumentHeadUpdater";
+
+// Lazy load the AdminPage component to reduce initial bundle size
+const AdminPage = lazy(() => import("@/pages/admin"));
 
 function App() {
   const [currentView, setCurrentView] = useState<'migration' | 'admin'>('migration');
@@ -85,7 +87,16 @@ function App() {
             {currentView === 'migration' ? (
               <MigrationPage onAdminAccess={handleAdminAccess} />
             ) : (
-              <AdminPage onClose={handleAdminClose} />
+              <Suspense fallback={
+                <div className="min-h-screen bg-background flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Lade Administrator-Bereich...</p>
+                  </div>
+                </div>
+              }>
+                <AdminPage onClose={handleAdminClose} />
+              </Suspense>
             )}
           </Route>
         </Switch>

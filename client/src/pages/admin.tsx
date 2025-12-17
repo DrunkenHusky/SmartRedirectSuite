@@ -39,6 +39,7 @@ import {
   Upload,
   Eye,
 
+  Database,
   BarChart3,
   Settings,
   FileText,
@@ -71,6 +72,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { CardDescription } from "@/components/ui/card";
 import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
+import { ImportPreviewTable } from "@/components/admin/ImportPreviewTable";
+import { StatsTable } from "@/components/admin/StatsTable";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -235,6 +238,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [showDeleteAllStatsDialog, setShowDeleteAllStatsDialog] = useState(false);
   const [deleteAllStatsConfirmationText, setDeleteAllStatsConfirmationText] = useState("");
 
+  // Clear blocked IPs state
+  const [showClearBlockedIpsDialog, setShowClearBlockedIpsDialog] = useState(false);
+  const [clearBlockedIpsConfirmationText, setClearBlockedIpsConfirmationText] = useState("");
+
+  // Manage blocked IPs state
+  const [showManageBlockedIpsDialog, setShowManageBlockedIpsDialog] = useState(false);
+  const [newBlockedIp, setNewBlockedIp] = useState("");
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
@@ -336,6 +347,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchLowExplanation: "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
+    enableTrackingCache: true,
   });
 
   // Statistics filters and state
@@ -602,6 +614,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         matchLowExplanation: settingsData.matchLowExplanation || "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
         matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
         matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
+        enableTrackingCache: settingsData.enableTrackingCache ?? true,
       });
     }
   }, [settingsData]);
@@ -786,6 +799,70 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         variant: "destructive",
       });
     },
+  });
+
+  // Clear blocked IPs mutation
+  const clearBlockedIpsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/admin/blocked-ips");
+      return await response.json();
+    },
+    onSuccess: () => {
+      setShowClearBlockedIpsDialog(false);
+      setClearBlockedIpsConfirmationText("");
+      toast({
+        title: "Blockierte IPs gelöscht",
+        description: "Alle blockierten IP-Adressen wurden erfolgreich gelöscht.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fehler",
+        description: error.message || "Fehler beim Löschen der blockierten IPs.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Fetch blocked IPs
+  const { data: blockedIps, isLoading: blockedIpsLoading, refetch: refetchBlockedIps } = useQuery({
+    queryKey: ["/api/admin/blocked-ips"],
+    enabled: isAuthenticated && showManageBlockedIpsDialog,
+    retry: false,
+    queryFn: async () => {
+      const response = await fetch("/api/admin/blocked-ips", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch blocked IPs");
+      return response.json() as Promise<Array<{ ip: string; attempts: number; blockedUntil: number }>>;
+    },
+  });
+
+  // Block IP mutation
+  const blockIpMutation = useMutation({
+    mutationFn: async (ip: string) => {
+      return await apiRequest("POST", "/api/admin/blocked-ips", { ip });
+    },
+    onSuccess: () => {
+      setNewBlockedIp("");
+      refetchBlockedIps();
+      toast({ title: "IP blockiert", description: "Die IP-Adresse wurde erfolgreich blockiert." });
+    },
+    onError: (error: any) => {
+       toast({ title: "Fehler", description: error.message || "IP konnte nicht blockiert werden.", variant: "destructive" });
+    }
+  });
+
+  // Unblock IP mutation
+  const unblockIpMutation = useMutation({
+    mutationFn: async (ip: string) => {
+      return await apiRequest("DELETE", `/api/admin/blocked-ips/${ip}`);
+    },
+    onSuccess: () => {
+      refetchBlockedIps();
+      toast({ title: "IP entsperrt", description: "Die IP-Adresse wurde erfolgreich entsperrt." });
+    },
+    onError: (error: any) => {
+       toast({ title: "Fehler", description: error.message || "IP konnte nicht entsperrt werden.", variant: "destructive" });
+    }
   });
 
   // Bulk delete mutation
@@ -1660,8 +1737,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <span className="truncate leading-tight text-center">Statistiken</span>
                 </TabsTrigger>
                 <TabsTrigger value="export" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Import/Export</span>
+                  <Database className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate leading-tight text-center">System & Daten</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -2509,6 +2586,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     size="sm"
                                     onClick={() => removeInfoItem(index)}
                                     className="h-9 w-9 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    aria-label={`Information ${index + 1} entfernen`}
                                   >
                                     <Trash className="h-4 w-4" />
                                   </Button>
@@ -2552,16 +2630,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
-                      {/* 6. Link Detection Settings */}
+                      {/* 6. Link Detection & Performance Settings */}
                       <div className="space-y-6 mt-8">
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung</h3>
-                            <p className="text-sm text-muted-foreground">Steuert, ob Groß-/Kleinschreibung bei URL-Regeln beachtet wird</p>
+                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung & Performance</h3>
+                            <p className="text-sm text-muted-foreground">Einstellungen zur Erkennungslogik und Systemleistung</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          {/* Case Sensitivity */}
                           <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                             <div className="flex items-center gap-3">
                               <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -2580,12 +2659,33 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               className="data-[state=checked]:bg-green-600"
                             />
                           </div>
+
+                          {/* Tracking Cache Toggle */}
+                          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                              <div>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Tracking-Cache aktivieren (RAM)</p>
+                                <p className="text-xs text-purple-700 dark:text-purple-300">
+                                  Speichert Statistik-Daten im Arbeitsspeicher für schnellen Zugriff. Erhöht die Systemgeschwindigkeit massiv, benötigt aber mehr RAM bei vielen Daten.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.enableTrackingCache}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, enableTrackingCache: checked })
+                              }
+                              className="data-[state=checked]:bg-purple-600"
+                            />
+                          </div>
+
                           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Best Practice:</p>
-                                <p>Nutzen Sie die Groß-/Kleinschreibung nur, wenn Ihre Altsysteme URLs case-sensitiv ausliefern und Sie dies exakt abbilden müssen.</p>
+                                <p className="font-medium">Empfehlung:</p>
+                                <p>Lassen Sie den Tracking-Cache aktiviert (Standard), es sei denn, Ihr Server hat sehr wenig Arbeitsspeicher (&lt; 512MB) oder Sie haben extrem viele Tracking-Daten (&gt; 1 Mio. Einträge).</p>
                               </div>
                             </div>
                           </div>
@@ -2713,6 +2813,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         value={rulesSearchQuery}
                         onChange={(e) => setRulesSearchQuery(e.target.value)}
                         className="pl-10"
+                        aria-label="Regeln durchsuchen"
                       />
                     </div>
                     
@@ -2876,6 +2977,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         value={statsSearchQuery}
                         onChange={(e) => setStatsSearchQuery(e.target.value)}
                         className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
+                        aria-label="Statistiken durchsuchen"
                       />
                     </div>
                     <div className="flex items-center">
@@ -3006,118 +3108,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                     ) : (
                       <>
-                        <div className="overflow-hidden">
-                          <table className="w-full">
-                            <thead className="bg-muted/50 border-b">
-                              <tr>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('timestamp')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Zeitstempel
-                                    {getSortIcon('timestamp')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('oldUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Alte URL
-                                    {getSortIcon('oldUrl')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('newUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Neue URL
-                                    {getSortIcon('newUrl')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('path')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Pfad
-                                    {getSortIcon('path')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3 font-medium text-sm">
-                                  Regel
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {trackingEntries.map((entry: any) => (
-                                <tr key={entry.id} className="border-b hover:bg-muted/50">
-                                  <td className="p-3 text-sm">
-                                    {formatTimestamp(entry.timestamp)}
-                                  </td>
-                                  <td className="p-3">
-                                    <code className="text-xs text-foreground break-all">
-                                      {entry.oldUrl}
-                                    </code>
-                                  </td>
-                                  <td className="p-3">
-                                    <code className="text-xs text-foreground break-all">
-                                      {entry.newUrl || 'N/A'}
-                                    </code>
-                                  </td>
-                                  <td className="p-3">
-                                    <code className="text-sm text-foreground">{entry.path}</code>
-                                  </td>
-                                  <td className="p-3">
-                                    {entry.rules && entry.rules.length > 0 ? (
-                                      <div className="flex flex-wrap gap-1">
-                                        {entry.rules.map((rule: UrlRule) => (
-                                          <Button
-                                            key={rule.id}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 mb-1"
-                                            onClick={() => handleEditRule(rule)}
-                                            title={`Regel bearbeiten: ${rule.redirectType}`}
-                                          >
-                                            <Edit className="h-3 w-3 mr-1" />
-                                            {rule.matcher}
-                                            <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4">
-                                                {rule.redirectType === 'domain' ? 'D' : rule.redirectType === 'wildcard' ? 'W' : 'P'}
-                                            </Badge>
-                                          </Button>
-                                        ))}
-                                      </div>
-                                    ) : entry.rule ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-auto p-1 text-xs bg-muted hover:bg-muted/80"
-                                        onClick={() => handleEditRule(entry.rule)}
-                                        title="Regel bearbeiten"
-                                      >
-                                        <Edit className="h-3 w-3 mr-1" />
-                                        {entry.rule.matcher}
-                                      </Button>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">-</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                        <StatsTable
+                          entries={trackingEntries}
+                          sortConfig={{ by: sortBy, order: sortOrder }}
+                          onSort={handleSort}
+                          onEditRule={handleEditRule}
+                          formatTimestamp={formatTimestamp}
+                        />
                         
                         {/* Pagination Controls for Browser View */}
                         {totalStatsPages > 1 && (
@@ -3258,9 +3255,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg gap-4">
+                                <div className="flex items-start gap-3 flex-1">
+                                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
                                     <div>
                                         <p className="text-sm font-medium text-blue-800 dark:text-blue-200">URLs automatisch kodieren</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300">
@@ -3275,7 +3272,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         setGeneralSettings(newSettings);
                                         updateSettingsMutation.mutate(newSettings);
                                     }}
-                                    className="data-[state=checked]:bg-blue-600"
+                                    className="data-[state=checked]:bg-blue-600 flex-shrink-0"
                                 />
                             </div>
 
@@ -3448,16 +3445,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
                             <h4 className="font-medium text-sm">Cache Wartung</h4>
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <Button
                                     variant="outline"
                                     onClick={() => rebuildCacheMutation.mutate()}
                                     disabled={rebuildCacheMutation.isPending}
-                                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 w-full sm:w-auto"
                                 >
                                     {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
                                 </Button>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-muted-foreground text-center sm:text-left">
                                     Nur bei Problemen mit der Regelerkennung notwendig.
                                 </p>
                             </div>
@@ -3466,34 +3463,65 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="border-t pt-4 flex flex-col gap-2">
                             <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
                             <div className="space-y-4">
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
                                         variant="destructive"
                                         onClick={() => {
                                             setDeleteAllConfirmationText("");
                                             setShowDeleteAllDialog(true);
                                         }}
+                                        className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Alle Regeln löschen
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
                                         variant="destructive"
                                         onClick={() => {
                                             setDeleteAllStatsConfirmationText("");
                                             setShowDeleteAllStatsDialog(true);
                                         }}
+                                        className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Alle Statistiken löschen
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle erfassten Tracking-Daten unwiderruflich.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => {
+                                            setClearBlockedIpsConfirmationText("");
+                                            setShowClearBlockedIpsDialog(true);
+                                        }}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <Shield className="h-4 w-4 mr-2" />
+                                        Blockierte IPs löschen
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
+                                        Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowManageBlockedIpsDialog(true)}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <Shield className="h-4 w-4 mr-2" />
+                                        Blockierte IPs anzeigen und verwalten
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
+                                        Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
                                     </p>
                                 </div>
                             </div>
@@ -3581,99 +3609,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                         </div>
 
-                        <div className="border rounded-md">
-                          <Table className="table-fixed">
-                              <TableHeader>
-                                  <TableRow>
-                                      <TableHead className="w-[100px]">
-                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('status')}>
-                                            Status {previewSortBy === 'status' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
-                                          </Button>
-                                      </TableHead>
-                                      <TableHead className="w-[25%]">
-                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('matcher')}>
-                                            URL-Pfad Matcher {previewSortBy === 'matcher' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
-                                          </Button>
-                                      </TableHead>
-                                      <TableHead className="w-[25%]">
-                                          <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium" onClick={() => handlePreviewSort('targetUrl')}>
-                                            Ziel-URL {previewSortBy === 'targetUrl' && (previewSortOrder === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />)}
-                                          </Button>
-                                      </TableHead>
-                                      <TableHead className="w-[12%]">Typ</TableHead>
-                                      <TableHead className="w-[12%]">Auto-Redirect</TableHead>
-                                      <TableHead className="w-[12%]">Query Parameter</TableHead>
-                                  </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                  {filteredPreviewData
-                                    .slice(0, previewLimit)
-                                    .map((item, i) => (
-                                      <TableRow key={i} className={!item.isValid ? "bg-red-50/50" : ""}>
-                                          <TableCell>
-                                              <Badge variant="outline" className={
-                                                item.status === 'new' ? "bg-green-50 text-green-700 border-green-200" :
-                                                item.status === 'update' ? "bg-blue-50 text-blue-700 border-blue-200" :
-                                                "bg-red-50 text-red-700 border-red-200"
-                                              }>
-                                                {item.status === 'new' ? 'Neu' : item.status === 'update' ? 'Update' : 'Ungültig'}
-                                              </Badge>
-                                          </TableCell>
-                                          <TableCell className="font-mono text-xs">
-                                            <div className="w-full" title={item.rule.matcher || ''}>
-                                              {item.rule.matcher ? (
-                                                <Badge variant="secondary" className="truncate max-w-full inline-block align-middle">
-                                                  {item.rule.matcher}
-                                                </Badge>
-                                              ) : (
-                                                '-'
-                                              )}
-                                            </div>
-                                            {!item.isValid && item.errors.length > 0 && (
-                                              <div className="text-red-600 text-[10px] mt-1 whitespace-normal">{item.errors[0]}</div>
-                                            )}
-                                          </TableCell>
-                                          <TableCell>
-                                            {item.rule.targetUrl ? (
-                                              <div className="w-full" title={item.rule.targetUrl}>
-                                                <code className="text-xs bg-muted px-2 py-1 rounded inline-block max-w-full truncate align-middle">
-                                                  {item.rule.targetUrl}
-                                                </code>
-                                              </div>
-                                            ) : (
-                                              <span className="text-xs italic text-muted-foreground">
-                                                -
-                                              </span>
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                              <Badge variant={(item.rule as any).redirectType === 'wildcard' ? 'destructive' : (item.rule as any).redirectType === 'domain' ? 'outline' : 'default'}>
-                                                {(item.rule as any).redirectType === 'wildcard' ? 'Vollständig' : (item.rule as any).redirectType === 'domain' ? 'Domain' : 'Teilweise'}
-                                              </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                              <Badge variant={item.rule.autoRedirect ? 'default' : 'secondary'}>
-                                                {item.rule.autoRedirect ? '✓ Aktiv' : '✗ Inaktiv'}
-                                              </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                            {item.rule.discardQueryParams ? (
-                                              <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
-                                                Entfernen
-                                              </Badge>
-                                            ) : item.rule.forwardQueryParams ? (
-                                              <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
-                                                Behalten
-                                              </Badge>
-                                            ) : (
-                                              <span className="text-muted-foreground">-</span>
-                                            )}
-                                          </TableCell>
-                                      </TableRow>
-                                  ))}
-                              </TableBody>
-                          </Table>
-                        </div>
+                        <ImportPreviewTable
+                          data={filteredPreviewData}
+                          sortConfig={{ by: previewSortBy, order: previewSortOrder }}
+                          onSort={handlePreviewSort}
+                          limit={previewLimit}
+                        />
 
                         {/* Pagination / Load More for "Show All" mode */}
                         {showAllPreview && importPreviewData.all && previewLimit < importPreviewData.total && (
@@ -3923,6 +3864,141 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             >
               Ich habe verstanden
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Clear Blocked IPs Confirmation Dialog */}
+      <Dialog open={showClearBlockedIpsDialog} onOpenChange={setShowClearBlockedIpsDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Shield className="h-5 w-5" />
+              Blockierte IPs löschen?
+            </DialogTitle>
+            <DialogDescription>
+              Dies löscht alle derzeit blockierten IP-Adressen. Nutzer können sich sofort wieder anmelden.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+               Diese Aktion hebt den Brute-Force-Schutz für alle aktuell gesperrten Nutzer auf.
+            </div>
+
+            <Button
+                variant="outline"
+                onClick={() => {
+                   window.open('/api/admin/export/blocked-ips', '_blank');
+                }}
+                className="w-full"
+            >
+                <Download className="h-4 w-4 mr-2" />
+                Backup herunterladen (Excel)
+            </Button>
+
+            <div className="space-y-2">
+                <label className="text-sm font-medium">
+                    Bestätigung erforderlich
+                </label>
+                <Input
+                    value={clearBlockedIpsConfirmationText}
+                    onChange={(e) => setClearBlockedIpsConfirmationText(e.target.value)}
+                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    className={clearBlockedIpsConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
+                />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClearBlockedIpsDialog(false)}>Abbrechen</Button>
+            <Button
+              variant="destructive"
+              onClick={() => clearBlockedIpsMutation.mutate()}
+              disabled={clearBlockedIpsConfirmationText !== "DELETE" || clearBlockedIpsMutation.isPending}
+            >
+              {clearBlockedIpsMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Blocked IPs Dialog */}
+      <Dialog open={showManageBlockedIpsDialog} onOpenChange={setShowManageBlockedIpsDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Blockierte IPs verwalten</DialogTitle>
+            <DialogDescription>
+              Hier können Sie aktuell blockierte IP-Adressen einsehen und verwalten.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 my-4">
+            <div className="flex gap-2">
+               <Input
+                 placeholder="IP-Adresse (z.B. 192.168.1.1)"
+                 value={newBlockedIp}
+                 onChange={(e) => setNewBlockedIp(e.target.value)}
+               />
+               <Button
+                 onClick={() => {
+                    if(newBlockedIp) blockIpMutation.mutate(newBlockedIp);
+                 }}
+                 disabled={!newBlockedIp || blockIpMutation.isPending}
+               >
+                 Blockieren
+               </Button>
+            </div>
+
+            <div className="border rounded-md max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>IP-Adresse</TableHead>
+                    <TableHead>Fehlversuche</TableHead>
+                    <TableHead>Blockiert bis</TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {blockedIpsLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">Lade...</TableCell>
+                    </TableRow>
+                  ) : blockedIps && blockedIps.length > 0 ? (
+                    blockedIps.map((entry) => (
+                      <TableRow key={entry.ip}>
+                        <TableCell className="font-medium">{entry.ip}</TableCell>
+                        <TableCell>{entry.attempts}</TableCell>
+                        <TableCell>{new Date(entry.blockedUntil).toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => unblockIpMutation.mutate(entry.ip)}
+                            disabled={unblockIpMutation.isPending}
+                            aria-label={`IP ${entry.ip} entsperren`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        Keine blockierten IP-Adressen.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          <DialogFooter>
+             <Button variant="outline" onClick={() => setShowManageBlockedIpsDialog(false)}>Schließen</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

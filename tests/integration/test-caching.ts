@@ -1,6 +1,6 @@
 
-import { storage } from "./storage";
-import { LocalFileUploadService } from "./localFileUpload";
+import { storage } from "../../server/storage";
+import { LocalFileUploadService } from "../../server/localFileUpload";
 import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const RULES_FILE = path.join(DATA_DIR, "rules.json");
+const TRACKING_FILE = path.join(DATA_DIR, "tracking.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 
@@ -140,6 +141,42 @@ async function runTests() {
     // Service delete
     fileService.deleteFile(testFile);
     assert.ok(!fileService.fileExists(testFile), "FAIL: Service delete should clear cache");
+    console.log("  -> PASS");
+
+    // === TEST 6: TRACKING CACHING ===
+    console.log("\n[Test 6] Tracking Caching");
+    await storage.clearAllTracking();
+
+    // Verify initial state
+    let tracking = await storage.getAllTrackingEntries();
+    assert.equal(tracking.length, 0);
+
+    // Track an access
+    const trackEntry = await storage.trackUrlAccess({
+      path: "/track-test",
+      userAgent: "TestBot",
+      oldUrl: "http://test/old"
+    });
+
+    // Verify cache updated
+    tracking = await storage.getAllTrackingEntries();
+    assert.equal(tracking.length, 1);
+    assert.equal(tracking[0].path, "/track-test");
+
+    // Hack disk
+    await fs.writeFile(TRACKING_FILE, JSON.stringify([{ ...trackEntry, path: "/hacked-track" }]));
+
+    // Verify cache is used (ignoring hack)
+    tracking = await storage.getAllTrackingEntries();
+    assert.equal(tracking[0].path, "/track-test", "FAIL: Tracking read from disk instead of cache");
+
+    // Clear tracking (should update cache)
+    await storage.clearAllTracking();
+    tracking = await storage.getAllTrackingEntries();
+    assert.equal(tracking.length, 0, "FAIL: Cache not cleared");
+
+    const fileTracking = JSON.parse(await fs.readFile(TRACKING_FILE, "utf-8"));
+    assert.equal(fileTracking.length, 0, "FAIL: Disk not cleared");
     console.log("  -> PASS");
 
     console.log("\nALL TESTS PASSED");

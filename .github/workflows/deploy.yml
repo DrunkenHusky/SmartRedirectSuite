@@ -33,6 +33,28 @@ jobs:
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
 
+      - name: Set version to commit hash
+        if: github.event_name == 'push'
+        run: |
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          echo "Updating version to $COMMIT_HASH"
+          node -e "
+            const fs = require('fs');
+            const files = ['package.json', 'package-lock.json'];
+            files.forEach(file => {
+              if (fs.existsSync(file)) {
+                const content = JSON.parse(fs.readFileSync(file, 'utf8'));
+                content.version = '$COMMIT_HASH';
+                if (file === 'package-lock.json') {
+                   if (content.packages && content.packages['']) {
+                       content.packages[''].version = '$COMMIT_HASH';
+                   }
+                }
+                fs.writeFileSync(file, JSON.stringify(content, null, 2));
+              }
+            });
+          "
+
       - name: Build Check (Pull Request)
         if: github.event_name == 'pull_request'
         # Bei PRs bauen wir nur das Image, um sicherzustellen, dass das Dockerfile valide ist.
