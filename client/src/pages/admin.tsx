@@ -3491,6 +3491,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
+                            <h4 className="font-medium text-sm">Sicherheit</h4>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowManageBlockedIpsDialog(true)}
+                                    className="w-full sm:w-auto"
+                                >
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Blockierte IPs anzeigen und verwalten
+                                </Button>
+                                <p className="text-xs text-muted-foreground text-center sm:text-left">
+                                    Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-4 flex flex-col gap-2">
                             <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -3539,19 +3556,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
-                                    </p>
-                                </div>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setShowManageBlockedIpsDialog(true)}
-                                        className="w-full sm:w-auto"
-                                    >
-                                        <Shield className="h-4 w-4 mr-2" />
-                                        Blockierte IPs anzeigen und verwalten
-                                    </Button>
-                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
                                     </p>
                                 </div>
                             </div>
