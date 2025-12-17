@@ -162,6 +162,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         let foundRule: UrlRule | null = null;
         let foundRules: UrlRule[] = [];
         let generatedNewUrl = "";
+        let currentMatchQuality = 0;
         
         if (ruleResponse.ok) {
           const { rule, hasMatch, matchQuality: quality, matchLevel: level, matchingRules } = await ruleResponse.json();
@@ -169,7 +170,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
           if (hasMatch && rule) {
             foundRule = rule;
             foundRules = matchingRules || [rule];
-            setMatchQuality(quality || 0);
+            currentMatchQuality = quality || 0;
+            setMatchQuality(currentMatchQuality);
             setMatchLevel(level || 'red');
             // Determine explanation
             if (quality >= 90) {
@@ -188,11 +190,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             // No match
             if (path === "/" || path === "") {
                 // Root URL case - 100% match equivalent
-                setMatchQuality(100);
+                currentMatchQuality = 100;
+                setMatchQuality(currentMatchQuality);
                 setMatchLevel('green');
                 setMatchExplanation(settings.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
             } else {
-                setMatchQuality(0);
+                currentMatchQuality = 0;
+                setMatchQuality(currentMatchQuality);
                 setMatchLevel('red');
                 setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
             }
@@ -235,6 +239,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               timestamp: new Date().toISOString(),
               userAgent: safeUserAgent,
               ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
+              matchQuality: currentMatchQuality,
             }),
           });
           
@@ -268,6 +273,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             userAgent: safeUserAgent,
             ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
             ruleIds: foundRules.map(r => r.id).filter(id => typeof id === 'string' && id.length > 0),
+            matchQuality: currentMatchQuality,
           }),
         });
 
