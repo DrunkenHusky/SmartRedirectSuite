@@ -11,14 +11,18 @@ const sampleRules: UrlRule[] = [
     targetUrl: "https://example.com/new-page",
     redirectType: 'wildcard',
     infoText: 'Exact Page Redirect',
-    autoRedirect: false
+    autoRedirect: false,
+    discardQueryParams: false,
+    forwardQueryParams: false
   } as any,
   {
     matcher: "/legacy-section",
     targetUrl: "/modern-section",
     redirectType: 'partial',
     infoText: 'Section/Folder Redirect',
-    autoRedirect: true
+    autoRedirect: true,
+    discardQueryParams: false,
+    forwardQueryParams: true
   } as any
 ];
 
@@ -33,7 +37,9 @@ const csvData = sampleRules.map(r => ({
   'Target URL': r.targetUrl,
   Type: r.redirectType,
   Info: r.infoText,
-  'Auto Redirect': r.autoRedirect
+  'Auto Redirect': r.autoRedirect,
+  'Discard Query Params': r.discardQueryParams,
+  'Keep Query Params': r.forwardQueryParams
 }));
 const csvContent = stringify(csvData, { header: true });
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.csv'), csvContent);
@@ -46,7 +52,9 @@ const excelData = sampleRules.map(r => ({
   'Target URL': r.targetUrl,
   Type: r.redirectType,
   Info: r.infoText,
-  'Auto Redirect': r.autoRedirect
+  'Auto Redirect': r.autoRedirect,
+  'Discard Query Params': r.discardQueryParams,
+  'Keep Query Params': r.forwardQueryParams
 }));
 const workbook = utils.book_new();
 const worksheet = utils.json_to_sheet(excelData);
@@ -61,7 +69,9 @@ const jsonRules = sampleRules.map(r => ({
   targetUrl: r.targetUrl,
   redirectType: r.redirectType,
   infoText: r.infoText,
-  autoRedirect: r.autoRedirect
+  autoRedirect: r.autoRedirect,
+  discardQueryParams: r.discardQueryParams,
+  forwardQueryParams: r.forwardQueryParams
 }));
 const jsonContent = JSON.stringify(jsonRules, null, 2);
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.json'), jsonContent);
