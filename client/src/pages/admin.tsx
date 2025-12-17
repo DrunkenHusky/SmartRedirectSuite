@@ -2585,6 +2585,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     size="sm"
                                     onClick={() => removeInfoItem(index)}
                                     className="h-9 w-9 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    aria-label={`Information ${index + 1} entfernen`}
                                   >
                                     <Trash className="h-4 w-4" />
                                   </Button>
@@ -2811,6 +2812,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         value={rulesSearchQuery}
                         onChange={(e) => setRulesSearchQuery(e.target.value)}
                         className="pl-10"
+                        aria-label="Regeln durchsuchen"
                       />
                     </div>
                     
@@ -2974,6 +2976,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         value={statsSearchQuery}
                         onChange={(e) => setStatsSearchQuery(e.target.value)}
                         className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
+                        aria-label="Statistiken durchsuchen"
                       />
                     </div>
                     <div className="flex items-center">
@@ -4075,6 +4078,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => unblockIpMutation.mutate(entry.ip)}
                             disabled={unblockIpMutation.isPending}
+                            aria-label={`IP ${entry.ip} entsperren`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

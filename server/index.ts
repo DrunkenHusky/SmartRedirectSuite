@@ -5,7 +5,7 @@ import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { FileSessionStore } from "./fileSessionStore";
-import { rateLimitMiddleware, adminRateLimitMiddleware } from "./middleware/security";
+import { rateLimitMiddleware, adminRateLimitMiddleware, csrfCheck } from "./middleware/security";
 
 const app = express();
 
@@ -107,6 +107,9 @@ app.use('/api/admin', sessionMiddleware);
 
 // Apply extra rate limiting to admin routes (auth + brute force handled separately, this is for general admin actions)
 app.use('/api/admin', adminRateLimitMiddleware);
+
+// Apply CSRF protection to admin routes
+app.use('/api/admin', csrfCheck);
 
 app.use((req, res, next) => {
   const start = Date.now();
