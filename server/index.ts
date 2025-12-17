@@ -20,7 +20,6 @@ const sessionSecret = process.env.SESSION_SECRET || randomBytes(64).toString('he
 
 if (!process.env.SESSION_SECRET) {
   console.warn("WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.");
-  console.warn("HINWEIS: Admin-Sitzungen werden bei jedem Neustart ungültig. Setzen Sie SESSION_SECRET für persistente Sitzungen.");
 }
 
 // Helmet Configuration
@@ -77,8 +76,13 @@ app.use((req, res, next) => {
 });
 
 // Session configuration
+const sessionStore = new FileSessionStore();
+sessionStore.clear(() => {
+  console.log("INFO: Alle existierenden Sitzungen wurden bereinigt.");
+});
+
 const sessionMiddleware = session({
-  store: new FileSessionStore(),
+  store: sessionStore,
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
