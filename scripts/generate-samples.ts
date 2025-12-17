@@ -9,15 +9,15 @@ const sampleRules: UrlRule[] = [
   {
     matcher: "/old-page",
     targetUrl: "https://example.com/new-page",
-    redirectType: 'partial',
-    infoText: 'Sample Redirect',
+    redirectType: 'wildcard',
+    infoText: 'Exact Page Redirect',
     autoRedirect: false
   } as any,
   {
     matcher: "/legacy-section",
     targetUrl: "https://example.com/modern-section",
-    redirectType: 'wildcard',
-    infoText: 'Legacy Section Redirect',
+    redirectType: 'partial',
+    infoText: 'Section/Folder Redirect',
     autoRedirect: true
   } as any
 ];
