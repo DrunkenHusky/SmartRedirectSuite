@@ -252,6 +252,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
+  const [statsMinQuality, setStatsMinQuality] = useState(0);
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -521,7 +522,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter, statsMinQuality],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -531,6 +532,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         sortBy: sortBy,
         sortOrder: sortOrder,
         ruleFilter: statsRuleFilter,
+        minQuality: statsMinQuality.toString(),
       });
       
       if (debouncedStatsSearchQuery.trim()) {
@@ -2980,18 +2982,35 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         aria-label="Statistiken durchsuchen"
                       />
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <Select
                         value={statsRuleFilter}
                         onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Filter" />
+                          <SelectValue placeholder="Regel-Filter" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Alle Einträge</SelectItem>
                           <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
                           <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={statsMinQuality.toString()}
+                        onValueChange={(value) => setStatsMinQuality(parseInt(value))}
+                      >
+                        <SelectTrigger className="w-auto h-9 text-xs">
+                          <SelectValue placeholder="Min. Qualität" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Alle Qualitäten</SelectItem>
+                          <SelectItem value="50">≥ 50%</SelectItem>
+                          <SelectItem value="60">≥ 60% (Mittel)</SelectItem>
+                          <SelectItem value="75">≥ 75%</SelectItem>
+                          <SelectItem value="90">≥ 90% (Hoch)</SelectItem>
+                          <SelectItem value="100">100% (Exakt)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
