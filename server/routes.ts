@@ -665,9 +665,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ruleFilter = 'with_rule';
       }
 
-      // Quality filtering
-      const minQuality = req.query.minQuality ? parseInt(req.query.minQuality as string) : undefined;
-      const maxQuality = req.query.maxQuality ? parseInt(req.query.maxQuality as string) : undefined;
+      // Quality filtering - Robust parsing
+      let minQuality: number | undefined = undefined;
+      if (req.query.minQuality) {
+        const parsed = parseInt(req.query.minQuality as string, 10);
+        if (!isNaN(parsed)) minQuality = parsed;
+      }
+
+      let maxQuality: number | undefined = undefined;
+      if (req.query.maxQuality) {
+        const parsed = parseInt(req.query.maxQuality as string, 10);
+        if (!isNaN(parsed)) maxQuality = parsed;
+      }
 
       const result = await storage.getTrackingEntriesPaginated(
         page,
