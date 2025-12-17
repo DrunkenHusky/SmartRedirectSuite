@@ -170,6 +170,10 @@ const StatsTable = memo(({
                     <Edit className="h-3 w-3 mr-1" />
                     <span className="truncate max-w-[100px] inline-block align-bottom">{entry.rule.matcher}</span>
                   </Button>
+                ) : (entry.ruleId || (entry.ruleIds && entry.ruleIds.length > 0)) ? (
+                  <Badge variant="outline" className="text-[10px] px-2 py-1 h-auto text-muted-foreground border-dashed">
+                    Regel nicht mehr vorhanden
+                  </Badge>
                 ) : (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
