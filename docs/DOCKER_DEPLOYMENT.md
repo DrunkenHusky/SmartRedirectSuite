@@ -51,6 +51,7 @@ Die Anwendung wird über Umgebungsvariablen konfiguriert.
 | `PORT` | Der Port, auf dem die App im Container lauscht. | `5000` | Nein |
 | `NODE_ENV` | Umgebungsmodus (`production` oder `development`). | `production` | Nein |
 | `ADMIN_PASSWORD` | Passwort für das Admin-Panel. **Dringend empfohlen.** | `Password1` | **Ja (Prod)** |
+| `SESSION_SECRET` | Schlüssel für Session-Cookies. Wenn nicht gesetzt, wird bei jedem Start ein zufälliger Schlüssel generiert (Sessions laufen ab). | (Zufällig) | Nein |
 | `LOGIN_MAX_ATTEMPTS` | Max. Login-Versuche vor temporärer Sperre. | `5` | Nein |
 | `LOGIN_BLOCK_DURATION_MS` | Sperrdauer in ms nach Fehlversuchen. | `86400000` (24h) | Nein |
 | `IMPORT_PREVIEW_LIMIT` | Maximale Anzahl an Regeln für Import-Vorschau. | `1000` | Nein |
@@ -112,8 +113,9 @@ docker-compose logs -f
 
 ## 🔒 Best Practices für die Produktion
 
-1.  **Standard-Zugangsdaten ändern:** Setzen Sie immer ein starkes `ADMIN_PASSWORD` und ein einzigartiges `SESSION_SECRET`.
-2.  **Reverse Proxy verwenden:** Exponieren Sie Port 5000 nicht direkt ins Internet. Nutzen Sie Nginx, Traefik oder Caddy für SSL-Terminierung (HTTPS) und leiten Sie Anfragen an den Container weiter.
+1.  **Standard-Zugangsdaten ändern:** Setzen Sie immer ein starkes `ADMIN_PASSWORD`.
+2.  **Session Secret:** Setzen Sie ein festes `SESSION_SECRET`, wenn Admin-Sitzungen auch nach einem Container-Neustart gültig bleiben sollen. Ohne diese Variable wird bei jedem Start ein neuer Sicherheitsschlüssel generiert, was alle bestehenden Logins ungültig macht.
+3.  **Reverse Proxy verwenden:** Exponieren Sie Port 5000 nicht direkt ins Internet. Nutzen Sie Nginx, Traefik oder Caddy für SSL-Terminierung (HTTPS) und leiten Sie Anfragen an den Container weiter.
     *   Setzen Sie den `X-Forwarded-Proto` Header im Proxy, damit die App HTTPS erkennt.
 3.  **Backups:** Sichern Sie regelmäßig das `./data` Verzeichnis auf dem Host-System.
 4.  **Ressourcen-Limits:** Sie können CPU und RAM in der `docker-compose.yml` begrenzen:
