@@ -73,6 +73,7 @@ import { CardDescription } from "@/components/ui/card";
 import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
 import { ImportPreviewTable } from "@/components/admin/ImportPreviewTable";
+import { StatsTable } from "@/components/admin/StatsTable";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -3107,118 +3108,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                     ) : (
                       <>
-                        <div className="overflow-hidden">
-                          <table className="w-full">
-                            <thead className="bg-muted/50 border-b">
-                              <tr>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('timestamp')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Zeitstempel
-                                    {getSortIcon('timestamp')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('oldUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Alte URL
-                                    {getSortIcon('oldUrl')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('newUrl')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Neue URL
-                                    {getSortIcon('newUrl')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSort('path')}
-                                    className="h-auto p-0 font-medium hover:bg-transparent"
-                                  >
-                                    Pfad
-                                    {getSortIcon('path')}
-                                  </Button>
-                                </th>
-                                <th className="text-left p-3 font-medium text-sm">
-                                  Regel
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {trackingEntries.map((entry: any) => (
-                                <tr key={entry.id} className="border-b hover:bg-muted/50">
-                                  <td className="p-3 text-sm">
-                                    {formatTimestamp(entry.timestamp)}
-                                  </td>
-                                  <td className="p-3">
-                                    <code className="text-xs text-foreground break-all">
-                                      {entry.oldUrl}
-                                    </code>
-                                  </td>
-                                  <td className="p-3">
-                                    <code className="text-xs text-foreground break-all">
-                                      {entry.newUrl || 'N/A'}
-                                    </code>
-                                  </td>
-                                  <td className="p-3">
-                                    <code className="text-sm text-foreground">{entry.path}</code>
-                                  </td>
-                                  <td className="p-3">
-                                    {entry.rules && entry.rules.length > 0 ? (
-                                      <div className="flex flex-wrap gap-1">
-                                        {entry.rules.map((rule: UrlRule) => (
-                                          <Button
-                                            key={rule.id}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 mb-1"
-                                            onClick={() => handleEditRule(rule)}
-                                            title={`Regel bearbeiten: ${rule.redirectType}`}
-                                          >
-                                            <Edit className="h-3 w-3 mr-1" />
-                                            {rule.matcher}
-                                            <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4">
-                                                {rule.redirectType === 'domain' ? 'D' : rule.redirectType === 'wildcard' ? 'W' : 'P'}
-                                            </Badge>
-                                          </Button>
-                                        ))}
-                                      </div>
-                                    ) : entry.rule ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-auto p-1 text-xs bg-muted hover:bg-muted/80"
-                                        onClick={() => handleEditRule(entry.rule)}
-                                        title="Regel bearbeiten"
-                                      >
-                                        <Edit className="h-3 w-3 mr-1" />
-                                        {entry.rule.matcher}
-                                      </Button>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">-</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                        <StatsTable
+                          entries={trackingEntries}
+                          sortConfig={{ by: sortBy, order: sortOrder }}
+                          onSort={handleSort}
+                          onEditRule={handleEditRule}
+                          formatTimestamp={formatTimestamp}
+                        />
                         
                         {/* Pagination Controls for Browser View */}
                         {totalStatsPages > 1 && (
