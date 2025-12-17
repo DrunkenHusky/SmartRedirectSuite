@@ -1489,10 +1489,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   }
 
   if (!isAuthenticated) {
-    return <AdminAuthForm onAuthenticated={() => {
-      setIsAuthenticated(true);
-      setIsCheckingAuth(false);
-    }} onClose={onClose} />;
+    return (
+      <>
+        <AdminAuthForm
+          onAuthenticated={() => {
+            setIsAuthenticated(true);
+            setIsCheckingAuth(false);
+          }}
+          onClose={onClose}
+        />
+        <Toaster />
+      </>
+    );
   }
 
   // Helper function to map technical field names to UI field names

@@ -44,11 +44,52 @@ app.use('/api', (_req, res, next) => {
   next();
 });
 
-// Global API Rate Limiting
-app.use('/api', rateLimitMiddleware);
-
 // Trust proxy settings for production
 app.set('trust proxy', true);
+
+// Logger middleware - MUST be before rate limiters to log blocked requests
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+
+      if (capturedJsonResponse) {
+        const safeLogBody = { ...capturedJsonResponse };
+        if (safeLogBody.sessionId) safeLogBody.sessionId = '***';
+        if (safeLogBody.password) safeLogBody.password = '***';
+        if (safeLogBody.token) safeLogBody.token = '***';
+        if (Array.isArray(safeLogBody.rules) && safeLogBody.rules.length > 5) {
+          safeLogBody.rules = `[${safeLogBody.rules.length} items]`;
+        }
+
+        const logString = JSON.stringify(safeLogBody);
+        logLine += ` :: ${logString.length > 1000 ? logString.substring(0, 1000) + '...' : logString}`;
+      }
+
+      if (logLine.length > 150) {
+        logLine = logLine.slice(0, 149) + "…";
+      }
+
+      log(logLine);
+    }
+  });
+
+  next();
+});
+
+// Global API Rate Limiting
+app.use('/api', rateLimitMiddleware);
 
 // Configure body parsers
 const defaultLimit = '1mb';
@@ -120,46 +161,6 @@ app.use('/api/admin', adminRateLimitMiddleware);
 
 // Apply CSRF protection to admin routes
 app.use('/api/admin', csrfCheck);
-
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-
-      if (capturedJsonResponse) {
-        const safeLogBody = { ...capturedJsonResponse };
-        if (safeLogBody.sessionId) safeLogBody.sessionId = '***';
-        if (safeLogBody.password) safeLogBody.password = '***';
-        if (safeLogBody.token) safeLogBody.token = '***';
-        if (Array.isArray(safeLogBody.rules) && safeLogBody.rules.length > 5) {
-          safeLogBody.rules = `[${safeLogBody.rules.length} items]`;
-        }
-
-        const logString = JSON.stringify(safeLogBody);
-        logLine += ` :: ${logString.length > 1000 ? logString.substring(0, 1000) + '...' : logString}`;
-      }
-
-      if (logLine.length > 150) {
-        logLine = logLine.slice(0, 149) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
 
 (async () => {
   const server = await registerRoutes(app);

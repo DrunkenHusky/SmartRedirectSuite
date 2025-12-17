@@ -13,7 +13,6 @@ async function throwIfResNotOk(res: Response) {
       // Clone the response to avoid consuming the body twice
       const responseClone = res.clone();
       const errorData = await responseClone.json();
-      console.log('Parsed error response:', errorData);
       
       if (errorData && typeof errorData === 'object' && errorData.error) {
         // Create a proper Error object with the message
@@ -34,7 +33,6 @@ async function throwIfResNotOk(res: Response) {
         throw parseError;
       }
       
-      console.log('JSON parsing failed, falling back to text:', parseError);
       // If JSON parsing fails, fallback to text
       try {
         const text = await res.text();
