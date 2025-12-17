@@ -1,6 +1,6 @@
 
-import { storage } from "./storage";
-import { LocalFileUploadService } from "./localFileUpload";
+import { storage } from "../../server/storage";
+import { LocalFileUploadService } from "../../server/localFileUpload";
 import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";

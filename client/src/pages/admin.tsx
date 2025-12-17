@@ -346,6 +346,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchLowExplanation: "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
+    enableTrackingCache: true,
   });
 
   // Statistics filters and state
@@ -612,6 +613,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         matchLowExplanation: settingsData.matchLowExplanation || "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
         matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
         matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
+        enableTrackingCache: settingsData.enableTrackingCache ?? true,
       });
     }
   }, [settingsData]);
@@ -2626,16 +2628,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
-                      {/* 6. Link Detection Settings */}
+                      {/* 6. Link Detection & Performance Settings */}
                       <div className="space-y-6 mt-8">
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung</h3>
-                            <p className="text-sm text-muted-foreground">Steuert, ob Groß-/Kleinschreibung bei URL-Regeln beachtet wird</p>
+                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung & Performance</h3>
+                            <p className="text-sm text-muted-foreground">Einstellungen zur Erkennungslogik und Systemleistung</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          {/* Case Sensitivity */}
                           <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                             <div className="flex items-center gap-3">
                               <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -2654,12 +2657,33 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               className="data-[state=checked]:bg-green-600"
                             />
                           </div>
+
+                          {/* Tracking Cache Toggle */}
+                          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                              <div>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Tracking-Cache aktivieren (RAM)</p>
+                                <p className="text-xs text-purple-700 dark:text-purple-300">
+                                  Speichert Statistik-Daten im Arbeitsspeicher für schnellen Zugriff. Erhöht die Systemgeschwindigkeit massiv, benötigt aber mehr RAM bei vielen Daten.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.enableTrackingCache}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, enableTrackingCache: checked })
+                              }
+                              className="data-[state=checked]:bg-purple-600"
+                            />
+                          </div>
+
                           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Best Practice:</p>
-                                <p>Nutzen Sie die Groß-/Kleinschreibung nur, wenn Ihre Altsysteme URLs case-sensitiv ausliefern und Sie dies exakt abbilden müssen.</p>
+                                <p className="font-medium">Empfehlung:</p>
+                                <p>Lassen Sie den Tracking-Cache aktiviert (Standard), es sei denn, Ihr Server hat sehr wenig Arbeitsspeicher (&lt; 512MB) oder Sie haben extrem viele Tracking-Daten (&gt; 1 Mio. Einträge).</p>
                               </div>
                             </div>
                           </div>

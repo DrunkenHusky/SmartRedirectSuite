@@ -288,6 +288,14 @@ Das Admin-Panel zeigt:
 - Zeitbasierte Auswertungen (24h, 7 Tage, alle Daten)
 - Export als CSV/JSON
 
+### Performance & Systemanforderungen
+
+Das System verwendet eine hochoptimierte In-Memory-Verarbeitung für URL-Regeln und Tracking-Daten.
+
+*   **Tracking-Cache:** Um hohe I/O-Lasten zu vermeiden, können Tracking-Daten im Arbeitsspeicher gehalten werden. Dies ist standardmäßig aktiviert und beschleunigt Dashboard-Zugriffe massiv.
+    *   **Empfehlung:** Für Produktionssysteme mit vielen Zugriffen sollten mindestens **512 MB bis 1 GB RAM** eingeplant werden, insbesondere wenn die Anzahl der Tracking-Einträge 500'000 übersteigt.
+    *   **Konfiguration:** Der Cache kann in den Admin-Einstellungen unter "System & Daten" -> "Systemeinstellungen" deaktiviert werden, falls der Arbeitsspeicher knapp ist (führt zu langsameren Statistiken).
+
 ## Release Prozess
 
 Dieses Projekt verwendet eine automatisierte CI/CD-Pipeline mit **GitHub Actions** und **Semantic Release**.
