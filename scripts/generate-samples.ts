@@ -15,7 +15,7 @@ const sampleRules: UrlRule[] = [
   } as any,
   {
     matcher: "/legacy-section",
-    targetUrl: "https://example.com/modern-section",
+    targetUrl: "/modern-section",
     redirectType: 'partial',
     infoText: 'Section/Folder Redirect',
     autoRedirect: true
