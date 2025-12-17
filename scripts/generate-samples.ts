@@ -13,7 +13,7 @@ const sampleRules: UrlRule[] = [
     infoText: 'Exact Page Redirect',
     autoRedirect: false,
     discardQueryParams: false,
-    forwardQueryParams: false
+    forwardQueryParams: true // Demonstrate keeping params (default is discard for wildcard)
   } as any,
   {
     matcher: "/legacy-section",
@@ -21,8 +21,8 @@ const sampleRules: UrlRule[] = [
     redirectType: 'partial',
     infoText: 'Section/Folder Redirect',
     autoRedirect: true,
-    discardQueryParams: false,
-    forwardQueryParams: true
+    discardQueryParams: true, // Demonstrate discarding params (default is keep for partial)
+    forwardQueryParams: false
   } as any
 ];
 

@@ -6,7 +6,7 @@
     "infoText": "Exact Page Redirect",
     "autoRedirect": false,
     "discardQueryParams": false,
-    "forwardQueryParams": false
+    "forwardQueryParams": true
   },
   {
     "matcher": "/legacy-section",
@@ -14,7 +14,7 @@
     "redirectType": "partial",
     "infoText": "Section/Folder Redirect",
     "autoRedirect": true,
-    "discardQueryParams": false,
-    "forwardQueryParams": true
+    "discardQueryParams": true,
+    "forwardQueryParams": false
   }
 ]
