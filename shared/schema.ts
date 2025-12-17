@@ -84,6 +84,11 @@ export const urlTrackingSchema = z.object({
   ruleIds: z.array(z.string().uuid())
     .optional()
     .default([]),
+  matchQuality: z.number()
+    .min(0, "Match quality must be positive")
+    .max(100, "Match quality must be <= 100")
+    .optional()
+    .default(0),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({

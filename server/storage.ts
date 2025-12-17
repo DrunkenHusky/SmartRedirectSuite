@@ -625,6 +625,9 @@ export class FileStorage implements IStorage {
         case "userAgent":
            comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
            break;
+        case "matchQuality":
+           comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
+           break;
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
