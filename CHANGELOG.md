@@ -1,3 +1,35 @@
+# [2.13.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.12.0...v2.13.0) (2025-12-17)
+
+
+### Bug Fixes
+
+* **admin:** improve mobile layout for System & Data tab ([0e2c5ce](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0e2c5ce547df2a25415d0ae79cf0c74e0e68fd17))
+* **data:** remove incorrect '/test-rule' from initial rules ([ffc9cce](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ffc9ccea01ecd07c80ba2f4e68ce74d77e12f597))
+* **security:** prevent path traversal in local file uploads ([d430f6d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d430f6dfb346ed84784857b0bcf231e812acd455))
+* **security:** prevent path traversal in local file uploads ([3d75eda](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3d75eda83552b0355d9ee1407a6b92853f5d8f84))
+* **server:** correct static asset path in production ([5323a3f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5323a3f580d1102873d4bbeec083a3a7b7662a0d))
+* **server:** correct static asset path in production ([5ea2462](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5ea2462c59d4ccd73e3dc4a09480d735d31214aa))
+
+
+### Features
+
+* **a11y:** add aria-labels to icon-only buttons in admin ([a91c19c](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/a91c19ca9848f721b97e0753be9c01d9764e6df7))
+* add draggable column resizing to admin tables ([2ed5e05](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/2ed5e054cb594ede6fb3b48fd9108da6d422e83f))
+* inject commit hash as version during fly deployment ([9cf8313](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/9cf831355c53ce49acd1c65d7bfd9e4d2201ad28))
+* make statistics table responsive with horizontal scroll and resizable columns ([29e9dc1](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/29e9dc1d873a7e0371c657418dd7a143183f4ace))
+* Manage blocked IPs, export, and clear functionality ([8b940ce](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/8b940cee20cbdd6cce3b3325ce2ea317c6036f3b))
+* secure session secret generation ([8449625](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/84496254416bbb669eccd926e70a949a3895d56d))
+* **security:** implement CSRF protection for admin API ([4f156d8](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/4f156d887925ad789f4b0c34e93b4bcc84358664))
+* **storage:** implement tracking cache to optimize I/O ([0747edf](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0747edfb8ed7f532a7926c0d5da0c128adc27079))
+* **storage:** make tracking cache configurable and move tests ([36ac82b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/36ac82b96a0d30b27367bb02693a15f58abe606b))
+* **ui:** improve copy button feedback and accessibility ([f185d4a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f185d4a0ccc2b142bbf1bc1a02c09b695ca1973c))
+
+
+### Performance Improvements
+
+* lazy load AdminPage to reduce initial bundle size ([32da3d9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/32da3d941c07a7b0eabc7bd312a843872dacde48))
+* Optimize tracking stats pagination to O(1) for default view ([854e055](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/854e055c272c824aea6fdfcd4c7e9d4ade6c28a4))
+
 # [2.12.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.11.0...v2.12.0) (2025-12-07)
 
 
