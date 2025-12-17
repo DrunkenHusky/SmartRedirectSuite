@@ -1,8 +1,9 @@
-## 2025-12-15 - [CSRF Protection]
-**Vulnerability:** The application was missing CSRF protection on API endpoints, allowing potential state-changing attacks via authenticated sessions.
-**Learning:** `Origin` and `Referer` headers can be used as a stateless defense against CSRF. However, parsing these headers must be robust. Specifically, `Origin: null` (sent by privacy modes or sandboxed iframes) or malformed URLs can cause server crashes (DoS) if not handled with try-catch blocks or safe parsing. Also, IPv6 addresses in `Origin` headers require careful handling when stripping ports (don't just split on colon).
-**Prevention:**
-1.  Use `new URL()` for robust parsing of `Origin` and `Referer`.
-2.  Always wrap header parsing logic in `try-catch` to fail closed (deny access) on errors instead of crashing.
-3.  Apply middleware explicitly to relevant route groups (e.g., `/api/admin`).
-4.  Test edge cases like `Origin: null`, IPv6 addresses, and missing headers.
+## 2024-05-22 - Session Secret Security & Future Tasks
+**Vulnerability:** The application was using a hardcoded fallback string for `SESSION_SECRET` when the environment variable was missing. This makes session cookies predictable if the admin forgets to configure the secret.
+**Learning:** Hardcoded fallbacks for cryptographic secrets are risky because they provide a false sense of functionality while compromising security. It's better to auto-generate a random secret (even if it causes inconvenience like session invalidation on restart) than to use a known weak secret.
+**Prevention:** Always use `crypto.randomBytes()` for fallback secrets or fail startup if critical secrets are missing.
+**Status:** Fixed by implementing random generation on startup.
+
+### Deferred Tasks
+1. **CSP Tightening:** The Content Security Policy allows `'unsafe-eval'` and `'unsafe-inline'`. This should be restricted to prevent XSS.
+2. **Error Handling:** Verify `server/middleware/errorHandler.ts` to ensure stack traces are not leaked in production.

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import helmet from "helmet";
+import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { FileSessionStore } from "./fileSessionStore";
@@ -13,8 +14,13 @@ const app = express();
 if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === "Password1") {
   console.warn("WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.");
 }
+
+// Session Secret Configuration
+const sessionSecret = process.env.SESSION_SECRET || randomBytes(64).toString('hex');
+
 if (!process.env.SESSION_SECRET) {
-  console.warn("WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Verwende unsicheren Standardwert.");
+  console.warn("WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.");
+  console.warn("HINWEIS: Admin-Sitzungen werden bei jedem Neustart ungültig. Setzen Sie SESSION_SECRET für persistente Sitzungen.");
 }
 
 // Helmet Configuration
@@ -73,7 +79,7 @@ app.use((req, res, next) => {
 // Session configuration
 const sessionMiddleware = session({
   store: new FileSessionStore(),
-  secret: process.env.SESSION_SECRET || 'url-migration-secret-key-change-in-production',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   name: 'admin_session',
