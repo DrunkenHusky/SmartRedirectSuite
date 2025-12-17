@@ -91,6 +91,8 @@ export interface IStorage {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
     ruleFilter?: 'all' | 'with_rule' | 'no_rule',
+    minQuality?: number,
+    maxQuality?: number,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -661,6 +663,8 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
+    minQuality?: number,
+    maxQuality?: number,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -676,6 +680,18 @@ export class FileStorage implements IStorage {
       search && search.trim()
         ? await this.searchTrackingEntries(search, sortBy, sortOrder)
         : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+
+    // Filter based on match quality
+    if (minQuality !== undefined) {
+      filteredEntries = filteredEntries.filter(
+        (entry) => (entry.matchQuality || 0) >= minQuality,
+      );
+    }
+    if (maxQuality !== undefined) {
+      filteredEntries = filteredEntries.filter(
+        (entry) => (entry.matchQuality || 0) <= maxQuality,
+      );
+    }
 
     // Filter based on rule presence
     if (ruleFilter === 'with_rule') {
