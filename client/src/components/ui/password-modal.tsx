@@ -21,13 +21,19 @@ export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps
     setIsLoading(true);
     setError("");
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
       const response = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
         credentials: "include",
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         setPassword("");
@@ -37,22 +43,29 @@ export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps
         const errorData = await response.json().catch(() => ({}));
         setError(errorData.error || "Falsches Passwort. Bitte versuchen Sie es erneut.");
       }
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error("Login error:", error);
-      setError("Verbindungsfehler. Bitte versuchen Sie es erneut.");
+
+      if (error.name === 'AbortError') {
+         setError("Zeitüberschreitung bei der Anfrage. Bitte versuchen Sie es erneut.");
+      } else {
+         setError("Verbindungsfehler. Bitte versuchen Sie es erneut.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleClose = () => {
+    if (isLoading) return; // Prevent closing while loading
     setPassword("");
     setError("");
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>

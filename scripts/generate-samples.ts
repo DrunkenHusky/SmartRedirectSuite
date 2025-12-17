@@ -9,16 +9,20 @@ const sampleRules: UrlRule[] = [
   {
     matcher: "/old-page",
     targetUrl: "https://example.com/new-page",
-    redirectType: 'partial',
-    infoText: 'Sample Redirect',
-    autoRedirect: false
+    redirectType: 'wildcard',
+    infoText: 'Exact Page Redirect',
+    autoRedirect: false,
+    discardQueryParams: false,
+    forwardQueryParams: true // Demonstrate keeping params (default is discard for wildcard)
   } as any,
   {
     matcher: "/legacy-section",
-    targetUrl: "https://example.com/modern-section",
-    redirectType: 'wildcard',
-    infoText: 'Legacy Section Redirect',
-    autoRedirect: true
+    targetUrl: "/modern-section",
+    redirectType: 'partial',
+    infoText: 'Section/Folder Redirect',
+    autoRedirect: true,
+    discardQueryParams: true, // Demonstrate discarding params (default is keep for partial)
+    forwardQueryParams: false
   } as any
 ];
 
@@ -33,7 +37,9 @@ const csvData = sampleRules.map(r => ({
   'Target URL': r.targetUrl,
   Type: r.redirectType,
   Info: r.infoText,
-  'Auto Redirect': r.autoRedirect
+  'Auto Redirect': r.autoRedirect,
+  'Discard Query Params': r.discardQueryParams,
+  'Keep Query Params': r.forwardQueryParams
 }));
 const csvContent = stringify(csvData, { header: true });
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.csv'), csvContent);
@@ -46,7 +52,9 @@ const excelData = sampleRules.map(r => ({
   'Target URL': r.targetUrl,
   Type: r.redirectType,
   Info: r.infoText,
-  'Auto Redirect': r.autoRedirect
+  'Auto Redirect': r.autoRedirect,
+  'Discard Query Params': r.discardQueryParams,
+  'Keep Query Params': r.forwardQueryParams
 }));
 const workbook = utils.book_new();
 const worksheet = utils.json_to_sheet(excelData);
@@ -61,7 +69,9 @@ const jsonRules = sampleRules.map(r => ({
   targetUrl: r.targetUrl,
   redirectType: r.redirectType,
   infoText: r.infoText,
-  autoRedirect: r.autoRedirect
+  autoRedirect: r.autoRedirect,
+  discardQueryParams: r.discardQueryParams,
+  forwardQueryParams: r.forwardQueryParams
 }));
 const jsonContent = JSON.stringify(jsonRules, null, 2);
 fs.writeFileSync(path.join(process.cwd(), 'sample-rules-import.json'), jsonContent);

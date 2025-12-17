@@ -2,15 +2,19 @@
   {
     "matcher": "/old-page",
     "targetUrl": "https://example.com/new-page",
-    "redirectType": "partial",
-    "infoText": "Sample Redirect",
-    "autoRedirect": false
+    "redirectType": "wildcard",
+    "infoText": "Exact Page Redirect",
+    "autoRedirect": false,
+    "discardQueryParams": false,
+    "forwardQueryParams": true
   },
   {
     "matcher": "/legacy-section",
-    "targetUrl": "https://example.com/modern-section",
-    "redirectType": "wildcard",
-    "infoText": "Legacy Section Redirect",
-    "autoRedirect": true
+    "targetUrl": "/modern-section",
+    "redirectType": "partial",
+    "infoText": "Section/Folder Redirect",
+    "autoRedirect": true,
+    "discardQueryParams": true,
+    "forwardQueryParams": false
   }
 ]

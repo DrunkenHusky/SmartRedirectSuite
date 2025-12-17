@@ -91,6 +91,8 @@ export interface IStorage {
     sortBy?: string,
     sortOrder?: "asc" | "desc",
     ruleFilter?: 'all' | 'with_rule' | 'no_rule',
+    minQuality?: number,
+    maxQuality?: number,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -625,6 +627,9 @@ export class FileStorage implements IStorage {
         case "userAgent":
            comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
            break;
+        case "matchQuality":
+           comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
+           break;
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
@@ -658,6 +663,8 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
+    minQuality?: number,
+    maxQuality?: number,
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -673,6 +680,24 @@ export class FileStorage implements IStorage {
       search && search.trim()
         ? await this.searchTrackingEntries(search, sortBy, sortOrder)
         : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+
+    // Filter based on match quality
+    if (minQuality !== undefined) {
+      filteredEntries = filteredEntries.filter(
+        (entry) => {
+          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+          return q >= minQuality;
+        }
+      );
+    }
+    if (maxQuality !== undefined) {
+      filteredEntries = filteredEntries.filter(
+        (entry) => {
+          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+          return q <= maxQuality;
+        }
+      );
+    }
 
     // Filter based on rule presence
     if (ruleFilter === 'with_rule') {

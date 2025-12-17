@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowUp,
   ArrowDown,
-  Edit
+  Edit,
+  AlertCircle
 } from "lucide-react";
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
@@ -37,6 +38,7 @@ const StatsTable = memo(({
       newUrl: 250,
       path: 200,
       rule: 150,
+      matchQuality: 100,
     }
   });
 
@@ -110,6 +112,20 @@ const StatsTable = memo(({
               Regel
               <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
             </th>
+            <th className="text-left p-3 relative" style={{ width: columnWidths.matchQuality }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSort('matchQuality')}
+                className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+              >
+                <span className="flex items-center gap-1 truncate">
+                  Qualität
+                  {getSortIcon('matchQuality')}
+                </span>
+              </Button>
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('matchQuality', e)} />
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -170,9 +186,23 @@ const StatsTable = memo(({
                     <Edit className="h-3 w-3 mr-1" />
                     <span className="truncate max-w-[100px] inline-block align-bottom">{entry.rule.matcher}</span>
                   </Button>
+                ) : (entry.ruleId || (entry.ruleIds && entry.ruleIds.length > 0)) ? (
+                  <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Regel nicht mehr vorhanden
+                  </span>
                 ) : (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
+              </td>
+              <td className="p-3">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  (entry.matchQuality || 0) >= 90 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                  (entry.matchQuality || 0) >= 50 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                }`}>
+                  {entry.matchQuality || 0}%
+                </span>
               </td>
             </tr>
           ))}

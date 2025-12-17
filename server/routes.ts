@@ -665,7 +665,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ruleFilter = 'with_rule';
       }
 
-      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, ruleFilter);
+      // Quality filtering - Robust parsing
+      let minQuality: number | undefined = undefined;
+      if (req.query.minQuality) {
+        const parsed = parseInt(req.query.minQuality as string, 10);
+        if (!isNaN(parsed)) minQuality = parsed;
+      }
+
+      let maxQuality: number | undefined = undefined;
+      if (req.query.maxQuality) {
+        const parsed = parseInt(req.query.maxQuality as string, 10);
+        if (!isNaN(parsed)) maxQuality = parsed;
+      }
+
+      const result = await storage.getTrackingEntriesPaginated(
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        ruleFilter,
+        minQuality,
+        maxQuality
+      );
       res.json(result);
     } catch (error) {
       console.error("Paginated tracking entries error:", error);

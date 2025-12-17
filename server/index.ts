@@ -20,7 +20,6 @@ const sessionSecret = process.env.SESSION_SECRET || randomBytes(64).toString('he
 
 if (!process.env.SESSION_SECRET) {
   console.warn("WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.");
-  console.warn("HINWEIS: Admin-Sitzungen werden bei jedem Neustart ungültig. Setzen Sie SESSION_SECRET für persistente Sitzungen.");
 }
 
 // Helmet Configuration
@@ -45,78 +44,10 @@ app.use('/api', (_req, res, next) => {
   next();
 });
 
-// Global API Rate Limiting
-app.use('/api', rateLimitMiddleware);
-
 // Trust proxy settings for production
 app.set('trust proxy', true);
 
-// Configure body parsers
-const defaultLimit = '1mb';
-const importLimit = '500mb';
-
-const jsonMiddleware = express.json({ limit: defaultLimit });
-const largeJsonMiddleware = express.json({ limit: importLimit });
-const urlEncodedMiddleware = express.urlencoded({ extended: false, limit: defaultLimit });
-const largeUrlEncodedMiddleware = express.urlencoded({ extended: false, limit: importLimit });
-
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/admin/import') || req.path.startsWith('/api/admin/logo/upload')) {
-    if (req.is('json')) {
-      largeJsonMiddleware(req, res, next);
-    } else {
-      largeUrlEncodedMiddleware(req, res, next);
-    }
-  } else {
-    if (req.is('json')) {
-      jsonMiddleware(req, res, next);
-    } else {
-      urlEncodedMiddleware(req, res, next);
-    }
-  }
-});
-
-// Session configuration
-const sessionMiddleware = session({
-  store: new FileSessionStore(),
-  secret: sessionSecret,
-  resave: false,
-  saveUninitialized: false,
-  name: 'admin_session',
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax',
-    path: '/',
-    ...(process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN && {
-      domain: process.env.COOKIE_DOMAIN,
-      sameSite: 'none'
-    })
-  },
-  rolling: true
-});
-
-// Force HTTPS in production
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    if (req.header('x-forwarded-proto') !== 'https') {
-      res.redirect(`https://${req.header('host')}${req.url}`);
-      return;
-    }
-    next();
-  });
-}
-
-// Apply session middleware to all admin routes
-app.use('/api/admin', sessionMiddleware);
-
-// Apply extra rate limiting to admin routes (auth + brute force handled separately, this is for general admin actions)
-app.use('/api/admin', adminRateLimitMiddleware);
-
-// Apply CSRF protection to admin routes
-app.use('/api/admin', csrfCheck);
-
+// Logger middleware - MUST be before rate limiters to log blocked requests
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -156,6 +87,80 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Global API Rate Limiting
+app.use('/api', rateLimitMiddleware);
+
+// Configure body parsers
+const defaultLimit = '1mb';
+const importLimit = '500mb';
+
+const jsonMiddleware = express.json({ limit: defaultLimit });
+const largeJsonMiddleware = express.json({ limit: importLimit });
+const urlEncodedMiddleware = express.urlencoded({ extended: false, limit: defaultLimit });
+const largeUrlEncodedMiddleware = express.urlencoded({ extended: false, limit: importLimit });
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/admin/import') || req.path.startsWith('/api/admin/logo/upload')) {
+    if (req.is('json')) {
+      largeJsonMiddleware(req, res, next);
+    } else {
+      largeUrlEncodedMiddleware(req, res, next);
+    }
+  } else {
+    if (req.is('json')) {
+      jsonMiddleware(req, res, next);
+    } else {
+      urlEncodedMiddleware(req, res, next);
+    }
+  }
+});
+
+// Session configuration
+const sessionStore = new FileSessionStore();
+sessionStore.clear(() => {
+  console.log("INFO: Alle existierenden Sitzungen wurden bereinigt.");
+});
+
+const sessionMiddleware = session({
+  store: sessionStore,
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  name: 'admin_session',
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'lax',
+    path: '/',
+    ...(process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN && {
+      domain: process.env.COOKIE_DOMAIN,
+      sameSite: 'none'
+    })
+  },
+  rolling: true
+});
+
+// Force HTTPS in production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      res.redirect(`https://${req.header('host')}${req.url}`);
+      return;
+    }
+    next();
+  });
+}
+
+// Apply session middleware to all admin routes
+app.use('/api/admin', sessionMiddleware);
+
+// Apply extra rate limiting to admin routes (auth + brute force handled separately, this is for general admin actions)
+app.use('/api/admin', adminRateLimitMiddleware);
+
+// Apply CSRF protection to admin routes
+app.use('/api/admin', csrfCheck);
 
 (async () => {
   const server = await registerRoutes(app);

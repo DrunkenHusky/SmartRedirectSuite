@@ -252,6 +252,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
+  const [statsQualityFilter, setStatsQualityFilter] = useState<string>("all");
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -521,7 +522,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter, statsQualityFilter],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -532,6 +533,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         sortOrder: sortOrder,
         ruleFilter: statsRuleFilter,
       });
+
+      // Parse quality filter
+      if (statsQualityFilter !== "all") {
+        if (statsQualityFilter.startsWith("min_")) {
+          params.append("minQuality", statsQualityFilter.replace("min_", ""));
+        } else if (statsQualityFilter.startsWith("max_")) {
+          params.append("maxQuality", statsQualityFilter.replace("max_", ""));
+        } else if (statsQualityFilter === "exact_100") {
+          params.append("minQuality", "100");
+        }
+      }
       
       if (debouncedStatsSearchQuery.trim()) {
         params.append('search', debouncedStatsSearchQuery);
@@ -1477,10 +1489,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   }
 
   if (!isAuthenticated) {
-    return <AdminAuthForm onAuthenticated={() => {
-      setIsAuthenticated(true);
-      setIsCheckingAuth(false);
-    }} onClose={onClose} />;
+    return (
+      <>
+        <AdminAuthForm
+          onAuthenticated={() => {
+            setIsAuthenticated(true);
+            setIsCheckingAuth(false);
+          }}
+          onClose={onClose}
+        />
+        <Toaster />
+      </>
+    );
   }
 
   // Helper function to map technical field names to UI field names
@@ -2980,18 +3000,36 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         aria-label="Statistiken durchsuchen"
                       />
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <Select
                         value={statsRuleFilter}
                         onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Filter" />
+                          <SelectValue placeholder="Regel-Filter" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Alle Einträge</SelectItem>
                           <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
                           <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={statsQualityFilter}
+                        onValueChange={(value) => setStatsQualityFilter(value)}
+                      >
+                        <SelectTrigger className="w-auto h-9 text-xs">
+                          <SelectValue placeholder="Qualität" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle Qualitäten</SelectItem>
+                          <SelectItem value="exact_100">100% (Exakt)</SelectItem>
+                          <SelectItem value="min_90">≥ 90% (Hoch)</SelectItem>
+                          <SelectItem value="min_75">≥ 75%</SelectItem>
+                          <SelectItem value="min_50">≥ 50%</SelectItem>
+                          <SelectItem value="max_99">&lt; 100% (Nicht exakt)</SelectItem>
+                          <SelectItem value="max_49">&lt; 50% (Schlecht)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -3461,6 +3499,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
+                            <h4 className="font-medium text-sm">Sicherheit</h4>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowManageBlockedIpsDialog(true)}
+                                    className="w-full sm:w-auto"
+                                >
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Blockierte IPs anzeigen und verwalten
+                                </Button>
+                                <p className="text-xs text-muted-foreground text-center sm:text-left">
+                                    Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-4 flex flex-col gap-2">
                             <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -3509,19 +3564,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
-                                    </p>
-                                </div>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setShowManageBlockedIpsDialog(true)}
-                                        className="w-full sm:w-auto"
-                                    >
-                                        <Shield className="h-4 w-4 mr-2" />
-                                        Blockierte IPs anzeigen und verwalten
-                                    </Button>
-                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
                                     </p>
                                 </div>
                             </div>
