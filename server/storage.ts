@@ -689,8 +689,35 @@ export class FileStorage implements IStorage {
       });
     }
 
-    if (!search || !search.trim()) {
-      // Only sort if not already sorted by searchTrackingEntries
+    // Optimization: If sorting by timestamp (default), avoid the expensive sort operation
+    // because the data is already in chronological order (ascending)
+    let paginatedEntries: typeof filteredEntries;
+    const total = filteredEntries.length;
+    const totalPages = Math.ceil(total / limit);
+
+    if ((!search || !search.trim()) && (sortBy === "timestamp" || !sortBy)) {
+      // Data is already sorted ASC by timestamp
+      if (sortOrder === "desc") {
+        // We want the end of the array (newest items)
+        // For page 1: last 'limit' items
+        // For page 2: items before that
+        const startFromEnd = total - ((page - 1) * limit);
+        const endFromEnd = total - (page * limit);
+
+        // Ensure indices are within bounds
+        const sliceEnd = Math.max(0, startFromEnd);
+        const sliceStart = Math.max(0, endFromEnd);
+
+        // Slice and reverse to get DESC order
+        paginatedEntries = filteredEntries.slice(sliceStart, sliceEnd).reverse();
+      } else {
+        // ASC order - standard pagination
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        paginatedEntries = filteredEntries.slice(startIndex, endIndex);
+      }
+    } else if (!search || !search.trim()) {
+      // Only sort if not already sorted by searchTrackingEntries and not handled by optimization above
       filteredEntries.sort((a, b) => {
         let comparison = 0;
 
@@ -716,14 +743,17 @@ export class FileStorage implements IStorage {
 
         return sortOrder === "asc" ? comparison : -comparison;
       });
-    }
 
-    // Calculate pagination
-    const total = filteredEntries.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedEntries = filteredEntries.slice(startIndex, endIndex);
+      // Calculate pagination for sorted data
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      paginatedEntries = filteredEntries.slice(startIndex, endIndex);
+    } else {
+      // Was already sorted by searchTrackingEntries
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      paginatedEntries = filteredEntries.slice(startIndex, endIndex);
+    }
 
     // Enrich with rule information
     const rules = await this.getUrlRules();
