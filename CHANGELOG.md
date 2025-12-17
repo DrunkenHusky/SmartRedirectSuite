@@ -1,3 +1,19 @@
+# [2.14.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.13.0...v2.14.0) (2025-12-17)
+
+
+### Bug Fixes
+
+* **auth:** resolve stuck login dialog state and add timeout ([458591f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/458591f29d6a6361afae9f21fa9979423180162f))
+* **tracking:** ensure match quality is sent in tracking requests ([5f33804](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5f33804e507f381760d4ea058af2f3fcd87f29f3))
+
+
+### Features
+
+* add link quality indicator and filter to statistics ([a1426d0](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/a1426d04e32ba5256467673d33a3d545cd14ba99))
+* clear all sessions on server startup ([0929679](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0929679a8255fd18ed2a919106cb39872118feaa))
+* handle orphaned rules in statistics table ([a6c9fef](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/a6c9fefd90747a2eb65dc051302702d77b7f9af1))
+* handle orphaned rules in statistics table ([70a16fa](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/70a16faf7abd4b066883ee590c45461b7778a427))
+
 # [2.13.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.12.0...v2.13.0) (2025-12-17)
 
 
