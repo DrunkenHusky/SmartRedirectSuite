@@ -85,12 +85,27 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const fallbackAppName = __APP_NAME__ || "URL Migration Service";
 
   // Check if user is already authenticated before showing password prompt
-  const handleAdminAccess = async () => {
+  const handleAdminAccess = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Prevent multiple clicks
+    if (isCheckingAuth) return;
+
+    // Explicitly reset any lingering modal state
+    setShowPasswordModal(false);
+
     setIsCheckingAuth(true);
     try {
       const response = await fetch("/api/admin/status", {
         method: "GET",
-        credentials: "include"
+        credentials: "include",
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
       
       if (response.ok) {
@@ -105,6 +120,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       // User is not logged in, show password prompt
       setShowPasswordModal(true);
     } catch (error) {
+      console.error("Auth check failed:", error);
       // On error, show password prompt as fallback
       setShowPasswordModal(true);
     } finally {
@@ -570,7 +586,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleAdminAccess}
+              onClick={(e) => handleAdminAccess(e)}
               disabled={isCheckingAuth}
               className="text-muted-foreground hover:text-primary"
               title="Administrator-Bereich"
