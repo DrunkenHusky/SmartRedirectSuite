@@ -456,10 +456,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       const response = await fetch(`/api/admin/rules/paginated?${params}`, {
         credentials: 'include',
       });
-      if (response.status === 401 || response.status === 403) {
-        setIsAuthenticated(false);
-        throw new Error('Authentication required');
-      }
+      if (response.status === 401 || response.status === 403) { toast({ title: "Sitzung abgelaufen", description: "Bitte melden Sie sich erneut an.", variant: "destructive" }); setIsAuthenticated(false); throw new Error('Authentication required'); }
       if (!response.ok) {
         throw new Error('Failed to fetch rules');
       }
@@ -487,10 +484,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       const response = await fetch(url, {
         credentials: 'include',
       });
-      if (response.status === 401 || response.status === 403) {
-        setIsAuthenticated(false);
-        throw new Error('Authentication required');
-      }
+      if (response.status === 401 || response.status === 403) { toast({ title: "Sitzung abgelaufen", description: "Bitte melden Sie sich erneut an.", variant: "destructive" }); setIsAuthenticated(false); throw new Error('Authentication required'); }
       if (!response.ok) {
         throw new Error('Failed to fetch statistics');
       }
@@ -510,10 +504,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       const url = `/api/admin/stats/top100${params.toString() ? '?' + params.toString() : ''}`;
       const response = await fetch(url, { credentials: 'include' });
-      if (response.status === 401 || response.status === 403) {
-        setIsAuthenticated(false);
-        throw new Error('Authentication required');
-      }
+      if (response.status === 401 || response.status === 403) { toast({ title: "Sitzung abgelaufen", description: "Bitte melden Sie sich erneut an.", variant: "destructive" }); setIsAuthenticated(false); throw new Error('Authentication required'); }
       if (!response.ok) throw new Error('Failed to fetch top 100');
       return response.json();
     },
@@ -542,10 +533,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       const response = await fetch(`/api/admin/stats/entries/paginated?${params}`, {
         credentials: 'include',
       });
-      if (response.status === 401 || response.status === 403) {
-        setIsAuthenticated(false);
-        throw new Error('Authentication required');
-      }
+      if (response.status === 401 || response.status === 403) { toast({ title: "Sitzung abgelaufen", description: "Bitte melden Sie sich erneut an.", variant: "destructive" }); setIsAuthenticated(false); throw new Error('Authentication required'); }
       if (!response.ok) {
         throw new Error('Failed to fetch tracking entries');
       }

@@ -84,7 +84,9 @@ const sessionMiddleware = session({
   saveUninitialized: false,
   name: 'admin_session',
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    // 'auto' uses the connection's security (HTTPS -> secure: true, HTTP -> secure: false)
+    // This allows the app to work behind proxies (with X-Forwarded-Proto) AND on local HTTP
+    secure: 'auto',
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     sameSite: 'lax',
@@ -97,8 +99,8 @@ const sessionMiddleware = session({
   rolling: true
 });
 
-// Force HTTPS in production
-if (process.env.NODE_ENV === 'production') {
+// Force HTTPS in production (optional)
+if (process.env.NODE_ENV === 'production' && process.env.DISABLE_HTTPS_REDIRECT !== 'true') {
   app.use((req, res, next) => {
     if (req.header('x-forwarded-proto') !== 'https') {
       res.redirect(`https://${req.header('host')}${req.url}`);
