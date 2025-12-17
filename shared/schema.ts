@@ -293,7 +293,11 @@ export const generalSettingsSchema = z.object({
     .min(1, "Text für keine Übereinstimmung darf nicht leer sein")
     .max(500, "Text für keine Übereinstimmung ist zu lang")
     .default("Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet."),
-    
+
+  // Tracking Cache Settings
+  enableTrackingCache: z.boolean()
+    .default(true),
+
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict(); // Prevent extra properties
 
