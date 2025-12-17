@@ -260,10 +260,6 @@ export const generalSettingsSchema = z.object({
   autoRedirect: z.boolean()
     .default(false),
 
-  // Encode imported URLs
-  encodeImportedUrls: z.boolean()
-    .default(true),
-
   // Show link quality gauge
   showLinkQualityGauge: z.boolean()
     .default(true),
