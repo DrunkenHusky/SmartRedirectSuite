@@ -3359,9 +3359,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg gap-4">
+                                <div className="flex items-start gap-3 flex-1">
+                                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
                                     <div>
                                         <p className="text-sm font-medium text-blue-800 dark:text-blue-200">URLs automatisch kodieren</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300">
@@ -3376,7 +3376,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         setGeneralSettings(newSettings);
                                         updateSettingsMutation.mutate(newSettings);
                                     }}
-                                    className="data-[state=checked]:bg-blue-600"
+                                    className="data-[state=checked]:bg-blue-600 flex-shrink-0"
                                 />
                             </div>
 
@@ -3549,16 +3549,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
                             <h4 className="font-medium text-sm">Cache Wartung</h4>
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <Button
                                     variant="outline"
                                     onClick={() => rebuildCacheMutation.mutate()}
                                     disabled={rebuildCacheMutation.isPending}
-                                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 w-full sm:w-auto"
                                 >
                                     {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
                                 </Button>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-muted-foreground text-center sm:text-left">
                                     Nur bei Problemen mit der Regelerkennung notwendig.
                                 </p>
                             </div>
@@ -3567,60 +3567,64 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="border-t pt-4 flex flex-col gap-2">
                             <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
                             <div className="space-y-4">
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
                                         variant="destructive"
                                         onClick={() => {
                                             setDeleteAllConfirmationText("");
                                             setShowDeleteAllDialog(true);
                                         }}
+                                        className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Alle Regeln löschen
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
                                         variant="destructive"
                                         onClick={() => {
                                             setDeleteAllStatsConfirmationText("");
                                             setShowDeleteAllStatsDialog(true);
                                         }}
+                                        className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Alle Statistiken löschen
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle erfassten Tracking-Daten unwiderruflich.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
                                         variant="destructive"
                                         onClick={() => {
                                             setClearBlockedIpsConfirmationText("");
                                             setShowClearBlockedIpsDialog(true);
                                         }}
+                                        className="w-full sm:w-auto"
                                     >
                                         <Shield className="h-4 w-4 mr-2" />
                                         Blockierte IPs löschen
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
                                         variant="outline"
                                         onClick={() => setShowManageBlockedIpsDialog(true)}
+                                        className="w-full sm:w-auto"
                                     >
                                         <Shield className="h-4 w-4 mr-2" />
                                         Blockierte IPs anzeigen und verwalten
                                     </Button>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
                                     </p>
                                 </div>
