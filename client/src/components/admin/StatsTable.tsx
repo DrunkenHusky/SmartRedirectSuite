@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowUp,
   ArrowDown,
-  Edit
+  Edit,
+  AlertCircle
 } from "lucide-react";
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
@@ -185,6 +186,11 @@ const StatsTable = memo(({
                     <Edit className="h-3 w-3 mr-1" />
                     <span className="truncate max-w-[100px] inline-block align-bottom">{entry.rule.matcher}</span>
                   </Button>
+                ) : (entry.ruleId || (entry.ruleIds && entry.ruleIds.length > 0)) ? (
+                  <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Regel nicht mehr vorhanden
+                  </span>
                 ) : (
                   <span className="text-xs text-muted-foreground">-</span>
                 )}
