@@ -252,7 +252,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [statsSearchQuery, setStatsSearchQuery] = useState("");
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
-  const [statsMinQuality, setStatsMinQuality] = useState(0);
+  const [statsQualityFilter, setStatsQualityFilter] = useState<string>("all");
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -522,7 +522,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter, statsMinQuality],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter, statsQualityFilter],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -532,8 +532,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         sortBy: sortBy,
         sortOrder: sortOrder,
         ruleFilter: statsRuleFilter,
-        minQuality: statsMinQuality.toString(),
       });
+
+      // Parse quality filter
+      if (statsQualityFilter !== "all") {
+        if (statsQualityFilter.startsWith("min_")) {
+          params.append("minQuality", statsQualityFilter.replace("min_", ""));
+        } else if (statsQualityFilter.startsWith("max_")) {
+          params.append("maxQuality", statsQualityFilter.replace("max_", ""));
+        } else if (statsQualityFilter === "exact_100") {
+          params.append("minQuality", "100");
+        }
+      }
       
       if (debouncedStatsSearchQuery.trim()) {
         params.append('search', debouncedStatsSearchQuery);
@@ -2998,19 +3008,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </Select>
 
                       <Select
-                        value={statsMinQuality.toString()}
-                        onValueChange={(value) => setStatsMinQuality(parseInt(value))}
+                        value={statsQualityFilter}
+                        onValueChange={(value) => setStatsQualityFilter(value)}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Min. Qualität" />
+                          <SelectValue placeholder="Qualität" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">Alle Qualitäten</SelectItem>
-                          <SelectItem value="50">≥ 50%</SelectItem>
-                          <SelectItem value="60">≥ 60% (Mittel)</SelectItem>
-                          <SelectItem value="75">≥ 75%</SelectItem>
-                          <SelectItem value="90">≥ 90% (Hoch)</SelectItem>
-                          <SelectItem value="100">100% (Exakt)</SelectItem>
+                          <SelectItem value="all">Alle Qualitäten</SelectItem>
+                          <SelectItem value="exact_100">100% (Exakt)</SelectItem>
+                          <SelectItem value="min_90">≥ 90% (Hoch)</SelectItem>
+                          <SelectItem value="min_75">≥ 75%</SelectItem>
+                          <SelectItem value="min_50">≥ 50%</SelectItem>
+                          <SelectItem value="max_99">&lt; 100% (Nicht exakt)</SelectItem>
+                          <SelectItem value="max_49">&lt; 50% (Schlecht)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

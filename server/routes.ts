@@ -665,7 +665,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ruleFilter = 'with_rule';
       }
 
-      const result = await storage.getTrackingEntriesPaginated(page, limit, search, sortBy, sortOrder, ruleFilter);
+      // Quality filtering
+      const minQuality = req.query.minQuality ? parseInt(req.query.minQuality as string) : undefined;
+      const maxQuality = req.query.maxQuality ? parseInt(req.query.maxQuality as string) : undefined;
+
+      const result = await storage.getTrackingEntriesPaginated(
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        ruleFilter,
+        minQuality,
+        maxQuality
+      );
       res.json(result);
     } catch (error) {
       console.error("Paginated tracking entries error:", error);
