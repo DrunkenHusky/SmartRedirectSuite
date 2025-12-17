@@ -88,13 +88,20 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const handleAdminAccess = async () => {
     setIsCheckingAuth(true);
     try {
+      // Add timeout to prevent indefinite loading state
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
       const response = await fetch("/api/admin/status", {
         method: "GET",
-        credentials: "include"
+        credentials: "include",
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
+
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({ isAuthenticated: false }));
         if (data.isAuthenticated) {
           // User is already logged in, go directly to admin
           onAdminAccess();
@@ -105,6 +112,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       // User is not logged in, show password prompt
       setShowPasswordModal(true);
     } catch (error) {
+      console.error("Admin status check failed:", error);
       // On error, show password prompt as fallback
       setShowPasswordModal(true);
     } finally {

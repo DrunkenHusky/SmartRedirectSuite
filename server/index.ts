@@ -143,7 +143,7 @@ const sessionMiddleware = session({
 });
 
 // Force HTTPS in production
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && !process.env.DISABLE_HTTPS_REDIRECT) {
   app.use((req, res, next) => {
     if (req.header('x-forwarded-proto') !== 'https') {
       res.redirect(`https://${req.header('host')}${req.url}`);
