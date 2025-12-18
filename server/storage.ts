@@ -550,7 +550,8 @@ export class FileStorage implements IStorage {
       cutoff.setDate(now.getDate() - 7);
     }
 
-    return trackingData.filter((track) => new Date(track.timestamp) >= cutoff);
+    const cutoffIso = cutoff.toISOString();
+    return trackingData.filter((track) => track.timestamp >= cutoffIso);
   }
 
   async getTopUrls(
@@ -643,16 +644,32 @@ export class FileStorage implements IStorage {
     today: number;
     week: number;
   }> {
-    const all = await this.getTrackingData("all");
-    const today = await this.getTrackingData("24h");
-    const week = await this.getTrackingData("7d");
+    const trackingData = await this.ensureTrackingLoaded();
+    const now = new Date();
 
-    // Filter out root path "/" from statistics
-    return {
-      total: all.filter((track) => track.path !== "/").length,
-      today: today.filter((track) => track.path !== "/").length,
-      week: week.filter((track) => track.path !== "/").length,
-    };
+    const todayCutoff = new Date();
+    todayCutoff.setHours(now.getHours() - 24);
+    const todayIso = todayCutoff.toISOString();
+
+    const weekCutoff = new Date();
+    weekCutoff.setDate(now.getDate() - 7);
+    const weekIso = weekCutoff.toISOString();
+
+    let total = 0;
+    let today = 0;
+    let week = 0;
+
+    for (const track of trackingData) {
+      if (track.path === "/") continue;
+
+      total++;
+
+      // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
+      if (track.timestamp >= todayIso) today++;
+      if (track.timestamp >= weekIso) week++;
+    }
+
+    return { total, today, week };
   }
 
   // Paginated statistics methods
