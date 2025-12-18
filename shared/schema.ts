@@ -165,7 +165,7 @@ export const generalSettingsSchema = z.object({
     }),
   headerBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
-    .default("white"),
+    .default("#ffffff"),
 
   // Popup display mode
   popupMode: z.enum(POPUP_MODES).default('active'),
@@ -181,7 +181,7 @@ export const generalSettingsSchema = z.object({
     .trim(),
   mainBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
-    .default("white"),
+    .default("#ffffff"),
     
   // Alert styling
   alertIcon: z.enum(ALERT_ICON_OPTIONS),
@@ -194,7 +194,7 @@ export const generalSettingsSchema = z.object({
   urlComparisonIcon: z.enum(ICON_OPTIONS).optional(),
   urlComparisonBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
-    .default("white"),
+    .default("#ffffff"),
   oldUrlLabel: z.string()
     .min(1, "Label für alte URL darf nicht leer sein")
     .max(50, "Label für alte URL ist zu lang")
