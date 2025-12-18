@@ -3087,14 +3087,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                     ) : (
                       <>
-                        <div className="overflow-hidden">
-                          <table className="w-full">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[500px]">
                             <thead className="bg-muted/50 border-b">
                               <tr>
-                                <th className="text-left p-3 font-medium">Rang</th>
-                                <th className="text-left p-3 font-medium">URL-Pfad</th>
-                                <th className="text-right p-3 font-medium">Aufrufe</th>
-                                <th className="text-left p-3 font-medium">Anteil</th>
+                                <th className="text-left p-2 sm:p-3 font-medium w-16">Rang</th>
+                                <th className="text-left p-2 sm:p-3 font-medium">URL-Pfad</th>
+                                <th className="text-right p-2 sm:p-3 font-medium w-24">Aufrufe</th>
+                                <th className="text-left p-2 sm:p-3 font-medium w-32">Anteil</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3103,17 +3103,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 const maxCount = topUrlsData?.[0]?.count || 1;
                                 return (
                                   <tr key={index} className="border-b hover:bg-muted/50">
-                                    <td className="p-3 text-sm font-medium">#{rank}</td>
-                                    <td className="p-3">
-                                      <code className="text-sm text-foreground">{url.path}</code>
+                                    <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
+                                    <td className="p-2 sm:p-3">
+                                      <code className="text-xs sm:text-sm text-foreground break-all">{url.path}</code>
                                     </td>
-                                    <td className="p-3 text-right text-sm font-medium">{url.count}</td>
-                                    <td className="p-3">
+                                    <td className="p-2 sm:p-3 text-right text-sm font-medium">{url.count}</td>
+                                    <td className="p-2 sm:p-3">
                                       <div className="flex items-center gap-2">
-                                        <div className="w-16">
-                                          <Progress value={(url.count / maxCount) * 100} className="h-2" />
+                                        <div className="w-12 sm:w-16">
+                                          <Progress value={(url.count / maxCount) * 100} className="h-1.5 sm:h-2" />
                                         </div>
-                                        <span className="text-xs text-muted-foreground">
+                                        <span className="text-[10px] sm:text-xs text-muted-foreground">
                                           {((url.count / maxCount) * 100).toFixed(1)}%
                                         </span>
                                       </div>
