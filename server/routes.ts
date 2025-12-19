@@ -316,12 +316,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
-      const search = req.query.search as string; // Can be undefined, null, empty string
+      // Handle HPP (HTTP Parameter Pollution): if search is array, take first element
+      const rawSearch = req.query.search;
+      const search = Array.isArray(rawSearch) ? (rawSearch[0] as string) : (rawSearch as string);
+
       const sortBy = req.query.sortBy as string || 'createdAt';
       const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
       
       // If search is provided but empty or whitespace only, treat it as undefined
-      const cleanSearch = (search && search.trim().length > 0) ? search.trim() : undefined;
+      const cleanSearch = (search && typeof search === 'string' && search.trim().length > 0) ? search.trim() : undefined;
 
       const result = await storage.getUrlRulesPaginated(page, limit, cleanSearch, sortBy, sortOrder);
       res.json(result);
@@ -632,8 +635,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/stats/entries", requireAuth, async (req, res) => {
     try {
       const { query = '', sortBy = 'timestamp', sortOrder = 'desc' } = req.query;
+      // Handle HPP for query
+      const rawQuery = query;
+      const cleanQuery = Array.isArray(rawQuery) ? String(rawQuery[0]) : String(rawQuery);
+
       const entries = await storage.searchTrackingEntries(
-        query as string, 
+        cleanQuery,
         sortBy as string, 
         sortOrder as 'asc' | 'desc'
       );
@@ -650,7 +657,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
-      const search = req.query.search as string || undefined;
+
+      // Handle HPP: if search is array, take first element
+      const rawSearch = req.query.search;
+      const searchVal = Array.isArray(rawSearch) ? rawSearch[0] : rawSearch;
+      const search = (typeof searchVal === 'string' && searchVal.length > 0) ? searchVal : undefined;
+
       const sortBy = req.query.sortBy as string || 'timestamp';
       const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'desc';
       
