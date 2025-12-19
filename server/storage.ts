@@ -586,22 +586,26 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
   ): Promise<UrlTracking[]> {
-    const trackingData = await this.getAllTrackingEntries();
+    // Optimization: Access cache directly to avoid O(N) copy
+    const trackingData = await this.ensureTrackingLoaded();
 
-    // Filter out root path "/" and then apply search query
-    let filteredData = trackingData.filter((entry) => entry.path !== "/");
+    // Filter out root path "/" and then apply search query in a single pass
+    const searchTerm = query.trim() ? query.trim().toLowerCase() : null;
 
-    if (query.trim()) {
-      const searchTerm = query.toLowerCase();
-      filteredData = filteredData.filter(
-        (entry) =>
+    const filteredData = trackingData.filter((entry) => {
+      if (entry.path === "/") return false;
+
+      if (searchTerm) {
+        return (
           entry.oldUrl.toLowerCase().includes(searchTerm) ||
-          ((entry as any).newUrl &&
-            (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
+          ((entry as any).newUrl && (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
           entry.path.toLowerCase().includes(searchTerm) ||
-          entry.userAgent?.toLowerCase().includes(searchTerm),
-      );
-    }
+          (entry.userAgent && entry.userAgent.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      return true;
+    });
 
     // Sort data
     filteredData.sort((a, b) => {
@@ -689,45 +693,72 @@ export class FileStorage implements IStorage {
     currentPage: number;
     totalAllEntries: number;
   }> {
-    const allEntries = await this.getAllTrackingEntries();
+    // Optimization: Access cache directly to avoid O(N) copy
+    const allEntries = await this.ensureTrackingLoaded();
     const totalAllEntries = allEntries.length;
 
-    // Filter entries based on search
-    let filteredEntries =
-      search && search.trim()
-        ? await this.searchTrackingEntries(search, sortBy, sortOrder)
-        : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+    let filteredEntries: UrlTracking[];
 
-    // Filter based on match quality
-    if (minQuality !== undefined) {
-      filteredEntries = filteredEntries.filter(
-        (entry) => {
-          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
-          return q >= minQuality;
-        }
-      );
-    }
-    if (maxQuality !== undefined) {
-      filteredEntries = filteredEntries.filter(
-        (entry) => {
-          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
-          return q <= maxQuality;
-        }
-      );
-    }
+    if (search && search.trim()) {
+      // searchTrackingEntries is already optimized to do a single pass filter + sort
+      filteredEntries = await this.searchTrackingEntries(search, sortBy, sortOrder);
 
-    // Filter based on rule presence
-    if (ruleFilter === 'with_rule') {
-      filteredEntries = filteredEntries.filter((entry) => {
-        const hasRuleId = !!entry.ruleId;
-        const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
-        return hasRuleId || hasRuleIds;
-      });
-    } else if (ruleFilter === 'no_rule') {
-      filteredEntries = filteredEntries.filter((entry) => {
-        const hasRuleId = !!entry.ruleId;
-        const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
-        return !hasRuleId && !hasRuleIds;
+      // We still need to apply the other filters to the search results
+      // Note: searchTrackingEntries returns a new array, so we can filter it further
+      if (minQuality !== undefined || maxQuality !== undefined || ruleFilter !== 'all') {
+         filteredEntries = filteredEntries.filter(entry => {
+            // Quality filter
+            if (minQuality !== undefined) {
+              const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+              if (q < minQuality) return false;
+            }
+            if (maxQuality !== undefined) {
+              const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+              if (q > maxQuality) return false;
+            }
+
+            // Rule filter
+            if (ruleFilter === 'with_rule') {
+              const hasRuleId = !!entry.ruleId;
+              const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
+              if (!(hasRuleId || hasRuleIds)) return false;
+            } else if (ruleFilter === 'no_rule') {
+              const hasRuleId = !!entry.ruleId;
+              const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
+              if (hasRuleId || hasRuleIds) return false;
+            }
+
+            return true;
+         });
+      }
+    } else {
+      // Optimization: Combined single-pass filter for non-search scenarios
+      filteredEntries = allEntries.filter((entry) => {
+        // Root path filter
+        if (entry.path === "/") return false;
+
+        // Quality filter
+        if (minQuality !== undefined) {
+          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+          if (q < minQuality) return false;
+        }
+        if (maxQuality !== undefined) {
+          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
+          if (q > maxQuality) return false;
+        }
+
+        // Rule filter
+        if (ruleFilter === 'with_rule') {
+          const hasRuleId = !!entry.ruleId;
+          const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
+          if (!(hasRuleId || hasRuleIds)) return false;
+        } else if (ruleFilter === 'no_rule') {
+          const hasRuleId = !!entry.ruleId;
+          const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
+          if (hasRuleId || hasRuleIds) return false;
+        }
+
+        return true;
       });
     }
 
