@@ -118,10 +118,14 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       }
       
       // User is not logged in, show password prompt
+      // IMPORTANT: Explicitly close the main dialog to prevent z-index/focus conflicts
+      // This ensures the password modal is the primary active dialog
+      setShowMainDialog(false);
       setShowPasswordModal(true);
     } catch (error) {
       console.error("Auth check failed:", error);
       // On error, show password prompt as fallback
+      setShowMainDialog(false);
       setShowPasswordModal(true);
     } finally {
       setIsCheckingAuth(false);
