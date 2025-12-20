@@ -206,7 +206,11 @@ export class FileStorage implements IStorage {
       return this.trackingCache;
     }
 
-    const data = await this.readJsonFile<UrlTracking>(TRACKING_FILE, []);
+    let data = await this.readJsonFile<UrlTracking>(TRACKING_FILE, []);
+
+    // Clean data once on load: Remove root path if present
+    // This ensures subsequent operations don't need to filter it repeatedly
+    data = data.filter((t) => t.path !== "/");
 
     if (useCache) {
       this.trackingCache = data;
@@ -538,6 +542,7 @@ export class FileStorage implements IStorage {
     const trackingData = await this.ensureTrackingLoaded();
 
     if (!timeRange || timeRange === "all") {
+      // Returns the cache directly (or clean loaded data) which is safe to read
       return trackingData;
     }
 
@@ -561,9 +566,10 @@ export class FileStorage implements IStorage {
     const trackingData = await this.getTrackingData(timeRange);
     const pathCounts = new Map<string, number>();
 
-    // Filter out root path "/" and admin access "/?admin=true" from statistics
+    // Filter out admin access "/?admin=true" from statistics
+    // Root path "/" is already filtered by ensureTrackingLoaded
     trackingData.forEach((track) => {
-      if (track.path !== "/" && track.path !== "/?admin=true") {
+      if (track.path !== "/?admin=true") {
         const current = pathCounts.get(track.path) || 0;
         pathCounts.set(track.path, current + 1);
       }
@@ -586,10 +592,8 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
   ): Promise<UrlTracking[]> {
-    const trackingData = await this.getAllTrackingEntries();
-
-    // Filter out root path "/" and then apply search query
-    let filteredData = trackingData.filter((entry) => entry.path !== "/");
+    // getAllTrackingEntries already returns a clean copy without "/"
+    let filteredData = await this.getAllTrackingEntries();
 
     if (query.trim()) {
       const searchTerm = query.toLowerCase();
@@ -660,7 +664,7 @@ export class FileStorage implements IStorage {
     let week = 0;
 
     for (const track of trackingData) {
-      if (track.path === "/") continue;
+      // Root path "/" is already filtered by ensureTrackingLoaded
 
       total++;
 
@@ -696,7 +700,7 @@ export class FileStorage implements IStorage {
     let filteredEntries =
       search && search.trim()
         ? await this.searchTrackingEntries(search, sortBy, sortOrder)
-        : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+        : allEntries; // No filter needed, root path already removed in ensureTrackingLoaded
 
     // Filter based on match quality
     if (minQuality !== undefined) {
