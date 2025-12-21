@@ -26,6 +26,24 @@ function sanitizeRuleFlags(rule: any): any {
   return rule;
 }
 
+// Helper to find index of first element with timestamp >= cutoff
+// Assumes data is sorted ascending by timestamp
+function findTimestampIndex(data: UrlTracking[], cutoffIso: string): number {
+  let low = 0;
+  let high = data.length;
+
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    const midTimestamp = data[mid].timestamp || "";
+    if (midTimestamp < cutoffIso) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+  return low;
+}
+
 const DATA_DIR = path.join(process.cwd(), "data");
 const RULES_FILE = path.join(DATA_DIR, "rules.json");
 const TRACKING_FILE = path.join(DATA_DIR, "tracking.json");
@@ -208,14 +226,18 @@ export class FileStorage implements IStorage {
 
     const data = await this.readJsonFile<UrlTracking>(TRACKING_FILE, []);
 
+    // Bolt Optimization: Filter out root path entries once on load.
+    // This removes the need for repeated O(N) filtering in stats methods.
+    const cleanData = data.filter(t => t.path !== "/");
+
     if (useCache) {
-      this.trackingCache = data;
+      this.trackingCache = cleanData;
     } else {
       // Clear cache if disabled
       this.trackingCache = null;
     }
 
-    return data;
+    return cleanData;
   }
 
   // Strip computed properties for saving to disk
@@ -563,6 +585,7 @@ export class FileStorage implements IStorage {
 
     // Filter out root path "/" and admin access "/?admin=true" from statistics
     trackingData.forEach((track) => {
+      // Note: "/" is already filtered by ensureTrackingLoaded, but keeping the check is harmless
       if (track.path !== "/" && track.path !== "/?admin=true") {
         const current = pathCounts.get(track.path) || 0;
         pathCounts.set(track.path, current + 1);
@@ -586,14 +609,15 @@ export class FileStorage implements IStorage {
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
   ): Promise<UrlTracking[]> {
-    const trackingData = await this.getAllTrackingEntries();
+    // Note: ensureTrackingLoaded already filters "/"
+    const trackingData = await this.ensureTrackingLoaded();
 
-    // Filter out root path "/" and then apply search query
-    let filteredData = trackingData.filter((entry) => entry.path !== "/");
+    let filteredData: UrlTracking[];
 
     if (query.trim()) {
       const searchTerm = query.toLowerCase();
-      filteredData = filteredData.filter(
+      // Filter creates a copy, safe to use
+      filteredData = trackingData.filter(
         (entry) =>
           entry.oldUrl.toLowerCase().includes(searchTerm) ||
           ((entry as any).newUrl &&
@@ -601,6 +625,9 @@ export class FileStorage implements IStorage {
           entry.path.toLowerCase().includes(searchTerm) ||
           entry.userAgent?.toLowerCase().includes(searchTerm),
       );
+    } else {
+      // Must create a copy to avoid mutating cache reference during sort
+      filteredData = [...trackingData];
     }
 
     // Sort data
@@ -655,19 +682,19 @@ export class FileStorage implements IStorage {
     weekCutoff.setDate(now.getDate() - 7);
     const weekIso = weekCutoff.toISOString();
 
-    let total = 0;
-    let today = 0;
-    let week = 0;
+    // Bolt Optimization: Use binary search + length calculation instead of O(N) loop
+    // Assumes trackingData is filtered (no "/") and sorted by timestamp (asc)
 
-    for (const track of trackingData) {
-      if (track.path === "/") continue;
+    // Calculate total (all valid entries)
+    const total = trackingData.length;
 
-      total++;
+    // Calculate today (entries >= todayIso)
+    const todayStartIndex = findTimestampIndex(trackingData, todayIso);
+    const today = total - todayStartIndex;
 
-      // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
-      if (track.timestamp >= todayIso) today++;
-      if (track.timestamp >= weekIso) week++;
-    }
+    // Calculate week (entries >= weekIso)
+    const weekStartIndex = findTimestampIndex(trackingData, weekIso);
+    const week = total - weekStartIndex;
 
     return { total, today, week };
   }
@@ -693,12 +720,18 @@ export class FileStorage implements IStorage {
     const totalAllEntries = allEntries.length;
 
     // Filter entries based on search
-    let filteredEntries =
-      search && search.trim()
-        ? await this.searchTrackingEntries(search, sortBy, sortOrder)
-        : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+    let filteredEntries: UrlTracking[];
+
+    if (search && search.trim()) {
+      filteredEntries = await this.searchTrackingEntries(search, sortBy, sortOrder);
+    } else {
+      // Bolt Optimization: Avoid O(N) .filter("/") here, it's done in ensureTrackingLoaded
+      // WARNING: filteredEntries now holds reference to cache if no search!
+      filteredEntries = allEntries;
+    }
 
     // Filter based on match quality
+    // .filter creates a new array, so if these run, filteredEntries becomes a copy
     if (minQuality !== undefined) {
       filteredEntries = filteredEntries.filter(
         (entry) => {
@@ -750,7 +783,7 @@ export class FileStorage implements IStorage {
         const sliceEnd = Math.max(0, startFromEnd);
         const sliceStart = Math.max(0, endFromEnd);
 
-        // Slice and reverse to get DESC order
+        // Slice and reverse to get DESC order (creates copy)
         paginatedEntries = filteredEntries.slice(sliceStart, sliceEnd).reverse();
       } else {
         // ASC order - standard pagination
@@ -760,6 +793,12 @@ export class FileStorage implements IStorage {
       }
     } else if (!search || !search.trim()) {
       // Only sort if not already sorted by searchTrackingEntries and not handled by optimization above
+
+      // Bolt Safety Check: If we haven't created a copy yet, do it now before sorting
+      if (filteredEntries === allEntries) {
+        filteredEntries = [...filteredEntries];
+      }
+
       filteredEntries.sort((a, b) => {
         let comparison = 0;
 
