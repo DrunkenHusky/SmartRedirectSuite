@@ -74,6 +74,7 @@ import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
 import { ImportPreviewTable } from "@/components/admin/ImportPreviewTable";
 import { StatsTable } from "@/components/admin/StatsTable";
+import { CopyButton } from "@/components/ui/copy-button";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -3105,7 +3106,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <tr key={index} className="border-b hover:bg-muted/50">
                                     <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
                                     <td className="p-2 sm:p-3">
-                                      <code className="text-xs sm:text-sm text-foreground break-all">{url.path}</code>
+                                      <div className="flex items-center gap-2 group">
+                                        <code className="text-xs sm:text-sm text-foreground break-all">{url.path}</code>
+                                        <CopyButton
+                                          value={url.path}
+                                          className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                                          label="URL kopieren"
+                                        />
+                                      </div>
                                     </td>
                                     <td className="p-2 sm:p-3 text-right text-sm font-medium">{url.count}</td>
                                     <td className="p-2 sm:p-3">
