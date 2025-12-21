@@ -34,8 +34,8 @@ declare module 'express-session' {
   }
 }
 
-// Admin-Passwort aus Umgebungsvariable oder Standard
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Password1";
+// Admin-Passwort aus Umgebungsvariable
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // Import Preview Limit from environment variable (default 1000)
 const IMPORT_PREVIEW_LIMIT = parseInt(process.env.IMPORT_PREVIEW_LIMIT || "1000", 10);

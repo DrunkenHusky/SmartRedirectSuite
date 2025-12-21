@@ -11,8 +11,13 @@ import { rateLimitMiddleware, adminRateLimitMiddleware, csrfCheck } from "./midd
 const app = express();
 
 // Security Warnings
-if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === "Password1") {
-  console.warn("WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.");
+if (process.env.ADMIN_PASSWORD === "Password1") {
+  console.warn("WARNUNG: Sie verwenden das unsichere Standard-Passwort 'Password1'. Bitte ändern Sie die Umgebungsvariable ADMIN_PASSWORD in ein sicheres Passwort.");
+}
+
+if (!process.env.ADMIN_PASSWORD) {
+  console.error("KRITISCHER FEHLER: ADMIN_PASSWORD Umgebungsvariable ist nicht gesetzt. Der Server wird aus Sicherheitsgründen beendet.");
+  process.exit(1);
 }
 
 // Session Secret Configuration
