@@ -212,18 +212,47 @@ export class ImportExportService {
   }
 
   /**
-   * Generate CSV content
+   * Sanitize value to prevent CSV injection (Formula Injection)
+   */
+  private static sanitizeForCSV(value: any): any {
+    if (typeof value === 'string') {
+      // If value starts with =, @, +, -, prepend with ' to prevent execution
+      if (/^[=@+-]/.test(value)) {
+        return "'" + value;
+      }
+    }
+    return value;
+  }
+
+  /**
+   * Generate CSV content with sanitization
    */
   static generateCSV(rules: UrlRule[]): string {
     const data = rules.map(rule => ({
-      ID: rule.id,
-      Matcher: rule.matcher,
-      'Target URL': rule.targetUrl,
-      Type: rule.redirectType,
-      Info: rule.infoText,
+      ID: this.sanitizeForCSV(rule.id),
+      Matcher: this.sanitizeForCSV(rule.matcher),
+      'Target URL': this.sanitizeForCSV(rule.targetUrl),
+      Type: this.sanitizeForCSV(rule.redirectType),
+      Info: this.sanitizeForCSV(rule.infoText),
       'Auto Redirect': rule.autoRedirect ? 'true' : 'false',
       'Discard Query Params': rule.discardQueryParams ? 'true' : 'false',
       'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false'
+    }));
+
+    return stringify(data, { header: true });
+  }
+
+  /**
+   * Generate CSV content for Tracking Data (Statistics)
+   */
+  static generateTrackingCSV(trackingData: any[]): string {
+    const data = trackingData.map(track => ({
+      ID: this.sanitizeForCSV(track.id),
+      'Alte URL': this.sanitizeForCSV(track.oldUrl),
+      'Neue URL': this.sanitizeForCSV(track.newUrl || ''),
+      Pfad: this.sanitizeForCSV(track.path),
+      Zeitstempel: this.sanitizeForCSV(track.timestamp),
+      'User-Agent': this.sanitizeForCSV(track.userAgent || '')
     }));
 
     return stringify(data, { header: true });

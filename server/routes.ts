@@ -718,15 +718,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const trackingData = await storage.getTrackingData(exportRequest.timeRange);
         
         if (exportRequest.format === 'csv') {
-          // CSV-Export without referrer
-          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent\n';
-          const csvData = trackingData.map(track =>
-            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}"`
-          ).join('\n');
+          // Safe CSV Export using csv-stringify and sanitization
+          const csvData = ImportExportService.generateTrackingCSV(trackingData);
           
           res.setHeader('Content-Type', 'text/csv');
           res.setHeader('Content-Disposition', 'attachment; filename="statistics.csv"');
-          res.send(csvHeader + csvData);
+          res.send(csvData);
         } else {
           // JSON-Export
           res.setHeader('Content-Type', 'application/json');
