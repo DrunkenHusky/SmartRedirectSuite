@@ -197,6 +197,22 @@ export class FileStorage implements IStorage {
     return this.rulesCache;
   }
 
+  // Helper to find index using binary search for sorted timestamps
+  private findTimestampIndex(data: UrlTracking[], timestamp: string): number {
+    let low = 0;
+    let high = data.length;
+
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      if (data[mid].timestamp < timestamp) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return low;
+  }
+
   // Helper to ensure tracking data is loaded
   private async ensureTrackingLoaded(): Promise<UrlTracking[]> {
     const settings = await this.getGeneralSettings();
@@ -208,14 +224,20 @@ export class FileStorage implements IStorage {
 
     const data = await this.readJsonFile<UrlTracking>(TRACKING_FILE, []);
 
+    // Filter out root path "/" and "/?admin=true" entries during initial load
+    // This allows O(1) stats access and simplifies downstream logic
+    const filteredData = data.filter(
+      (t) => t.path !== "/" && t.path !== "/?admin=true",
+    );
+
     if (useCache) {
-      this.trackingCache = data;
+      this.trackingCache = filteredData;
     } else {
       // Clear cache if disabled
       this.trackingCache = null;
     }
 
-    return data;
+    return filteredData;
   }
 
   // Strip computed properties for saving to disk
@@ -561,12 +583,10 @@ export class FileStorage implements IStorage {
     const trackingData = await this.getTrackingData(timeRange);
     const pathCounts = new Map<string, number>();
 
-    // Filter out root path "/" and admin access "/?admin=true" from statistics
+    // Data is already filtered in ensureTrackingLoaded
     trackingData.forEach((track) => {
-      if (track.path !== "/" && track.path !== "/?admin=true") {
-        const current = pathCounts.get(track.path) || 0;
-        pathCounts.set(track.path, current + 1);
-      }
+      const current = pathCounts.get(track.path) || 0;
+      pathCounts.set(track.path, current + 1);
     });
 
     return Array.from(pathCounts.entries())
@@ -588,8 +608,8 @@ export class FileStorage implements IStorage {
   ): Promise<UrlTracking[]> {
     const trackingData = await this.getAllTrackingEntries();
 
-    // Filter out root path "/" and then apply search query
-    let filteredData = trackingData.filter((entry) => entry.path !== "/");
+    // Data is already filtered in ensureTrackingLoaded
+    let filteredData = trackingData;
 
     if (query.trim()) {
       const searchTerm = query.toLowerCase();
@@ -647,6 +667,10 @@ export class FileStorage implements IStorage {
     const trackingData = await this.ensureTrackingLoaded();
     const now = new Date();
 
+    const total = trackingData.length;
+    // Data is assumed to be sorted by timestamp (append-only log)
+
+    // Calculate cutoffs
     const todayCutoff = new Date();
     todayCutoff.setHours(now.getHours() - 24);
     const todayIso = todayCutoff.toISOString();
@@ -655,21 +679,15 @@ export class FileStorage implements IStorage {
     weekCutoff.setDate(now.getDate() - 7);
     const weekIso = weekCutoff.toISOString();
 
-    let total = 0;
-    let today = 0;
-    let week = 0;
+    // Use binary search to find split points - O(log N)
+    const todayIndex = this.findTimestampIndex(trackingData, todayIso);
+    const weekIndex = this.findTimestampIndex(trackingData, weekIso);
 
-    for (const track of trackingData) {
-      if (track.path === "/") continue;
-
-      total++;
-
-      // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
-      if (track.timestamp >= todayIso) today++;
-      if (track.timestamp >= weekIso) week++;
-    }
-
-    return { total, today, week };
+    return {
+      total,
+      today: total - todayIndex,
+      week: total - weekIndex,
+    };
   }
 
   // Paginated statistics methods
@@ -696,7 +714,7 @@ export class FileStorage implements IStorage {
     let filteredEntries =
       search && search.trim()
         ? await this.searchTrackingEntries(search, sortBy, sortOrder)
-        : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+        : allEntries; // Data is already filtered in ensureTrackingLoaded
 
     // Filter based on match quality
     if (minQuality !== undefined) {
