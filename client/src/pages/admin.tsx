@@ -1722,13 +1722,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
                 className="text-muted-foreground hover:text-orange-600"
+                aria-label="Abmelden"
+                title="Abmelden"
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
                   {logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
                 </span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:text-destructive">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-muted-foreground hover:text-destructive"
+                aria-label="Schließen"
+                title="Schließen"
+              >
                 <X className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Schließen</span>
               </Button>
