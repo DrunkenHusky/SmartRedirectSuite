@@ -11,7 +11,7 @@ import type {
   ImportUrlRule,
 } from "@shared/schema";
 import { urlUtils } from "@shared/utils";
-import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
+import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule, normalizePath } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 // Helper to ensure only relevant flags are stored
@@ -31,10 +31,17 @@ const RULES_FILE = path.join(DATA_DIR, "rules.json");
 const TRACKING_FILE = path.join(DATA_DIR, "tracking.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
+interface RuleIndex {
+  staticPathIndex: Map<string, ProcessedUrlRule[]>;
+  domainIndex: Map<string, ProcessedUrlRule[]>;
+  complexIndex: ProcessedUrlRule[];
+}
+
 export interface IStorage {
   // URL-Regeln
   getUrlRules(): Promise<UrlRule[]>;
   getProcessedUrlRules(config: RuleMatchingConfig): Promise<ProcessedUrlRule[]>;
+  getCandidateRules(requestUrl: string, config: RuleMatchingConfig): Promise<ProcessedUrlRule[]>;
   getUrlRulesPaginated(
     page: number,
     limit: number,
@@ -126,6 +133,8 @@ export class FileStorage implements IStorage {
   // We type it as ProcessedUrlRule[] because we ensure they are processed when loaded
   private rulesCache: ProcessedUrlRule[] | null = null;
   private lastCacheConfig: RuleMatchingConfig | null = null;
+  private ruleIndex: RuleIndex | null = null;
+
   private settingsCache: GeneralSettings | null = null;
   private trackingCache: UrlTracking[] | null = null;
 
@@ -157,6 +166,68 @@ export class FileStorage implements IStorage {
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
   }
 
+  private buildRuleIndex(rules: ProcessedUrlRule[]): RuleIndex {
+    const staticPathIndex = new Map<string, ProcessedUrlRule[]>();
+    const domainIndex = new Map<string, ProcessedUrlRule[]>();
+    const complexIndex: ProcessedUrlRule[] = [];
+
+    for (const rule of rules) {
+      if (rule.isDomainMatcher) {
+        // Index domain rules by hostname
+        const [matcherDomain] = rule.matcher.split("?");
+        const domain = matcherDomain.toLowerCase();
+
+        if (!domainIndex.has(domain)) {
+          domainIndex.set(domain, []);
+        }
+        domainIndex.get(domain)!.push(rule);
+
+        // Also add to complex index for fallback matching if needed
+        // But the findMatchingRule logic iterates all if we pass all.
+        // Our new strategy filters.
+        // We will query domainIndex by request hostname.
+      } else {
+        const segments = rule.normalizedPath;
+
+        if (segments.length === 0) {
+          // Root or empty path rules go to complex
+          complexIndex.push(rule);
+          continue;
+        }
+
+        const firstSeg = segments[0];
+
+        // Check if first segment is "complex" (wildcard, param, or partial suffix)
+        // Check for param
+        if (firstSeg.startsWith(":")) {
+          complexIndex.push(rule);
+          continue;
+        }
+
+        // Check for wildcard
+        if (firstSeg === "*") {
+          complexIndex.push(rule);
+          continue;
+        }
+
+        // Check for partial suffix (e.g. "foo*")
+        if (firstSeg.endsWith("*") && firstSeg.length > 1) {
+          complexIndex.push(rule);
+          continue;
+        }
+
+        // If simple static segment, index it
+        // Note: normalizePath has already handled casing based on config
+        if (!staticPathIndex.has(firstSeg)) {
+          staticPathIndex.set(firstSeg, []);
+        }
+        staticPathIndex.get(firstSeg)!.push(rule);
+      }
+    }
+
+    return { staticPathIndex, domainIndex, complexIndex };
+  }
+
   // Helper to ensure rules are loaded and processed
   private async ensureRulesLoaded(config?: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
     // If we have a cache
@@ -172,6 +243,8 @@ export class FileStorage implements IStorage {
           // Reprocess existing cache in-place or map
           this.rulesCache = this.rulesCache.map(rule => preprocessRule(rule, config));
           this.lastCacheConfig = config;
+          // Rebuild index whenever rules are reprocessed
+          this.ruleIndex = this.buildRuleIndex(this.rulesCache);
         }
       }
       return this.rulesCache;
@@ -193,6 +266,8 @@ export class FileStorage implements IStorage {
     // Process rules
     this.rulesCache = rawRules.map(rule => preprocessRule(rule, effectiveConfig!));
     this.lastCacheConfig = effectiveConfig;
+    // Build index
+    this.ruleIndex = this.buildRuleIndex(this.rulesCache);
 
     return this.rulesCache;
   }
@@ -252,6 +327,46 @@ export class FileStorage implements IStorage {
 
   async getProcessedUrlRules(config: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
     return this.ensureRulesLoaded(config);
+  }
+
+  async getCandidateRules(requestUrl: string, config: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
+    await this.ensureRulesLoaded(config);
+    if (!this.ruleIndex) {
+      // Should not happen as ensureRulesLoaded builds it
+      return this.rulesCache || [];
+    }
+
+    // Parse request URL
+    const fullRequestUrl = requestUrl.startsWith('/')
+      ? `http://example.com${requestUrl}`
+      : (requestUrl.startsWith('http') ? requestUrl : `http://${requestUrl}`);
+    const reqUrl = new URL(fullRequestUrl);
+
+    const candidates = new Set<ProcessedUrlRule>();
+
+    // 1. Add Domain Rules (if matches hostname)
+    const reqHostname = reqUrl.hostname.toLowerCase();
+    const domainRules = this.ruleIndex.domainIndex.get(reqHostname);
+    if (domainRules) {
+      domainRules.forEach(r => candidates.add(r));
+    }
+
+    // 2. Add Complex Rules (wildcards, regex, params, root) - ALWAYS checked
+    this.ruleIndex.complexIndex.forEach(r => candidates.add(r));
+
+    // 3. Add Path Segment Matches
+    // Normalize path to get segments. Key point: we need segments to look up in the static index.
+    const reqPathSegments = normalizePath(reqUrl.pathname, config);
+
+    // For each segment in the request path, rules starting with that segment could match (substring match starting at that index)
+    for (const segment of reqPathSegments) {
+      const segmentRules = this.ruleIndex.staticPathIndex.get(segment);
+      if (segmentRules) {
+        segmentRules.forEach(r => candidates.add(r));
+      }
+    }
+
+    return Array.from(candidates);
   }
 
   async getUrlRulesPaginated(
@@ -386,7 +501,8 @@ export class FileStorage implements IStorage {
 
     // Update cache after successful write
     this.rulesCache = newRules;
-    // lastCacheConfig remains valid
+    // Rebuild index
+    this.ruleIndex = this.buildRuleIndex(this.rulesCache);
 
     return processedRule;
   }
@@ -441,6 +557,8 @@ export class FileStorage implements IStorage {
 
     // Update cache after successful write
     this.rulesCache = newRules;
+    // Rebuild index
+    this.ruleIndex = this.buildRuleIndex(this.rulesCache);
 
     return newRules[index];
   }
@@ -458,6 +576,8 @@ export class FileStorage implements IStorage {
 
     // Update cache after successful write
     this.rulesCache = newRules;
+    // Rebuild index
+    this.ruleIndex = this.buildRuleIndex(this.rulesCache);
 
     return true;
   }
@@ -483,6 +603,8 @@ export class FileStorage implements IStorage {
 
     // Update cache after successful write
     this.rulesCache = filteredRules;
+    // Rebuild index
+    this.ruleIndex = this.buildRuleIndex(this.rulesCache);
 
     return { deleted: deletedCount, notFound: notFoundCount };
   }
@@ -491,6 +613,7 @@ export class FileStorage implements IStorage {
     await this.writeJsonFile(RULES_FILE, []);
     // Update cache after successful write
     this.rulesCache = [];
+    this.ruleIndex = this.buildRuleIndex([]);
     // Cache config stays valid for empty array
   }
 
@@ -842,6 +965,12 @@ export class FileStorage implements IStorage {
     total: number;
     totalPages: number;
     currentPage: number;
+    totalAllEntries: number; // Corrected from totalPages which was incorrect
+  } | {
+    urls: Array<{ path: string; count: number }>;
+    total: number;
+    totalPages: number;
+    currentPage: number;
   }> {
     const allUrls = await this.getTopUrls(10000, timeRange); // Get a large number first
 
@@ -1009,6 +1138,7 @@ export class FileStorage implements IStorage {
 
     // Update cache after successful write
     this.rulesCache = newRules;
+    this.ruleIndex = this.buildRuleIndex(this.rulesCache);
 
     return { imported, updated, errors: [] };
   }
@@ -1122,6 +1252,7 @@ export class FileStorage implements IStorage {
     // Invalidate config so cache is reprocessed on next access
     if (oldSettings.caseSensitiveLinkDetection !== settings.caseSensitiveLinkDetection) {
       this.lastCacheConfig = null; // Forces re-evaluation in ensureRulesLoaded
+      this.ruleIndex = null;
     }
 
     return settings;
@@ -1131,6 +1262,7 @@ export class FileStorage implements IStorage {
     console.log("Forcing cache rebuild...");
     this.rulesCache = null;
     this.lastCacheConfig = null;
+    this.ruleIndex = null;
     this.trackingCache = null;
     await this.ensureRulesLoaded();
     console.log("Cache rebuild complete.");

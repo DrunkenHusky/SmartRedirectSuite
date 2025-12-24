@@ -193,12 +193,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
       };
 
-      // Rules loaded from storage with pre-processing (server/storage.ts#getProcessedUrlRules)
-      const rules = await storage.getProcessedUrlRules(config);
+      // Use optimized candidate lookup to reduce search space from O(N) to O(1) for most cases
+      // We prefer the full URL to enable domain matching, but fallback to path if not provided
+      const requestUrl = url || path;
+      const rules = await storage.getCandidateRules(requestUrl, config);
 
       // Normalization and specificity prioritization handled by findMatchingRule
-      // We prefer the full URL to enable domain matching, but fallback to path if not provided
-      const matchDetails = findMatchingRule(url || path, rules, config);
+      const matchDetails = findMatchingRule(requestUrl, rules, config);
 
       res.json({
         rule: matchDetails?.rule || null,
