@@ -7,3 +7,6 @@
 ## 2025-12-18 - Keyboard Access for Tooltips
 **Learning:** Radix UI `TooltipTrigger` requires its child to be focusable for keyboard users to perceive the tooltip. Simple `div` or `span` wrappers must have `tabIndex={0}` and appropriate ARIA roles/labels.
 **Action:** Ensure all interactive-but-non-button elements triggering tooltips are keyboard focusable.
+## 2025-12-24 - Clickable Code Blocks
+**Learning:** Users instinctively try to click code blocks (like URLs/IDs) to copy them. Adding explicit click-to-copy behavior with `role="button"` and `tabIndex={0}` aligns the UI with this mental model while maintaining accessibility.
+**Action:** Enhance static code displays that represent copyable data (URLs, Keys) by making them interactive copy triggers.
