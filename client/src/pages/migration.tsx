@@ -441,14 +441,26 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         <div className="flex-1">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                <div className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-help h-full flex items-center">
+                                <div
+                                  className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-pointer h-full flex items-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 outline-none"
+                                  onClick={handleCopy}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label="Neue URL in die Zwischenablage kopieren"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      handleCopy();
+                                    }
+                                  }}
+                                >
                                     <code className="text-sm text-green-800 break-all">
                                     {newUrl}
                                     </code>
                                 </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                <p>So sieht die neue Ziel-URL aus</p>
+                                <p>Klicken zum Kopieren</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
