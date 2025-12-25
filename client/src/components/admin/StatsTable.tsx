@@ -166,6 +166,7 @@ const StatsTable = memo(({
                         className="h-auto p-1 text-[10px] sm:text-xs bg-muted hover:bg-muted/80 mb-1"
                         onClick={() => onEditRule(rule)}
                         title={`Regel bearbeiten: ${rule.redirectType}`}
+                        aria-label={`Regel ${rule.matcher} bearbeiten`}
                       >
                         <Edit className="h-3 w-3 mr-1" />
                         <span className="truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom">{rule.matcher}</span>
@@ -182,6 +183,7 @@ const StatsTable = memo(({
                     className="h-auto p-1 text-[10px] sm:text-xs bg-muted hover:bg-muted/80"
                     onClick={() => onEditRule(entry.rule)}
                     title="Regel bearbeiten"
+                    aria-label={`Regel ${entry.rule.matcher} bearbeiten`}
                   >
                     <Edit className="h-3 w-3 mr-1" />
                     <span className="truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom">{entry.rule.matcher}</span>

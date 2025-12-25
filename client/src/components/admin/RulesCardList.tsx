@@ -125,7 +125,7 @@ const RulesCardList = memo(({
                 onClick={() => onEditRule(rule)}
                 title="Bearbeiten"
                 className="h-8 w-8 p-0"
-                aria-label="Regel bearbeiten"
+                aria-label={`Regel ${rule.matcher} bearbeiten`}
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -136,7 +136,7 @@ const RulesCardList = memo(({
                     size="sm"
                     className="text-destructive hover:text-destructive h-8 w-8 p-0"
                     title="Löschen"
-                    aria-label="Regel löschen"
+                    aria-label={`Regel ${rule.matcher} löschen`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
