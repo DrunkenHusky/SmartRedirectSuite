@@ -1,9 +1,4 @@
-## 2024-05-22 - Session Secret Security & Future Tasks
-**Vulnerability:** The application was using a hardcoded fallback string for `SESSION_SECRET` when the environment variable was missing. This makes session cookies predictable if the admin forgets to configure the secret.
-**Learning:** Hardcoded fallbacks for cryptographic secrets are risky because they provide a false sense of functionality while compromising security. It's better to auto-generate a random secret (even if it causes inconvenience like session invalidation on restart) than to use a known weak secret.
-**Prevention:** Always use `crypto.randomBytes()` for fallback secrets or fail startup if critical secrets are missing.
-**Status:** Fixed by implementing random generation on startup.
-
-### Deferred Tasks
-1. **CSP Tightening:** The Content Security Policy allows `'unsafe-eval'` and `'unsafe-inline'`. This should be restricted to prevent XSS.
-2. **Error Handling:** Verify `server/middleware/errorHandler.ts` to ensure stack traces are not leaked in production.
+## 2024-05-24 - CSV Injection Vulnerability
+**Vulnerability:** The `ImportExportService` generated CSV and Excel files without sanitizing fields (matcher, targetUrl, infoText). This allowed "Formula Injection" where a malicious user (or admin copying malicious input) could insert formulas (e.g., `=1+1`) that would execute when opened in Excel/Sheets.
+**Learning:** Even internal admin-facing tools need sanitization, as admins might import/export data from untrusted sources or the application might be used in a way where "Info" fields are populated from user logs. CSV/Excel generation libraries often don't sanitize for formulas by default.
+**Prevention:** Implemented a `sanitizeForCSV` helper that prepends a single quote `'` to any string starting with `=`, `+`, `-`, or `@`. Applied this to all text fields in CSV and Excel generation.
