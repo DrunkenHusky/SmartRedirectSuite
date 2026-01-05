@@ -146,6 +146,33 @@ export class FileStorage implements IStorage {
     defaultValue: T[],
   ): Promise<T[]> {
     try {
+      const stats = await fs.stat(filePath);
+
+      if (stats.size > 10 * 1024 * 1024) {
+        const { createReadStream } = await import('fs');
+
+        return new Promise<T[]>((resolve, reject) => {
+          let buffer = '';
+          const stream = createReadStream(filePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
+
+          stream.on('data', (chunk: string | Buffer) => {
+            buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf8');
+          });
+
+          stream.on('end', () => {
+            try {
+              const parsed = JSON.parse(buffer);
+              resolve(parsed);
+            }
+            catch (error) {
+              reject(error);
+            }
+          });
+
+          stream.on('error', reject);
+        });
+      }
+
       const data = await fs.readFile(filePath, "utf-8");
       return JSON.parse(data);
     } catch {
@@ -169,8 +196,27 @@ export class FileStorage implements IStorage {
           this.lastCacheConfig.TRAILING_SLASH_POLICY !== config.TRAILING_SLASH_POLICY;
 
         if (needsReprocess) {
-          // Reprocess existing cache in-place or map
-          this.rulesCache = this.rulesCache.map(rule => preprocessRule(rule, config));
+          const BATCH_SIZE = 1000;
+          const newCache = new Array(this.rulesCache.length);
+          const batches = Math.ceil(this.rulesCache.length / BATCH_SIZE);
+
+          for (let i = 0; i < batches; i++) {
+            const start = i * BATCH_SIZE;
+            const end = Math.min(start + BATCH_SIZE, this.rulesCache.length);
+            const batch = this.rulesCache.slice(start, end);
+            const processed = batch.map(rule => preprocessRule(rule, config));
+
+            // Fill the new array at the correct positions
+            for (let j = 0; j < processed.length; j++) {
+              newCache[start + j] = processed[j];
+            }
+
+            if (i < batches - 1) {
+              await new Promise(resolve => setImmediate(resolve));
+            }
+          }
+
+          this.rulesCache = newCache;
           this.lastCacheConfig = config;
         }
       }
@@ -190,8 +236,21 @@ export class FileStorage implements IStorage {
        };
     }
 
+    const BATCH_SIZE = 1000;
+    const processed: ProcessedUrlRule[] = [];
+
+    for (let i = 0; i < rawRules.length; i += BATCH_SIZE) {
+      const batch = rawRules.slice(i, i + BATCH_SIZE);
+      const processedBatch = batch.map(rule => preprocessRule(rule, effectiveConfig!));
+      processed.push(...processedBatch);
+
+      if (i + BATCH_SIZE < rawRules.length) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
     // Process rules
-    this.rulesCache = rawRules.map(rule => preprocessRule(rule, effectiveConfig!));
+    this.rulesCache = processed;
     this.lastCacheConfig = effectiveConfig;
 
     return this.rulesCache;
