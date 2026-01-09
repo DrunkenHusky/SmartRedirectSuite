@@ -120,6 +120,7 @@ Content-Type: application/json
   "newUrl": "https://newsite.com/articles/article-1",
   "path": "/news/article-1",
   "userAgent": "Mozilla/5.0...",
+   "referrer": "https://google.com/search?q=smartredirect",
   "timestamp": "2025-01-06T17:30:00.000Z"
 }
 ```
@@ -576,8 +577,8 @@ Content-Type: application/json
 Content-Type: text/csv
 Content-Disposition: attachment; filename="url-statistics-20250106.csv"
 
-Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Referrer
-"https://oldsite.com/news/","https://newsite.com/articles/","/news/","2025-01-06T17:30:00.000Z","Mozilla/5.0...","https://google.com"
+ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent
+"uuid...","https://oldsite.com/news/","https://newsite.com/articles/","/news/","https://google.com","2025-01-06T17:30:00.000Z","Mozilla/5.0..."
 ```
 
 **Response (Excel)**
