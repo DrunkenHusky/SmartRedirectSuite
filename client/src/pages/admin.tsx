@@ -2246,8 +2246,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="domain">Simple Domain Replacement (Legacy)</SelectItem>
-                                    <SelectItem value="search">Smart Search Redirect (New)</SelectItem>
+                                    <SelectItem value="domain">Simple Domain Replacement</SelectItem>
+                                    <SelectItem value="search">Smart Search Redirect</SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 mt-1">
@@ -2295,7 +2295,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {/* Smart Search Message */}
                                     <div>
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Smart Search Message (New)
+                                            Smart Search Message
                                         </label>
                                         <DebouncedTextarea
                                             value={generalSettings.defaultSearchMessage}
@@ -2310,9 +2310,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </div>
                            </div>
 
-                           {/* Visualization Settings (Legacy) */}
+                           {/* Visualization Settings */}
                            <div className="mt-6 pt-6 border-t border-dashed">
-                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">Visualisierung (Legacy Settings)</h4>
+                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">Visualisierung</h4>
                                <div className="space-y-6">
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
@@ -2360,7 +2360,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                        </div>
                                    </div>
 
-                                   {/* Special Hints Title & Icon (Legacy) */}
+                                   {/* Special Hints Title & Icon */}
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
@@ -2434,7 +2434,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                  )}
                                </div>
 
-                               {/* Action Buttons (Legacy) */}
+                               {/* Action Buttons */}
                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
