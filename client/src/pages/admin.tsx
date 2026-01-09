@@ -2243,11 +2243,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 }
                             >
                                 <SelectTrigger className="bg-white dark:bg-gray-700">
-                                    <SelectValue />
+                                    <SelectValue>
+                                        {generalSettings.defaultRedirectMode === "domain" ? "Simple Domain Replacement" : "Smart Search Redirect"}
+                                    </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="domain">Simple Domain Replacement</SelectItem>
-                                    <SelectItem value="search">Smart Search Redirect</SelectItem>
+                                <SelectContent className="min-w-[400px] max-w-[600px]">
+                                    <SelectItem value="domain" className="items-start py-3">
+                                        <div className="flex flex-col text-left space-y-1">
+                                            <span className="font-medium">Simple Domain Replacement</span>
+                                            <span className="text-xs text-muted-foreground whitespace-normal leading-relaxed">
+                                                Ersetzt die Domain der angeforderten URL durch die "Target Domain". Pfad und Query-Parameter bleiben erhalten.
+                                            </span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="search" className="items-start py-3">
+                                        <div className="flex flex-col text-left space-y-1">
+                                            <span className="font-medium">Smart Search Redirect</span>
+                                            <span className="text-xs text-muted-foreground whitespace-normal leading-relaxed">
+                                                Leitet auf eine konfigurierte Such-URL weiter. Der letzte Teil des Pfades wird als Suchbegriff verwendet.
+                                            </span>
+                                        </div>
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 mt-1">
