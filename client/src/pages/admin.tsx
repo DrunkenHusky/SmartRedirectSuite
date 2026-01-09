@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DebouncedInput } from "@/components/ui/debounced-input";
 import { Textarea } from "@/components/ui/textarea";
+import { DebouncedTextarea } from "@/components/ui/debounced-textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -349,6 +351,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
     enableTrackingCache: true,
+    defaultRedirectMode: "domain" as "domain" | "search",
+    defaultSearchUrl: "" as string | undefined | null,
+    defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
   });
 
   // Statistics filters and state
@@ -627,6 +632,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
         matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
         enableTrackingCache: settingsData.enableTrackingCache ?? true,
+        defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
+        defaultSearchUrl: settingsData.defaultSearchUrl || "",
+        defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
       });
     }
   }, [settingsData]);
@@ -1802,9 +1810,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Titel <span className="text-red-500">*</span>
                               </label>
-                              <Input
+                              <DebouncedInput
                                 value={generalSettings.headerTitle}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, headerTitle: e.target.value })}
+                                onChange={(val) => setGeneralSettings({ ...generalSettings, headerTitle: val as string })}
                                 placeholder="Smart Redirect Service"
                                 className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
                               />
@@ -1858,9 +1866,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   onChange={(e) => setGeneralSettings({ ...generalSettings, headerBackgroundColor: e.target.value })}
                                   className="w-20 h-10 p-1 rounded-md border cursor-pointer"
                                 />
-                                <Input
+                                <DebouncedInput
                                   value={generalSettings.headerBackgroundColor}
-                                  onChange={(e) => setGeneralSettings({ ...generalSettings, headerBackgroundColor: e.target.value })}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, headerBackgroundColor: val as string })}
                                   placeholder="#ffffff"
                                   className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
                                 />
@@ -2092,9 +2100,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Titel <span className="text-red-500">*</span>
                               </label>
-                              <Input
+                              <DebouncedInput
                                 value={generalSettings.mainTitle}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, mainTitle: e.target.value })}
+                                onChange={(val) => setGeneralSettings({ ...generalSettings, mainTitle: val as string })}
                                 placeholder="URL veraltet - Aktualisierung erforderlich"
                                 className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
                                 disabled={generalSettings.popupMode === 'disabled'}
@@ -2123,9 +2131,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                               Beschreibung <span className="text-red-500">*</span>
                             </label>
-                            <Textarea
+                            <DebouncedTextarea
                               value={generalSettings.mainDescription}
-                              onChange={(e) => setGeneralSettings({ ...generalSettings, mainDescription: e.target.value })}
+                              onChange={(val) => setGeneralSettings({ ...generalSettings, mainDescription: val as string })}
                               placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
                               rows={3}
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
@@ -2139,9 +2147,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                               PopUp Button-Text
                             </label>
-                            <Input
+                            <DebouncedInput
                               value={generalSettings.popupButtonText}
-                              onChange={(e) => setGeneralSettings({ ...generalSettings, popupButtonText: e.target.value })}
+                              onChange={(val) => setGeneralSettings({ ...generalSettings, popupButtonText: val as string })}
                               placeholder="Zeige mir die neue URL"
                               className="bg-white dark:bg-gray-700"
                               disabled={generalSettings.popupMode === 'disabled'}
@@ -2182,9 +2190,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="w-20 h-10 p-1 rounded-md border cursor-pointer"
                                   disabled={generalSettings.popupMode === 'disabled'}
                                 />
-                                <Input
+                                <DebouncedInput
                                   value={generalSettings.mainBackgroundColor}
-                                  onChange={(e) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: e.target.value })}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: val as string })}
                                   placeholder="#ffffff"
                                   className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
                                   disabled={generalSettings.popupMode === 'disabled'}
@@ -2196,311 +2204,250 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
                       </div>
 
-                      {/* 3. URL Comparison Settings */}
+                      {/* 3. Routing & Fallback Behavior */}
                       <div className="space-y-6">
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">3</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">URL-Vergleich</h3>
-                            <p className="text-sm text-muted-foreground">Bereich für alte/neue URL-Gegenüberstellung</p>
+                            <h3 className="text-lg font-semibold text-foreground">Routing & Fallback Behavior</h3>
+                            <p className="text-sm text-muted-foreground">Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                            {/* Title */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel
-                              </label>
-                              <Input
-                                value={generalSettings.urlComparisonTitle}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, urlComparisonTitle: e.target.value })}
-                                placeholder="Zu verwendende URL"
-                                className="bg-white dark:bg-gray-700"
-                              />
-                            </div>
-                            
-                            {/* Icon */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon
-                              </label>
-                              <Select value={generalSettings.urlComparisonIcon} onValueChange={(value) => 
-                                setGeneralSettings({ ...generalSettings, urlComparisonIcon: value as any })
-                              }>
-                                <SelectTrigger className="bg-white dark:bg-gray-700">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                  <SelectItem value="Star">⭐ Stern</SelectItem>
-                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            {/* Background Color */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Hintergrundfarbe
-                              </label>
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="color"
-                                  value={generalSettings.urlComparisonBackgroundColor}
-                                  onChange={(e) => setGeneralSettings({ ...generalSettings, urlComparisonBackgroundColor: e.target.value })}
-                                  className="w-20 h-10 p-1 rounded-md border cursor-pointer"
-                                />
-                                <Input
-                                  value={generalSettings.urlComparisonBackgroundColor}
-                                  onChange={(e) => setGeneralSettings({ ...generalSettings, urlComparisonBackgroundColor: e.target.value })}
-                                  placeholder="#ffffff"
-                                  className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
-                                />
-                              </div>
-                            </div>
-                          </div>
                           
-                          {/* URL Labels */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Label für alte URL
-                              </label>
-                              <Input
-                                value={generalSettings.oldUrlLabel}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, oldUrlLabel: e.target.value })}
-                                placeholder="Alte aufgerufene URL"
-                                className="bg-white dark:bg-gray-700"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Beschriftung für die veraltete URL im Vergleich
-                              </p>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Label für neue URL
-                              </label>
-                              <Input
-                                value={generalSettings.newUrlLabel}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, newUrlLabel: e.target.value })}
-                                placeholder="Neue URL"
-                                className="bg-white dark:bg-gray-700"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Beschriftung für die neue/aktuelle URL im Vergleich
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {/* Default Domain */}
+                          {/* Field 1: Target Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Standard neue Domain
+                              Target Domain (Standard New Domain)
                             </label>
-                            <Input
+                            <DebouncedInput
                               value={generalSettings.defaultNewDomain}
-                              onChange={(e) => setGeneralSettings({ ...generalSettings, defaultNewDomain: e.target.value })}
-                              placeholder="https://newapplicationurl.com/"
+                              onChange={(value) => setGeneralSettings({ ...generalSettings, defaultNewDomain: value as string })}
+                              placeholder="https://thisisthenewurl.com/"
                               className="bg-white dark:bg-gray-700"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Domain die verwendet wird wenn keine spezielle URL-Regel greift - der Pfad wird automatisch übernommen
+                              Verwendet für Partial Matches und spezifische Regeln.
                             </p>
                           </div>
 
-                          {/* Show Link Quality Gauge Setting */}
-                          <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                <div>
-                                  <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
-                                  <p className="text-xs text-green-700 dark:text-green-300">
-                                    Zeigt ein Symbol mit der Qualität der URL-Übereinstimmung auf der Migrationsseite an
-                                  </p>
-                                </div>
-                              </div>
-                              <Switch
-                                checked={generalSettings.showLinkQualityGauge}
-                                onCheckedChange={(checked) =>
-                                  setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
-                                }
-                                className="data-[state=checked]:bg-green-600"
-                              />
-                            </div>
-
-                            {/* Match Explanation Texts */}
-                            {generalSettings.showLinkQualityGauge && (
-                              <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für hohe Übereinstimmung (≥ 90%)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchHighExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchHighExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für mittlere Übereinstimmung (≥ 60%)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchMediumExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter)."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für niedrige Übereinstimmung (Partial Match)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchLowExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchLowExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match)."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für Startseiten-Übereinstimmung (Root)
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchRootExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchRootExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Startseite erkannt. Direkte Weiterleitung auf die neue Domain."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">
-                                    Text für keine Übereinstimmung
-                                  </label>
-                                  <Input
-                                    value={generalSettings.matchNoneExplanation}
-                                    onChange={(e) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: e.target.value })}
-                                    className="bg-white dark:bg-gray-800"
-                                    placeholder="Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet."
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Action Buttons Sub-section */}
-                          <div className="pt-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Button-Text "URL kopieren"
-                                </label>
-                                <Input
-                                  value={generalSettings.copyButtonText}
-                                  onChange={(e) => setGeneralSettings({ ...generalSettings, copyButtonText: e.target.value })}
-                                  placeholder="URL kopieren"
-                                  className="bg-white dark:bg-gray-700"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Kopiert die neue URL in die Zwischenablage
-                                </p>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Button-Text "In neuem Tab öffnen"
-                                </label>
-                                <Input
-                                  value={generalSettings.openButtonText}
-                                  onChange={(e) => setGeneralSettings({ ...generalSettings, openButtonText: e.target.value })}
-                                  placeholder="In neuem Tab öffnen"
-                                  className="bg-white dark:bg-gray-700"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Öffnet die neue URL in einem neuen Browser-Tab
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Special Hints Sub-section */}
-                          <div className="pt-8 border-t border-gray-200 dark:border-gray-700">
-                            <div className="flex items-center gap-3 mb-6">
-                              <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600 dark:text-orange-400 text-xs font-semibold">3.1</div>
-                              <div>
-                                <h4 className="text-base font-semibold text-foreground">Spezielle Hinweise</h4>
-                                <p className="text-sm text-muted-foreground">Zusatzbereich der immer sichtbar ist</p>
-                              </div>
-                            </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel
-                              </label>
-                              <Input
-                                value={generalSettings.specialHintsTitle}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsTitle: e.target.value })}
-                                placeholder="Bitte beachte folgendes für diese URL:"
-                                className="bg-white dark:bg-gray-700"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon
-                              </label>
-                              <Select value={generalSettings.specialHintsIcon} onValueChange={(value) => 
-                                setGeneralSettings({ ...generalSettings, specialHintsIcon: value as any })
-                              }>
-                                <SelectTrigger className="bg-white dark:bg-gray-700">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                  <SelectItem value="Star">⭐ Stern</SelectItem>
-                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
+                          {/* Field 2: Fallback Strategy */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Standard-Beschreibung
+                                Fallback Strategy
                             </label>
-                            <Textarea
-                              value={generalSettings.specialHintsDescription}
-                              onChange={(e) => setGeneralSettings({ ...generalSettings, specialHintsDescription: e.target.value })}
-                              placeholder="Die neue URL wurde automatisch generiert. Es kann sein, dass sie nicht wie erwartet funktioniert. Falls die URL ungültig ist, nutze bitte die Suchfunktion in der neuen Applikation, um den gewünschten Inhalt zu finden."
-                              rows={3}
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.specialHintsDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Wird angezeigt, wenn keine passende URL-Regel aktiv ist
+                            <Select
+                                value={generalSettings.defaultRedirectMode}
+                                onValueChange={(value) =>
+                                    setGeneralSettings({ ...generalSettings, defaultRedirectMode: value as "domain" | "search" })
+                                }
+                            >
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="domain">Simple Domain Replacement (Legacy)</SelectItem>
+                                    <SelectItem value="search">Smart Search Redirect (New)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Definiert was passiert, wenn KEINE Regel (Exakt oder Partial) greift.
                             </p>
                           </div>
-                          </div>
+
+                          {/* Field 3: Search Base URL (Conditional) */}
+                          {generalSettings.defaultRedirectMode === 'search' && (
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                  Search Base URL <span className="text-red-500">*</span>
+                                </label>
+                                <DebouncedInput
+                                  value={generalSettings.defaultSearchUrl || ''}
+                                  onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
+                                  placeholder="https://newapp.com/?q="
+                                  className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Beispiel: https://newapp.com/?q=
+                                </p>
+                              </div>
+                          )}
+
+                           {/* Field 4: Fallback Info Messages (Grouped) */}
+                           <div className="border-t pt-4 mt-4">
+                                <h4 className="text-sm font-medium mb-4">Fallback Info Messages</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Standard Info Text */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                            Standard Info Text
+                                        </label>
+                                        <DebouncedTextarea
+                                            value={generalSettings.specialHintsDescription}
+                                            onChange={(value) => setGeneralSettings({ ...generalSettings, specialHintsDescription: value as string })}
+                                            rows={3}
+                                            className="bg-white dark:bg-gray-700"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
+                                        </p>
+                                    </div>
+                                    {/* Smart Search Message */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                            Smart Search Message (New)
+                                        </label>
+                                        <DebouncedTextarea
+                                            value={generalSettings.defaultSearchMessage}
+                                            onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchMessage: value as string })}
+                                            rows={3}
+                                            className="bg-white dark:bg-gray-700"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Angezeigt NUR wenn "Smart Search" ausgelöst wird (keine Regel matched).
+                                        </p>
+                                    </div>
+                                </div>
+                           </div>
+
+                           {/* Visualization Settings (Legacy) */}
+                           <div className="mt-6 pt-6 border-t border-dashed">
+                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">Visualisierung (Legacy Settings)</h4>
+                               <div className="space-y-6">
+                                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                                       <div>
+                                           <label className="block text-sm font-medium mb-2">Titel</label>
+                                           <DebouncedInput value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                       </div>
+                                       <div>
+                                         <label className="block text-sm font-medium mb-2">Icon</label>
+                                         <Select value={generalSettings.urlComparisonIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, urlComparisonIcon: val as any})}>
+                                            <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">🚫 Kein Icon</SelectItem>
+                                                <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
+                                                <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                                <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                                <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                                <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                                <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
+                                                <SelectItem value="Share2">📤 Teilen</SelectItem>
+                                                <SelectItem value="Clock">⏰ Zeit</SelectItem>
+                                                <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
+                                                <SelectItem value="Star">⭐ Stern</SelectItem>
+                                                <SelectItem value="Heart">❤️ Herz</SelectItem>
+                                                <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                            </SelectContent>
+                                         </Select>
+                                       </div>
+                                       <div>
+                                          <label className="block text-sm font-medium mb-2">Hintergrundfarbe</label>
+                                          <div className="flex items-center gap-3">
+                                              <input type="color" value={generalSettings.urlComparisonBackgroundColor} onChange={(e) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: e.target.value})} className="w-20 h-10 p-1 rounded-md border cursor-pointer"/>
+                                              <DebouncedInput value={generalSettings.urlComparisonBackgroundColor} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: val as string})} className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"/>
+                                          </div>
+                                       </div>
+                                   </div>
+
+                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                       <div>
+                                           <label className="block text-sm font-medium mb-2">Label für alte URL</label>
+                                           <DebouncedInput value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                       </div>
+                                       <div>
+                                           <label className="block text-sm font-medium mb-2">Label für neue URL</label>
+                                           <DebouncedInput value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                       </div>
+                                   </div>
+
+                                   {/* Special Hints Title & Icon (Legacy) */}
+                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                     <div>
+                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
+                                        <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                     </div>
+                                     <div>
+                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
+                                         <Select value={generalSettings.specialHintsIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, specialHintsIcon: val as any})}>
+                                            <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">🚫 Kein Icon</SelectItem>
+                                                <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
+                                                <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                                <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                                <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                                <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                                <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
+                                                <SelectItem value="Share2">📤 Teilen</SelectItem>
+                                                <SelectItem value="Clock">⏰ Zeit</SelectItem>
+                                                <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
+                                                <SelectItem value="Star">⭐ Stern</SelectItem>
+                                                <SelectItem value="Heart">❤️ Herz</SelectItem>
+                                                <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                            </SelectContent>
+                                         </Select>
+                                     </div>
+                                   </div>
+                               </div>
+
+                               {/* Link Quality Gauge */}
+                               <div className="mt-6 space-y-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                 <div className="flex items-center justify-between">
+                                   <div className="flex items-center gap-3">
+                                     <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                     <div>
+                                       <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                     </div>
+                                   </div>
+                                   <Switch
+                                     checked={generalSettings.showLinkQualityGauge}
+                                     onCheckedChange={(checked) =>
+                                       setGeneralSettings({ ...generalSettings, showLinkQualityGauge: checked })
+                                     }
+                                     className="data-[state=checked]:bg-green-600"
+                                   />
+                                 </div>
+
+                                 {generalSettings.showLinkQualityGauge && (
+                                   <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
+                                     <div>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">High Match Text (≥ 90%)</label>
+                                       <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                     </div>
+                                     <div>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Medium Match Text (≥ 60%)</label>
+                                       <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                     </div>
+                                     <div>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Low Match Text</label>
+                                       <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                     </div>
+                                     <div>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Root Match Text</label>
+                                       <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                     </div>
+                                     <div>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">No Match Text</label>
+                                       <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+
+                               {/* Action Buttons (Legacy) */}
+                               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                     <div>
+                                       <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
+                                       <DebouncedInput value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                     </div>
+                                     <div>
+                                       <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
+                                       <DebouncedInput value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                     </div>
+                                   </div>
+                               </div>
+                           </div>
                         </div>
                       </div>
 
@@ -2519,9 +2466,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                 Titel der Sektion
                               </label>
-                              <Input
+                              <DebouncedInput
                                 value={generalSettings.infoTitle}
-                                onChange={(e) => setGeneralSettings({ ...generalSettings, infoTitle: e.target.value })}
+                                onChange={(val) => setGeneralSettings({ ...generalSettings, infoTitle: val as string })}
                                 placeholder="Zusätzliche Informationen"
                                 className="bg-white dark:bg-gray-700"
                               />
@@ -2580,9 +2527,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               {generalSettings.infoItems.map((item, index) => (
                                 <div key={index} className="flex gap-3 items-center p-3 bg-white dark:bg-gray-700 rounded-lg border">
                                   <div className="flex-1">
-                                    <Input
+                                    <DebouncedInput
                                       value={item}
-                                      onChange={(e) => handleInfoItemChange(index, e.target.value)}
+                                      onChange={(val) => handleInfoItemChange(index, val as string)}
                                       placeholder={`Informationspunkt ${index + 1}`}
                                       className="border-0 bg-transparent focus:ring-1 focus:ring-blue-500"
                                     />
@@ -2645,9 +2592,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                               Copyright-Text <span className="text-red-500">*</span>
                             </label>
-                            <Input
+                            <DebouncedInput
                               value={generalSettings.footerCopyright}
-                              onChange={(e) => setGeneralSettings({ ...generalSettings, footerCopyright: e.target.value })}
+                              onChange={(val) => setGeneralSettings({ ...generalSettings, footerCopyright: val as string })}
                               placeholder="Proudly brewed with Generative AI."
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
                             />

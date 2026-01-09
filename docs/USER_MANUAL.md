@@ -11,8 +11,14 @@ Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-A
 
 - **Header**: Titel, Icon oder Logo sowie die Hintergrundfarbe des oberen Bereichs.
 - **Hauptbereich und Hinweis**: Überschrift, Beschreibung, Warn-Icon und Farben für die Hinweismeldung.
-- **URL-Vergleich**: Titel, Icon, Hintergrundfarbe und Bezeichnungen für alte und neue URL. Optional Standard-Domain und Button-Texte zum Kopieren oder Öffnen der neuen Adresse.
-- **Spezielle Hinweise**: Überschrift, Icon und Standardtext für Hinweise ohne spezifische Regel.
+- **Routing & Fallback Behavior (ehemals URL-Vergleich)**:
+  - **Target Domain**: Die Basis-Domain für alle Weiterleitungen (Standard). WICHTIG: Wird auch als Basis für Partial Matches verwendet.
+  - **Fallback Strategy**: Definiert das Verhalten, wenn keine spezifische Regel passt.
+    - *Simple Domain Replacement (Legacy)*: Standardverhalten. Ersetzt nur die Domain, behält den gesamten Pfad bei.
+    - *Smart Search Redirect (New)*: Extrahiert das letzte Pfadsegment und leitet auf eine konfigurierbare Suchseite weiter (z.B. `?q=dateiname.pdf`).
+  - **Fallback Info Messages**: Konfigurierbare Texte für den Fall, dass keine Regel greift (Smart Search Message) oder kein spezifischer Regeltext vorhanden ist (Standard Info Text).
+  - **Visualisierung**: Titel, Icon, Hintergrundfarbe und Bezeichnungen für alte und neue URL sowie Button-Texte.
+- **Spezielle Hinweise**: Überschrift und Icon für den Hinweisbereich.
 - **Zusätzliche Informationen**: Titel, Icon und bis zu drei Stichpunkte.
 - **Footer**: Copyright-Hinweis.
 - **Automatische Weiterleitung**: Globale Aktivierung einer sofortigen Weiterleitung für alle Regeln.
