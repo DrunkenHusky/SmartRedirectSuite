@@ -93,6 +93,7 @@ export interface IStorage {
     ruleFilter?: 'all' | 'with_rule' | 'no_rule',
     minQuality?: number,
     maxQuality?: number,
+    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'empty',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -741,6 +742,7 @@ export class FileStorage implements IStorage {
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
     minQuality?: number,
     maxQuality?: number,
+    feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -787,6 +789,16 @@ export class FileStorage implements IStorage {
         const hasRuleId = !!entry.ruleId;
         const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
         return !hasRuleId && !hasRuleIds;
+      });
+    }
+
+    // Filter based on feedback
+    if (feedbackFilter !== 'all') {
+      filteredEntries = filteredEntries.filter((entry) => {
+        if (feedbackFilter === 'empty') {
+          return !entry.feedback;
+        }
+        return entry.feedback === feedbackFilter;
       });
     }
 

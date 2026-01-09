@@ -89,6 +89,9 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
+  feedback: z.enum(['OK', 'NOK'])
+    .optional()
+    .nullable(),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
@@ -313,6 +316,22 @@ export const generalSettingsSchema = z.object({
   // Tracking Cache Settings
   enableTrackingCache: z.boolean()
     .default(true),
+
+  // User Feedback Survey
+  enableFeedbackSurvey: z.boolean()
+    .default(false),
+  feedbackSurveyTitle: z.string()
+    .min(1, "Titel für Feedback-Umfrage darf nicht leer sein")
+    .max(100, "Titel für Feedback-Umfrage ist zu lang")
+    .default("Hat die Weiterleitung funktioniert?"),
+  feedbackSurveyQuestion: z.string()
+    .min(1, "Frage für Feedback-Umfrage darf nicht leer sein")
+    .max(200, "Frage für Feedback-Umfrage ist zu lang")
+    .default("Bitte bewerten Sie die Zielseite."),
+  feedbackSuccessMessage: z.string()
+    .min(1, "Erfolgsmeldung für Feedback-Umfrage darf nicht leer sein")
+    .max(100, "Erfolgsmeldung für Feedback-Umfrage ist zu lang")
+    .default("Danke für Ihr Feedback!"),
 
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {

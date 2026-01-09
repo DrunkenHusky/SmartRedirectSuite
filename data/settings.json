@@ -32,7 +32,7 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2025-12-05T20:44:01.321Z",
+  "updatedAt": "2026-01-09T19:18:41.751Z",
   "popupMode": "inline",
   "showLinkQualityGauge": true,
   "headerLogoUrl": "",
@@ -41,5 +41,13 @@
   "matchLowExplanation": "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
   "matchRootExplanation": "Startseite erkannt. Direkte Weiterleitung auf die neue Seite.",
   "matchNoneExplanation": "Die URL konnte nicht spezifisch zugeordnet werden. Bitte nutzen Sie die Suche der neuen Applikation.",
-  "encodeImportedUrls": false
+  "encodeImportedUrls": false,
+  "defaultRedirectMode": "domain",
+  "defaultSearchUrl": "",
+  "defaultSearchMessage": "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+  "enableTrackingCache": true,
+  "enableFeedbackSurvey": true,
+  "feedbackSurveyTitle": "Feedback Test Title",
+  "feedbackSurveyQuestion": "Bitte bewerten Sie die Zielseite.",
+  "feedbackSuccessMessage": "Danke für Ihr Feedback!"
 }
