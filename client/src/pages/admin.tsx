@@ -2218,13 +2218,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {/* Field 1: Target Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Target Domain (Standard New Domain)
+                              Target Domain (Standard New Domain) <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               value={generalSettings.defaultNewDomain}
                               onChange={(value) => setGeneralSettings({ ...generalSettings, defaultNewDomain: value as string })}
                               placeholder="https://thisisthenewurl.com/"
-                              className="bg-white dark:bg-gray-700"
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain ? 'border-red-500' : ''}`}
                             />
                             <p className="text-xs text-gray-500 mt-1">
                               Verwendet für Partial Matches und spezifische Regeln.
@@ -2277,10 +2277,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                            <div className="border-t pt-4 mt-4">
                                 <h4 className="text-sm font-medium mb-4">Fallback Info Messages</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Standard Info Text */}
+                                    {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
+                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
+                                        <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
+                                         <Select value={generalSettings.specialHintsIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, specialHintsIcon: val as any})}>
+                                            <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">🚫 Kein Icon</SelectItem>
+                                                <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
+                                                <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
+                                                <SelectItem value="XCircle">❌ Fehler</SelectItem>
+                                                <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
+                                                <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                                <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
+                                                <SelectItem value="Share2">📤 Teilen</SelectItem>
+                                                <SelectItem value="Clock">⏰ Zeit</SelectItem>
+                                                <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
+                                                <SelectItem value="Star">⭐ Stern</SelectItem>
+                                                <SelectItem value="Heart">❤️ Herz</SelectItem>
+                                                <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                            </SelectContent>
+                                         </Select>
+                                     </div>
+
+                                    {/* Standard Info Text */}
+                                    <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Standard Info Text
+                                            Standard Info Text (Beschreibung)
                                         </label>
                                         <DebouncedTextarea
                                             value={generalSettings.specialHintsDescription}
@@ -2292,8 +2319,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
                                         </p>
                                     </div>
+
                                     {/* Smart Search Message */}
-                                    <div>
+                                    {generalSettings.defaultRedirectMode === 'search' && (
+                                    <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                             Smart Search Message
                                         </label>
@@ -2307,6 +2336,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Angezeigt NUR wenn "Smart Search" ausgelöst wird (keine Regel matched).
                                         </p>
                                     </div>
+                                    )}
                                 </div>
                            </div>
 
@@ -2358,35 +2388,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                            <label className="block text-sm font-medium mb-2">Label für neue URL</label>
                                            <DebouncedInput value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
                                        </div>
-                                   </div>
-
-                                   {/* Special Hints Title & Icon */}
-                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
-                                        <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
-                                     </div>
-                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
-                                         <Select value={generalSettings.specialHintsIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, specialHintsIcon: val as any})}>
-                                            <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                                <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                                <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                                <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                                <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                                <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                                <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                                <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                                <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                                <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                                <SelectItem value="Star">⭐ Stern</SelectItem>
-                                                <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                                <SelectItem value="Bell">🔔 Glocke</SelectItem>
-                                            </SelectContent>
-                                         </Select>
-                                     </div>
                                    </div>
                                </div>
 

@@ -315,7 +315,15 @@ export const generalSettingsSchema = z.object({
     .default(true),
 
   updatedAt: z.string().datetime("Invalid update timestamp"),
-}).strict(); // Prevent extra properties
+}).strict().refine((data) => {
+  if (data.defaultRedirectMode === 'search') {
+    return !!data.defaultSearchUrl && data.defaultSearchUrl.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Search Base URL is required when Smart Search Redirect is selected",
+  path: ["defaultSearchUrl"],
+}); // Prevent extra properties
 
 export const insertGeneralSettingsSchema = generalSettingsSchema.omit({
   id: true,
