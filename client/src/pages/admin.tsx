@@ -2247,7 +2247,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         {generalSettings.defaultRedirectMode === "domain" ? "Simple Domain Replacement" : "Smart Search Redirect"}
                                     </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent className="max-w-[90vw] sm:min-w-[400px] sm:max-w-[600px]">
+                                <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[400px] sm:max-w-[600px]">
                                     <SelectItem value="domain" className="items-start py-3">
                                         <div className="flex flex-col text-left space-y-1">
                                             <span className="font-medium">Simple Domain Replacement</span>
