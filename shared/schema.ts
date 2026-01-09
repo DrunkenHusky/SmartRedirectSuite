@@ -208,6 +208,21 @@ export const generalSettingsSchema = z.object({
     .refine((val) => val.startsWith('http://') || val.startsWith('https://'), {
       message: "Standard-Domain muss eine gültige HTTP/HTTPS-URL sein",
     }),
+
+  defaultRedirectMode: z.enum(["domain", "search"]).default("domain"),
+
+  defaultSearchUrl: z.string()
+    .max(500, "Such-URL ist zu lang")
+    .optional()
+    .nullable()
+    .refine((val) => !val || val.startsWith('http://') || val.startsWith('https://'), {
+      message: "Such-URL muss eine gültige HTTP/HTTPS-URL sein",
+    }),
+
+  defaultSearchMessage: z.string()
+    .min(1, "Text für Such-Weiterleitung darf nicht leer sein")
+    .max(500, "Text für Such-Weiterleitung ist zu lang")
+    .default("Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet."),
     
   // Button texts with validation
   copyButtonText: z.string()

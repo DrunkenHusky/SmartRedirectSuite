@@ -210,21 +210,72 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 setMatchQuality(currentMatchQuality);
                 setMatchLevel('green');
                 setMatchExplanation(settings.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
-            } else {
-                currentMatchQuality = 0;
-                setMatchQuality(currentMatchQuality);
-                setMatchLevel('red');
-                setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
-            }
 
-            if (settings.autoRedirect) {
-               // No matching rule, but global auto-redirect is enabled
-               shouldAutoRedirect = true;
-               redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
-               generatedNewUrl = redirectUrl;
+                if (settings.autoRedirect) {
+                    shouldAutoRedirect = true;
+                    redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
+                    generatedNewUrl = redirectUrl;
+                } else {
+                    generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                }
             } else {
-               // No auto-redirect, generate URL for display
-               generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                // Not root, and no match check Fallback Strategy
+                if (settings.defaultRedirectMode === 'search') {
+                    // Smart Search Logic
+                    currentMatchQuality = 0;
+                    setMatchQuality(currentMatchQuality);
+                    setMatchLevel('yellow'); // Indicates fallback is active but not exact match
+
+                    const message = settings.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.";
+                    setMatchExplanation(message);
+                    setInfoText(message);
+
+                    // Extract last segment
+                    try {
+                        const urlObj = new URL(url);
+                        const pathname = urlObj.pathname;
+                        const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
+                        const lastSegment = segments.length > 0 ? segments[segments.length - 1] : "";
+
+                        if (lastSegment && settings.defaultSearchUrl) {
+                            generatedNewUrl = settings.defaultSearchUrl + encodeURIComponent(lastSegment);
+                            redirectUrl = generatedNewUrl;
+
+                            if (settings.autoRedirect) {
+                                shouldAutoRedirect = true;
+                            }
+                        } else {
+                            // Fallback if extraction fails or no search URL
+                             setMatchLevel('red');
+                             setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
+                             generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                             if (settings.autoRedirect) {
+                                shouldAutoRedirect = true;
+                                redirectUrl = generatedNewUrl;
+                             }
+                        }
+                    } catch (e) {
+                        // Fallback on error
+                        console.error("Smart search extraction failed", e);
+                        generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                    }
+                } else {
+                    // Standard Domain Replacement (Legacy)
+                    currentMatchQuality = 0;
+                    setMatchQuality(currentMatchQuality);
+                    setMatchLevel('red');
+                    setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
+
+                    if (settings.autoRedirect) {
+                       // No matching rule, but global auto-redirect is enabled
+                       shouldAutoRedirect = true;
+                       redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
+                       generatedNewUrl = redirectUrl;
+                    } else {
+                       // No auto-redirect, generate URL for display
+                       generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                    }
+                }
             }
           }
         } else if (settings.autoRedirect) {
