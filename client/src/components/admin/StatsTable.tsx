@@ -143,9 +143,20 @@ const StatsTable = memo(({
               </td>
               <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.newUrl || 'N/A'}>
-                  <code className="text-[10px] sm:text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
-                    {entry.newUrl || 'N/A'}
-                  </code>
+                  {entry.newUrl ? (
+                    <a
+                      href={entry.newUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 hover:underline break-all inline-block max-w-full truncate align-middle font-mono"
+                    >
+                      {entry.newUrl}
+                    </a>
+                  ) : (
+                    <code className="text-[10px] sm:text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
+                      N/A
+                    </code>
+                  )}
                 </div>
               </td>
               <td className="p-2 sm:p-3">
