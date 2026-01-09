@@ -607,10 +607,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
       const stats = await storage.getTrackingStats();
       const topUrls = await storage.getTopUrls(10, timeRange);
+      const topReferrers = await storage.getTopReferrers(10, timeRange);
       
       res.json({
         stats,
         topUrls,
+        topReferrers,
       });
     } catch (error) {
       console.error("Stats error:", error);
@@ -730,10 +732,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const trackingData = await storage.getTrackingData(exportRequest.timeRange);
         
         if (exportRequest.format === 'csv') {
-          // CSV-Export without referrer
-          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent\n';
+          // CSV-Export with referrer
+          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Referrer\n';
           const csvData = trackingData.map(track =>
-            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}"`
+            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${track.referrer || ''}"`
           ).join('\n');
           
           res.setHeader('Content-Type', 'text/csv');

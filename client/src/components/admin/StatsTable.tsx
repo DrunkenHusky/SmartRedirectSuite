@@ -37,6 +37,7 @@ const StatsTable = memo(({
       oldUrl: 250,
       newUrl: 250,
       path: 200,
+      referrer: 200,
       rule: 150,
       matchQuality: 100,
     }
@@ -108,6 +109,20 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('path', e)} />
             </th>
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.referrer }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSort('referrer')}
+                className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+              >
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
+                  Referrer
+                  {getSortIcon('referrer')}
+                </span>
+              </Button>
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('referrer', e)} />
+            </th>
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.rule }}>
               Regel
               <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
@@ -153,6 +168,13 @@ const StatsTable = memo(({
                     <code className="text-xs sm:text-sm text-foreground inline-block max-w-full truncate align-middle">
                         {entry.path}
                     </code>
+                </div>
+              </td>
+              <td className="p-2 sm:p-3">
+                <div className="w-full" title={entry.referrer || ''}>
+                  <code className="text-[10px] sm:text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
+                    {entry.referrer || '-'}
+                  </code>
                 </div>
               </td>
               <td className="p-2 sm:p-3">

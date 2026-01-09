@@ -68,6 +68,10 @@ export interface IStorage {
     limit?: number,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<Array<{ path: string; count: number }>>;
+  getTopReferrers(
+    limit?: number,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ referrer: string; count: number }>>;
   getTrackingStats(): Promise<{ total: number; today: number; week: number }>;
 
   // Import functionality
@@ -634,6 +638,34 @@ export class FileStorage implements IStorage {
       .slice(0, limit);
   }
 
+  async getTopReferrers(
+    limit = 10,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ referrer: string; count: number }>> {
+    const trackingData = await this.getTrackingData(timeRange);
+    const referrerCounts = new Map<string, number>();
+
+    trackingData.forEach((track) => {
+      if (track.referrer && track.referrer.trim() !== "") {
+        try {
+          // Extract domain from referrer
+          const url = new URL(track.referrer);
+          const domain = url.hostname;
+
+          const current = referrerCounts.get(domain) || 0;
+          referrerCounts.set(domain, current + 1);
+        } catch (e) {
+          // Ignore invalid URLs
+        }
+      }
+    });
+
+    return Array.from(referrerCounts.entries())
+      .map(([referrer, count]) => ({ referrer, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+
   // Enhanced statistics methods
   async getAllTrackingEntries(): Promise<UrlTracking[]> {
     const tracking = await this.ensureTrackingLoaded();
@@ -658,7 +690,8 @@ export class FileStorage implements IStorage {
           ((entry as any).newUrl &&
             (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
           entry.path.toLowerCase().includes(searchTerm) ||
-          entry.userAgent?.toLowerCase().includes(searchTerm),
+          entry.userAgent?.toLowerCase().includes(searchTerm) ||
+          (entry.referrer && entry.referrer.toLowerCase().includes(searchTerm)),
       );
     }
 
@@ -689,6 +722,9 @@ export class FileStorage implements IStorage {
            break;
         case "matchQuality":
            comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
+           break;
+        case "referrer":
+           comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
            break;
       }
 
@@ -839,6 +875,9 @@ export class FileStorage implements IStorage {
             break;
           case "path":
             comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+            break;
+          case "referrer":
+            comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
             break;
         }
 

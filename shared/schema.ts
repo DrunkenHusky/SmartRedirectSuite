@@ -89,6 +89,9 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
+  referrer: z.string()
+    .max(2000, "Referrer too long")
+    .optional(),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({

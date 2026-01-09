@@ -474,6 +474,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const { data: statsData, isLoading: statsLoading } = useQuery<{
     stats: { total: number; today: number; week: number };
     topUrls: Array<{ path: string; count: number }>;
+    topReferrers: Array<{ referrer: string; count: number }>;
   }>({
     queryKey: ["/api/admin/stats/all", statsFilter],
     enabled: isAuthenticated,
@@ -3132,6 +3133,64 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           </table>
                         </div>
 
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Top 10 Referrers View */}
+              {statsView === 'top100' && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Top Referrer</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {statsLoading ? (
+                      <div className="text-center py-8">Lade Referrer...</div>
+                    ) : !statsData?.topReferrers?.length ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Keine Referrer-Daten vorhanden.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[500px]">
+                            <thead className="bg-muted/50 border-b">
+                              <tr>
+                                <th className="text-left p-2 sm:p-3 font-medium w-16">Rang</th>
+                                <th className="text-left p-2 sm:p-3 font-medium">Domain</th>
+                                <th className="text-right p-2 sm:p-3 font-medium w-24">Anzahl</th>
+                                <th className="text-left p-2 sm:p-3 font-medium w-32">Anteil</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {statsData.topReferrers.map((ref, index) => {
+                                const rank = index + 1;
+                                const maxCount = statsData.topReferrers[0]?.count || 1;
+                                return (
+                                  <tr key={index} className="border-b hover:bg-muted/50">
+                                    <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
+                                    <td className="p-2 sm:p-3">
+                                      <code className="text-xs sm:text-sm text-foreground break-all">{ref.referrer}</code>
+                                    </td>
+                                    <td className="p-2 sm:p-3 text-right text-sm font-medium">{ref.count}</td>
+                                    <td className="p-2 sm:p-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-12 sm:w-16">
+                                          <Progress value={(ref.count / maxCount) * 100} className="h-1.5 sm:h-2" />
+                                        </div>
+                                        <span className="text-[10px] sm:text-xs text-muted-foreground">
+                                          {((ref.count / maxCount) * 100).toFixed(1)}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </>
                     )}
                   </CardContent>
