@@ -260,7 +260,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
                     }
                 } else {
-                    // Standard Domain Replacement (Legacy)
+                    // Standard Domain Replacement
                     currentMatchQuality = 0;
                     setMatchQuality(currentMatchQuality);
                     setMatchLevel('red');
