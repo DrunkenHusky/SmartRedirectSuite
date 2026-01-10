@@ -351,6 +351,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
     enableTrackingCache: true,
+    enableReferrerTracking: true,
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
