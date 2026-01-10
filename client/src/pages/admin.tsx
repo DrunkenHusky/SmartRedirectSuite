@@ -637,6 +637,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+        enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
+        feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
+        feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
+        feedbackSuccessMessage: settingsData.feedbackSuccessMessage || "Danke für Ihr Feedback!",
       });
     }
   }, [settingsData]);
