@@ -21,6 +21,7 @@ interface StatsTableProps {
   onSort: (column: string) => void;
   onEditRule: (rule: UrlRule) => void;
   formatTimestamp: (timestamp: string) => string;
+  showReferrer?: boolean;
 }
 
 const StatsTable = memo(({
@@ -28,7 +29,8 @@ const StatsTable = memo(({
   sortConfig,
   onSort,
   onEditRule,
-  formatTimestamp
+  formatTimestamp,
+  showReferrer = true
 }: StatsTableProps) => {
 
   const { columnWidths, handleResizeStart } = useResizableColumns({
@@ -37,7 +39,7 @@ const StatsTable = memo(({
       oldUrl: 250,
       newUrl: 250,
       path: 200,
-      referrer: 200,
+      referrer: showReferrer ? 200 : 0,
       rule: 150,
       matchQuality: 100,
     }
@@ -109,6 +111,7 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('path', e)} />
             </th>
+            {showReferrer && (
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.referrer }}>
               <Button
                 variant="ghost"
@@ -123,6 +126,7 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('referrer', e)} />
             </th>
+            )}
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.rule }}>
               Regel
               <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
@@ -181,6 +185,7 @@ const StatsTable = memo(({
                     </code>
                 </div>
               </td>
+              {showReferrer && (
               <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.referrer || 'Direct'}>
                   {entry.referrer ? (
@@ -197,6 +202,7 @@ const StatsTable = memo(({
                   )}
                 </div>
               </td>
+              )}
               <td className="p-2 sm:p-3">
                 {entry.rules && entry.rules.length > 0 ? (
                   <div className="flex flex-wrap gap-1">

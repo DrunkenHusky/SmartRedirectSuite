@@ -737,16 +737,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/export", requireAuth, async (req, res) => {
     try {
       const exportRequest = exportRequestSchema.parse(req.body);
+      const settings = await storage.getGeneralSettings();
       
       if (exportRequest.type === 'statistics') {
         const trackingData = await storage.getTrackingData(exportRequest.timeRange);
         
         if (exportRequest.format === 'csv') {
-          // CSV-Export with referrer
-          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent\n';
-          const csvData = trackingData.map(track =>
-            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}"`
-          ).join('\n');
+          const includeReferrer = settings.enableReferrerTracking;
+          // CSV-Export
+          const csvHeader = includeReferrer
+            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent\n'
+            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent\n';
+
+          const csvData = trackingData.map(track => {
+            if (includeReferrer) {
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}"`;
+            } else {
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}"`;
+            }
+          }).join('\n');
           
           res.setHeader('Content-Type', 'text/csv');
           res.setHeader('Content-Disposition', 'attachment; filename="statistics.csv"');

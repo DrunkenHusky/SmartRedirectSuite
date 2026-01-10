@@ -314,6 +314,10 @@ export const generalSettingsSchema = z.object({
   enableTrackingCache: z.boolean()
     .default(true),
 
+  // Referrer Tracking
+  enableReferrerTracking: z.boolean()
+    .default(true),
+
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {
   if (data.defaultRedirectMode === 'search') {

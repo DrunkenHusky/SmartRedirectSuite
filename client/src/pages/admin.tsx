@@ -653,6 +653,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
         matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
         enableTrackingCache: settingsData.enableTrackingCache ?? true,
+        enableReferrerTracking: settingsData.enableReferrerTracking ?? true,
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
@@ -2656,6 +2657,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             />
                           </div>
 
+                          {/* Referrer Tracking Toggle */}
+                          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Share2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                              <div>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Referrer Tracking aktivieren</p>
+                                <p className="text-xs text-purple-700 dark:text-purple-300">
+                                  Erfasst die Herkunfts-URL (Referrer) der Besucher für statistische Auswertungen.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.enableReferrerTracking}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, enableReferrerTracking: checked })
+                              }
+                              className="data-[state=checked]:bg-purple-600"
+                            />
+                          </div>
+
                           {/* Tracking Cache Toggle */}
                           <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
                             <div className="flex items-center gap-3">
@@ -3050,7 +3071,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
               {/* Top 100 View */}
               {statsView === 'top100' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
                   <Card>
                     <CardHeader>
                       <CardTitle>Top URLs</CardTitle>
@@ -3107,6 +3128,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   </Card>
 
                   {/* Top Referrers Widget */}
+                  {generalSettings.enableReferrerTracking && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Top Referrer</CardTitle>
@@ -3171,6 +3193,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       )}
                     </CardContent>
                   </Card>
+                  )}
                 </div>
               )}
 
@@ -3195,6 +3218,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           onSort={handleSort}
                           onEditRule={handleEditRule}
                           formatTimestamp={formatTimestamp}
+                          showReferrer={generalSettings.enableReferrerTracking}
                         />
                         
                         {/* Pagination Controls for Browser View */}

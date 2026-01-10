@@ -1158,6 +1158,7 @@ export class FileStorage implements IStorage {
         footerCopyright:
           "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
         caseSensitiveLinkDetection: false,
+        enableReferrerTracking: true,
         updatedAt: new Date().toISOString(),
         autoRedirect: false,
       };
