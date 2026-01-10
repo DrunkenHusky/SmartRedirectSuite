@@ -323,15 +323,15 @@ export const generalSettingsSchema = z.object({
   feedbackSurveyTitle: z.string()
     .min(1, "Titel für Feedback-Umfrage darf nicht leer sein")
     .max(100, "Titel für Feedback-Umfrage ist zu lang")
-    .default("Hat die Weiterleitung funktioniert?"),
+    .default("War die neue URL korrekt?"),
   feedbackSurveyQuestion: z.string()
     .min(1, "Frage für Feedback-Umfrage darf nicht leer sein")
     .max(200, "Frage für Feedback-Umfrage ist zu lang")
-    .default("Bitte bewerten Sie die Zielseite."),
+    .default("Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."),
   feedbackSuccessMessage: z.string()
     .min(1, "Erfolgsmeldung für Feedback-Umfrage darf nicht leer sein")
     .max(100, "Erfolgsmeldung für Feedback-Umfrage ist zu lang")
-    .default("Danke für Ihr Feedback!"),
+    .default("Vielen Dank für deine Rückmeldung."),
 
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {

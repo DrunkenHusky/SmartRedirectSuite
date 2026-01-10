@@ -1137,6 +1137,12 @@ export class FileStorage implements IStorage {
         caseSensitiveLinkDetection: false,
         updatedAt: new Date().toISOString(),
         autoRedirect: false,
+
+        // User Feedback Defaults
+        enableFeedbackSurvey: false,
+        feedbackSurveyTitle: "War die neue URL korrekt?",
+        feedbackSurveyQuestion: "Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern.",
+        feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
       };
 
       // Save default settings directly to avoid infinite loop

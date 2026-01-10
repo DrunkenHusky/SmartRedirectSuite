@@ -181,19 +181,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Feedback Endpoint
   app.post("/api/feedback", apiRateLimiter, async (req, res) => {
     try {
-      const { ruleId, feedback } = z.object({
-        ruleId: z.string().uuid(),
-        feedback: z.enum(['OK', 'NOK'])
+      const { ruleId, feedback, url } = z.object({
+        ruleId: z.string().optional(),
+        feedback: z.enum(['OK', 'NOK']),
+        url: z.string().optional()
       }).parse(req.body);
 
       // Create a tracking entry representing the feedback
       // We look up the rule to get context if possible
-      const rule = await storage.getUrlRule(ruleId);
+      const rule = ruleId ? await storage.getUrlRule(ruleId) : undefined;
 
       const trackingEntry: any = {
-        oldUrl: "Manual Feedback",
-        path: rule ? rule.matcher : "unknown",
-        ruleId: ruleId,
+        oldUrl: url || "Manual Feedback",
+        path: rule ? rule.matcher : (url ? extractPath(url) : "unknown"),
+        ruleId: ruleId || undefined,
         matchQuality: 100, // Explicit manual match
         timestamp: new Date().toISOString(),
         userAgent: "Manual Verification",
@@ -207,6 +208,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid feedback data" });
     }
   });
+
+  function extractPath(url: string): string {
+    try {
+      const u = new URL(url);
+      return u.pathname;
+    } catch {
+      return url.startsWith('/') ? url : '/' + url;
+    }
+  }
 
   // URL-Regel Matching endpoint
   app.post("/api/check-rules", apiRateLimiter, async (req, res) => {

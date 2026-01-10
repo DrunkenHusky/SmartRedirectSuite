@@ -408,7 +408,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ruleId: matchingRule?.id,
-          feedback
+          feedback,
+          url: currentUrl
         }),
       });
       setFeedbackSuccess(true);
