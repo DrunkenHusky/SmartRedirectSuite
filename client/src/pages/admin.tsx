@@ -2242,12 +2242,29 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     setGeneralSettings({ ...generalSettings, defaultRedirectMode: value as "domain" | "search" })
                                 }
                             >
-                                <SelectTrigger className="bg-white dark:bg-gray-700">
-                                    <SelectValue />
+                                <SelectTrigger className="h-auto min-h-[40px] bg-white dark:bg-gray-700">
+                                    <SelectValue>
+                                        {generalSettings.defaultRedirectMode === "domain" && "Simple Domain Replacement"}
+                                        {generalSettings.defaultRedirectMode === "search" && "Smart Search Redirect"}
+                                    </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="domain">Simple Domain Replacement</SelectItem>
-                                    <SelectItem value="search">Smart Search Redirect</SelectItem>
+                                <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
+                                    <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
+                                        <div className="flex flex-col space-y-1">
+                                            <span className="font-medium text-sm">Simple Domain Replacement</span>
+                                            <span className="text-xs text-muted-foreground leading-relaxed">
+                                                Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.
+                                            </span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="search" className="pl-8 pr-3 py-3 items-start">
+                                        <div className="flex flex-col space-y-1">
+                                            <span className="font-medium text-sm">Smart Search Redirect</span>
+                                            <span className="text-xs text-muted-foreground leading-relaxed">
+                                                Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.
+                                            </span>
+                                        </div>
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 mt-1">
