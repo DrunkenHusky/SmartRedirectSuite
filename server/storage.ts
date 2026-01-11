@@ -68,6 +68,10 @@ export interface IStorage {
     limit?: number,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<Array<{ path: string; count: number }>>;
+  getTopReferrers(
+    limit?: number,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ domain: string; count: number }>>;
   getTrackingStats(): Promise<{ total: number; today: number; week: number }>;
 
   // Import functionality
@@ -635,6 +639,30 @@ export class FileStorage implements IStorage {
       .slice(0, limit);
   }
 
+  async getTopReferrers(
+    limit = 10,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ domain: string; count: number }>> {
+    const trackingData = await this.getTrackingData(timeRange);
+    const domainCounts = new Map<string, number>();
+
+    trackingData.forEach((track) => {
+      if (track.referrer) {
+        // Use robust extraction
+        const hostname = urlUtils.extractHostname(track.referrer);
+        if (hostname) {
+          const current = domainCounts.get(hostname) || 0;
+          domainCounts.set(hostname, current + 1);
+        }
+      }
+    });
+
+    return Array.from(domainCounts.entries())
+      .map(([domain, count]) => ({ domain, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+
   // Enhanced statistics methods
   async getAllTrackingEntries(): Promise<UrlTracking[]> {
     const tracking = await this.ensureTrackingLoaded();
@@ -659,7 +687,8 @@ export class FileStorage implements IStorage {
           ((entry as any).newUrl &&
             (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
           entry.path.toLowerCase().includes(searchTerm) ||
-          entry.userAgent?.toLowerCase().includes(searchTerm),
+          entry.userAgent?.toLowerCase().includes(searchTerm) ||
+          entry.referrer?.toLowerCase().includes(searchTerm),
       );
     }
 
@@ -687,6 +716,9 @@ export class FileStorage implements IStorage {
            break;
         case "userAgent":
            comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
+           break;
+        case "referrer":
+           comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
            break;
         case "matchQuality":
            comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
@@ -851,6 +883,9 @@ export class FileStorage implements IStorage {
             break;
           case "path":
             comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+            break;
+          case "referrer":
+            comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
             break;
         }
 
@@ -1135,6 +1170,7 @@ export class FileStorage implements IStorage {
         footerCopyright:
           "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
         caseSensitiveLinkDetection: false,
+        enableReferrerTracking: true,
         updatedAt: new Date().toISOString(),
         autoRedirect: false,
 

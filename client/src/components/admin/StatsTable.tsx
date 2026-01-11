@@ -23,6 +23,7 @@ interface StatsTableProps {
   onSort: (column: string) => void;
   onEditRule: (rule: UrlRule) => void;
   formatTimestamp: (timestamp: string) => string;
+  showReferrer?: boolean;
 }
 
 const StatsTable = memo(({
@@ -30,7 +31,8 @@ const StatsTable = memo(({
   sortConfig,
   onSort,
   onEditRule,
-  formatTimestamp
+  formatTimestamp,
+  showReferrer = true
 }: StatsTableProps) => {
 
   const { columnWidths, handleResizeStart } = useResizableColumns({
@@ -39,6 +41,7 @@ const StatsTable = memo(({
       oldUrl: 250,
       newUrl: 250,
       path: 200,
+      referrer: showReferrer ? 200 : 0,
       rule: 150,
       matchQuality: 100,
       feedback: 100,
@@ -112,6 +115,22 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('path', e)} />
             </th>
+            {showReferrer && (
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.referrer }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSort('referrer')}
+                className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+              >
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
+                  Referrer
+                  {getSortIcon('referrer')}
+                </span>
+              </Button>
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('referrer', e)} />
+            </th>
+            )}
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.rule }}>
               Regel
               <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
@@ -174,6 +193,24 @@ const StatsTable = memo(({
                     </code>
                 </div>
               </td>
+              {showReferrer && (
+              <td className="p-2 sm:p-3">
+                <div className="w-full" title={entry.referrer || 'Direct'}>
+                  {entry.referrer ? (
+                    <a
+                      href={entry.referrer}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 hover:underline break-all inline-block max-w-full truncate align-middle font-mono"
+                    >
+                      {entry.referrer}
+                    </a>
+                  ) : (
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
+                  )}
+                </div>
+              </td>
+              )}
               <td className="p-2 sm:p-3">
                 {entry.rules && entry.rules.length > 0 ? (
                   <div className="flex flex-wrap gap-1">

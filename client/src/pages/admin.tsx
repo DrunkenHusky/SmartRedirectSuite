@@ -58,7 +58,8 @@ import {
   Info,
   CheckCircle,
   FileSpreadsheet,
-  Filter
+  Filter,
+  Share2
 } from "lucide-react";
 import {
   Table,
@@ -352,6 +353,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
     enableTrackingCache: true,
+    enableReferrerTracking: true,
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
@@ -525,6 +527,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
   });
 
+  // Top Referrers
+  const { data: topReferrersData, isLoading: topReferrersLoading } = useQuery<Array<{ domain: string; count: number }>>({
+    queryKey: ["/api/admin/stats/top-referrers", statsFilter],
+    enabled: isAuthenticated && statsView === 'top100',
+    retry: false,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statsFilter !== 'all') {
+        params.append('timeRange', statsFilter);
+      }
+      const url = `/api/admin/stats/top-referrers${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url, { credentials: 'include' });
+      if (response.status === 401 || response.status === 403) {
+        setIsAuthenticated(false);
+        throw new Error('Authentication required');
+      }
+      if (!response.ok) throw new Error('Failed to fetch top referrers');
+      return response.json();
+    },
+  });
+
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
@@ -634,6 +657,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
         matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
         enableTrackingCache: settingsData.enableTrackingCache ?? true,
+        enableReferrerTracking: settingsData.enableReferrerTracking ?? true,
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
@@ -2658,6 +2682,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             />
                           </div>
 
+                          {/* Referrer Tracking Toggle */}
+                          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Share2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                              <div>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Referrer Tracking aktivieren</p>
+                                <p className="text-xs text-purple-700 dark:text-purple-300">
+                                  Erfasst die Herkunfts-URL (Referrer) der Besucher für statistische Auswertungen.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.enableReferrerTracking}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, enableReferrerTracking: checked })
+                              }
+                              className="data-[state=checked]:bg-purple-600"
+                            />
+                          </div>
+
                           {/* Tracking Cache Toggle */}
                           <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
                             <div className="flex items-center gap-3">
@@ -3130,61 +3174,130 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
               {/* Top 100 View */}
               {statsView === 'top100' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top URLs</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {top100Loading ? (
-                      <div className="text-center py-8">Lade URLs...</div>
-                    ) : !topUrlsData?.length ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Keine URL-Aufrufe vorhanden.
-                      </div>
-                    ) : (
-                      <>
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[500px]">
-                            <thead className="bg-muted/50 border-b">
-                              <tr>
-                                <th className="text-left p-2 sm:p-3 font-medium w-16">Rang</th>
-                                <th className="text-left p-2 sm:p-3 font-medium">URL-Pfad</th>
-                                <th className="text-right p-2 sm:p-3 font-medium w-24">Aufrufe</th>
-                                <th className="text-left p-2 sm:p-3 font-medium w-32">Anteil</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {topUrlsData.map((url, index) => {
-                                const rank = index + 1;
-                                const maxCount = topUrlsData?.[0]?.count || 1;
-                                return (
-                                  <tr key={index} className="border-b hover:bg-muted/50">
-                                    <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
-                                    <td className="p-2 sm:p-3">
-                                      <code className="text-xs sm:text-sm text-foreground break-all">{url.path}</code>
-                                    </td>
-                                    <td className="p-2 sm:p-3 text-right text-sm font-medium">{url.count}</td>
-                                    <td className="p-2 sm:p-3">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-12 sm:w-16">
-                                          <Progress value={(url.count / maxCount) * 100} className="h-1.5 sm:h-2" />
-                                        </div>
-                                        <span className="text-[10px] sm:text-xs text-muted-foreground">
-                                          {((url.count / maxCount) * 100).toFixed(1)}%
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Top URLs</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {top100Loading ? (
+                        <div className="text-center py-8">Lade URLs...</div>
+                      ) : !topUrlsData?.length ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          Keine URL-Aufrufe vorhanden.
                         </div>
+                      ) : (
+                        <>
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[300px]">
+                              <thead className="bg-muted/50 border-b">
+                                <tr>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-12">#</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium">URL-Pfad</th>
+                                  <th className="text-right p-2 sm:p-3 font-medium w-20">Aufrufe</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-24">Anteil</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {topUrlsData.map((url, index) => {
+                                  const rank = index + 1;
+                                  const maxCount = topUrlsData?.[0]?.count || 1;
+                                  return (
+                                    <tr key={index} className="border-b hover:bg-muted/50">
+                                      <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
+                                      <td className="p-2 sm:p-3">
+                                        <code className="text-xs sm:text-sm text-foreground break-all">{url.path}</code>
+                                      </td>
+                                      <td className="p-2 sm:p-3 text-right text-sm font-medium">{url.count}</td>
+                                      <td className="p-2 sm:p-3">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-12 sm:w-16">
+                                            <Progress value={(url.count / maxCount) * 100} className="h-1.5 sm:h-2" />
+                                          </div>
+                                          <span className="text-[10px] sm:text-xs text-muted-foreground">
+                                            {((url.count / maxCount) * 100).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                  {/* Top Referrers Widget */}
+                  {generalSettings.enableReferrerTracking && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Top Referrer</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {topReferrersLoading ? (
+                        <div className="text-center py-8">Lade Referrer...</div>
+                      ) : !topReferrersData?.length ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          Keine Referrer-Daten vorhanden.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[300px]">
+                              <thead className="bg-muted/50 border-b">
+                                <tr>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-12">#</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium">Domain</th>
+                                  <th className="text-right p-2 sm:p-3 font-medium w-20">Anzahl</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-24">Anteil</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {topReferrersData.map((ref, index) => {
+                                  const rank = index + 1;
+                                  const maxRefCount = topReferrersData?.[0]?.count || 1;
+                                  return (
+                                    <tr key={index} className="border-b hover:bg-muted/50">
+                                      <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
+                                      <td className="p-2 sm:p-3">
+                                        <div className="flex items-center gap-2">
+                                          <img
+                                            src={`https://www.google.com/s2/favicons?domain=${ref.domain}&sz=16`}
+                                            alt=""
+                                            className="w-4 h-4 opacity-70"
+                                            onError={(e) => e.currentTarget.style.display = 'none'}
+                                          />
+                                          <span className="text-xs sm:text-sm text-foreground truncate max-w-[150px] sm:max-w-[200px]" title={ref.domain}>
+                                            {ref.domain}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className="p-2 sm:p-3 text-right text-sm font-medium">{ref.count}</td>
+                                      <td className="p-2 sm:p-3">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-12 sm:w-16">
+                                            <Progress value={(ref.count / maxRefCount) * 100} className="h-1.5 sm:h-2" />
+                                          </div>
+                                          <span className="text-[10px] sm:text-xs text-muted-foreground">
+                                            {((ref.count / maxRefCount) * 100).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                  )}
+                </div>
               )}
 
               {/* Comprehensive Tracking Browser */}
@@ -3208,6 +3321,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           onSort={handleSort}
                           onEditRule={handleEditRule}
                           formatTimestamp={formatTimestamp}
+                          showReferrer={generalSettings.enableReferrerTracking}
                         />
                         
                         {/* Pagination Controls for Browser View */}

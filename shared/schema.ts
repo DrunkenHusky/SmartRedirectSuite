@@ -317,6 +317,10 @@ export const generalSettingsSchema = z.object({
   enableTrackingCache: z.boolean()
     .default(true),
 
+  // Referrer Tracking
+  enableReferrerTracking: z.boolean()
+    .default(true),
+  
   // User Feedback Survey
   enableFeedbackSurvey: z.boolean()
     .default(false),
