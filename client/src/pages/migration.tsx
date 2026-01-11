@@ -780,7 +780,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                   onClick={() => handleFeedback('OK')}
                 >
                   <ThumbsUp className="h-8 w-8" />
-                  <span>Ja, OK</span>
+                  <span>{settings?.feedbackButtonYes || "Ja, OK"}</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -789,7 +789,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                   onClick={() => handleFeedback('NOK')}
                 >
                   <ThumbsDown className="h-8 w-8" />
-                  <span>Nein</span>
+                  <span>{settings?.feedbackButtonNo || "Nein"}</span>
                 </Button>
               </div>
             </>

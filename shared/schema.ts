@@ -333,6 +333,12 @@ export const generalSettingsSchema = z.object({
   feedbackSuccessMessage: z.string()
     .max(100, "Erfolgsmeldung für Feedback-Umfrage ist zu lang")
     .default("Vielen Dank für deine Rückmeldung."),
+  feedbackButtonYes: z.string()
+    .max(50, "Button-Text für Ja ist zu lang")
+    .default("Ja, OK"),
+  feedbackButtonNo: z.string()
+    .max(50, "Button-Text für Nein ist zu lang")
+    .default("Nein"),
 
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {
@@ -367,6 +373,22 @@ export const generalSettingsSchema = z.object({
 }, {
   message: "Erfolgsmeldung für Feedback-Umfrage darf nicht leer sein",
   path: ["feedbackSuccessMessage"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackButtonYes && data.feedbackButtonYes.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Button-Text für Ja darf nicht leer sein",
+  path: ["feedbackButtonYes"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackButtonNo && data.feedbackButtonNo.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Button-Text für Nein darf nicht leer sein",
+  path: ["feedbackButtonNo"],
 }); // Prevent extra properties
 
 export const insertGeneralSettingsSchema = generalSettingsSchema.omit({

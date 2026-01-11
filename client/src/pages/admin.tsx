@@ -665,6 +665,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
         feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
         feedbackSuccessMessage: settingsData.feedbackSuccessMessage || "Danke für Ihr Feedback!",
+        feedbackButtonYes: settingsData.feedbackButtonYes || "Ja, OK",
+        feedbackButtonNo: settingsData.feedbackButtonNo || "Nein",
       });
     }
   }, [settingsData]);
@@ -2837,6 +2839,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="Vielen Dank für deine Rückmeldung."
                                 />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Button Ja (OK) <span className="text-red-500">*</span></label>
+                                <DebouncedInput
+                                  value={generalSettings.feedbackButtonYes}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonYes: val as string })}
+                                  className="bg-white dark:bg-gray-700"
+                                  placeholder="Ja, OK"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Button Nein (NOK) <span className="text-red-500">*</span></label>
+                                <DebouncedInput
+                                  value={generalSettings.feedbackButtonNo}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonNo: val as string })}
+                                  className="bg-white dark:bg-gray-700"
+                                  placeholder="Nein"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
                               </div>
                             </div>
                           )}
