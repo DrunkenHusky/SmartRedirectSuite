@@ -1143,6 +1143,8 @@ export class FileStorage implements IStorage {
         feedbackSurveyTitle: "War die neue URL korrekt?",
         feedbackSurveyQuestion: "Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern.",
         feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
+        feedbackButtonYes: "Ja, OK",
+        feedbackButtonNo: "Nein",
       };
 
       // Save default settings directly to avoid infinite loop
