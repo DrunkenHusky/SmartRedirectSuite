@@ -84,6 +84,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [trackingId, setTrackingId] = useState<string | null>(null);
+  const [hasAskedFeedback, setHasAskedFeedback] = useState(false);
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const fallbackAppName = __APP_NAME__ || "URL Migration Service";
@@ -333,7 +335,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         const safeNewUrl = generatedNewUrl.substring(0, 8000);
         const safePath = path.substring(0, 8000);
 
-        await fetch("/api/track", {
+        const trackResponse = await fetch("/api/track", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -347,6 +349,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             matchQuality: currentMatchQuality,
           }),
         });
+
+        if (trackResponse.ok) {
+          const trackData = await trackResponse.json();
+          if (trackData.id) {
+            setTrackingId(trackData.id);
+          }
+        }
 
       } catch (error) {
         console.error("Initialization error:", error);
@@ -377,8 +386,9 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       setCopySuccess(true);
       setIsCopied(true);
 
-      if (settings?.enableFeedbackSurvey) {
+      if (settings?.enableFeedbackSurvey && !hasAskedFeedback) {
         setShowFeedbackPopup(true);
+        setHasAskedFeedback(true);
       }
 
       setTimeout(() => {
@@ -396,8 +406,9 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
   const handleOpenNewTab = () => {
     window.open(newUrl, '_blank');
-    if (settings?.enableFeedbackSurvey) {
+    if (settings?.enableFeedbackSurvey && !hasAskedFeedback) {
       setShowFeedbackPopup(true);
+      setHasAskedFeedback(true);
     }
   };
 
@@ -408,6 +419,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ruleId: matchingRule?.id,
+          trackingId: trackingId || undefined,
           feedback,
           url: currentUrl
         }),

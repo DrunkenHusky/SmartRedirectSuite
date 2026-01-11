@@ -181,13 +181,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Feedback Endpoint
   app.post("/api/feedback", apiRateLimiter, async (req, res) => {
     try {
-      const { ruleId, feedback, url } = z.object({
+      const { ruleId, feedback, url, trackingId } = z.object({
         ruleId: z.string().optional(),
         feedback: z.enum(['OK', 'NOK']),
-        url: z.string().optional()
+        url: z.string().optional(),
+        trackingId: z.string().optional()
       }).parse(req.body);
 
-      // Create a tracking entry representing the feedback
+      if (trackingId) {
+        // Update existing tracking entry
+        const success = await storage.updateUrlTracking(trackingId, { feedback });
+        if (success) {
+           res.json({ success: true, id: trackingId });
+           return;
+        }
+        // If update failed (e.g. ID not found), fall back to creating new entry or error?
+        // Let's fall back to creating a new entry to ensure feedback isn't lost,
+        // but log a warning.
+        console.warn(`Feedback update failed for trackingId: ${trackingId}, creating new entry.`);
+      }
+
+      // Create a tracking entry representing the feedback (Fallback or Legacy)
       // We look up the rule to get context if possible
       const rule = ruleId ? await storage.getUrlRule(ruleId) : undefined;
 
