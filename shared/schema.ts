@@ -320,6 +320,12 @@ export const generalSettingsSchema = z.object({
   enableTrackingCache: z.boolean()
     .default(true),
 
+  // Max Statistics Entries (0 = unlimited)
+  maxStatsEntries: z.number()
+    .min(0, "Muss positiv sein")
+    .optional()
+    .default(0),
+
   // Referrer Tracking
   enableReferrerTracking: z.boolean()
     .default(true),
