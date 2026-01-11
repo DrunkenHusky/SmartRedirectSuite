@@ -89,6 +89,9 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
+  feedback: z.enum(['OK', 'NOK'])
+    .optional()
+    .nullable(),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
@@ -314,6 +317,19 @@ export const generalSettingsSchema = z.object({
   enableTrackingCache: z.boolean()
     .default(true),
 
+  // User Feedback Survey
+  enableFeedbackSurvey: z.boolean()
+    .default(false),
+  feedbackSurveyTitle: z.string()
+    .max(100, "Titel für Feedback-Umfrage ist zu lang")
+    .default("War die neue URL korrekt?"),
+  feedbackSurveyQuestion: z.string()
+    .max(200, "Frage für Feedback-Umfrage ist zu lang")
+    .default("Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."),
+  feedbackSuccessMessage: z.string()
+    .max(100, "Erfolgsmeldung für Feedback-Umfrage ist zu lang")
+    .default("Vielen Dank für deine Rückmeldung."),
+
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {
   if (data.defaultRedirectMode === 'search') {
@@ -323,6 +339,30 @@ export const generalSettingsSchema = z.object({
 }, {
   message: "Search Base URL is required when Smart Search Redirect is selected",
   path: ["defaultSearchUrl"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackSurveyTitle && data.feedbackSurveyTitle.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Titel für Feedback-Umfrage darf nicht leer sein",
+  path: ["feedbackSurveyTitle"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackSurveyQuestion && data.feedbackSurveyQuestion.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Frage für Feedback-Umfrage darf nicht leer sein",
+  path: ["feedbackSurveyQuestion"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackSuccessMessage && data.feedbackSuccessMessage.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Erfolgsmeldung für Feedback-Umfrage darf nicht leer sein",
+  path: ["feedbackSuccessMessage"],
 }); // Prevent extra properties
 
 export const insertGeneralSettingsSchema = generalSettingsSchema.omit({

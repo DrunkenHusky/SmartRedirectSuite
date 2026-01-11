@@ -21,7 +21,9 @@ import {
   Settings,
   Star,
   Heart,
-  Bell
+  Bell,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +82,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const fallbackAppName = __APP_NAME__ || "URL Migration Service";
@@ -372,6 +376,11 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       await copyToClipboard(newUrl);
       setCopySuccess(true);
       setIsCopied(true);
+
+      if (settings?.enableFeedbackSurvey) {
+        setShowFeedbackPopup(true);
+      }
+
       setTimeout(() => {
         setCopySuccess(false);
         setIsCopied(false);
@@ -387,6 +396,31 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
   const handleOpenNewTab = () => {
     window.open(newUrl, '_blank');
+    if (settings?.enableFeedbackSurvey) {
+      setShowFeedbackPopup(true);
+    }
+  };
+
+  const handleFeedback = async (feedback: 'OK' | 'NOK') => {
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ruleId: matchingRule?.id,
+          feedback,
+          url: currentUrl
+        }),
+      });
+      setFeedbackSuccess(true);
+      setTimeout(() => {
+        setShowFeedbackPopup(false);
+        setFeedbackSuccess(false); // Reset for next time
+      }, 2000);
+    } catch (error) {
+      console.error("Feedback error:", error);
+      setShowFeedbackPopup(false);
+    }
   };
 
   const handleAdminSuccess = () => {
@@ -717,6 +751,49 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handleAdminSuccess}
       />
+
+      {/* Feedback Survey Dialog */}
+      <Dialog open={showFeedbackPopup} onOpenChange={setShowFeedbackPopup}>
+        <DialogContent className="sm:max-w-md">
+          {feedbackSuccess ? (
+            <div className="flex flex-col items-center justify-center py-6 space-y-4 text-center animate-fade-in">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="h-6 w-6 text-green-600" />
+              </div>
+              <DialogTitle className="text-xl">{settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!"}</DialogTitle>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>{settings?.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?"}</DialogTitle>
+                <DialogDescription>
+                  {settings?.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-center gap-6 py-6">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-24 h-24 rounded-xl flex flex-col gap-2 hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all duration-200"
+                  onClick={() => handleFeedback('OK')}
+                >
+                  <ThumbsUp className="h-8 w-8" />
+                  <span>Ja, OK</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-24 h-24 rounded-xl flex flex-col gap-2 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all duration-200"
+                  onClick={() => handleFeedback('NOK')}
+                >
+                  <ThumbsDown className="h-8 w-8" />
+                  <span>Nein</span>
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
