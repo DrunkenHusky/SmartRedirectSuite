@@ -32,7 +32,7 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2026-01-11T20:44:13.376Z",
+  "updatedAt": "2026-01-11T20:56:00.233Z",
   "popupMode": "inline",
   "showLinkQualityGauge": true,
   "headerLogoUrl": "",
@@ -50,5 +50,7 @@
   "feedbackSurveyTitle": "War die neue URL korrekt?",
   "feedbackSurveyQuestion": "Dein Feedback hilft uns, die Weiterleitungen zu verbessern.",
   "feedbackSuccessMessage": "Vielen Dank für deine Rückmeldung.",
-  "enableReferrerTracking": true
+  "enableReferrerTracking": true,
+  "feedbackButtonYes": "Ja, OK",
+  "feedbackButtonNo": "Nein"
 }
