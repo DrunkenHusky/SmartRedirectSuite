@@ -6,7 +6,9 @@ import {
   ArrowUp,
   ArrowDown,
   Edit,
-  AlertCircle
+  AlertCircle,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
@@ -42,8 +44,10 @@ const StatsTable = memo(({
       referrer: showReferrer ? 200 : 0,
       rule: 150,
       matchQuality: 100,
+      feedback: 100,
     }
   });
+
 
   const getSortIcon = (column: string) => {
     if (sortConfig.by !== column) return <ArrowUp className="h-3 w-3 opacity-0" />; // Invisible placeholder for spacing
@@ -144,6 +148,10 @@ const StatsTable = memo(({
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('matchQuality', e)} />
+            </th>
+            <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.feedback }}>
+              Feedback
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('feedback', e)} />
             </th>
           </tr>
         </thead>
@@ -252,6 +260,15 @@ const StatsTable = memo(({
                 }`}>
                   {entry.matchQuality || 0}%
                 </span>
+              </td>
+              <td className="p-2 sm:p-3">
+                {entry.feedback === 'OK' ? (
+                  <ThumbsUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : entry.feedback === 'NOK' ? (
+                  <ThumbsDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
               </td>
             </tr>
           ))}

@@ -256,6 +256,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
   const [statsQualityFilter, setStatsQualityFilter] = useState<string>("all");
+  const [statsFeedbackFilter, setStatsFeedbackFilter] = useState<'all' | 'OK' | 'NOK' | 'empty'>('all');
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -550,7 +551,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Paginated tracking entries with search and sort
   const { data: paginatedEntriesData, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter, statsQualityFilter],
+    queryKey: ["/api/admin/stats/entries/paginated", statsPage, statsPerPage, debouncedStatsSearchQuery, sortBy, sortOrder, statsRuleFilter, statsQualityFilter, statsFeedbackFilter],
     enabled: isAuthenticated && statsView === 'browser',
     retry: false,
     queryFn: async () => {
@@ -560,6 +561,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         sortBy: sortBy,
         sortOrder: sortOrder,
         ruleFilter: statsRuleFilter,
+        feedbackFilter: statsFeedbackFilter,
       });
 
       // Parse quality filter
@@ -659,6 +661,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+        enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
+        feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
+        feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
+        feedbackSuccessMessage: settingsData.feedbackSuccessMessage || "Danke für Ihr Feedback!",
       });
     }
   }, [settingsData]);
@@ -2266,12 +2272,29 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     setGeneralSettings({ ...generalSettings, defaultRedirectMode: value as "domain" | "search" })
                                 }
                             >
-                                <SelectTrigger className="bg-white dark:bg-gray-700">
-                                    <SelectValue />
+                                <SelectTrigger className="h-auto min-h-[40px] bg-white dark:bg-gray-700">
+                                    <SelectValue>
+                                        {generalSettings.defaultRedirectMode === "domain" && "Simple Domain Replacement"}
+                                        {generalSettings.defaultRedirectMode === "search" && "Smart Search Redirect"}
+                                    </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="domain">Simple Domain Replacement</SelectItem>
-                                    <SelectItem value="search">Smart Search Redirect</SelectItem>
+                                <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
+                                    <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
+                                        <div className="flex flex-col space-y-1">
+                                            <span className="font-medium text-sm">Simple Domain Replacement</span>
+                                            <span className="text-xs text-muted-foreground leading-relaxed">
+                                                Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.
+                                            </span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="search" className="pl-8 pr-3 py-3 items-start">
+                                        <div className="flex flex-col space-y-1">
+                                            <span className="font-medium text-sm">Smart Search Redirect</span>
+                                            <span className="text-xs text-muted-foreground leading-relaxed">
+                                                Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.
+                                            </span>
+                                        </div>
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 mt-1">
@@ -2757,6 +2780,69 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
+                      {/* 8. User Feedback Survey */}
+                      <div className="space-y-6 mt-8">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center text-pink-600 dark:text-pink-400 text-sm font-semibold">8</div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground">User Feedback Survey</h3>
+                            <p className="text-sm text-muted-foreground">Erfassen Sie Feedback von Nutzern zur Qualität der Weiterleitung</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
+                          <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                              <div>
+                                <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Feedback-Umfrage aktivieren</p>
+                                <p className="text-xs text-pink-700 dark:text-pink-300">
+                                  Zeigt ein Popup an, wenn Nutzer auf "Kopieren" oder "Öffnen" klicken, um zu fragen, ob der Link funktioniert hat.
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={generalSettings.enableFeedbackSurvey}
+                              onCheckedChange={(checked) =>
+                                setGeneralSettings({ ...generalSettings, enableFeedbackSurvey: checked })
+                              }
+                              className="data-[state=checked]:bg-pink-600"
+                            />
+                          </div>
+
+                          {generalSettings.enableFeedbackSurvey && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                              <div className="md:col-span-2">
+                                <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
+                                <DebouncedInput
+                                  value={generalSettings.feedbackSurveyTitle}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
+                                  className="bg-white dark:bg-gray-700"
+                                  placeholder="War die neue URL korrekt?"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
+                                <DebouncedInput
+                                  value={generalSettings.feedbackSurveyQuestion}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
+                                  className="bg-white dark:bg-gray-700"
+                                  placeholder="Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
+                                <DebouncedInput
+                                  value={generalSettings.feedbackSuccessMessage}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
+                                  className="bg-white dark:bg-gray-700"
+                                  placeholder="Vielen Dank für deine Rückmeldung."
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                     {/* Save Button */}
                     <div className="border-t pt-6 mt-8">
                       <div className="flex items-center justify-between">
@@ -3029,6 +3115,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <SelectItem value="min_50">≥ 50%</SelectItem>
                           <SelectItem value="max_99">&lt; 100% (Nicht exakt)</SelectItem>
                           <SelectItem value="max_49">&lt; 50% (Schlecht)</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={statsFeedbackFilter}
+                        onValueChange={(value) => setStatsFeedbackFilter(value as 'all' | 'OK' | 'NOK' | 'empty')}
+                      >
+                        <SelectTrigger className="w-auto h-9 text-xs">
+                          <SelectValue placeholder="Feedback" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle Feedbacks</SelectItem>
+                          <SelectItem value="OK">👍 OK</SelectItem>
+                          <SelectItem value="NOK">👎 NOK</SelectItem>
+                          <SelectItem value="empty">Kein Feedback</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

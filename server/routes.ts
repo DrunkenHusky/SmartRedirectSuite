@@ -178,6 +178,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Feedback Endpoint
+  app.post("/api/feedback", apiRateLimiter, async (req, res) => {
+    try {
+      const { ruleId, feedback, url } = z.object({
+        ruleId: z.string().optional(),
+        feedback: z.enum(['OK', 'NOK']),
+        url: z.string().optional()
+      }).parse(req.body);
+
+      // Create a tracking entry representing the feedback
+      // We look up the rule to get context if possible
+      const rule = ruleId ? await storage.getUrlRule(ruleId) : undefined;
+
+      const trackingEntry: any = {
+        oldUrl: url || "Manual Feedback",
+        path: rule ? rule.matcher : (url ? extractPath(url) : "unknown"),
+        ruleId: ruleId || undefined,
+        matchQuality: 100, // Explicit manual match
+        timestamp: new Date().toISOString(),
+        userAgent: "Manual Verification",
+        feedback: feedback
+      };
+
+      const tracking = await storage.trackUrlAccess(trackingEntry);
+      res.json({ success: true, id: tracking.id });
+    } catch (error) {
+      console.error("Feedback error:", error);
+      res.status(400).json({ error: "Invalid feedback data" });
+    }
+  });
+
+  function extractPath(url: string): string {
+    try {
+      const u = new URL(url);
+      return u.pathname;
+    } catch {
+      return url.startsWith('/') ? url : '/' + url;
+    }
+  }
+
   // URL-Regel Matching endpoint
   app.post("/api/check-rules", apiRateLimiter, async (req, res) => {
     try {
@@ -702,6 +742,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!isNaN(parsed)) maxQuality = parsed;
       }
 
+      // Feedback filter
+      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all';
+      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'empty'].includes(req.query.feedbackFilter as string)) {
+        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'empty';
+      }
+
       const result = await storage.getTrackingEntriesPaginated(
         page,
         limit,
@@ -710,7 +756,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortOrder,
         ruleFilter,
         minQuality,
-        maxQuality
+        maxQuality,
+        feedbackFilter
       );
       res.json(result);
     } catch (error) {
