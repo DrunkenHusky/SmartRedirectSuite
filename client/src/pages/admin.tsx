@@ -2241,7 +2241,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">3</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Routing & Fallback Behavior</h3>
+                            <h3 className="text-lg font-semibold text-foreground">Routing & Fallback-Verhalten</h3>
                             <p className="text-sm text-muted-foreground">Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung</p>
                           </div>
                         </div>
@@ -2250,7 +2250,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {/* Field 1: Target Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Target Domain (Standard New Domain) <span className="text-red-500">*</span>
+                              Ziel-Domain (Standard neue Domain) <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               value={generalSettings.defaultNewDomain}
@@ -2266,7 +2266,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {/* Field 2: Fallback Strategy */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Fallback Strategy
+                                Fallback-Strategie
                             </label>
                             <Select
                                 value={generalSettings.defaultRedirectMode}
@@ -2276,14 +2276,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             >
                                 <SelectTrigger className="h-auto min-h-[40px] bg-white dark:bg-gray-700">
                                     <SelectValue>
-                                        {generalSettings.defaultRedirectMode === "domain" && "Simple Domain Replacement"}
-                                        {generalSettings.defaultRedirectMode === "search" && "Smart Search Redirect"}
+                                        {generalSettings.defaultRedirectMode === "domain" && "Einfacher Domain-Austausch"}
+                                        {generalSettings.defaultRedirectMode === "search" && "Intelligente Such-Weiterleitung"}
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
                                     <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Simple Domain Replacement</span>
+                                            <span className="font-medium text-sm">Einfacher Domain-Austausch</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
                                                 Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.
                                             </span>
@@ -2291,7 +2291,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     </SelectItem>
                                     <SelectItem value="search" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Smart Search Redirect</span>
+                                            <span className="font-medium text-sm">Intelligente Such-Weiterleitung</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
                                                 Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.
                                             </span>
@@ -2308,7 +2308,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {generalSettings.defaultRedirectMode === 'search' && (
                               <div>
                                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Search Base URL <span className="text-red-500">*</span>
+                                  Such-Basis-URL <span className="text-red-500">*</span>
                                 </label>
                                 <DebouncedInput
                                   value={generalSettings.defaultSearchUrl || ''}
@@ -2324,7 +2324,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                            {/* Field 4: Fallback Info Messages (Grouped) */}
                            <div className="border-t pt-4 mt-4">
-                                <h4 className="text-sm font-medium mb-4">Fallback Info Messages</h4>
+                                <h4 className="text-sm font-medium mb-4">Fallback-Info-Nachrichten</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
@@ -2373,7 +2373,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {generalSettings.defaultRedirectMode === 'search' && (
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Smart Search Message
+                                            Smart Search Nachricht
                                         </label>
                                         <DebouncedTextarea
                                             value={generalSettings.defaultSearchMessage}
@@ -2382,7 +2382,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             className="bg-white dark:bg-gray-700"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Angezeigt NUR wenn "Smart Search" ausgelöst wird (keine Regel matched).
+                                            Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).
                                         </p>
                                     </div>
                                     )}
@@ -2461,23 +2461,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                  {generalSettings.showLinkQualityGauge && (
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">High Match Text (≥ 90%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (≥ 90%)</label>
                                        <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Medium Match Text (≥ 60%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (≥ 60%)</label>
                                        <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Low Match Text</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung</label>
                                        <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Root Match Text</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer</label>
                                        <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">No Match Text</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung</label>
                                        <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                    </div>
@@ -2659,7 +2659,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung & Performance</h3>
+                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung & Leistung</h3>
                             <p className="text-sm text-muted-foreground">Einstellungen zur Erkennungslogik und Systemleistung</p>
                           </div>
                         </div>
@@ -2787,7 +2787,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center text-pink-600 dark:text-pink-400 text-sm font-semibold">8</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">User Feedback Survey</h3>
+                            <h3 className="text-lg font-semibold text-foreground">Benutzer-Feedback-Umfrage</h3>
                             <p className="text-sm text-muted-foreground">Erfassen Sie Feedback von Nutzern zur Qualität der Weiterleitung</p>
                           </div>
                         </div>
@@ -3668,7 +3668,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5 text-red-500" />
-                        <CardTitle className="text-red-500">Danger-Zone!</CardTitle>
+                        <CardTitle className="text-red-500">Gefahrenzone!</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
