@@ -32,7 +32,7 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2026-01-09T22:09:08.213Z",
+  "updatedAt": "2026-01-11T20:44:13.376Z",
   "popupMode": "inline",
   "showLinkQualityGauge": true,
   "headerLogoUrl": "",
@@ -42,12 +42,13 @@
   "matchRootExplanation": "Startseite erkannt. Direkte Weiterleitung auf die neue Seite.",
   "matchNoneExplanation": "Die URL konnte nicht spezifisch zugeordnet werden. Bitte nutzen Sie die Suche der neuen Applikation.",
   "encodeImportedUrls": false,
-  "defaultRedirectMode": "domain",
-  "defaultSearchUrl": "",
-  "defaultSearchMessage": "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+  "defaultRedirectMode": "search",
+  "defaultSearchUrl": "https://new.example.com/?q=",
+  "defaultSearchMessage": "Keine direkte Übereinstimmung gefunden. Du wirst zur Suche weitergeleitet.",
   "enableTrackingCache": true,
   "enableFeedbackSurvey": true,
-  "feedbackSurveyTitle": "Test Title",
-  "feedbackSurveyQuestion": "Test Question",
-  "feedbackSuccessMessage": "Test Success"
+  "feedbackSurveyTitle": "War die neue URL korrekt?",
+  "feedbackSurveyQuestion": "Dein Feedback hilft uns, die Weiterleitungen zu verbessern.",
+  "feedbackSuccessMessage": "Vielen Dank für deine Rückmeldung.",
+  "enableReferrerTracking": true
 }
