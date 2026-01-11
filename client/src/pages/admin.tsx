@@ -566,12 +566,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
       // Parse quality filter
       if (statsQualityFilter !== "all") {
-        if (statsQualityFilter.startsWith("min_")) {
-          params.append("minQuality", statsQualityFilter.replace("min_", ""));
-        } else if (statsQualityFilter.startsWith("max_")) {
-          params.append("maxQuality", statsQualityFilter.replace("max_", ""));
-        } else if (statsQualityFilter === "exact_100") {
+        if (statsQualityFilter === "100") {
           params.append("minQuality", "100");
+        } else if (statsQualityFilter === "75") {
+          params.append("minQuality", "75");
+          params.append("maxQuality", "75");
+        } else if (statsQualityFilter === "50") {
+          params.append("minQuality", "50");
+          params.append("maxQuality", "50");
+        } else if (statsQualityFilter === "0") {
+          params.append("maxQuality", "0");
         }
       }
       
@@ -2461,23 +2465,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                  {generalSettings.showLinkQualityGauge && (
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">High Match Text (≥ 90%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">High Match Text (100%)</label>
                                        <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Medium Match Text (≥ 60%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Medium Match Text (75%)</label>
                                        <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Low Match Text</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Low Match Text (50%)</label>
                                        <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Root Match Text</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Root Match Text (100%)</label>
                                        <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">No Match Text</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">No Match Text (0%)</label>
                                        <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                    </div>
@@ -3131,12 +3135,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Alle Qualitäten</SelectItem>
-                          <SelectItem value="exact_100">100% (Exakt)</SelectItem>
-                          <SelectItem value="min_90">≥ 90% (Hoch)</SelectItem>
-                          <SelectItem value="min_75">≥ 75%</SelectItem>
-                          <SelectItem value="min_50">≥ 50%</SelectItem>
-                          <SelectItem value="max_99">&lt; 100% (Nicht exakt)</SelectItem>
-                          <SelectItem value="max_49">&lt; 50% (Schlecht)</SelectItem>
+                          <SelectItem value="100">100% (Exakt)</SelectItem>
+                          <SelectItem value="75">75% (Fast exakt)</SelectItem>
+                          <SelectItem value="50">50% (Teilweise)</SelectItem>
+                          <SelectItem value="0">0% (Kein Treffer)</SelectItem>
                         </SelectContent>
                       </Select>
 
