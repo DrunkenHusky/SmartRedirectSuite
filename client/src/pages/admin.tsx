@@ -2751,27 +2751,30 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {generalSettings.enableFeedbackSurvey && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                               <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-2">Umfrage Titel</label>
+                                <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackSurveyTitle}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
                                   className="bg-white dark:bg-gray-700"
+                                  placeholder="War die neue URL korrekt?"
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Umfrage Frage</label>
+                                <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackSurveyQuestion}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
                                   className="bg-white dark:bg-gray-700"
+                                  placeholder="Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Erfolgsmeldung</label>
+                                <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackSuccessMessage}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
                                   className="bg-white dark:bg-gray-700"
+                                  placeholder="Vielen Dank für deine Rückmeldung."
                                 />
                               </div>
                             </div>
