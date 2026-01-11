@@ -63,6 +63,7 @@ export interface IStorage {
   // URL-Tracking
   clearAllTracking(): Promise<void>;
   trackUrlAccess(tracking: InsertUrlTracking): Promise<UrlTracking>;
+  updateUrlTracking(id: string, updates: Partial<UrlTracking>): Promise<boolean>;
   getTrackingData(timeRange?: "24h" | "7d" | "all"): Promise<UrlTracking[]>;
   getTopUrls(
     limit?: number,
@@ -594,6 +595,28 @@ export class FileStorage implements IStorage {
 
     await this.writeJsonFile(TRACKING_FILE, trackingData);
     return tracking;
+  }
+
+  async updateUrlTracking(
+    id: string,
+    updates: Partial<UrlTracking>,
+  ): Promise<boolean> {
+    const trackingData = await this.ensureTrackingLoaded();
+    const index = trackingData.findIndex((t) => t.id === id);
+
+    if (index === -1) {
+      return false;
+    }
+
+    const entry = trackingData[index];
+    const updatedEntry = { ...entry, ...updates };
+
+    // Update the entry in place
+    trackingData[index] = updatedEntry;
+
+    // Persist changes
+    await this.writeJsonFile(TRACKING_FILE, trackingData);
+    return true;
   }
 
   async getTrackingData(
