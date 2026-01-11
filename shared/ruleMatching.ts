@@ -371,7 +371,7 @@ export function findMatchingRule(
   if (isDomainRule) {
       // For domain rules, quality is high if it matched
       if (hasExtraQuery) {
-          quality = 90;
+          quality = 75;
       } else {
           quality = 100;
       }
