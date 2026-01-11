@@ -353,6 +353,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
     matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
     enableTrackingCache: true,
+    maxStatsEntries: 0,
     enableReferrerTracking: true,
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
@@ -661,6 +662,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         matchRootExplanation: settingsData.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
         matchNoneExplanation: settingsData.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
         enableTrackingCache: settingsData.enableTrackingCache ?? true,
+        maxStatsEntries: settingsData.maxStatsEntries || 0,
         enableReferrerTracking: settingsData.enableReferrerTracking ?? true,
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
@@ -2725,6 +2727,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 setGeneralSettings({ ...generalSettings, enableTrackingCache: checked })
                               }
                               className="data-[state=checked]:bg-purple-600"
+                            />
+                          </div>
+
+                          {/* Max Stats Entries */}
+                          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <div className="flex items-center gap-3 flex-1 mr-4">
+                              <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                              <div>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Max. Statistik-Einträge</p>
+                                <p className="text-xs text-purple-700 dark:text-purple-300">
+                                  Begrenzt die Anzahl der gespeicherten Statistik-Einträge in der tracking.json. Älteste Einträge werden bei Überschreitung gelöscht. (0 = Unbegrenzt)
+                                </p>
+                              </div>
+                            </div>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={generalSettings.maxStatsEntries}
+                              onChange={(e) => setGeneralSettings({ ...generalSettings, maxStatsEntries: parseInt(e.target.value) || 0 })}
+                              className="w-24 bg-white dark:bg-gray-700"
                             />
                           </div>
 

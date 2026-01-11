@@ -586,7 +586,20 @@ export class FileStorage implements IStorage {
 
     // In strict non-cache mode, ensureTrackingLoaded returns a new array from disk
     // In cache mode, it returns the cache reference
+
+    // Check for max stats entries limit
+    const settings = await this.getGeneralSettings();
+    const maxEntries = settings.maxStatsEntries || 0;
+
     trackingData.push(tracking);
+
+    // Apply limit if configured (and greater than 0)
+    if (maxEntries > 0 && trackingData.length > maxEntries) {
+      // Remove oldest entries to fit the limit
+      // Since new entries are pushed to the end, we remove from the beginning
+      const removeCount = trackingData.length - maxEntries;
+      trackingData.splice(0, removeCount);
+    }
 
     // If cache is disabled, we need to ensure we don't keep the reference if we obtained it from ensureTrackingLoaded
     // But ensureTrackingLoaded handles clearing this.trackingCache if disabled.
