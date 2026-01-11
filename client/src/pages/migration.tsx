@@ -23,14 +23,27 @@ import {
   Heart,
   Bell,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Plus,
+  Trash
 } from "lucide-react";
 import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordModal } from "@/components/ui/password-modal";
 import { QualityGauge } from "@/components/ui/quality-gauge";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { UrlRule, GeneralSettings } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+
+// Inline Editing Imports
+import { EditModeProvider, useEditMode } from "@/components/inline/EditModeContext";
+import { InlineText } from "@/components/inline/InlineText";
+import { InlineImage } from "@/components/inline/InlineImage";
+import { InlineColorWrapper } from "@/components/inline/InlineColorWrapper";
+import { InlineSemanticColorPicker } from "@/components/inline/InlineSemanticColorPicker";
+import { InlineIconPicker } from "@/components/inline/InlineIconPicker";
+import { AdminToolbar } from "@/components/inline/AdminToolbar";
+import { ICON_OPTIONS } from "@shared/schema";
 
 interface MigrationPageProps {
   onAdminAccess: () => void;
@@ -38,7 +51,7 @@ interface MigrationPageProps {
 
 // Icon mapping function
 const getIconComponent = (iconName: string) => {
-  const iconMap = {
+  const iconMap: Record<string, any> = {
     ArrowRightLeft,
     AlertTriangle,
     AlertCircle,
@@ -51,23 +64,24 @@ const getIconComponent = (iconName: string) => {
     Star,
     Heart,
     Bell
-  } as const;
-  return iconMap[iconName as keyof typeof iconMap] || AlertTriangle;
+  };
+  return iconMap[iconName] || AlertTriangle;
 };
 
 // Background color mapping
 const getBackgroundColor = (color: string) => {
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     yellow: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/50 dark:border-yellow-800",
     red: "bg-red-50 border-red-200 dark:bg-red-950/50 dark:border-red-800",
     orange: "bg-orange-50 border-orange-200 dark:bg-orange-950/50 dark:border-orange-800",
     blue: "bg-blue-50 border-blue-200 dark:bg-blue-950/50 dark:border-blue-800",
     gray: "bg-gray-50 border-gray-200 dark:bg-gray-950/50 dark:border-gray-800"
   };
-  return colorMap[color as keyof typeof colorMap] || colorMap.yellow;
+  return colorMap[color] || colorMap.yellow;
 };
 
-export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
+function MigrationPageContent({ onAdminAccess }: MigrationPageProps) {
+  const { isEditMode, isAdmin, setIsAdmin, toggleEditMode } = useEditMode();
   const [currentUrl, setCurrentUrl] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [matchingRule, setMatchingRule] = useState<UrlRule | null>(null);
@@ -87,63 +101,83 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [hasAskedFeedback, setHasAskedFeedback] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const fallbackAppName = __APP_NAME__ || "URL Migration Service";
 
-  // Check if user is already authenticated before showing password prompt
-  const handleAdminAccess = async (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    // Prevent multiple clicks
-    if (isCheckingAuth) return;
-
-    // Explicitly reset any lingering modal state
-    setShowPasswordModal(false);
-
-    setIsCheckingAuth(true);
-    try {
-      const response = await fetch("/api/admin/status", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.isAuthenticated) {
-          // User is already logged in, go directly to admin
-          onAdminAccess();
-          return;
-        }
-      }
-      
-      // User is not logged in, show password prompt
-      setShowPasswordModal(true);
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      // On error, show password prompt as fallback
-      setShowPasswordModal(true);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  };
+  // Dialog state specifically for admin modal
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
 
   // Fetch general settings for customizable texts
   const { data: settings, isLoading: settingsLoading } = useQuery<GeneralSettings>({
     queryKey: ["/api/settings"],
   });
 
+  const updateSettingsMutation = useMutation({
+    mutationFn: (newSettings: GeneralSettings) =>
+      apiRequest("PUT", "/api/admin/settings", newSettings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({
+        title: "Gespeichert",
+        description: "Einstellungen wurden erfolgreich aktualisiert.",
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to update settings", error);
+      toast({
+        title: "Fehler",
+        description: "Einstellungen konnten nicht gespeichert werden.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleUpdateSetting = async (updates: Partial<GeneralSettings>) => {
+    if (!settings) return;
+    const newSettings = { ...settings, ...updates };
+    await updateSettingsMutation.mutateAsync(newSettings);
+  };
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+        const response = await fetch("/api/admin/logout", {
+            method: "POST",
+            credentials: "include"
+        });
+        if (!response.ok) throw new Error("Logout failed");
+    },
+    onSuccess: () => {
+        setIsAdmin(false);
+        // Also refresh the page or queries to reflect logged out state if needed
+        toast({ title: "Abgemeldet", description: "Sie wurden erfolgreich abgemeldet." });
+    }
+  });
+
   useEffect(() => {
     if (settings) {
-      setShowMainDialog(settings.popupMode === 'active');
+      // Only set showMainDialog if not in edit mode (to avoid popping up while editing)
+      if (!isEditMode) {
+          setShowMainDialog(settings.popupMode === 'active');
+      }
     }
-  }, [settings]);
+  }, [settings, isEditMode]);
+
+  // Auth check on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+        try {
+            const res = await fetch("/api/admin/status");
+            if (res.ok) {
+                const data = await res.json();
+                setIsAdmin(data.isAuthenticated);
+            }
+        } catch (e) {
+            console.error("Auth check failed", e);
+        }
+    };
+    checkAuth();
+  }, [setIsAdmin]);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -294,8 +328,9 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
           generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
         }
         
-        // Handle auto-redirect
-        if (shouldAutoRedirect && redirectUrl && redirectUrl !== url) {
+        // Handle auto-redirect - but ONLY if not in edit mode or admin access
+        // We don't want to redirect admins trying to edit
+        if (shouldAutoRedirect && redirectUrl && redirectUrl !== url && !isAdmin && !isEditMode) {
           // Track the redirect before redirecting
           const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
           const safeOldUrl = url.substring(0, 8000);
@@ -336,27 +371,30 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         const safeNewUrl = generatedNewUrl.substring(0, 8000);
         const safePath = path.substring(0, 8000);
 
-        const trackResponse = await fetch("/api/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            oldUrl: safeOldUrl,
-            newUrl: safeNewUrl,
-            path: safePath,
-            timestamp: new Date().toISOString(),
-            userAgent: safeUserAgent,
-            referrer: settings.enableReferrerTracking ? (document.referrer || '').substring(0, 2000) : undefined,
-            ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
-            ruleIds: foundRules.map(r => r.id).filter(id => typeof id === 'string' && id.length > 0),
-            matchQuality: currentMatchQuality,
-          }),
-        });
+        // Only track if not admin
+        if (!isAdmin) {
+            const trackResponse = await fetch("/api/track", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                oldUrl: safeOldUrl,
+                newUrl: safeNewUrl,
+                path: safePath,
+                timestamp: new Date().toISOString(),
+                userAgent: safeUserAgent,
+                referrer: settings.enableReferrerTracking ? (document.referrer || '').substring(0, 2000) : undefined,
+                ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
+                ruleIds: foundRules.map(r => r.id).filter(id => typeof id === 'string' && id.length > 0),
+                matchQuality: currentMatchQuality,
+            }),
+            });
 
-        if (trackResponse.ok) {
-          const trackData = await trackResponse.json();
-          if (trackData.id) {
-            setTrackingId(trackData.id);
-          }
+            if (trackResponse.ok) {
+                const trackData = await trackResponse.json();
+                if (trackData.id) {
+                    setTrackingId(trackData.id);
+                }
+            }
         }
 
       } catch (error) {
@@ -369,7 +407,55 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     };
 
     initializePage();
-  }, [settings, settingsLoading]); // Re-run when settings are loaded
+  }, [settings, settingsLoading, isAdmin, isEditMode]); // Re-run when settings are loaded or admin status changes
+
+  // Check if user is already authenticated before showing password prompt
+  const handleAdminAccess = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Prevent multiple clicks
+    if (isCheckingAuth) return;
+
+    // Explicitly reset any lingering modal state
+    setShowPasswordModal(false);
+    // Also ensure main dialog is closed if we are logging in
+    setShowMainDialog(false);
+
+    setIsCheckingAuth(true);
+    try {
+      const response = await fetch("/api/admin/status", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isAuthenticated) {
+          // User is already logged in, update context
+          setIsAdmin(true);
+          // Don't call onAdminAccess(), stay on page in admin mode
+          return;
+        }
+      }
+
+      // User is not logged in, show password prompt
+      setShowPasswordModal(true);
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      // On error, show password prompt as fallback
+      setShowPasswordModal(true);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
+
 
   // Update URLs when settings are loaded (but not when matchingRule changes to avoid loops)
   useEffect(() => {
@@ -388,7 +474,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       setCopySuccess(true);
       setIsCopied(true);
 
-      if (settings?.enableFeedbackSurvey && !hasAskedFeedback) {
+      if (settings?.enableFeedbackSurvey && !hasAskedFeedback && !isEditMode) {
         setShowFeedbackPopup(true);
         setHasAskedFeedback(true);
       }
@@ -407,6 +493,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   };
 
   const handleOpenNewTab = () => {
+    if (isEditMode) return;
     window.open(newUrl, '_blank');
     if (settings?.enableFeedbackSurvey && !hasAskedFeedback) {
       setShowFeedbackPopup(true);
@@ -438,40 +525,93 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   };
 
   const handleAdminSuccess = () => {
-    onAdminAccess();
+    setIsAdmin(true);
   };
+
+  const handleInfoItemUpdate = async (index: number, value: string) => {
+      if (!settings) return;
+      const newItems = [...(settings.infoItems || [])];
+      newItems[index] = value;
+      await handleUpdateSetting({ infoItems: newItems });
+  };
+
+  const handleAddInfoItem = async () => {
+      if (!settings) return;
+      const newItems = [...(settings.infoItems || []), "Neuer Info-Punkt"];
+      const newIcons = [...(settings.infoIcons || []), "Bookmark" as const];
+      await handleUpdateSetting({ infoItems: newItems, infoIcons: newIcons });
+  };
+
+  const handleRemoveInfoItem = async (index: number) => {
+      if (!settings) return;
+      const newItems = settings.infoItems.filter((_, i) => i !== index);
+      const newIcons = settings.infoIcons.filter((_, i) => i !== index);
+      await handleUpdateSetting({ infoItems: newItems, infoIcons: newIcons });
+  };
+
+  const handleInfoIconUpdate = async (index: number, icon: string) => {
+      if (!settings) return;
+      const newIcons = [...(settings.infoIcons || [])];
+      newIcons[index] = icon as any;
+      await handleUpdateSetting({ infoIcons: newIcons });
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <AdminToolbar
+        onLogout={() => logoutMutation.mutate()}
+        onOpenAdmin={() => onAdminAccess()} // This now acts as "Settings" button
+      />
+
       {/* Header */}
+      <InlineColorWrapper
+        color={settings?.headerBackgroundColor || "#ffffff"}
+        onSave={(color) => handleUpdateSetting({ headerBackgroundColor: color })}
+        className="w-full"
+      >
       <header className="bg-surface shadow-sm border-b border-border" style={{ backgroundColor: settings?.headerBackgroundColor || 'white' }}>
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              {settings?.headerLogoUrl ? (
-                <img 
-                  src={settings.headerLogoUrl.startsWith('/objects/') ? settings.headerLogoUrl : settings.headerLogoUrl} 
-                  alt="Logo" 
-                  className="h-8 w-auto object-contain"
-                  onError={(e) => {
-                    // Fallback to icon if logo fails to load
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              ) : settings?.headerIcon && settings.headerIcon !== "none" ? (
-                (() => {
-                  const IconComponent = getIconComponent(settings.headerIcon);
-                  return <IconComponent className="text-primary text-2xl" />;
-                })()
-              ) : null}
+              <InlineImage
+                src={settings?.headerLogoUrl || undefined}
+                className="h-8 w-auto object-contain"
+                placeholder={
+                    !settings?.headerLogoUrl && !settings?.headerIcon ?
+                    <div className="h-8 w-8 bg-gray-100 flex items-center justify-center rounded text-xs text-gray-500">Logo</div> : null
+                }
+                onSave={(url) => handleUpdateSetting({ headerLogoUrl: url })}
+                onDelete={async () => {
+                    await apiRequest("DELETE", "/api/admin/logo");
+                    queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+                }}
+              />
+
+              {!settings?.headerLogoUrl && (
+                  <InlineIconPicker
+                    iconName={settings?.headerIcon || "ArrowRightLeft"}
+                    onSave={(icon) => handleUpdateSetting({ headerIcon: icon as any })}
+                  >
+                    {(() => {
+                        const IconComponent = getIconComponent(settings?.headerIcon || "ArrowRightLeft");
+                        return settings?.headerIcon !== "none" ? <IconComponent className="text-primary text-2xl" /> : null;
+                    })()}
+                  </InlineIconPicker>
+              )}
+
               <h1 className="text-xl font-semibold text-foreground">
-                {settings?.headerTitle || "URL Migration Tool"}
+                <InlineText
+                    value={settings?.headerTitle || "URL Migration Tool"}
+                    onSave={(val) => handleUpdateSetting({ headerTitle: val })}
+                    label="Header Titel"
+                />
               </h1>
             </div>
             <div></div>
           </div>
         </div>
       </header>
+      </InlineColorWrapper>
 
       {/* Main Content */}
       <main className="flex-1 py-8 px-4 pb-20">
@@ -493,25 +633,62 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
           {!isLoading && (
             <div className="space-y-6">
-              {settings?.popupMode === 'inline' && (
-                <div className={`${getBackgroundColor(settings?.alertBackgroundColor || 'yellow')} rounded-lg p-4 flex items-start space-x-3`}>
-                  {(() => {
-                    const IconComponent = getIconComponent(settings?.alertIcon || 'AlertTriangle');
-                    return <IconComponent className="h-5 w-5 mt-0.5" />;
-                  })()}
-                  <div>
-                    <h3 className="font-semibold">{settings?.mainTitle || "Veralteter Link erkannt"}</h3>
-                    <p className="text-sm mt-1">{settings?.mainDescription || "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten."}</p>
-                  </div>
+              {/* Inline PopUp Mode Display (if configured as Inline or if we are editing) */}
+              {(settings?.popupMode === 'inline' || isEditMode) && (
+                <div className="relative group">
+                    {/* Visual indicator that this is the "Popup Content" being edited inline */}
+                    {isEditMode && <div className="absolute -top-3 left-0 bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full border border-blue-200 z-10">Popup / Main Content</div>}
+
+                    <InlineSemanticColorPicker
+                        color={settings?.alertBackgroundColor || "yellow"}
+                        onSave={(color) => handleUpdateSetting({ alertBackgroundColor: color as any })}
+                    >
+                    <div className={`${getBackgroundColor(settings?.alertBackgroundColor || 'yellow')} rounded-lg p-4 flex items-start space-x-3 transition-colors`}>
+                        <InlineIconPicker
+                            iconName={settings?.alertIcon || "AlertTriangle"}
+                            onSave={(icon) => handleUpdateSetting({ alertIcon: icon as any })}
+                        >
+                        {(() => {
+                            const IconComponent = getIconComponent(settings?.alertIcon || 'AlertTriangle');
+                            return <IconComponent className="h-5 w-5 mt-0.5" />;
+                        })()}
+                        </InlineIconPicker>
+                    <div>
+                        <h3 className="font-semibold">
+                            <InlineText
+                                value={settings?.mainTitle || "Veralteter Link erkannt"}
+                                onSave={(val) => handleUpdateSetting({ mainTitle: val })}
+                                label="Haupttitel"
+                            />
+                        </h3>
+                        <div className="text-sm mt-1">
+                            <InlineText
+                                value={settings?.mainDescription || ""}
+                                onSave={(val) => handleUpdateSetting({ mainDescription: val })}
+                                multiline
+                                label="Hauptbeschreibung"
+                            />
+                        </div>
+                    </div>
+                    </div>
+                    </InlineSemanticColorPicker>
                 </div>
               )}
 
               {/* URL Comparison Section - Shown on main page when requested */}
               {showUrlComparison && (
-                <Card className="animate-fade-in border-green-200 bg-green-50" style={{ backgroundColor: settings?.urlComparisonBackgroundColor || 'white' }}>
+                <InlineColorWrapper
+                    color={settings?.urlComparisonBackgroundColor || "#ffffff"}
+                    onSave={(color) => handleUpdateSetting({ urlComparisonBackgroundColor: color })}
+                >
+                <Card className="animate-fade-in border-green-200 bg-green-50 transition-colors" style={{ backgroundColor: settings?.urlComparisonBackgroundColor || 'white' }}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center space-x-2 text-green-800">
+                        <InlineIconPicker
+                            iconName={settings?.urlComparisonIcon || "ArrowRightLeft"}
+                            onSave={(icon) => handleUpdateSetting({ urlComparisonIcon: icon as any })}
+                        >
                         {settings?.urlComparisonIcon && settings.urlComparisonIcon !== "none" ? (
                           (() => {
                             const IconComponent = getIconComponent(settings.urlComparisonIcon);
@@ -520,7 +697,14 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         ) : (
                           <ArrowRightLeft className="h-5 w-5" />
                         )}
-                        <span>{settings?.urlComparisonTitle || "URL-Vergleich"}</span>
+                        </InlineIconPicker>
+                        <span>
+                            <InlineText
+                                value={settings?.urlComparisonTitle || "URL-Vergleich"}
+                                onSave={(val) => handleUpdateSetting({ urlComparisonTitle: val })}
+                                label="Vergleichstitel"
+                            />
+                        </span>
                       </CardTitle>
 
                       {/* Quality Gauge in Top Right */}
@@ -534,7 +718,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <CheckCircle className="inline text-green-500 mr-2" />
-                        {settings?.newUrlLabel || "Neue URL (verwenden Sie diese)"}
+                        <InlineText
+                            value={settings?.newUrlLabel || "Neue URL"}
+                            onSave={(val) => handleUpdateSetting({ newUrlLabel: val })}
+                            className="inline-block"
+                            label="Label Neue URL"
+                        />
                       </label>
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
@@ -566,8 +755,6 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       </div>
                     </div>
 
-
-
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3">
                       <Button
@@ -575,22 +762,36 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         className="flex items-center space-x-2 transition-all duration-200"
                         aria-label={isCopied ? "URL kopiert" : "Neue URL in Zwischenablage kopieren"}
                         variant={isCopied ? "outline" : "default"}
+                        disabled={isEditMode}
                       >
                         {isCopied ? (
                           <Check className="h-4 w-4" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
-                        <span>{isCopied ? "Kopiert!" : (settings?.copyButtonText || "URL kopieren")}</span>
+                        <span>
+                            <InlineText
+                                value={isCopied ? "Kopiert!" : (settings?.copyButtonText || "URL kopieren")}
+                                onSave={(val) => handleUpdateSetting({ copyButtonText: val })}
+                                label="Button Kopieren"
+                            />
+                        </span>
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={handleOpenNewTab}
                         className="flex items-center space-x-2"
                         aria-label="Neue URL in neuem Tab öffnen"
+                        disabled={isEditMode}
                       >
                         <ExternalLink className="h-4 w-4" />
-                        <span>{settings?.openButtonText || "In neuem Tab öffnen"}</span>
+                        <span>
+                            <InlineText
+                                value={settings?.openButtonText || "In neuem Tab öffnen"}
+                                onSave={(val) => handleUpdateSetting({ openButtonText: val })}
+                                label="Button Öffnen"
+                            />
+                        </span>
                       </Button>
                     </div>
 
@@ -607,6 +808,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     {/* Special hints for this URL - always shown below buttons */}
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center space-x-2 mb-2">
+                        <InlineIconPicker
+                            iconName={settings?.specialHintsIcon || "Info"}
+                            onSave={(icon) => handleUpdateSetting({ specialHintsIcon: icon as any })}
+                        >
                         {settings?.specialHintsIcon && settings.specialHintsIcon !== "none" ? (
                           (() => {
                             const IconComponent = getIconComponent(settings.specialHintsIcon);
@@ -615,8 +820,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         ) : (
                           <Info className="h-4 w-4 text-blue-600" />
                         )}
+                        </InlineIconPicker>
                         <span className="text-sm font-bold text-blue-800">
-                          {settings?.specialHintsTitle || "Spezielle Hinweise für diese URL"}
+                          <InlineText
+                            value={settings?.specialHintsTitle || "Spezielle Hinweise"}
+                            onSave={(val) => handleUpdateSetting({ specialHintsTitle: val })}
+                            label="Hinweis Titel"
+                          />
                         </span>
                       </div>
                       <div className="text-sm text-blue-700 space-y-2">
@@ -625,7 +835,14 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             <p key={index}>{line}</p>
                           ))
                         ) : (
-                          <p>{settings?.specialHintsDescription || "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL."}</p>
+                          <p>
+                              <InlineText
+                                value={settings?.specialHintsDescription || "Standard Hinweis Text"}
+                                onSave={(val) => handleUpdateSetting({ specialHintsDescription: val })}
+                                multiline
+                                label="Hinweis Text"
+                              />
+                          </p>
                         )}
                       </div>
                     </div>
@@ -634,7 +851,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <XCircle className="inline text-red-500 mr-2" />
-                        {settings?.oldUrlLabel || "Alte URL (veraltet)"}
+                        <InlineText
+                            value={settings?.oldUrlLabel || "Alte URL"}
+                            onSave={(val) => handleUpdateSetting({ oldUrlLabel: val })}
+                            className="inline-block"
+                            label="Label Alte URL"
+                        />
                       </label>
                       <div className="bg-red-50 border border-red-200 rounded-md p-3">
                         <code className="text-sm text-red-800 break-all">
@@ -644,13 +866,18 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     </div>
                   </CardContent>
                 </Card>
+                </InlineColorWrapper>
               )}
 
-              {/* Additional Information Card - Only show if there are info items */}
-              {settings?.infoItems && settings.infoItems.some(item => item && item.trim()) && (
-                <Card className="animate-fade-in">
+              {/* Additional Information Card - Only show if there are info items OR if in edit mode */}
+              {(isEditMode || (settings?.infoItems && settings.infoItems.some(item => item && item.trim()))) && (
+                <Card className="animate-fade-in relative">
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
+                      <InlineIconPicker
+                        iconName={settings?.infoTitleIcon || "Info"}
+                        onSave={(icon) => handleUpdateSetting({ infoTitleIcon: icon as any })}
+                      >
                       {settings?.infoTitleIcon && settings.infoTitleIcon !== "none" ? (
                         (() => {
                           const IconComponent = getIconComponent(settings.infoTitleIcon);
@@ -659,23 +886,60 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       ) : (
                         <Info className="h-5 w-5 text-primary" />
                       )}
-                      <span>{settings?.infoTitle || "Wichtige Hinweise"}</span>
+                      </InlineIconPicker>
+                      <span>
+                          <InlineText
+                            value={settings?.infoTitle || "Wichtige Hinweise"}
+                            onSave={(val) => handleUpdateSetting({ infoTitle: val })}
+                            label="Info Titel"
+                          />
+                      </span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-3 text-muted-foreground">
-                      {settings.infoItems.map((item, index) => (
-                        item && item.trim() ? (
-                          <li key={index} className="flex items-start space-x-3">
+                      {settings?.infoItems?.map((item, index) => (
+                        (isEditMode || (item && item.trim())) ? (
+                          <li key={index} className="flex items-start space-x-3 group">
+                            <InlineIconPicker
+                                iconName={settings?.infoIcons?.[index] || 'Bookmark'}
+                                onSave={(icon) => handleInfoIconUpdate(index, icon)}
+                            >
                             {(() => {
                               const iconName = settings?.infoIcons?.[index] || 'Bookmark';
                               const IconComponent = getIconComponent(iconName);
                               return <IconComponent className="h-4 w-4 text-primary mt-1 flex-shrink-0" />;
                             })()}
-                            <span>{item}</span>
+                            </InlineIconPicker>
+                            <span className="flex-1">
+                                <InlineText
+                                    value={item}
+                                    onSave={(val) => handleInfoItemUpdate(index, val)}
+                                    placeholder="Info Punkt Text"
+                                    label={`Info Punkt ${index + 1}`}
+                                />
+                            </span>
+                            {isEditMode && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 text-red-500"
+                                    onClick={() => handleRemoveInfoItem(index)}
+                                >
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            )}
                           </li>
                         ) : null
                       ))}
+
+                      {isEditMode && (
+                          <li className="pt-2">
+                              <Button variant="outline" size="sm" onClick={handleAddInfoItem} className="w-full border-dashed">
+                                  <Plus className="h-4 w-4 mr-2" /> Punkt hinzufügen
+                              </Button>
+                          </li>
+                      )}
                     </ul>
                   </CardContent>
                 </Card>
@@ -689,11 +953,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       <footer className="fixed bottom-0 w-full z-50 bg-background border-t border-border py-4">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
-            <span className="ml-2 text-xs opacity-50">v{__APP_VERSION__}</span>
+             <InlineText
+                value={settings?.footerCopyright || ""}
+                onSave={(val) => handleUpdateSetting({ footerCopyright: val })}
+                label="Footer Copyright"
+                placeholder={`© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
+             />
+             <span className="ml-2 text-xs opacity-50">v{__APP_VERSION__}</span>
           </div>
           <div className="flex items-center space-x-2">
-
+            {!isAdmin && (
             <Button
               variant="ghost"
               size="sm"
@@ -705,12 +974,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             >
               <Settings className="h-4 w-4" />
             </Button>
+            )}
           </div>
         </div>
       </footer>
 
       {/* Main Migration Dialog (Popup) */}
-      {settings?.popupMode === 'active' && (
+      {(settings?.popupMode === 'active' && !isEditMode) && (
       <Dialog open={showMainDialog} onOpenChange={setShowMainDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ backgroundColor: settings?.mainBackgroundColor || 'white' }}>
           <DialogHeader>
@@ -809,5 +1079,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function MigrationPage(props: MigrationPageProps) {
+  return (
+    <EditModeProvider>
+      <MigrationPageContent {...props} />
+    </EditModeProvider>
   );
 }
