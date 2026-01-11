@@ -2284,7 +2284,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         {generalSettings.defaultRedirectMode === "search" && "Intelligente Such-Weiterleitung"}
                                     </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
+                                <SelectContent className="w-[calc(100vw-2rem)] sm:w-[var(--radix-select-trigger-width)]">
                                     <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
                                             <span className="font-medium text-sm">Einfacher Domain-Austausch</span>
