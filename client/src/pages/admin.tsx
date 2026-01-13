@@ -104,6 +104,7 @@ interface ImportPreviewData {
 
 interface AdminPageProps {
   onClose: () => void;
+  onOpenVisualEditor?: () => void;
 }
 
 interface AdminAuthFormProps {
@@ -199,7 +200,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
   );
 }
 
-export default function AdminPage({ onClose }: AdminPageProps) {
+export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Default to false until verified
   const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Start with checking auth on mount
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
@@ -1850,10 +1851,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             <TabsContent value="general">
               <Card>
                 <CardHeader>
-                  <CardTitle>Allgemeine Einstellungen</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Hier können Sie alle Texte der Anwendung anpassen.
-                  </p>
+                  <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row gap-4">
+                    <div>
+                      <CardTitle>Allgemeine Einstellungen</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Hier können Sie alle Texte der Anwendung anpassen.
+                      </p>
+                    </div>
+                    {onOpenVisualEditor && (
+                      <Button onClick={onOpenVisualEditor} variant="outline" className="flex items-center gap-2">
+                        <Edit className="w-4 h-4" />
+                        Visueller Editor
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {!isAuthenticated ? (
