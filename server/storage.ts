@@ -63,11 +63,16 @@ export interface IStorage {
   // URL-Tracking
   clearAllTracking(): Promise<void>;
   trackUrlAccess(tracking: InsertUrlTracking): Promise<UrlTracking>;
+  updateUrlTracking(id: string, updates: Partial<UrlTracking>): Promise<boolean>;
   getTrackingData(timeRange?: "24h" | "7d" | "all"): Promise<UrlTracking[]>;
   getTopUrls(
     limit?: number,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<Array<{ path: string; count: number }>>;
+  getTopReferrers(
+    limit?: number,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ domain: string; count: number }>>;
   getTrackingStats(): Promise<{ total: number; today: number; week: number }>;
 
   // Import functionality
@@ -93,6 +98,7 @@ export interface IStorage {
     ruleFilter?: 'all' | 'with_rule' | 'no_rule',
     minQuality?: number,
     maxQuality?: number,
+    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'empty',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -122,6 +128,21 @@ export interface IStorage {
 }
 
 export class FileStorage implements IStorage {
+  private async enforceMaxStatsLimit(limit: number): Promise<void> {
+    if (limit <= 0) return;
+
+    const trackingData = await this.ensureTrackingLoaded();
+    if (trackingData.length > limit) {
+      console.log(
+        `Pruning tracking data: Limit ${limit}, Current ${trackingData.length}, Removing ${trackingData.length - limit} oldest entries.`,
+      );
+      // Remove oldest entries (from the beginning of the array)
+      const removeCount = trackingData.length - limit;
+      trackingData.splice(0, removeCount);
+      await this.writeJsonFile(TRACKING_FILE, trackingData);
+    }
+  }
+
   // Unified cache that holds rules that are processed or will be processed
   // We type it as ProcessedUrlRule[] because we ensure they are processed when loaded
   private rulesCache: ProcessedUrlRule[] | null = null;
@@ -146,6 +167,33 @@ export class FileStorage implements IStorage {
     defaultValue: T[],
   ): Promise<T[]> {
     try {
+      const stats = await fs.stat(filePath);
+
+      if (stats.size > 10 * 1024 * 1024) {
+        const { createReadStream } = await import('fs');
+
+        return new Promise<T[]>((resolve, reject) => {
+          let buffer = '';
+          const stream = createReadStream(filePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
+
+          stream.on('data', (chunk: string | Buffer) => {
+            buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf8');
+          });
+
+          stream.on('end', () => {
+            try {
+              const parsed = JSON.parse(buffer);
+              resolve(parsed);
+            }
+            catch (error) {
+              reject(error);
+            }
+          });
+
+          stream.on('error', reject);
+        });
+      }
+
       const data = await fs.readFile(filePath, "utf-8");
       return JSON.parse(data);
     } catch {
@@ -169,8 +217,27 @@ export class FileStorage implements IStorage {
           this.lastCacheConfig.TRAILING_SLASH_POLICY !== config.TRAILING_SLASH_POLICY;
 
         if (needsReprocess) {
-          // Reprocess existing cache in-place or map
-          this.rulesCache = this.rulesCache.map(rule => preprocessRule(rule, config));
+          const BATCH_SIZE = 1000;
+          const newCache = new Array(this.rulesCache.length);
+          const batches = Math.ceil(this.rulesCache.length / BATCH_SIZE);
+
+          for (let i = 0; i < batches; i++) {
+            const start = i * BATCH_SIZE;
+            const end = Math.min(start + BATCH_SIZE, this.rulesCache.length);
+            const batch = this.rulesCache.slice(start, end);
+            const processed = batch.map(rule => preprocessRule(rule, config));
+
+            // Fill the new array at the correct positions
+            for (let j = 0; j < processed.length; j++) {
+              newCache[start + j] = processed[j];
+            }
+
+            if (i < batches - 1) {
+              await new Promise(resolve => setImmediate(resolve));
+            }
+          }
+
+          this.rulesCache = newCache;
           this.lastCacheConfig = config;
         }
       }
@@ -190,8 +257,21 @@ export class FileStorage implements IStorage {
        };
     }
 
+    const BATCH_SIZE = 1000;
+    const processed: ProcessedUrlRule[] = [];
+
+    for (let i = 0; i < rawRules.length; i += BATCH_SIZE) {
+      const batch = rawRules.slice(i, i + BATCH_SIZE);
+      const processedBatch = batch.map(rule => preprocessRule(rule, effectiveConfig!));
+      processed.push(...processedBatch);
+
+      if (i + BATCH_SIZE < rawRules.length) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
     // Process rules
-    this.rulesCache = rawRules.map(rule => preprocessRule(rule, effectiveConfig!));
+    this.rulesCache = processed;
     this.lastCacheConfig = effectiveConfig;
 
     return this.rulesCache;
@@ -521,7 +601,20 @@ export class FileStorage implements IStorage {
 
     // In strict non-cache mode, ensureTrackingLoaded returns a new array from disk
     // In cache mode, it returns the cache reference
+
+    // Check for max stats entries limit
+    const settings = await this.getGeneralSettings();
+    const maxEntries = settings.maxStatsEntries || 0;
+
     trackingData.push(tracking);
+
+    // Apply limit if configured (and greater than 0)
+    if (maxEntries > 0 && trackingData.length > maxEntries) {
+      // Remove oldest entries to fit the limit
+      // Since new entries are pushed to the end, we remove from the beginning
+      const removeCount = trackingData.length - maxEntries;
+      trackingData.splice(0, removeCount);
+    }
 
     // If cache is disabled, we need to ensure we don't keep the reference if we obtained it from ensureTrackingLoaded
     // But ensureTrackingLoaded handles clearing this.trackingCache if disabled.
@@ -530,6 +623,28 @@ export class FileStorage implements IStorage {
 
     await this.writeJsonFile(TRACKING_FILE, trackingData);
     return tracking;
+  }
+
+  async updateUrlTracking(
+    id: string,
+    updates: Partial<UrlTracking>,
+  ): Promise<boolean> {
+    const trackingData = await this.ensureTrackingLoaded();
+    const index = trackingData.findIndex((t) => t.id === id);
+
+    if (index === -1) {
+      return false;
+    }
+
+    const entry = trackingData[index];
+    const updatedEntry = { ...entry, ...updates };
+
+    // Update the entry in place
+    trackingData[index] = updatedEntry;
+
+    // Persist changes
+    await this.writeJsonFile(TRACKING_FILE, trackingData);
+    return true;
   }
 
   async getTrackingData(
@@ -550,7 +665,8 @@ export class FileStorage implements IStorage {
       cutoff.setDate(now.getDate() - 7);
     }
 
-    return trackingData.filter((track) => new Date(track.timestamp) >= cutoff);
+    const cutoffIso = cutoff.toISOString();
+    return trackingData.filter((track) => track.timestamp >= cutoffIso);
   }
 
   async getTopUrls(
@@ -570,6 +686,30 @@ export class FileStorage implements IStorage {
 
     return Array.from(pathCounts.entries())
       .map(([path, count]) => ({ path, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+
+  async getTopReferrers(
+    limit = 10,
+    timeRange?: "24h" | "7d" | "all",
+  ): Promise<Array<{ domain: string; count: number }>> {
+    const trackingData = await this.getTrackingData(timeRange);
+    const domainCounts = new Map<string, number>();
+
+    trackingData.forEach((track) => {
+      if (track.referrer) {
+        // Use robust extraction
+        const hostname = urlUtils.extractHostname(track.referrer);
+        if (hostname) {
+          const current = domainCounts.get(hostname) || 0;
+          domainCounts.set(hostname, current + 1);
+        }
+      }
+    });
+
+    return Array.from(domainCounts.entries())
+      .map(([domain, count]) => ({ domain, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
   }
@@ -598,7 +738,8 @@ export class FileStorage implements IStorage {
           ((entry as any).newUrl &&
             (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
           entry.path.toLowerCase().includes(searchTerm) ||
-          entry.userAgent?.toLowerCase().includes(searchTerm),
+          entry.userAgent?.toLowerCase().includes(searchTerm) ||
+          entry.referrer?.toLowerCase().includes(searchTerm),
       );
     }
 
@@ -627,6 +768,9 @@ export class FileStorage implements IStorage {
         case "userAgent":
            comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
            break;
+        case "referrer":
+           comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
+           break;
         case "matchQuality":
            comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
            break;
@@ -643,16 +787,32 @@ export class FileStorage implements IStorage {
     today: number;
     week: number;
   }> {
-    const all = await this.getTrackingData("all");
-    const today = await this.getTrackingData("24h");
-    const week = await this.getTrackingData("7d");
+    const trackingData = await this.ensureTrackingLoaded();
+    const now = new Date();
 
-    // Filter out root path "/" from statistics
-    return {
-      total: all.filter((track) => track.path !== "/").length,
-      today: today.filter((track) => track.path !== "/").length,
-      week: week.filter((track) => track.path !== "/").length,
-    };
+    const todayCutoff = new Date();
+    todayCutoff.setHours(now.getHours() - 24);
+    const todayIso = todayCutoff.toISOString();
+
+    const weekCutoff = new Date();
+    weekCutoff.setDate(now.getDate() - 7);
+    const weekIso = weekCutoff.toISOString();
+
+    let total = 0;
+    let today = 0;
+    let week = 0;
+
+    for (const track of trackingData) {
+      if (track.path === "/") continue;
+
+      total++;
+
+      // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
+      if (track.timestamp >= todayIso) today++;
+      if (track.timestamp >= weekIso) week++;
+    }
+
+    return { total, today, week };
   }
 
   // Paginated statistics methods
@@ -665,6 +825,7 @@ export class FileStorage implements IStorage {
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
     minQuality?: number,
     maxQuality?: number,
+    feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -711,6 +872,16 @@ export class FileStorage implements IStorage {
         const hasRuleId = !!entry.ruleId;
         const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
         return !hasRuleId && !hasRuleIds;
+      });
+    }
+
+    // Filter based on feedback
+    if (feedbackFilter !== 'all') {
+      filteredEntries = filteredEntries.filter((entry) => {
+        if (feedbackFilter === 'empty') {
+          return !entry.feedback;
+        }
+        return entry.feedback === feedbackFilter;
       });
     }
 
@@ -763,6 +934,9 @@ export class FileStorage implements IStorage {
             break;
           case "path":
             comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+            break;
+          case "referrer":
+            comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
             break;
         }
 
@@ -1018,17 +1192,17 @@ export class FileStorage implements IStorage {
         id: randomUUID(),
         headerTitle: "URL Migration Tool",
         headerIcon: "ArrowRightLeft",
-        headerBackgroundColor: "white",
+        headerBackgroundColor: "#ffffff",
         popupMode: "active",
         mainTitle: "Veralteter Link erkannt",
         mainDescription:
           "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten.",
-        mainBackgroundColor: "white",
+        mainBackgroundColor: "#ffffff",
         alertIcon: "AlertTriangle",
         alertBackgroundColor: "yellow",
         urlComparisonTitle: "URL-Vergleich",
         urlComparisonIcon: "ArrowRightLeft",
-        urlComparisonBackgroundColor: "white",
+        urlComparisonBackgroundColor: "#ffffff",
         oldUrlLabel: "Alte URL (veraltet)",
         newUrlLabel: "Neue URL (verwenden Sie diese)",
         defaultNewDomain: "https://thisisthenewurl.com/",
@@ -1047,8 +1221,17 @@ export class FileStorage implements IStorage {
         footerCopyright:
           "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
         caseSensitiveLinkDetection: false,
+        enableReferrerTracking: true,
         updatedAt: new Date().toISOString(),
         autoRedirect: false,
+
+        // User Feedback Defaults
+        enableFeedbackSurvey: false,
+        feedbackSurveyTitle: "War die neue URL korrekt?",
+        feedbackSurveyQuestion: "Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern.",
+        feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
+        feedbackButtonYes: "Ja, OK",
+        feedbackButtonNo: "Nein",
       };
 
       // Save default settings directly to avoid infinite loop
@@ -1101,9 +1284,17 @@ export class FileStorage implements IStorage {
     await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
     this.settingsCache = settings;
 
+    // Check if maxStatsEntries changed and needs enforcement
+    if (settings.maxStatsEntries && settings.maxStatsEntries > 0) {
+      await this.enforceMaxStatsLimit(settings.maxStatsEntries);
+    }
+
     // Check if relevant settings changed
     // Invalidate config so cache is reprocessed on next access
-    if (oldSettings.caseSensitiveLinkDetection !== settings.caseSensitiveLinkDetection) {
+    if (
+      oldSettings.caseSensitiveLinkDetection !==
+      settings.caseSensitiveLinkDetection
+    ) {
       this.lastCacheConfig = null; // Forces re-evaluation in ensureRulesLoaded
     }
 

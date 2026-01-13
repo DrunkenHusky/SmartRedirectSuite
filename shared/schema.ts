@@ -77,6 +77,9 @@ export const urlTrackingSchema = z.object({
   userAgent: z.string()
     .max(2000, "User agent too long")
     .optional(),
+  referrer: z.string()
+    .max(2000, "Referrer too long")
+    .optional(),
   ruleId: z.string()
     .uuid("Invalid rule ID")
     .optional()
@@ -89,6 +92,9 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
+  feedback: z.enum(['OK', 'NOK'])
+    .optional()
+    .nullable(),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
@@ -165,7 +171,7 @@ export const generalSettingsSchema = z.object({
     }),
   headerBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
-    .default("white"),
+    .default("#ffffff"),
 
   // Popup display mode
   popupMode: z.enum(POPUP_MODES).default('active'),
@@ -181,7 +187,7 @@ export const generalSettingsSchema = z.object({
     .trim(),
   mainBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
-    .default("white"),
+    .default("#ffffff"),
     
   // Alert styling
   alertIcon: z.enum(ALERT_ICON_OPTIONS),
@@ -194,7 +200,7 @@ export const generalSettingsSchema = z.object({
   urlComparisonIcon: z.enum(ICON_OPTIONS).optional(),
   urlComparisonBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")
-    .default("white"),
+    .default("#ffffff"),
   oldUrlLabel: z.string()
     .min(1, "Label für alte URL darf nicht leer sein")
     .max(50, "Label für alte URL ist zu lang")
@@ -208,6 +214,21 @@ export const generalSettingsSchema = z.object({
     .refine((val) => val.startsWith('http://') || val.startsWith('https://'), {
       message: "Standard-Domain muss eine gültige HTTP/HTTPS-URL sein",
     }),
+
+  defaultRedirectMode: z.enum(["domain", "search"]).default("domain"),
+
+  defaultSearchUrl: z.string()
+    .max(500, "Such-URL ist zu lang")
+    .optional()
+    .nullable()
+    .refine((val) => !val || val.startsWith('http://') || val.startsWith('https://'), {
+      message: "Such-URL muss eine gültige HTTP/HTTPS-URL sein",
+    }),
+
+  defaultSearchMessage: z.string()
+    .min(1, "Text für Such-Weiterleitung darf nicht leer sein")
+    .max(500, "Text für Such-Weiterleitung ist zu lang")
+    .default("Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet."),
     
   // Button texts with validation
   copyButtonText: z.string()
@@ -299,8 +320,85 @@ export const generalSettingsSchema = z.object({
   enableTrackingCache: z.boolean()
     .default(true),
 
+  // Max Statistics Entries (0 = unlimited)
+  maxStatsEntries: z.number()
+    .min(0, "Muss positiv sein")
+    .optional()
+    .default(0),
+
+  // Referrer Tracking
+  enableReferrerTracking: z.boolean()
+    .default(true),
+  
+  // User Feedback Survey
+  enableFeedbackSurvey: z.boolean()
+    .default(false),
+  feedbackSurveyTitle: z.string()
+    .max(100, "Titel für Feedback-Umfrage ist zu lang")
+    .default("War die neue URL korrekt?"),
+  feedbackSurveyQuestion: z.string()
+    .max(200, "Frage für Feedback-Umfrage ist zu lang")
+    .default("Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."),
+  feedbackSuccessMessage: z.string()
+    .max(100, "Erfolgsmeldung für Feedback-Umfrage ist zu lang")
+    .default("Vielen Dank für deine Rückmeldung."),
+  feedbackButtonYes: z.string()
+    .max(50, "Button-Text für Ja ist zu lang")
+    .default("Ja, OK"),
+  feedbackButtonNo: z.string()
+    .max(50, "Button-Text für Nein ist zu lang")
+    .default("Nein"),
+
   updatedAt: z.string().datetime("Invalid update timestamp"),
-}).strict(); // Prevent extra properties
+}).strict().refine((data) => {
+  if (data.defaultRedirectMode === 'search') {
+    return !!data.defaultSearchUrl && data.defaultSearchUrl.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Search Base URL is required when Smart Search Redirect is selected",
+  path: ["defaultSearchUrl"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackSurveyTitle && data.feedbackSurveyTitle.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Titel für Feedback-Umfrage darf nicht leer sein",
+  path: ["feedbackSurveyTitle"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackSurveyQuestion && data.feedbackSurveyQuestion.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Frage für Feedback-Umfrage darf nicht leer sein",
+  path: ["feedbackSurveyQuestion"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackSuccessMessage && data.feedbackSuccessMessage.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Erfolgsmeldung für Feedback-Umfrage darf nicht leer sein",
+  path: ["feedbackSuccessMessage"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackButtonYes && data.feedbackButtonYes.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Button-Text für Ja darf nicht leer sein",
+  path: ["feedbackButtonYes"],
+}).refine((data) => {
+  if (data.enableFeedbackSurvey) {
+    return !!data.feedbackButtonNo && data.feedbackButtonNo.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Button-Text für Nein darf nicht leer sein",
+  path: ["feedbackButtonNo"],
+}); // Prevent extra properties
 
 export const insertGeneralSettingsSchema = generalSettingsSchema.omit({
   id: true,

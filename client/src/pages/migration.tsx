@@ -21,7 +21,9 @@ import {
   Settings,
   Star,
   Heart,
-  Bell
+  Bell,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +82,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [trackingId, setTrackingId] = useState<string | null>(null);
+  const [hasAskedFeedback, setHasAskedFeedback] = useState(false);
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const fallbackAppName = __APP_NAME__ || "URL Migration Service";
@@ -210,21 +216,72 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 setMatchQuality(currentMatchQuality);
                 setMatchLevel('green');
                 setMatchExplanation(settings.matchRootExplanation || "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.");
-            } else {
-                currentMatchQuality = 0;
-                setMatchQuality(currentMatchQuality);
-                setMatchLevel('red');
-                setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
-            }
 
-            if (settings.autoRedirect) {
-               // No matching rule, but global auto-redirect is enabled
-               shouldAutoRedirect = true;
-               redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
-               generatedNewUrl = redirectUrl;
+                if (settings.autoRedirect) {
+                    shouldAutoRedirect = true;
+                    redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
+                    generatedNewUrl = redirectUrl;
+                } else {
+                    generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                }
             } else {
-               // No auto-redirect, generate URL for display
-               generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                // Not root, and no match check Fallback Strategy
+                if (settings.defaultRedirectMode === 'search') {
+                    // Smart Search Logic
+                    currentMatchQuality = 0;
+                    setMatchQuality(currentMatchQuality);
+                    setMatchLevel('yellow'); // Indicates fallback is active but not exact match
+
+                    const message = settings.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.";
+                    setMatchExplanation(message);
+                    setInfoText(message);
+
+                    // Extract last segment
+                    try {
+                        const urlObj = new URL(url);
+                        const pathname = urlObj.pathname;
+                        const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
+                        const lastSegment = segments.length > 0 ? segments[segments.length - 1] : "";
+
+                        if (lastSegment && settings.defaultSearchUrl) {
+                            generatedNewUrl = settings.defaultSearchUrl + encodeURIComponent(lastSegment);
+                            redirectUrl = generatedNewUrl;
+
+                            if (settings.autoRedirect) {
+                                shouldAutoRedirect = true;
+                            }
+                        } else {
+                            // Fallback if extraction fails or no search URL
+                             setMatchLevel('red');
+                             setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
+                             generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                             if (settings.autoRedirect) {
+                                shouldAutoRedirect = true;
+                                redirectUrl = generatedNewUrl;
+                             }
+                        }
+                    } catch (e) {
+                        // Fallback on error
+                        console.error("Smart search extraction failed", e);
+                        generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                    }
+                } else {
+                    // Standard Domain Replacement
+                    currentMatchQuality = 0;
+                    setMatchQuality(currentMatchQuality);
+                    setMatchLevel('red');
+                    setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
+
+                    if (settings.autoRedirect) {
+                       // No matching rule, but global auto-redirect is enabled
+                       shouldAutoRedirect = true;
+                       redirectUrl = generateNewUrl(url, settings.defaultNewDomain);
+                       generatedNewUrl = redirectUrl;
+                    } else {
+                       // No auto-redirect, generate URL for display
+                       generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
+                    }
+                }
             }
           }
         } else if (settings.autoRedirect) {
@@ -254,6 +311,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               path: safePath,
               timestamp: new Date().toISOString(),
               userAgent: safeUserAgent,
+              referrer: settings.enableReferrerTracking ? (document.referrer || '').substring(0, 2000) : undefined,
               ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
               matchQuality: currentMatchQuality,
             }),
@@ -278,7 +336,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         const safeNewUrl = generatedNewUrl.substring(0, 8000);
         const safePath = path.substring(0, 8000);
 
-        await fetch("/api/track", {
+        const trackResponse = await fetch("/api/track", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -287,11 +345,19 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             path: safePath,
             timestamp: new Date().toISOString(),
             userAgent: safeUserAgent,
+            referrer: settings.enableReferrerTracking ? (document.referrer || '').substring(0, 2000) : undefined,
             ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
             ruleIds: foundRules.map(r => r.id).filter(id => typeof id === 'string' && id.length > 0),
             matchQuality: currentMatchQuality,
           }),
         });
+
+        if (trackResponse.ok) {
+          const trackData = await trackResponse.json();
+          if (trackData.id) {
+            setTrackingId(trackData.id);
+          }
+        }
 
       } catch (error) {
         console.error("Initialization error:", error);
@@ -321,6 +387,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       await copyToClipboard(newUrl);
       setCopySuccess(true);
       setIsCopied(true);
+
+      if (settings?.enableFeedbackSurvey && !hasAskedFeedback) {
+        setShowFeedbackPopup(true);
+        setHasAskedFeedback(true);
+      }
+
       setTimeout(() => {
         setCopySuccess(false);
         setIsCopied(false);
@@ -336,6 +408,33 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
   const handleOpenNewTab = () => {
     window.open(newUrl, '_blank');
+    if (settings?.enableFeedbackSurvey && !hasAskedFeedback) {
+      setShowFeedbackPopup(true);
+      setHasAskedFeedback(true);
+    }
+  };
+
+  const handleFeedback = async (feedback: 'OK' | 'NOK') => {
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ruleId: matchingRule?.id,
+          trackingId: trackingId || undefined,
+          feedback,
+          url: currentUrl
+        }),
+      });
+      setFeedbackSuccess(true);
+      setTimeout(() => {
+        setShowFeedbackPopup(false);
+        setFeedbackSuccess(false); // Reset for next time
+      }, 2000);
+    } catch (error) {
+      console.error("Feedback error:", error);
+      setShowFeedbackPopup(false);
+    }
   };
 
   const handleAdminSuccess = () => {
@@ -441,14 +540,26 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         <div className="flex-1">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                <div className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-help h-full flex items-center">
+                                <div
+                                  className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-pointer h-full flex items-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 outline-none"
+                                  onClick={handleCopy}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label="Neue URL in die Zwischenablage kopieren"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      handleCopy();
+                                    }
+                                  }}
+                                >
                                     <code className="text-sm text-green-800 break-all">
                                     {newUrl}
                                     </code>
                                 </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                <p>So sieht die neue Ziel-URL aus</p>
+                                <p>Klicken zum Kopieren</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -654,6 +765,49 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handleAdminSuccess}
       />
+
+      {/* Feedback Survey Dialog */}
+      <Dialog open={showFeedbackPopup} onOpenChange={setShowFeedbackPopup}>
+        <DialogContent className="sm:max-w-md">
+          {feedbackSuccess ? (
+            <div className="flex flex-col items-center justify-center py-6 space-y-4 text-center animate-fade-in">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Check className="h-6 w-6 text-green-600" />
+              </div>
+              <DialogTitle className="text-xl">{settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!"}</DialogTitle>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>{settings?.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?"}</DialogTitle>
+                <DialogDescription>
+                  {settings?.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-center gap-6 py-6">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-24 h-24 rounded-xl flex flex-col gap-2 hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all duration-200"
+                  onClick={() => handleFeedback('OK')}
+                >
+                  <ThumbsUp className="h-8 w-8" />
+                  <span>{settings?.feedbackButtonYes || "Ja, OK"}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-24 h-24 rounded-xl flex flex-col gap-2 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all duration-200"
+                  onClick={() => handleFeedback('NOK')}
+                >
+                  <ThumbsDown className="h-8 w-8" />
+                  <span>{settings?.feedbackButtonNo || "Nein"}</span>
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

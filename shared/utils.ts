@@ -47,6 +47,25 @@ export const urlUtils = {
   },
 
   /**
+   * Robustly extracts hostname from URL, handling missing protocol
+   */
+  extractHostname(url: string): string | null {
+    if (!url || !url.trim()) return null;
+    const trimmedUrl = url.trim();
+    try {
+      // Try parsing as is (e.g. http://example.com/foo)
+      return new URL(trimmedUrl).hostname;
+    } catch {
+      try {
+        // Try adding protocol (e.g. example.com/foo)
+        return new URL('http://' + trimmedUrl).hostname;
+      } catch {
+        return null;
+      }
+    }
+  },
+
+  /**
    * Validates URL matcher pattern
    */
   isValidMatcher(matcher: string): boolean {

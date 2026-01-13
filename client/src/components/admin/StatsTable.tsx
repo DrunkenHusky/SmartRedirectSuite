@@ -6,7 +6,9 @@ import {
   ArrowUp,
   ArrowDown,
   Edit,
-  AlertCircle
+  AlertCircle,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
@@ -21,6 +23,7 @@ interface StatsTableProps {
   onSort: (column: string) => void;
   onEditRule: (rule: UrlRule) => void;
   formatTimestamp: (timestamp: string) => string;
+  showReferrer?: boolean;
 }
 
 const StatsTable = memo(({
@@ -28,7 +31,8 @@ const StatsTable = memo(({
   sortConfig,
   onSort,
   onEditRule,
-  formatTimestamp
+  formatTimestamp,
+  showReferrer = true
 }: StatsTableProps) => {
 
   const { columnWidths, handleResizeStart } = useResizableColumns({
@@ -37,10 +41,13 @@ const StatsTable = memo(({
       oldUrl: 250,
       newUrl: 250,
       path: 200,
+      referrer: showReferrer ? 200 : 0,
       rule: 150,
       matchQuality: 100,
+      feedback: 100,
     }
   });
+
 
   const getSortIcon = (column: string) => {
     if (sortConfig.by !== column) return <ArrowUp className="h-3 w-3 opacity-0" />; // Invisible placeholder for spacing
@@ -52,110 +59,159 @@ const StatsTable = memo(({
       <table className="w-full table-fixed border-collapse">
         <thead className="bg-muted/50 border-b">
           <tr>
-            <th className="text-left p-3 relative" style={{ width: columnWidths.timestamp }}>
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.timestamp }}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onSort('timestamp')}
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
-                <span className="flex items-center gap-1 truncate">
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
                   Zeitstempel
                   {getSortIcon('timestamp')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('timestamp', e)} />
             </th>
-            <th className="text-left p-3 relative" style={{ width: columnWidths.oldUrl }}>
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.oldUrl }}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onSort('oldUrl')}
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
-                <span className="flex items-center gap-1 truncate">
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
                   Alte URL
                   {getSortIcon('oldUrl')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('oldUrl', e)} />
             </th>
-            <th className="text-left p-3 relative" style={{ width: columnWidths.newUrl }}>
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.newUrl }}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onSort('newUrl')}
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
-                <span className="flex items-center gap-1 truncate">
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
                   Neue URL
                   {getSortIcon('newUrl')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('newUrl', e)} />
             </th>
-            <th className="text-left p-3 relative" style={{ width: columnWidths.path }}>
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.path }}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onSort('path')}
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
-                <span className="flex items-center gap-1 truncate">
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
                   Pfad
                   {getSortIcon('path')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('path', e)} />
             </th>
-            <th className="text-left p-3 font-medium text-sm relative" style={{ width: columnWidths.rule }}>
+            {showReferrer && (
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.referrer }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSort('referrer')}
+                className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
+              >
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
+                  Referrer
+                  {getSortIcon('referrer')}
+                </span>
+              </Button>
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('referrer', e)} />
+            </th>
+            )}
+            <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.rule }}>
               Regel
               <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
             </th>
-            <th className="text-left p-3 relative" style={{ width: columnWidths.matchQuality }}>
+            <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.matchQuality }}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onSort('matchQuality')}
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
-                <span className="flex items-center gap-1 truncate">
+                <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
                   Qualität
                   {getSortIcon('matchQuality')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('matchQuality', e)} />
             </th>
+            <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.feedback }}>
+              Feedback
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('feedback', e)} />
+            </th>
           </tr>
         </thead>
         <tbody>
           {entries.map((entry: any) => (
             <tr key={entry.id} className="border-b hover:bg-muted/50">
-              <td className="p-3 text-sm truncate">
+              <td className="p-2 sm:p-3 text-xs sm:text-sm truncate">
                 {formatTimestamp(entry.timestamp)}
               </td>
-              <td className="p-3">
+              <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.oldUrl}>
-                   <code className="text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
+                   <code className="text-[10px] sm:text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
                     {entry.oldUrl}
                    </code>
                 </div>
               </td>
-              <td className="p-3">
+              <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.newUrl || 'N/A'}>
-                  <code className="text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
-                    {entry.newUrl || 'N/A'}
-                  </code>
+                  {entry.newUrl ? (
+                    <a
+                      href={entry.newUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 hover:underline break-all inline-block max-w-full truncate align-middle font-mono"
+                    >
+                      {entry.newUrl}
+                    </a>
+                  ) : (
+                    <code className="text-[10px] sm:text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
+                      N/A
+                    </code>
+                  )}
                 </div>
               </td>
-              <td className="p-3">
+              <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.path}>
-                    <code className="text-sm text-foreground inline-block max-w-full truncate align-middle">
+                    <code className="text-xs sm:text-sm text-foreground inline-block max-w-full truncate align-middle">
                         {entry.path}
                     </code>
                 </div>
               </td>
-              <td className="p-3">
+              {showReferrer && (
+              <td className="p-2 sm:p-3">
+                <div className="w-full" title={entry.referrer || 'Direct'}>
+                  {entry.referrer ? (
+                    <a
+                      href={entry.referrer}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 hover:underline break-all inline-block max-w-full truncate align-middle font-mono"
+                    >
+                      {entry.referrer}
+                    </a>
+                  ) : (
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
+                  )}
+                </div>
+              </td>
+              )}
+              <td className="p-2 sm:p-3">
                 {entry.rules && entry.rules.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {entry.rules.map((rule: UrlRule) => (
@@ -163,12 +219,12 @@ const StatsTable = memo(({
                         key={rule.id}
                         variant="ghost"
                         size="sm"
-                        className="h-auto p-1 text-xs bg-muted hover:bg-muted/80 mb-1"
+                        className="h-auto p-1 text-[10px] sm:text-xs bg-muted hover:bg-muted/80 mb-1"
                         onClick={() => onEditRule(rule)}
                         title={`Regel bearbeiten: ${rule.redirectType}`}
                       >
                         <Edit className="h-3 w-3 mr-1" />
-                        <span className="truncate max-w-[100px] inline-block align-bottom">{rule.matcher}</span>
+                        <span className="truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom">{rule.matcher}</span>
                         <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4">
                             {rule.redirectType === 'domain' ? 'D' : rule.redirectType === 'wildcard' ? 'W' : 'P'}
                         </Badge>
@@ -179,30 +235,40 @@ const StatsTable = memo(({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-1 text-xs bg-muted hover:bg-muted/80"
+                    className="h-auto p-1 text-[10px] sm:text-xs bg-muted hover:bg-muted/80"
                     onClick={() => onEditRule(entry.rule)}
                     title="Regel bearbeiten"
                   >
                     <Edit className="h-3 w-3 mr-1" />
-                    <span className="truncate max-w-[100px] inline-block align-bottom">{entry.rule.matcher}</span>
+                    <span className="truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom">{entry.rule.matcher}</span>
                   </Button>
                 ) : (entry.ruleId || (entry.ruleIds && entry.ruleIds.length > 0)) ? (
-                  <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground italic flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
-                    Regel nicht mehr vorhanden
+                    <span className="hidden sm:inline">Regel nicht mehr vorhanden</span>
+                    <span className="sm:hidden">Gelöscht</span>
                   </span>
                 ) : (
-                  <span className="text-xs text-muted-foreground">-</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
                 )}
               </td>
-              <td className="p-3">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              <td className="p-2 sm:p-3">
+                <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full ${
                   (entry.matchQuality || 0) >= 90 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                   (entry.matchQuality || 0) >= 50 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                 }`}>
                   {entry.matchQuality || 0}%
                 </span>
+              </td>
+              <td className="p-2 sm:p-3">
+                {entry.feedback === 'OK' ? (
+                  <ThumbsUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : entry.feedback === 'NOK' ? (
+                  <ThumbsDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
               </td>
             </tr>
           ))}

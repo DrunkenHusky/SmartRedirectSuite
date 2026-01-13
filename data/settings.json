@@ -41,5 +41,7 @@
   "matchLowExplanation": "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
   "matchRootExplanation": "Startseite erkannt. Direkte Weiterleitung auf die neue Seite.",
   "matchNoneExplanation": "Die URL konnte nicht spezifisch zugeordnet werden. Bitte nutzen Sie die Suche der neuen Applikation.",
-  "encodeImportedUrls": true
+  "encodeImportedUrls": true,
+  "enableTrackingCache": true,
+  "maxStatsEntries": 0
 }

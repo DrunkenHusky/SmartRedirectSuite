@@ -178,6 +178,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Feedback Endpoint
+  app.post("/api/feedback", apiRateLimiter, async (req, res) => {
+    try {
+      const { ruleId, feedback, url, trackingId } = z.object({
+        ruleId: z.string().optional(),
+        feedback: z.enum(['OK', 'NOK']),
+        url: z.string().optional(),
+        trackingId: z.string().optional()
+      }).parse(req.body);
+
+      if (trackingId) {
+        // Update existing tracking entry
+        const success = await storage.updateUrlTracking(trackingId, { feedback });
+        if (success) {
+           res.json({ success: true, id: trackingId });
+           return;
+        }
+        // If update failed (e.g. ID not found), fall back to creating new entry or error?
+        // Let's fall back to creating a new entry to ensure feedback isn't lost,
+        // but log a warning.
+        console.warn(`Feedback update failed for trackingId: ${trackingId}, creating new entry.`);
+      }
+
+      // Create a tracking entry representing the feedback (Fallback or Legacy)
+      // We look up the rule to get context if possible
+      const rule = ruleId ? await storage.getUrlRule(ruleId) : undefined;
+
+      const trackingEntry: any = {
+        oldUrl: url || "Manual Feedback",
+        path: rule ? rule.matcher : (url ? extractPath(url) : "unknown"),
+        ruleId: ruleId || undefined,
+        matchQuality: 100, // Explicit manual match
+        timestamp: new Date().toISOString(),
+        userAgent: "Manual Verification",
+        feedback: feedback
+      };
+
+      const tracking = await storage.trackUrlAccess(trackingEntry);
+      res.json({ success: true, id: tracking.id });
+    } catch (error) {
+      console.error("Feedback error:", error);
+      res.status(400).json({ error: "Invalid feedback data" });
+    }
+  });
+
+  function extractPath(url: string): string {
+    try {
+      const u = new URL(url);
+      return u.pathname;
+    } catch {
+      return url.startsWith('/') ? url : '/' + url;
+    }
+  }
+
   // URL-Regel Matching endpoint
   app.post("/api/check-rules", apiRateLimiter, async (req, res) => {
     try {
@@ -316,12 +370,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
-      const search = req.query.search as string; // Can be undefined, null, empty string
+      // Handle HPP (HTTP Parameter Pollution): if search is array, take first element
+      const rawSearch = req.query.search;
+      const search = Array.isArray(rawSearch) ? (rawSearch[0] as string) : (rawSearch as string);
+
       const sortBy = req.query.sortBy as string || 'createdAt';
       const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
       
       // If search is provided but empty or whitespace only, treat it as undefined
-      const cleanSearch = (search && search.trim().length > 0) ? search.trim() : undefined;
+      const cleanSearch = (search && typeof search === 'string' && search.trim().length > 0) ? search.trim() : undefined;
 
       const result = await storage.getUrlRulesPaginated(page, limit, cleanSearch, sortBy, sortOrder);
       res.json(result);
@@ -628,12 +685,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Top Referrers
+  app.get("/api/admin/stats/top-referrers", requireAuth, async (req, res) => {
+    try {
+      const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
+      const topReferrers = await storage.getTopReferrers(10, timeRange);
+      res.json(topReferrers);
+    } catch (error) {
+      console.error("Top referrers stats error:", error);
+      res.status(500).json({ error: "Failed to fetch top referrers statistics" });
+    }
+  });
+
   // Comprehensive tracking entries with search and sort
   app.get("/api/admin/stats/entries", requireAuth, async (req, res) => {
     try {
       const { query = '', sortBy = 'timestamp', sortOrder = 'desc' } = req.query;
+      // Handle HPP for query
+      const rawQuery = query;
+      const cleanQuery = Array.isArray(rawQuery) ? String(rawQuery[0]) : String(rawQuery);
+
       const entries = await storage.searchTrackingEntries(
-        query as string, 
+        cleanQuery,
         sortBy as string, 
         sortOrder as 'asc' | 'desc'
       );
@@ -650,7 +723,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
-      const search = req.query.search as string || undefined;
+
+      // Handle HPP: if search is array, take first element
+      const rawSearch = req.query.search;
+      const searchVal = Array.isArray(rawSearch) ? rawSearch[0] : rawSearch;
+      const search = (typeof searchVal === 'string' && searchVal.length > 0) ? searchVal : undefined;
+
       const sortBy = req.query.sortBy as string || 'timestamp';
       const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'desc';
       
@@ -678,6 +756,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!isNaN(parsed)) maxQuality = parsed;
       }
 
+      // Feedback filter
+      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all';
+      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'empty'].includes(req.query.feedbackFilter as string)) {
+        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'empty';
+      }
+
       const result = await storage.getTrackingEntriesPaginated(
         page,
         limit,
@@ -686,7 +770,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortOrder,
         ruleFilter,
         minQuality,
-        maxQuality
+        maxQuality,
+        feedbackFilter
       );
       res.json(result);
     } catch (error) {
@@ -713,16 +798,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/export", requireAuth, async (req, res) => {
     try {
       const exportRequest = exportRequestSchema.parse(req.body);
+      const settings = await storage.getGeneralSettings();
       
       if (exportRequest.type === 'statistics') {
         const trackingData = await storage.getTrackingData(exportRequest.timeRange);
         
         if (exportRequest.format === 'csv') {
-          // CSV-Export without referrer
-          const csvHeader = 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent\n';
-          const csvData = trackingData.map(track =>
-            `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}"`
-          ).join('\n');
+          const includeReferrer = settings.enableReferrerTracking;
+          // CSV-Export
+          const csvHeader = includeReferrer
+            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität\n'
+            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität\n';
+
+          const csvData = trackingData.map(track => {
+            // Prepare new fields
+            const ruleId = track.ruleId || (track.ruleIds && track.ruleIds.length > 0 ? track.ruleIds.join(';') : '') || '';
+            const feedback = track.feedback || '';
+            const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
+
+            if (includeReferrer) {
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}"`;
+            } else {
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}"`;
+            }
+          }).join('\n');
           
           res.setHeader('Content-Type', 'text/csv');
           res.setHeader('Content-Disposition', 'attachment; filename="statistics.csv"');

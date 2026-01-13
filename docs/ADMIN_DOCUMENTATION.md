@@ -20,6 +20,12 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 - Logs und Performance-Metriken gemäß Deployment-Guides überwachen.
 - **Cache neu aufbauen**: Im Admin-Bereich unter "System & Daten" > "Wartung" kann der Regel-Cache manuell neu aufgebaut werden. Dies ist normalerweise nicht erforderlich, kann aber helfen, wenn nach umfangreichen Importen oder Updates Probleme mit Weiterleitungen auftreten.
 
+## Referrer Tracking & Analytics
+- Das System erfasst automatisch den HTTP Referrer (Herkunftsseite) für jeden Zugriff.
+- **Top 10 Referrer**: Ein Dashboard-Widget zeigt die häufigsten Herkunfts-Domains an.
+- **Direct Access**: Wenn kein Referrer vorhanden ist (z.B. direkter Aufruf oder Lesezeichen), wird dies als "-" oder "Direct" angezeigt.
+- **Datenexport**: Der CSV-Export der Statistiken enthält nun eine "Referrer"-Spalte mit der vollständigen URL.
+
 ## Login-Schutz
 - Fehlgeschlagene Anmeldungen werden IP-basiert gezählt.
 - Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen (Standard: 5) wird die IP für `LOGIN_BLOCK_DURATION_MS` Millisekunden (Standard: 24h) gesperrt.

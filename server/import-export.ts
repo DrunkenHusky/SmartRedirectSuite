@@ -212,15 +212,31 @@ export class ImportExportService {
   }
 
   /**
+   * Sanitize value for CSV/Excel injection protection
+   * @param value The value to sanitize
+   * @returns Sanitized value
+   */
+  private static sanitizeForCSV(value: any): any {
+    if (typeof value === 'string') {
+      // Prevent formula injection (CSV Injection)
+      // If string starts with =, +, -, or @, prepend a single quote
+      if (/^[=+\-@]/.test(value)) {
+        return `'${value}`;
+      }
+    }
+    return value;
+  }
+
+  /**
    * Generate CSV content
    */
   static generateCSV(rules: UrlRule[]): string {
     const data = rules.map(rule => ({
       ID: rule.id,
-      Matcher: rule.matcher,
-      'Target URL': rule.targetUrl,
+      Matcher: this.sanitizeForCSV(rule.matcher),
+      'Target URL': this.sanitizeForCSV(rule.targetUrl),
       Type: rule.redirectType,
-      Info: rule.infoText,
+      Info: this.sanitizeForCSV(rule.infoText),
       'Auto Redirect': rule.autoRedirect ? 'true' : 'false',
       'Discard Query Params': rule.discardQueryParams ? 'true' : 'false',
       'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false'
@@ -235,10 +251,10 @@ export class ImportExportService {
   static generateExcel(rules: UrlRule[]): Buffer {
     const data = rules.map(rule => ({
       ID: rule.id,
-      Matcher: rule.matcher,
-      'Target URL': rule.targetUrl,
+      Matcher: this.sanitizeForCSV(rule.matcher),
+      'Target URL': this.sanitizeForCSV(rule.targetUrl),
       Type: rule.redirectType,
-      Info: rule.infoText,
+      Info: this.sanitizeForCSV(rule.infoText),
       'Auto Redirect': rule.autoRedirect,
       'Discard Query Params': rule.discardQueryParams,
       'Keep Query Params': rule.forwardQueryParams
