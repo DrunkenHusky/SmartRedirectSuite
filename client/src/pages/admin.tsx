@@ -249,6 +249,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [showManageBlockedIpsDialog, setShowManageBlockedIpsDialog] = useState(false);
   const [newBlockedIp, setNewBlockedIp] = useState("");
 
+  // Max stats warning state
+  const [showMaxStatsWarningDialog, setShowMaxStatsWarningDialog] = useState(false);
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
@@ -1347,10 +1350,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if we are changing from 0 (unlimited) to a specific limit
+    const oldLimit = settingsData?.maxStatsEntries || 0;
+    const newLimit = generalSettings.maxStatsEntries;
+
+    if (oldLimit === 0 && newLimit > 0) {
+      setShowMaxStatsWarningDialog(true);
+      return;
+    }
+
     updateSettingsMutation.mutate(generalSettings, {
       onSuccess: () => {
-        toast({ title: "Einstellungen gespeichert", description: "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert." });
-      }
+        toast({
+          title: "Einstellungen gespeichert",
+          description:
+            "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert.",
+        });
+      },
+    });
+  };
+
+  const handleConfirmStatsLimitChange = () => {
+    setShowMaxStatsWarningDialog(false);
+    updateSettingsMutation.mutate(generalSettings, {
+      onSuccess: () => {
+        toast({
+          title: "Einstellungen gespeichert",
+          description:
+            "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert.",
+        });
+      },
     });
   };
 
@@ -4380,6 +4410,40 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               disabled={bulkDeleteRulesMutation.isPending}
             >
               {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Max Stats Warning Dialog */}
+      <AlertDialog
+        open={showMaxStatsWarningDialog}
+        onOpenChange={setShowMaxStatsWarningDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-yellow-600">
+              <AlertTriangle className="h-5 w-5" />
+              Statistik-Limitierung aktivieren?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Sie ändern das Limit für Statistik-Einträge von "Unbegrenzt" auf{" "}
+              {generalSettings.maxStatsEntries}.
+              <br />
+              <br />
+              <strong>Warnung:</strong> Wenn aktuell mehr als{" "}
+              {generalSettings.maxStatsEntries} Einträge vorhanden sind (aktuell:{" "}
+              {statsData?.stats?.total || 0}), werden die ältesten Einträge beim
+              Speichern <strong>unwiderruflich gelöscht</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmStatsLimitChange}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              Verstanden & Speichern
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

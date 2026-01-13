@@ -128,6 +128,21 @@ export interface IStorage {
 }
 
 export class FileStorage implements IStorage {
+  private async enforceMaxStatsLimit(limit: number): Promise<void> {
+    if (limit <= 0) return;
+
+    const trackingData = await this.ensureTrackingLoaded();
+    if (trackingData.length > limit) {
+      console.log(
+        `Pruning tracking data: Limit ${limit}, Current ${trackingData.length}, Removing ${trackingData.length - limit} oldest entries.`,
+      );
+      // Remove oldest entries (from the beginning of the array)
+      const removeCount = trackingData.length - limit;
+      trackingData.splice(0, removeCount);
+      await this.writeJsonFile(TRACKING_FILE, trackingData);
+    }
+  }
+
   // Unified cache that holds rules that are processed or will be processed
   // We type it as ProcessedUrlRule[] because we ensure they are processed when loaded
   private rulesCache: ProcessedUrlRule[] | null = null;
@@ -1269,9 +1284,17 @@ export class FileStorage implements IStorage {
     await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
     this.settingsCache = settings;
 
+    // Check if maxStatsEntries changed and needs enforcement
+    if (settings.maxStatsEntries && settings.maxStatsEntries > 0) {
+      await this.enforceMaxStatsLimit(settings.maxStatsEntries);
+    }
+
     // Check if relevant settings changed
     // Invalidate config so cache is reprocessed on next access
-    if (oldSettings.caseSensitiveLinkDetection !== settings.caseSensitiveLinkDetection) {
+    if (
+      oldSettings.caseSensitiveLinkDetection !==
+      settings.caseSensitiveLinkDetection
+    ) {
       this.lastCacheConfig = null; // Forces re-evaluation in ensureRulesLoaded
     }
 
