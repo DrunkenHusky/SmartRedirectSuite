@@ -43,5 +43,15 @@
   "matchNoneExplanation": "Die URL konnte nicht spezifisch zugeordnet werden. Bitte nutzen Sie die Suche der neuen Applikation.",
   "encodeImportedUrls": true,
   "enableTrackingCache": true,
-  "maxStatsEntries": 0
+  "maxStatsEntries": 0,
+  "defaultRedirectMode": "domain",
+  "defaultSearchUrl": "",
+  "defaultSearchMessage": "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+  "enableReferrerTracking": true,
+  "enableFeedbackSurvey": true,
+  "feedbackSurveyTitle": "Hat die Weiterleitung funktioniert?",
+  "feedbackSurveyQuestion": "Bitte bewerten Sie die Zielseite.",
+  "feedbackSuccessMessage": "Danke für Ihr Feedback!",
+  "feedbackButtonYes": "Ja, OK",
+  "feedbackButtonNo": "Nein"
 }
