@@ -1355,7 +1355,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     const oldLimit = settingsData?.maxStatsEntries || 0;
     const newLimit = generalSettings.maxStatsEntries;
 
-    if (oldLimit === 0 && newLimit > 0) {
+    if (newLimit > 0 && (oldLimit === 0 || newLimit < oldLimit)) {
       setShowMaxStatsWarningDialog(true);
       return;
     }
@@ -4424,10 +4424,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-yellow-600">
               <AlertTriangle className="h-5 w-5" />
-              Statistik-Limitierung aktivieren?
+              Statistik-Limitierung ändern?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Sie ändern das Limit für Statistik-Einträge von "Unbegrenzt" auf{" "}
+              Sie ändern das Limit für Statistik-Einträge von {(settingsData?.maxStatsEntries || 0) === 0 ? '"Unbegrenzt"' : settingsData?.maxStatsEntries} auf{" "}
               {generalSettings.maxStatsEntries}.
               <br />
               <br />
