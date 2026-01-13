@@ -1,3 +1,51 @@
+# [2.15.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.14.0...v2.15.0) (2026-01-13)
+
+
+### Bug Fixes
+
+* add missing Share2 icon import in AdminPage ([c02f374](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/c02f374ee07d7f803646bea67825f9b45049f763))
+* Improve feedback tracking context and update default texts ([4ca5993](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/4ca5993883a68aa59be6fba3b34f50c6565189be))
+* Improve settings validation and UI for feedback survey ([5ab996a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5ab996ac8ae653a3ed88fb01f7e5586d079fe671))
+* initialize enableReferrerTracking in AdminPage state ([043b9d1](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/043b9d15a40205571eac366bf619e4cf94fc6fe1))
+* refresh schema definition for referrer tracking ([c2e02f9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/c2e02f9a1fb062c8da4fe050129aa84c4cf016f7))
+* **security:** handle HTTP parameter pollution in admin search ([7435694](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/7435694f83034134fa7686915e8e2fb57252c3f5))
+* **tracking:** add referrer field to urlTrackingSchema ([6d487f9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/6d487f9ee5de965c0b212f975962681bb5647369))
+
+
+### Features
+
+* **a11y:** add aria-labels to admin header buttons ([d654b44](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d654b44eb8c9a6c7be55858c49274f511882dea8))
+* **a11y:** improve keyboard accessibility for QualityGauge tooltip ([5a83b84](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5a83b84489fc1e04f9302f214940eb5284a8c88f))
+* add configurable max statistics entries limit ([d23b274](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d23b274147eaeccc5c78d0cf6ba16dd5fde2bd96))
+* add descriptions to fallback strategy dropdown options ([21ae015](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/21ae015385f975d54561c3946d240916729951e3))
+* add referrer tracking and analytics ([36a72b7](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/36a72b71d755f8ebafe4c1f21af0752ca275ad49))
+* implement Smart Search Fallback and optimize Admin UI performance ([97f7769](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/97f77696fe9f26ed2dcbfdc44357b2363c76c582))
+* improve user feedback tracking mechanism ([41b435c](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/41b435cbc7e7abb650031619e0aecd36e10074f6))
+* include Rule GUID, Feedback, and Quality in statistics export ([3124d68](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3124d6829fd5e921ca517cf168e0b58c01679400))
+* Localize Admin Settings to German ([1677764](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/167776459d3fb1b066f26b6dd219486ed5685541))
+* make 'New URL' in stats table clickable ([66d69be](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/66d69be6bdd0a8f139c00c4f0acbb7d8c899fd64))
+* make feedback survey buttons configurable ([2403ce4](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/2403ce482681ef88ac8f5ff5b2a28345a892cea5))
+* make referrer tracking optional via settings ([5888dc2](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5888dc22bdd21e6d0274f8bf2ce4ce83da2f06aa))
+* remove 'New' and 'Legacy' labels from search features ([44be14d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/44be14d2ab96b4271ba853f1380bd1783df29740))
+* sanitize CSV and Excel exports to prevent formula injection ([14fb575](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/14fb575fcada23ec40ba1136aaceec46b43fe94a))
+* simplify link quality gauge levels to 0/50/75/100 ([590d1db](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/590d1dbdc858aef15e798fd2f019fc742af568da))
+* **ui:** make new url code block clickable ([60e214b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/60e214b764a0adef4f4dd53b9cdd240d8756631f))
+* update default background colors to hex code #ffffff ([acdc086](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/acdc0865d3f1ad49be1a151c26bd01d930f201cc))
+* User Feedback Survey implementation ([3b25540](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3b25540f1b77d9d8057a980455e8b79f850a1565))
+* User Feedback Survey implementation ([9354c9d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/9354c9d04ec28b7920d42b110d47a4fff788988b))
+* User Feedback Survey implementation ([226426a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/226426a262900a2ba0795b1dfc8b7db4982e9f27))
+* User Feedback Survey integration ([d61575a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d61575a7067f73ede3c2d83afbb62979429ecbd4))
+* warn when enabling stats limit and prune on save ([a191b7a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/a191b7a1f10b66c29a004eeea5bd335186fd7558))
+* warn when enabling stats limit and prune on save ([5a5a7a8](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5a5a7a8e3295b3c1020ae4e2321786149374c089))
+* warn when reducing stats limit ([947d626](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/947d626047ef9268ffcdaee416e95da65fc26d76))
+
+
+### Performance Improvements
+
+* Optimize tracking stats calculation ([1808b23](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1808b23ce5109fe4642c0bfb0f4d14ff57cc03b5))
+* **storage:** optimize file reading and rule processing ([b7e1fe6](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b7e1fe673ab07f74a7a0b3f4932cfb46d137bbb1))
+* **storage:** optimize file reading and rule processing ([b81cc14](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b81cc1472f426973f15a766f87d0646119f05b79))
+
 # [2.14.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.13.0...v2.14.0) (2025-12-17)
 
 
