@@ -140,10 +140,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   };
 
   useEffect(() => {
-    if (settings && !isEditMode) {
+    if (settings) {
       setShowMainDialog(settings.popupMode === 'active');
     }
-  }, [settings, isEditMode]);
+  }, [settings?.popupMode]);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -464,8 +464,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
   const addInfoItem = () => {
     if (!settings) return;
-    const newInfoItems = [...settings.infoItems, "New Info Item"];
-    const newInfoIcons = [...settings.infoIcons, "Info" as const];
+    const newInfoItems = [...(settings.infoItems || []), "New Info Item"];
+    const newInfoIcons = [...(settings.infoIcons || []), "Info" as const];
     updateSetting("infoItems", newInfoItems);
     updateSetting("infoIcons", newInfoIcons);
   };
@@ -485,7 +485,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             <div className="flex items-center space-x-3">
               {settings?.headerLogoUrl ? (
                 <img 
-                  src={settings.headerLogoUrl.startsWith('/objects/') ? settings.headerLogoUrl : settings.headerLogoUrl} 
+                  src={settings.headerLogoUrl}
                   alt="Logo" 
                   className="h-8 w-auto object-contain"
                   onError={(e) => {
@@ -504,6 +504,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 <InlineText
                     value={settings?.headerTitle || "URL Migration Tool"}
                     onChange={(val) => updateSetting('headerTitle', val)}
+                    className="text-xl font-semibold"
                 />
               </h1>
             </div>
@@ -556,6 +557,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         <InlineText
                             value={settings?.mainTitle || "Veralteter Link erkannt"}
                             onChange={(val) => updateSetting('mainTitle', val)}
+                            className="font-semibold"
                         />
                     </h3>
                     <p className="text-sm mt-1">
@@ -563,6 +565,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             value={settings?.mainDescription || ""}
                             onChange={(val) => updateSetting('mainDescription', val)}
                             multiline
+                            className="text-sm"
                         />
                     </p>
                   </div>
@@ -590,6 +593,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             <InlineText
                                 value={settings?.urlComparisonTitle || "URL-Vergleich"}
                                 onChange={(val) => updateSetting('urlComparisonTitle', val)}
+                                className="font-semibold"
                             />
                         </span>
                       </CardTitle>
@@ -850,7 +854,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       {showMainDialog && (
       <Dialog open={showMainDialog} onOpenChange={setShowMainDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ backgroundColor: settings?.mainBackgroundColor || 'white' }}>
-            {isEditMode && <div className="absolute top-2 right-12 z-50">
+            {isEditMode && <div className="absolute top-2 right-12 z-50 flex gap-2">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs px-2 bg-background/50 hover:bg-background"
+                    onClick={() => updateSetting('popupMode', 'inline')}
+                >
+                    Switch to Inline
+                </Button>
                 <InlineColor
                     value={settings?.mainBackgroundColor || '#ffffff'}
                     onChange={(val) => updateSetting('mainBackgroundColor', val)}

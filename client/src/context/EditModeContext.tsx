@@ -52,7 +52,6 @@ export function EditModeProvider({ children }: { children: React.ReactNode }) {
         title: "Einstellungen gespeichert",
         description: "Die Änderungen wurden erfolgreich übernommen.",
       });
-      setIsEditMode(false);
     },
     onError: (error: any) => {
       toast({

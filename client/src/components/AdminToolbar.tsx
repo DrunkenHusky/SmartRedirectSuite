@@ -38,7 +38,7 @@ export function AdminToolbar() {
         <Button
           size="sm"
           variant="ghost"
-          onClick={discardChanges}
+          onClick={disableEditMode}
           className="rounded-full h-8 w-8 p-0 text-background hover:bg-background/20 hover:text-background"
           title="Exit / Discard"
         >
