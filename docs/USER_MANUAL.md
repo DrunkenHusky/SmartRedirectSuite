@@ -16,6 +16,8 @@ Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-A
   - **Fallback Strategy**: Definiert das Verhalten, wenn keine spezifische Regel passt.
     - *Simple Domain Replacement*: Standardverhalten. Ersetzt nur die Domain, behält den gesamten Pfad bei.
     - *Smart Search Redirect*: Extrahiert das letzte Pfadsegment und leitet auf eine konfigurierbare Suchseite weiter (z.B. `?q=dateiname.pdf`).
+      - **Regex-Extraktion**: Optional kann ein regulärer Ausdruck definiert werden, um den Suchbegriff flexibel aus der URL zu extrahieren (z.B. aus Query-Parametern mit `[?&]file=([^&]+)`).
+      - **Fallback**: Greift der Regex nicht oder ist keiner definiert, wird automatisch das letzte Pfadsegment verwendet.
   - **Fallback Info Messages**: Konfigurierbare Texte für den Fall, dass keine Regel greift (Smart Search Message) oder kein spezifischer Regeltext vorhanden ist (Standard Info Text).
   - **Visualisierung**: Titel, Icon, Hintergrundfarbe und Bezeichnungen für alte und neue URL sowie Button-Texte.
 - **Spezielle Hinweise**: Überschrift und Icon für den Hinweisbereich.

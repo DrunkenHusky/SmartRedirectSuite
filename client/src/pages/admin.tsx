@@ -670,6 +670,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+        smartSearchRegex: settingsData.smartSearchRegex || "",
         enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
         feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
         feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
@@ -2342,19 +2343,131 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                           {/* Field 3: Search Base URL (Conditional) */}
                           {generalSettings.defaultRedirectMode === 'search' && (
-                              <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Such-Basis-URL <span className="text-red-500">*</span>
-                                </label>
-                                <DebouncedInput
-                                  value={generalSettings.defaultSearchUrl || ''}
-                                  onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
-                                  placeholder="https://newapp.com/?q="
-                                  className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Beispiel: https://newapp.com/?q=
-                                </p>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Such-Basis-URL <span className="text-red-500">*</span>
+                                  </label>
+                                  <DebouncedInput
+                                    value={generalSettings.defaultSearchUrl || ''}
+                                    onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
+                                    placeholder="https://newapp.com/?q="
+                                    className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Beispiel: https://newapp.com/?q=
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Extraktions-Regeln (Regex)
+                                  </label>
+                                  <div className="space-y-2">
+                                    {(generalSettings.smartSearchRules || []).map((rule, index) => (
+                                      <div key={index} className="flex gap-2 items-center">
+                                        <DebouncedInput
+                                          value={rule.pattern}
+                                          onChange={(value) => {
+                                            const newRules = [...(generalSettings.smartSearchRules || [])];
+                                            newRules[index] = { ...newRules[index], pattern: value as string };
+                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                          }}
+                                          placeholder="Regex Pattern (z.B. [?&]q=([^&]+))"
+                                          className="flex-1 bg-white dark:bg-gray-700"
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-4 w-6 p-0"
+                                            onClick={() => {
+                                              if (index > 0) {
+                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                const temp = newRules[index];
+                                                newRules[index] = newRules[index - 1];
+                                                newRules[index - 1] = temp;
+                                                // Sync order property with array index
+                                                newRules.forEach((r, i) => r.order = i);
+                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                              }
+                                            }}
+                                            disabled={index === 0}
+                                          >
+                                            <ArrowUp className="h-3 w-3" />
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-4 w-6 p-0"
+                                            onClick={() => {
+                                              if (index < (generalSettings.smartSearchRules || []).length - 1) {
+                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                const temp = newRules[index];
+                                                newRules[index] = newRules[index + 1];
+                                                newRules[index + 1] = temp;
+                                                // Sync order property with array index
+                                                newRules.forEach((r, i) => r.order = i);
+                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                              }
+                                            }}
+                                            disabled={index === (generalSettings.smartSearchRules || []).length - 1}
+                                          >
+                                            <ArrowDown className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => {
+                                            const newRules = (generalSettings.smartSearchRules || [])
+                                              .filter((_, i) => i !== index)
+                                              .map((r, i) => ({ ...r, order: i })); // Sync order after delete
+                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                    <div className="flex gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newRules = [...(generalSettings.smartSearchRules || []), { pattern: "", order: (generalSettings.smartSearchRules || []).length }];
+                                          setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        Regel hinzufügen
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newRules = [...(generalSettings.smartSearchRules || []), { pattern: '[?&]file=([^&]+)', order: (generalSettings.smartSearchRules || []).length }];
+                                          setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                        }}
+                                        title="Fügt eine Beispiel-Regex hinzu"
+                                      >
+                                        Beispiel hinzufügen
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Definieren Sie eine Liste von Regex-Patterns. Die Regeln werden von oben nach unten geprüft.
+                                    Jedes Regex muss eine Capture Group () enthalten, um den Suchbegriff zu extrahieren.
+                                    Wenn keine Regel greift, wird als Fallback das letzte Pfadsegment verwendet.
+                                  </p>
+                                </div>
                               </div>
                           )}
 

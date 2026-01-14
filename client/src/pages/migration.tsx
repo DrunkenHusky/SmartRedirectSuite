@@ -236,15 +236,47 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     setMatchExplanation(message);
                     setInfoText(message);
 
-                    // Extract last segment
+                    // Extract last segment or use Regex
                     try {
-                        const urlObj = new URL(url);
-                        const pathname = urlObj.pathname;
-                        const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
-                        const lastSegment = segments.length > 0 ? segments[segments.length - 1] : "";
+                        let searchTerm = "";
 
-                        if (lastSegment && settings.defaultSearchUrl) {
-                            generatedNewUrl = settings.defaultSearchUrl + encodeURIComponent(lastSegment);
+                        // Try regex rules if configured
+                        if (settings.smartSearchRules && settings.smartSearchRules.length > 0) {
+                          for (const rule of settings.smartSearchRules) {
+                            try {
+                              const regex = new RegExp(rule.pattern);
+                              const match = regex.exec(url); // Search in full URL including query params
+                              if (match && match[1]) {
+                                searchTerm = match[1];
+                                break; // Stop at first match (rules are ordered)
+                              }
+                            } catch (regexError) {
+                              console.error("Invalid smart search regex rule:", rule.pattern, regexError);
+                            }
+                          }
+                        } else if (settings.smartSearchRegex) {
+                          // Fallback to legacy single regex if rules are empty but regex exists
+                          try {
+                            const regex = new RegExp(settings.smartSearchRegex);
+                            const match = regex.exec(url);
+                            if (match && match[1]) {
+                              searchTerm = match[1];
+                            }
+                          } catch (regexError) {
+                            console.error("Invalid smart search regex:", regexError);
+                          }
+                        }
+
+                        // Fallback to path segment if regex didn't match or wasn't configured
+                        if (!searchTerm) {
+                          const urlObj = new URL(url);
+                          const pathname = urlObj.pathname;
+                          const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
+                          searchTerm = segments.length > 0 ? segments[segments.length - 1] : "";
+                        }
+
+                        if (searchTerm && settings.defaultSearchUrl) {
+                            generatedNewUrl = settings.defaultSearchUrl + encodeURIComponent(searchTerm);
                             redirectUrl = generatedNewUrl;
 
                             if (settings.autoRedirect) {
