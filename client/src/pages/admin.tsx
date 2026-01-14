@@ -152,6 +152,8 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
     }
   };
 
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -159,23 +161,23 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
           <div className="flex justify-center mb-4">
             <Shield className="text-primary text-4xl" />
           </div>
-          <CardTitle className="text-2xl">Administrator-Anmeldung</CardTitle>
+          <CardTitle className="text-2xl">{t('auth.login.title', 'Administrator-Anmeldung')}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Bitte geben Sie das Administrator-Passwort ein.
+            {t('auth.login.description', 'Bitte geben Sie das Administrator-Passwort ein.')}
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Passwort
+                {t('auth.password.label', 'Passwort')}
               </label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Administrator-Passwort eingeben"
+                placeholder={t('auth.password.placeholder', 'Administrator-Passwort eingeben')}
                 required
                 disabled={authMutation.isPending}
               />
@@ -186,7 +188,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
                 className="flex-1"
                 disabled={authMutation.isPending}
               >
-                {authMutation.isPending ? "Anmelden..." : "Anmelden"}
+                {authMutation.isPending ? "Anmelden..." : t('auth.login.button', 'Anmelden')}
               </Button>
               <Button
                 type="button"
@@ -194,7 +196,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
                 onClick={onClose}
                 disabled={authMutation.isPending}
               >
-                Abbrechen
+                {t('auth.login.cancel', 'Abbrechen')}
               </Button>
             </div>
           </form>
@@ -628,6 +630,20 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       return data;
     },
   });
+
+  // Fetch translations for editing
+  const { data: translationsData, isLoading: translationsLoading, refetch: refetchTranslations } = useQuery({
+    queryKey: ["/api/admin/translations"],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+        const response = await fetch("/api/admin/translations", { credentials: 'include' });
+        if (!response.ok) throw new Error("Failed to fetch translations");
+        return response.json();
+    }
+  });
+
+  const [editLanguage, setEditLanguage] = useState("de");
+  const [pendingTranslations, setPendingTranslations] = useState<Record<string, string>>({});
 
   // Populate general settings form when data is loaded
   useEffect(() => {
@@ -1354,7 +1370,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     }
   };
 
-  const handleSettingsSubmit = (e: React.FormEvent) => {
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Check if we are changing from 0 (unlimited) to a specific limit
@@ -1364,6 +1380,31 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     if (newLimit > 0 && (oldLimit === 0 || newLimit < oldLimit)) {
       setShowMaxStatsWarningDialog(true);
       return;
+    }
+
+    // Save Translations
+    if (Object.keys(pendingTranslations).length > 0) {
+        try {
+            const updates = Object.entries(pendingTranslations).map(([compositeKey, value]) => {
+                const [lang, ...keyParts] = compositeKey.split(':');
+                const key = keyParts.join(':');
+                return { key, value, lang };
+            });
+
+            for (const update of updates) {
+                await apiRequest("POST", "/api/admin/translations", update);
+            }
+            refetchTranslations();
+            queryClient.invalidateQueries({ queryKey: ["/api/translations"] });
+            setPendingTranslations({});
+        } catch (err) {
+            console.error("Failed to save translations", err);
+            toast({
+                title: "Fehler beim Speichern der Übersetzungen",
+                description: "Einige Texte konnten nicht gespeichert werden.",
+                variant: "destructive"
+            });
+        }
     }
 
     updateSettingsMutation.mutate(generalSettings, {
@@ -1638,6 +1679,48 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     setGeneralSettings({ ...generalSettings, infoIcons: newInfoIcons });
   };
 
+  // Helper for translated content fields
+  const getTranslatedValue = (key: string, fallback: string) => {
+      // 1. Check pending changes
+      if (pendingTranslations[`${editLanguage}:${key}`] !== undefined) {
+          return pendingTranslations[`${editLanguage}:${key}`];
+      }
+
+      // 2. Check loaded translations
+      if (translationsData) {
+          const t = translationsData.find((t: any) => t.key === key && t.lang === editLanguage);
+          if (t) return t.value;
+      }
+
+      // 3. Fallback to settings if default language
+      if (editLanguage === generalSettings.defaultLanguage) {
+          return fallback;
+      }
+
+      return ""; // Or fallback to default language if needed, but empty allows seeing what is missing
+  };
+
+  const handleTranslationChange = (key: string, value: string) => {
+      setPendingTranslations(prev => ({
+          ...prev,
+          [`${editLanguage}:${key}`]: value
+      }));
+
+      // Also update general settings if we are editing default language to keep sync
+      // BUT: We should be moving away from generalSettings for text.
+      // For backward compatibility, we sync if it's the default language.
+      if (editLanguage === generalSettings.defaultLanguage) {
+          // Map key back to settings field if possible
+          const settingsField = key.replace('content.', '');
+          if (Object.keys(generalSettings).includes(settingsField)) {
+              setGeneralSettings(prev => ({
+                  ...prev,
+                  [settingsField]: value
+              }));
+          }
+      }
+  };
+
   // Helper functions for sorting
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -1793,7 +1876,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Shield className="text-primary text-xl sm:text-2xl" />
               <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">
-                <span className="hidden sm:inline">Administrator-Bereich</span>
+                <span className="hidden sm:inline">{t('admin.header.title', 'Administrator-Bereich')}</span>
                 <span className="sm:hidden">Admin</span>
               </h1>
             </div>
@@ -1805,11 +1888,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
                 className="text-muted-foreground hover:text-orange-600"
-                aria-label={logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
+                aria-label={logoutMutation.isPending ? "Abmelden..." : t('admin.logout', 'Abmelden')}
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
-                  {logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
+                  {logoutMutation.isPending ? "Abmelden..." : t('admin.logout', 'Abmelden')}
                 </span>
               </Button>
               <Button
@@ -1817,10 +1900,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 size="sm"
                 onClick={onClose}
                 className="text-muted-foreground hover:text-destructive"
-                aria-label="Schließen"
+                aria-label={t('common.close', 'Schließen')}
               >
                 <X className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Schließen</span>
+                <span className="hidden sm:inline">{t('common.close', 'Schließen')}</span>
               </Button>
             </div>
           </div>
@@ -1863,9 +1946,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 <CardHeader>
                   <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row gap-4">
                     <div>
-                      <CardTitle>Allgemeine Einstellungen</CardTitle>
+                      <CardTitle>{t('settings.title', 'Allgemeine Einstellungen')}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        Hier können Sie alle Texte der Anwendung anpassen.
+                        {t('settings.description', 'Hier können Sie alle Texte der Anwendung anpassen.')}
                       </p>
                     </div>
                     {onOpenVisualEditor && (
@@ -1889,7 +1972,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm font-semibold">0</div>
                           <div>
                             <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('settings.language.default')}</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Standardsprache für die Anwendung.</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.language.description', 'Standardsprache für die Anwendung.')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -1919,25 +2002,38 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                       {/* 1. Header Settings */}
                       <div className="space-y-4 sm:space-y-6">
-                        <div className="flex items-center gap-3 border-b pb-3">
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-semibold">1</div>
-                          <div>
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground">Header-Einstellungen</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Anpassung des oberen Bereichs der Anwendung - wird auf jeder Seite angezeigt</p>
-                          </div>
+                        <div className="flex items-center justify-between border-b pb-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-semibold">1</div>
+                                <div>
+                                    <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('settings.header_section.title', 'Header-Einstellungen')}</h3>
+                                    <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.header_section.description', 'Anpassung des oberen Bereichs der Anwendung - wird auf jeder Seite angezeigt')}</p>
+                                </div>
+                            </div>
+                            <Select value={editLanguage} onValueChange={setEditLanguage}>
+                                <SelectTrigger className="w-[120px] h-8">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="de">🇩🇪 DE</SelectItem>
+                                    <SelectItem value="en">🇬🇧 EN</SelectItem>
+                                    <SelectItem value="fr">🇫🇷 FR</SelectItem>
+                                    <SelectItem value="it">🇮🇹 IT</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                             {/* Title */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel <span className="text-red-500">*</span>
+                                {t('settings.field.title', 'Titel')} <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
-                                value={generalSettings.headerTitle}
-                                onChange={(val) => setGeneralSettings({ ...generalSettings, headerTitle: val as string })}
+                                value={getTranslatedValue('content.headerTitle', generalSettings.headerTitle)}
+                                onChange={(val) => handleTranslationChange('content.headerTitle', val as string)}
                                 placeholder="Smart Redirect Service"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700`}
                               />
                               <p className="text-xs text-gray-500 mt-1">
                                 Wird als Haupttitel im Header der Anwendung angezeigt
@@ -2195,8 +2291,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-xs sm:text-sm font-semibold">2</div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground">PopUp-Einstellungen</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Dialog-Fenster das automatisch erscheint, wenn ein Nutzer eine veraltete URL aufruft</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('settings.popup_section.title', 'PopUp-Einstellungen')}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.popup_section.description', 'Dialog-Fenster das automatisch erscheint, wenn ein Nutzer eine veraltete URL aufruft')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -2221,13 +2317,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel <span className="text-red-500">*</span>
+                                {t('settings.field.title', 'Titel')} <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
-                                value={generalSettings.mainTitle}
-                                onChange={(val) => setGeneralSettings({ ...generalSettings, mainTitle: val as string })}
+                                value={getTranslatedValue('content.mainTitle', generalSettings.mainTitle)}
+                                onChange={(val) => handleTranslationChange('content.mainTitle', val as string)}
                                 placeholder="URL veraltet - Aktualisierung erforderlich"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700`}
                                 disabled={generalSettings.popupMode === 'disabled'}
                               />
                             </div>
@@ -2252,14 +2348,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           </div>
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Beschreibung <span className="text-red-500">*</span>
+                              {t('settings.field.description', 'Beschreibung')} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedTextarea
-                              value={generalSettings.mainDescription}
-                              onChange={(val) => setGeneralSettings({ ...generalSettings, mainDescription: val as string })}
+                              value={getTranslatedValue('content.mainDescription', generalSettings.mainDescription)}
+                              onChange={(val) => handleTranslationChange('content.mainDescription', val as string)}
                               placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
                               rows={3}
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
                             <p className="text-xs text-gray-500 mt-1">
@@ -2271,8 +2367,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               PopUp Button-Text
                             </label>
                             <DebouncedInput
-                              value={generalSettings.popupButtonText}
-                              onChange={(val) => setGeneralSettings({ ...generalSettings, popupButtonText: val as string })}
+                              value={getTranslatedValue('content.popupButtonText', generalSettings.popupButtonText)}
+                              onChange={(val) => handleTranslationChange('content.popupButtonText', val as string)}
                               placeholder="Zeige mir die neue URL"
                               className="bg-white dark:bg-gray-700"
                               disabled={generalSettings.popupMode === 'disabled'}
@@ -2332,8 +2428,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">3</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Routing & Fallback-Verhalten</h3>
-                            <p className="text-sm text-muted-foreground">Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.routing_section.title', 'Routing & Fallback-Verhalten')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.routing_section.description', 'Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2341,7 +2437,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {/* Field 1: Target Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Ziel-Domain (Standard neue Domain) <span className="text-red-500">*</span>
+                              {t('settings.field.target_domain', 'Ziel-Domain (Standard neue Domain)')} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               value={generalSettings.defaultNewDomain}
@@ -2357,7 +2453,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {/* Field 2: Fallback Strategy */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Fallback-Strategie
+                                {t('settings.field.fallback_strategy', 'Fallback-Strategie')}
                             </label>
                             <Select
                                 value={generalSettings.defaultRedirectMode}
@@ -2399,7 +2495,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {generalSettings.defaultRedirectMode === 'search' && (
                               <div>
                                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Such-Basis-URL <span className="text-red-500">*</span>
+                                  {t('settings.field.search_base_url', 'Such-Basis-URL')} <span className="text-red-500">*</span>
                                 </label>
                                 <DebouncedInput
                                   value={generalSettings.defaultSearchUrl || ''}
@@ -2420,7 +2516,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
-                                        <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                        <DebouncedInput
+                                            value={getTranslatedValue('content.specialHintsTitle', generalSettings.specialHintsTitle)}
+                                            onChange={(val) => handleTranslationChange('content.specialHintsTitle', val as string)}
+                                            className="bg-white dark:bg-gray-700"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
@@ -2450,8 +2550,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                             Standard Info Text (Beschreibung)
                                         </label>
                                         <DebouncedTextarea
-                                            value={generalSettings.specialHintsDescription}
-                                            onChange={(value) => setGeneralSettings({ ...generalSettings, specialHintsDescription: value as string })}
+                                            value={getTranslatedValue('content.specialHintsDescription', generalSettings.specialHintsDescription)}
+                                            onChange={(val) => handleTranslationChange('content.specialHintsDescription', val as string)}
                                             rows={3}
                                             className="bg-white dark:bg-gray-700"
                                         />
@@ -2467,8 +2567,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                             Smart Search Nachricht
                                         </label>
                                         <DebouncedTextarea
-                                            value={generalSettings.defaultSearchMessage}
-                                            onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchMessage: value as string })}
+                                            value={getTranslatedValue('content.defaultSearchMessage', generalSettings.defaultSearchMessage)}
+                                            onChange={(val) => handleTranslationChange('content.defaultSearchMessage', val as string)}
                                             rows={3}
                                             className="bg-white dark:bg-gray-700"
                                         />
@@ -2486,8 +2586,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                <div className="space-y-6">
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Titel</label>
-                                           <DebouncedInput value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <label className="block text-sm font-medium mb-2">{t('settings.field.title', 'Titel')}</label>
+                                           <DebouncedInput
+                                               value={getTranslatedValue('content.urlComparisonTitle', generalSettings.urlComparisonTitle)}
+                                               onChange={(val) => handleTranslationChange('content.urlComparisonTitle', val as string)}
+                                               className="bg-white dark:bg-gray-700"
+                                           />
                                        </div>
                                        <div>
                                          <label className="block text-sm font-medium mb-2">Icon</label>
@@ -2522,11 +2626,19 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für alte URL</label>
-                                           <DebouncedInput value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput
+                                               value={getTranslatedValue('content.oldUrlLabel', generalSettings.oldUrlLabel)}
+                                               onChange={(val) => handleTranslationChange('content.oldUrlLabel', val as string)}
+                                               className="bg-white dark:bg-gray-700"
+                                           />
                                        </div>
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für neue URL</label>
-                                           <DebouncedInput value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput
+                                               value={getTranslatedValue('content.newUrlLabel', generalSettings.newUrlLabel)}
+                                               onChange={(val) => handleTranslationChange('content.newUrlLabel', val as string)}
+                                               className="bg-white dark:bg-gray-700"
+                                           />
                                        </div>
                                    </div>
                                </div>
@@ -2553,23 +2665,43 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                           value={getTranslatedValue('content.matchHighExplanation', generalSettings.matchHighExplanation)}
+                                           onChange={(val) => handleTranslationChange('content.matchHighExplanation', val as string)}
+                                           className="bg-white dark:bg-gray-800"
+                                       />
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (75%)</label>
-                                       <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                           value={getTranslatedValue('content.matchMediumExplanation', generalSettings.matchMediumExplanation)}
+                                           onChange={(val) => handleTranslationChange('content.matchMediumExplanation', val as string)}
+                                           className="bg-white dark:bg-gray-800"
+                                       />
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung (50%)</label>
-                                       <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                           value={getTranslatedValue('content.matchLowExplanation', generalSettings.matchLowExplanation)}
+                                           onChange={(val) => handleTranslationChange('content.matchLowExplanation', val as string)}
+                                           className="bg-white dark:bg-gray-800"
+                                       />
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                           value={getTranslatedValue('content.matchRootExplanation', generalSettings.matchRootExplanation)}
+                                           onChange={(val) => handleTranslationChange('content.matchRootExplanation', val as string)}
+                                           className="bg-white dark:bg-gray-800"
+                                       />
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung (0%)</label>
-                                       <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                           value={getTranslatedValue('content.matchNoneExplanation', generalSettings.matchNoneExplanation)}
+                                           onChange={(val) => handleTranslationChange('content.matchNoneExplanation', val as string)}
+                                           className="bg-white dark:bg-gray-800"
+                                       />
                                      </div>
                                    </div>
                                  )}
@@ -2580,11 +2712,19 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
-                                       <DebouncedInput value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput
+                                           value={getTranslatedValue('content.copyButtonText', generalSettings.copyButtonText)}
+                                           onChange={(val) => handleTranslationChange('content.copyButtonText', val as string)}
+                                           className="bg-white dark:bg-gray-700"
+                                       />
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
-                                       <DebouncedInput value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput
+                                           value={getTranslatedValue('content.openButtonText', generalSettings.openButtonText)}
+                                           onChange={(val) => handleTranslationChange('content.openButtonText', val as string)}
+                                           className="bg-white dark:bg-gray-700"
+                                       />
                                      </div>
                                    </div>
                                </div>
@@ -2597,19 +2737,19 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-semibold">4</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Zusätzliche Informationen</h3>
-                            <p className="text-sm text-muted-foreground">Wird nur angezeigt wenn mindestens ein Info-Punkt konfiguriert ist</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.info_section.title', 'Zusätzliche Informationen')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.info_section.description', 'Wird nur angezeigt wenn mindestens ein Info-Punkt konfiguriert ist')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel der Sektion
+                                {t('settings.field.title', 'Titel der Sektion')}
                               </label>
                               <DebouncedInput
-                                value={generalSettings.infoTitle}
-                                onChange={(val) => setGeneralSettings({ ...generalSettings, infoTitle: val as string })}
+                                value={getTranslatedValue('content.infoTitle', generalSettings.infoTitle)}
+                                onChange={(val) => handleTranslationChange('content.infoTitle', val as string)}
                                 placeholder="Zusätzliche Informationen"
                                 className="bg-white dark:bg-gray-700"
                               />
@@ -2724,8 +2864,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 text-sm font-semibold">5</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Footer</h3>
-                            <p className="text-sm text-muted-foreground">Copyright und Fußzeile der Anwendung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.footer_section.title', 'Footer')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.footer_section.description', 'Copyright und Fußzeile der Anwendung')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2734,10 +2874,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               Copyright-Text <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
-                              value={generalSettings.footerCopyright}
-                              onChange={(val) => setGeneralSettings({ ...generalSettings, footerCopyright: val as string })}
+                              value={getTranslatedValue('content.footerCopyright', generalSettings.footerCopyright)}
+                              onChange={(val) => handleTranslationChange('content.footerCopyright', val as string)}
                               placeholder="Proudly brewed with Generative AI."
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700`}
                             />
                           </div>
                           
@@ -2750,8 +2890,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung & Leistung</h3>
-                            <p className="text-sm text-muted-foreground">Einstellungen zur Erkennungslogik und Systemleistung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.performance_section.title', 'Link-Erkennung & Leistung')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.performance_section.description', 'Einstellungen zur Erkennungslogik und Systemleistung')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2852,8 +2992,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 text-sm font-semibold">7</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
-                            <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.autoredirect_section.title', 'Automatische Weiterleitung')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.autoredirect_section.description', 'Globale Einstellungen für automatische Weiterleitungen')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2898,8 +3038,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center text-pink-600 dark:text-pink-400 text-sm font-semibold">8</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Benutzer-Feedback-Umfrage</h3>
-                            <p className="text-sm text-muted-foreground">Erfassen Sie Feedback von Nutzern zur Qualität der Weiterleitung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.feedback_section.title', 'Benutzer-Feedback-Umfrage')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.feedback_section.description', 'Erfassen Sie Feedback von Nutzern zur Qualität der Weiterleitung')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2925,47 +3065,47 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {generalSettings.enableFeedbackSurvey && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                               <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('feedback.title', 'Umfrage Titel')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
-                                  value={generalSettings.feedbackSurveyTitle}
-                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
+                                  value={getTranslatedValue('content.feedbackSurveyTitle', generalSettings.feedbackSurveyTitle)}
+                                  onChange={(val) => handleTranslationChange('content.feedbackSurveyTitle', val as string)}
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="War die neue URL korrekt?"
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('feedback.question', 'Umfrage Frage')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
-                                  value={generalSettings.feedbackSurveyQuestion}
-                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
+                                  value={getTranslatedValue('content.feedbackSurveyQuestion', generalSettings.feedbackSurveyQuestion)}
+                                  onChange={(val) => handleTranslationChange('content.feedbackSurveyQuestion', val as string)}
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('feedback.success', 'Erfolgsmeldung')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
-                                  value={generalSettings.feedbackSuccessMessage}
-                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
+                                  value={getTranslatedValue('content.feedbackSuccessMessage', generalSettings.feedbackSuccessMessage)}
+                                  onChange={(val) => handleTranslationChange('content.feedbackSuccessMessage', val as string)}
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="Vielen Dank für deine Rückmeldung."
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Button Ja (OK) <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('feedback.yes', 'Button Ja (OK)')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
-                                  value={generalSettings.feedbackButtonYes}
-                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonYes: val as string })}
+                                  value={getTranslatedValue('content.feedbackButtonYes', generalSettings.feedbackButtonYes)}
+                                  onChange={(val) => handleTranslationChange('content.feedbackButtonYes', val as string)}
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="Ja, OK"
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Button Nein (NOK) <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('feedback.no', 'Button Nein (NOK)')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
-                                  value={generalSettings.feedbackButtonNo}
-                                  onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonNo: val as string })}
+                                  value={getTranslatedValue('content.feedbackButtonNo', generalSettings.feedbackButtonNo)}
+                                  onChange={(val) => handleTranslationChange('content.feedbackButtonNo', val as string)}
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="Nein"
                                 />
@@ -2990,7 +3130,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           className="min-w-48 px-6"
                           disabled={updateSettingsMutation.isPending}
                         >
-                          {updateSettingsMutation.isPending ? "Speichere..." : "Einstellungen speichern"}
+                          {updateSettingsMutation.isPending ? t('settings.save.loading', 'Speichere...') : t('settings.save.button', 'Einstellungen speichern')}
                         </Button>
                       </div>
                     </div>
@@ -3006,9 +3146,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                     <div className="flex-1">
-                      <CardTitle className="text-lg sm:text-xl">URL-Transformationsregeln</CardTitle>
+                      <CardTitle className="text-lg sm:text-xl">{t('rules.title', 'URL-Transformationsregeln')}</CardTitle>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                        Verwalten Sie URL-Transformations-Regeln für die Migration.
+                        {t('rules.description', 'Verwalten Sie URL-Transformations-Regeln für die Migration.')}
                       </p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
@@ -3021,7 +3161,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           className="flex-1 sm:flex-initial"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          {selectedRuleIds.length} löschen
+                          {selectedRuleIds.length} {t('common.delete', 'löschen')}
                         </Button>
                       )}
                       
@@ -3035,7 +3175,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         className="flex-1 sm:flex-initial sm:w-auto"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Neue Regel
+                        {t('rules.new_rule', 'Neue Regel')}
                       </Button>
                     </div>
                   </div>
@@ -3047,7 +3187,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         ref={rulesSearchInputRef}
-                        placeholder="Regeln durchsuchen..."
+                        placeholder={t('rules.search_placeholder', 'Regeln durchsuchen...')}
                         value={rulesSearchQuery}
                         onChange={(e) => setRulesSearchQuery(e.target.value)}
                         className="pl-10"
