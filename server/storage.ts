@@ -1184,6 +1184,16 @@ export class FileStorage implements IStorage {
       if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
         settings.caseSensitiveLinkDetection = false;
       }
+      // Migration: Convert old smartSearchRegex to new smartSearchRules
+      if (!settings.smartSearchRules && settings.smartSearchRegex) {
+        settings.smartSearchRules = [
+          { pattern: settings.smartSearchRegex, order: 0 }
+        ];
+      }
+      // Ensure smartSearchRules is initialized
+      if (!settings.smartSearchRules) {
+        settings.smartSearchRules = [];
+      }
       this.settingsCache = settings;
       return settings;
     } catch {
