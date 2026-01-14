@@ -126,8 +126,8 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
     },
     onSuccess: async () => {
       toast({
-        title: "Erfolgreich angemeldet",
-        description: "Willkommen im Administrator-Bereich.",
+        title: t('auth.success.title', "Erfolgreich angemeldet"),
+        description: t('auth.success.description', "Willkommen im Administrator-Bereich."),
       });
       
       // Immediately call onAuthenticated to update parent state
@@ -138,8 +138,8 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Anmeldung fehlgeschlagen",
-        description: error.message || "Falsches Passwort",
+        title: t('auth.error.title', "Anmeldung fehlgeschlagen"),
+        description: error.message || t('auth.error.password', "Falsches Passwort"),
         variant: "destructive",
       });
     },
@@ -713,7 +713,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel erstellt", description: "Die URL-Regel wurde erfolgreich erstellt." });
+      toast({ title: t('rules.dialog.success.create', "Regel erstellt"), description: t('rules.dialog.success.create_desc', "Die URL-Regel wurde erfolgreich erstellt.") });
     },
     onError: (error: any) => {
       console.error('Create rule error:', error);
@@ -723,8 +723,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('auth.required.title', "Authentifizierung erforderlich"),
+          description: t('auth.required.desc', "Bitte melden Sie sich erneut an."),
           variant: "destructive" 
         });
         window.location.reload();
@@ -732,27 +732,27 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       // Extract German error message from the server response
-      let errorMessage = "Die Regel konnte nicht erstellt werden.";
-      let title = "Fehler";
+      let errorMessage = t('rules.dialog.error.create', "Die Regel konnte nicht erstellt werden.");
+      let title = t('rules.dialog.error.title', "Fehler");
       
       // Check different possible error structures for createRuleMutation
       if (error?.error) {
         errorMessage = error.error;
-        title = "Validierungsfehler";
+        title = t('rules.dialog.validation_error', "Validierungsfehler");
       } else if (error?.message) {
         errorMessage = error.message;
-        title = "Validierungsfehler";
+        title = t('rules.dialog.validation_error', "Validierungsfehler");
       } else if (typeof error === 'string') {
         errorMessage = error;
-        title = "Validierungsfehler";
+        title = t('rules.dialog.validation_error', "Validierungsfehler");
       } else {
         // Fallback for unknown error structures
         errorMessage = JSON.stringify(error);
-        title = "Unbekannter Fehler";
+        title = t('rules.dialog.unknown_error', "Unbekannter Fehler");
       }
       
       // Show validation error with save anyway option
-      if (title === "Validierungsfehler") {
+      if (title === t('rules.dialog.validation_error', "Validierungsfehler")) {
         setValidationError(errorMessage);
         setShowValidationDialog(true);
       } else {
@@ -775,7 +775,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde erfolgreich aktualisiert." });
+      toast({ title: t('rules.dialog.success.update', "Regel aktualisiert"), description: t('rules.dialog.success.update_desc', "Die URL-Regel wurde erfolgreich aktualisiert.") });
     },
     onError: (error: any) => {
       console.error('Update rule error:', error);
@@ -794,27 +794,27 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       // Extract German error message from the server response
-      let errorMessage = "Die Regel konnte nicht aktualisiert werden.";
-      let title = "Fehler";
+      let errorMessage = t('rules.dialog.error.update', "Die Regel konnte nicht aktualisiert werden.");
+      let title = t('rules.dialog.error.title', "Fehler");
       
       // Check different possible error structures for updateRuleMutation
       if (error?.error) {
         errorMessage = error.error;
-        title = "Validierungsfehler";
+        title = t('rules.dialog.validation_error', "Validierungsfehler");
       } else if (error?.message) {
         errorMessage = error.message;
-        title = "Validierungsfehler";
+        title = t('rules.dialog.validation_error', "Validierungsfehler");
       } else if (typeof error === 'string') {
         errorMessage = error;
-        title = "Validierungsfehler";
+        title = t('rules.dialog.validation_error', "Validierungsfehler");
       } else {
         // Fallback for unknown error structures
         errorMessage = JSON.stringify(error);
-        title = "Unbekannter Fehler";
+        title = t('rules.dialog.unknown_error', "Unbekannter Fehler");
       }
       
       // Show validation error with save anyway option
-      if (title === "Validierungsfehler") {
+      if (title === t('rules.dialog.validation_error', "Validierungsfehler")) {
         setValidationError(errorMessage);
         setShowValidationDialog(true);
       } else {
@@ -833,8 +833,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
       toast({
-        title: "Regel gelöscht",
-        description: "1 Regel wurde erfolgreich gelöscht.",
+        title: t('rules.dialog.success.delete', "Regel gelöscht"),
+        description: t('rules.dialog.success.delete_desc', "1 Regel wurde erfolgreich gelöscht."),
       });
     },
     onError: (error: any) => {
@@ -871,8 +871,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setShowDeleteAllStatsDialog(false);
       setDeleteAllStatsConfirmationText("");
       toast({
-        title: "Alle Statistiken gelöscht",
-        description: "Alle Tracking-Daten wurden erfolgreich gelöscht.",
+        title: t('danger.delete_stats.success', "Alle Statistiken gelöscht"),
+        description: t('danger.delete_stats.success_desc', "Alle Tracking-Daten wurden erfolgreich gelöscht."),
       });
     },
     onError: (error: any) => {
@@ -894,8 +894,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setShowClearBlockedIpsDialog(false);
       setClearBlockedIpsConfirmationText("");
       toast({
-        title: "Blockierte IPs gelöscht",
-        description: "Alle blockierten IP-Adressen wurden erfolgreich gelöscht.",
+        title: t('danger.delete_ips.success', "Blockierte IPs gelöscht"),
+        description: t('danger.delete_ips.success_desc', "Alle blockierten IP-Adressen wurden erfolgreich gelöscht."),
       });
     },
     onError: (error: any) => {
@@ -927,10 +927,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     onSuccess: () => {
       setNewBlockedIp("");
       refetchBlockedIps();
-      toast({ title: "IP blockiert", description: "Die IP-Adresse wurde erfolgreich blockiert." });
+      toast({ title: t('danger.blocked_ips.success.block', "IP blockiert"), description: t('danger.blocked_ips.success.block_desc', "Die IP-Adresse wurde erfolgreich blockiert.") });
     },
     onError: (error: any) => {
-       toast({ title: "Fehler", description: error.message || "IP konnte nicht blockiert werden.", variant: "destructive" });
+       toast({ title: t('danger.blocked_ips.error.title', "Fehler"), description: error.message || t('danger.blocked_ips.error.block', "IP konnte nicht blockiert werden."), variant: "destructive" });
     }
   });
 
@@ -941,10 +941,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     },
     onSuccess: () => {
       refetchBlockedIps();
-      toast({ title: "IP entsperrt", description: "Die IP-Adresse wurde erfolgreich entsperrt." });
+      toast({ title: t('danger.blocked_ips.success.unblock', "IP entsperrt"), description: t('danger.blocked_ips.success.unblock_desc', "Die IP-Adresse wurde erfolgreich entsperrt.") });
     },
     onError: (error: any) => {
-       toast({ title: "Fehler", description: error.message || "IP konnte nicht entsperrt werden.", variant: "destructive" });
+       toast({ title: t('danger.blocked_ips.error.title', "Fehler"), description: error.message || t('danger.blocked_ips.error.unblock', "IP konnte nicht entsperrt werden."), variant: "destructive" });
     }
   });
 
@@ -982,14 +982,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
       if (failedCount > 0) {
         toast({
-          title: "Teilweise gelöscht",
-          description: `${deletedCount} von ${totalRequested} ${totalRequested === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht. ${failedCount} konnten nicht gelöscht werden.`,
+        title: t('rules.bulk_delete_partial', "Teilweise gelöscht"),
+        description: `${deletedCount} / ${totalRequested} ${t('rules.deleted_success', 'gelöscht')}. ${failedCount} ${t('rules.deleted_fail', 'fehlgeschlagen')}.`,
           variant: "destructive"
         });
       } else {
         toast({
-          title: "Regeln gelöscht",
-          description: `${deletedCount} ${deletedCount === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht.`
+        title: t('rules.bulk_delete_success', "Regeln gelöscht"),
+        description: `${deletedCount} ${deletedCount === 1 ? t('rules.rule_deleted', 'Regel wurde') : t('rules.rules_deleted', 'Regeln wurden')} erfolgreich gelöscht.`
         });
       }
       
@@ -1009,8 +1009,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
         return;
       }
       toast({ 
-        title: "Fehler beim Löschen", 
-        description: error.message || "Die Regeln konnten nicht gelöscht werden.",
+        title: t('rules.bulk_delete_error', "Fehler beim Löschen"),
+        description: error.message || t('rules.bulk_delete_error_desc', "Die Regeln konnten nicht gelöscht werden."),
         variant: "destructive" 
       });
       setShowBulkDeleteDialog(false);
@@ -1355,16 +1355,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
         
         const typeText = type === 'statistics' ? 'Statistiken' : type === 'rules' ? 'Regeln' : 'Einstellungen';
         toast({ 
-          title: "Export erfolgreich", 
-          description: `${typeText} wurden heruntergeladen.` 
+          title: t('export.success', "Export erfolgreich"),
+          description: `${typeText} ${t('export.success_desc', 'wurden heruntergeladen.')}`
         });
       } else {
         throw new Error('Export failed');
       }
     } catch (error) {
       toast({ 
-        title: "Export fehlgeschlagen", 
-        description: "Die Daten konnten nicht exportiert werden.",
+        title: t('export.failed', "Export fehlgeschlagen"),
+        description: t('export.failed_desc', "Die Daten konnten nicht exportiert werden."),
         variant: "destructive" 
       });
     }
@@ -1486,8 +1486,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     },
     onError: (error: any) => {
       toast({
-        title: "Vorschau fehlgeschlagen",
-        description: error.message || "Die Datei konnte nicht gelesen werden.",
+        title: t('import.preview.failed', "Vorschau fehlgeschlagen"),
+        description: error.message || t('import.preview.failed_desc', "Die Datei konnte nicht gelesen werden."),
         variant: "destructive",
       });
     }
@@ -1505,16 +1505,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
       if (data.errors && data.errors.length > 0) {
         toast({
-          title: "Import mit Validierungsfehlern",
-          description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
+          title: t('import.validation_errors', "Import mit Validierungsfehlern"),
+          description: `${data.errors.length} ${t('import.validation_error_count', 'Validierungsfehler')}: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
           variant: "destructive"
         });
       } else {
         const imported = data.imported || 0;
         const updated = data.updated || 0;
         toast({
-          title: "Import erfolgreich",
-          description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.`
+          title: t('import.success', "Import erfolgreich"),
+          description: `${imported} ${t('import.imported_desc', 'neue Regeln importiert')}, ${updated} ${t('import.updated_desc', 'Regeln aktualisiert.')}`
         });
       }
     },
@@ -1534,8 +1534,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       // Handle PayloadTooLargeError (413) specifically
       if (error?.status === 413 || error?.message?.includes('too large')) {
         toast({
-          title: "Datei zu groß",
-          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
+          title: t('import.file_too_large', "Datei zu groß"),
+          description: t('import.file_too_large_desc', "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei)."),
           variant: "destructive",
           duration: 10000
         });
@@ -1543,8 +1543,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
 
       toast({
-        title: "Import fehlgeschlagen",
-        description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
+        title: t('import.failed', "Import fehlgeschlagen"),
+        description: error?.message || t('import.failed_desc', "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat."),
         variant: "destructive"
       });
     },
@@ -1558,14 +1558,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     },
     onSuccess: () => {
       toast({
-        title: "Cache neu aufgebaut",
-        description: "Der Regel-Cache wurde erfolgreich neu erstellt.",
+        title: t('danger.cache.success', "Cache neu aufgebaut"),
+        description: t('danger.cache.success_desc', "Der Regel-Cache wurde erfolgreich neu erstellt."),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler beim Cache-Neuaufbau",
-        description: error.message || "Der Cache konnte nicht neu erstellt werden.",
+        title: t('danger.cache.error', "Fehler beim Cache-Neuaufbau"),
+        description: error.message || t('danger.cache.error_desc', "Der Cache konnte nicht neu erstellt werden."),
         variant: "destructive",
       });
     },
@@ -1582,14 +1582,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setShowDeleteAllDialog(false);
       setDeleteAllConfirmationText("");
       toast({
-        title: "Alle Regeln gelöscht",
-        description: "Alle URL-Regeln wurden erfolgreich gelöscht.",
+        title: t('danger.delete_rules.success', "Alle Regeln gelöscht"),
+        description: t('danger.delete_rules.success_desc', "Alle URL-Regeln wurden erfolgreich gelöscht."),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
-        description: error.message || "Fehler beim Löschen aller Regeln.",
+        title: t('danger.delete_rules.error', "Fehler"),
+        description: error.message || t('danger.delete_rules.error_desc', "Fehler beim Löschen aller Regeln."),
         variant: "destructive",
       });
     },
@@ -1648,9 +1648,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
   };
 
   const handleInfoItemChange = (index: number, value: string) => {
-    const newInfoItems = [...generalSettings.infoItems];
-    newInfoItems[index] = value;
-    setGeneralSettings({ ...generalSettings, infoItems: newInfoItems });
+    // 1. Update pending translations
+    handleTranslationChange(`content.infoItem_${index}`, value);
+
+    // 2. If default language, sync to generalSettings for backward compatibility/fallback
+    if (editLanguage === generalSettings.defaultLanguage) {
+        const newInfoItems = [...generalSettings.infoItems];
+        newInfoItems[index] = value;
+        setGeneralSettings({ ...generalSettings, infoItems: newInfoItems });
+    }
   };
 
   const addInfoItem = () => {
@@ -1661,6 +1667,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       infoItems: newInfoItems,
       infoIcons: newInfoIcons
     });
+
+    // Also remove translation from pending to keep clean?
+    // It's tricky because indices shift. For now, we rely on the fact that
+    // when re-rendering, we look up by new index. Old keys might remain orphan in pending/DB
+    // until cleanup, but that's acceptable for now.
   };
 
   const removeInfoItem = (index: number) => {
@@ -2811,7 +2822,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 <div key={index} className="flex gap-3 items-center p-3 bg-white dark:bg-gray-700 rounded-lg border">
                                   <div className="flex-1">
                                     <DebouncedInput
-                                      value={item}
+                                      value={getTranslatedValue(`content.infoItem_${index}`, item)}
                                       onChange={(val) => handleInfoItemChange(index, val as string)}
                                       placeholder={`${t('settings.info.placeholder', 'Informationspunkt')} ${index + 1}`}
                                       className="border-0 bg-transparent focus:ring-1 focus:ring-blue-500"
