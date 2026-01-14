@@ -56,7 +56,7 @@ export function InlineText({ value, onChange, className, placeholder, multiline 
             onChange={(e) => setTempValue(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className={cn("w-full bg-background border rounded px-1 py-0.5 outline-none focus:ring-2 focus:ring-primary", className)}
+            className={cn("w-full bg-background border rounded px-1 py-0.5 outline-none focus:ring-2 focus:ring-primary font-inherit text-inherit", className)}
             rows={3}
         />
     ) : (
@@ -66,7 +66,7 @@ export function InlineText({ value, onChange, className, placeholder, multiline 
         onChange={(e) => setTempValue(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className={cn("bg-background border rounded px-1 py-0.5 outline-none focus:ring-2 focus:ring-primary", className)}
+        className={cn("bg-background border rounded px-1 py-0.5 outline-none focus:ring-2 focus:ring-primary font-inherit text-inherit", className)}
         placeholder={placeholder}
       />
     );
