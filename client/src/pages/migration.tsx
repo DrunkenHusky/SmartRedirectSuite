@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -71,6 +72,7 @@ const getBackgroundColor = (color: string) => {
 };
 
 export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
+  const { t } = useTranslation();
   const { settings, isLoading: settingsLoading, updateSetting, isEditMode } = useEditMode();
 
   const [currentUrl, setCurrentUrl] = useState("");
@@ -832,6 +834,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             <span className="ml-2 text-xs opacity-50">v{__APP_VERSION__}</span>
           </div>
           <div className="flex items-center space-x-2">
+            <LanguageSwitcher />
 
             <Button
               variant="ghost"

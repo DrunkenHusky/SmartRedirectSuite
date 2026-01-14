@@ -1,0 +1,20 @@
+
+> smartredirectsuite@2.14.0 dev
+> cross-env NODE_ENV=development tsx server/index.ts
+
+WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.
+WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.
+INFO: Alle existierenden Sitzungen wurden bereinigt.
+6:40:31 AM [express] serving on port 5000
+6:40:38 AM [express] GET /api/translations/en-US@posix 200 in 3ms :: {}
+6:40:38 AM [express] GET /api/translations/en 200 in 1ms :: {"nav.overview":"Overview","nav.rules":"Rules","nav.stats":"Statistics","nav.settings":"Settings","nav.danger"…
+6:40:38 AM [express] GET /api/translations/de 200 in 1ms :: {"nav.overview":"Übersicht","nav.rules":"Regeln","nav.stats":"Statistiken","nav.settings":"Einstellungen","nav…
+6:40:38 AM [express] GET /api/settings 200 in 2ms :: {"id":"fd19faba-b08a-4c83-b6eb-e101fba86607","headerTitle":"SmartRedirect Suite","headerIcon":"Info","headerBackgroun…
+6:41:27 AM [express] GET /api/translations/en-US@posix 200 in 2ms :: {}
+6:41:27 AM [express] GET /api/translations/en 200 in 1ms :: {"nav.overview":"Overview","nav.rules":"Rules","nav.stats":"Statistics","nav.settings":"Settings","nav.danger"…
+6:41:27 AM [express] GET /api/translations/de 200 in 0ms :: {"nav.overview":"Übersicht","nav.rules":"Regeln","nav.stats":"Statistiken","nav.settings":"Einstellungen","nav…
+6:41:27 AM [express] GET /api/settings 200 in 1ms :: {"id":"fd19faba-b08a-4c83-b6eb-e101fba86607","headerTitle":"SmartRedirect Suite","headerIcon":"Info","headerBackgroun…
+6:44:08 AM [vite] (client) hmr update /src/App.tsx, /src/index.css
+6:44:17 AM [vite] (client) hmr update /src/index.css
+6:44:40 AM [vite] (client) hmr update /src/index.css
+6:45:01 AM [vite] (client) hmr update /src/index.css

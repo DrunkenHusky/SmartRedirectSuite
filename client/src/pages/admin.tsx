@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,8 @@ import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
 import { ImportPreviewTable } from "@/components/admin/ImportPreviewTable";
 import { StatsTable } from "@/components/admin/StatsTable";
+import { TranslationsManager } from "@/pages/admin/translations";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -201,6 +204,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
 }
 
 export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProps) {
+  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Default to false until verified
   const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Start with checking auth on mount
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
@@ -1793,6 +1797,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               </h1>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2">
+              <LanguageSwitcher />
               <Button 
                 variant="outline" 
                 size="sm"
@@ -1827,22 +1832,26 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
             {/* Enhanced Tab Navigation */}
             <div className="w-full overflow-hidden">
-              <TabsList className="grid w-full grid-cols-4 h-auto">
+              <TabsList className="grid w-full grid-cols-5 h-auto">
                 <TabsTrigger value="general" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Allgemein</span>
+                  <span className="truncate leading-tight text-center">{t('nav.overview')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="rules" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Regeln</span>
+                  <span className="truncate leading-tight text-center">{t('nav.rules')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="stats" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Statistiken</span>
+                  <span className="truncate leading-tight text-center">{t('nav.stats')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="export" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Database className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">System & Daten</span>
+                  <span className="truncate leading-tight text-center">{t('nav.danger')}</span>
+                </TabsTrigger>
+                <TabsTrigger value="translations" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
+                  <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate leading-tight text-center">{t('nav.translations')}</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1873,6 +1882,40 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                     <div className="text-center py-8">Lade Einstellungen... (Auth: {String(isAuthenticated)}, Loading: {String(settingsLoading)})</div>
                   ) : (
                     <form onSubmit={handleSettingsSubmit} className="space-y-8">
+                      {/* 0. Language Settings */}
+                      <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm font-semibold">0</div>
+                          <div>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('settings.language.default')}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">Standardsprache für die Anwendung.</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              {t('settings.language.default')}
+                            </label>
+                            <Select
+                              value={generalSettings.defaultLanguage}
+                              onValueChange={(value) =>
+                                setGeneralSettings({ ...generalSettings, defaultLanguage: value })
+                              }
+                            >
+                              <SelectTrigger className="bg-white dark:bg-gray-700">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="de">Deutsch</SelectItem>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="fr">Français</SelectItem>
+                                <SelectItem value="it">Italiano</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* 1. Header Settings */}
                       <div className="space-y-4 sm:space-y-6">
                         <div className="flex items-center gap-3 border-b pb-3">
@@ -3829,6 +3872,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* Translations Tab */}
+            <TabsContent value="translations">
+              <TranslationsManager />
             </TabsContent>
           </Tabs>
         </div>

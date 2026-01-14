@@ -7,6 +7,7 @@ import {
   exportRequestSchema,
   importSettingsRequestSchema,
   insertGeneralSettingsSchema,
+  insertTranslationSchema,
   type InsertGeneralSettings,
   type InsertUrlRule,
 } from "@shared/schema";
@@ -1165,6 +1166,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.sendFile(path.resolve(filePath));
     } else {
       res.status(404).json({ error: "File not found" });
+    }
+  });
+
+  // Translations
+  app.get("/api/translations/:lang", async (req, res) => {
+    try {
+      const { lang } = req.params;
+      const translations = await storage.getTranslations(lang);
+      res.json(translations);
+    } catch (error) {
+      console.error("Translations error:", error);
+      res.status(500).json({ error: "Failed to fetch translations" });
+    }
+  });
+
+  app.get("/api/admin/translations", requireAuth, async (_req, res) => {
+    try {
+      const translations = await storage.getAllTranslations();
+      res.json(translations);
+    } catch (error) {
+      console.error("Translations error:", error);
+      res.status(500).json({ error: "Failed to fetch translations" });
+    }
+  });
+
+  app.post("/api/admin/translations", requireAuth, async (req, res) => {
+    try {
+      const translation = insertTranslationSchema.parse(req.body);
+      const result = await storage.setTranslation(translation);
+      res.json(result);
+    } catch (error) {
+      console.error("Translations update error:", error);
+      res.status(400).json({ error: "Invalid translation data" });
     }
   });
 

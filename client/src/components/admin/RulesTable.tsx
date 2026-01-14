@@ -1,5 +1,6 @@
 
 import React, { memo } from 'react';
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,6 +48,7 @@ const RulesTable = memo(({
   onEditRule,
   onDeleteRule
 }: RulesTableProps) => {
+  const { t } = useTranslation();
 
   const allSelected = rules.length > 0 && rules.every(rule => selectedRuleIds.includes(rule.id));
 
@@ -93,7 +95,7 @@ const RulesTable = memo(({
                 onClick={() => onSort('matcher')}
               >
                 <span className="flex items-center gap-1 truncate">
-                  URL-Pfad Matcher
+                  {t('rules.matcher')}
                   {sortConfig.by === 'matcher' && (
                     sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
@@ -112,7 +114,7 @@ const RulesTable = memo(({
                 onClick={() => onSort('targetUrl')}
               >
                 <span className="flex items-center gap-1 truncate">
-                  Ziel-URL
+                  {t('rules.target')}
                   {sortConfig.by === 'targetUrl' && (
                     sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
@@ -124,7 +126,7 @@ const RulesTable = memo(({
               className="text-left py-3 px-4 text-sm font-medium text-foreground relative"
               style={{ width: columnWidths.type }}
             >
-              Typ
+              {t('rules.type')}
               <ResizeHandle onMouseDown={(e) => handleResizeStart('type', e)} />
             </th>
             <th
@@ -159,7 +161,7 @@ const RulesTable = memo(({
                 onClick={() => onSort('createdAt')}
               >
                 <span className="flex items-center gap-1 truncate">
-                  Erstellt am
+                  {t('rules.created')}
                   {sortConfig.by === 'createdAt' && (
                     sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />
                   )}
@@ -171,7 +173,7 @@ const RulesTable = memo(({
               className="text-left py-3 px-4 text-sm font-medium text-foreground relative"
               style={{ width: columnWidths.actions }}
             >
-              Aktionen
+              {t('rules.actions')}
               <ResizeHandle onMouseDown={(e) => handleResizeStart('actions', e)} />
             </th>
           </tr>
@@ -242,8 +244,8 @@ const RulesTable = memo(({
                     variant="ghost"
                     size="sm"
                     onClick={() => onEditRule(rule)}
-                    title="Bearbeiten"
-                    aria-label="Regel bearbeiten"
+                    title={t('common.edit')}
+                    aria-label={t('common.edit')}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -253,27 +255,27 @@ const RulesTable = memo(({
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive"
-                        title="Löschen"
-                        aria-label="Regel löschen"
+                        title={t('common.delete')}
+                        aria-label={t('common.delete')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Regel löschen</AlertDialogTitle>
+                        <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
                         <AlertDialogDescription>
                           Sind Sie sicher, dass Sie diese Regel löschen möchten?
                           Diese Aktion kann nicht rückgängig gemacht werden.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => onDeleteRule(rule.id)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Löschen
+                          {t('common.delete')}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
