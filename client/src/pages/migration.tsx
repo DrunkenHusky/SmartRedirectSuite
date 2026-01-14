@@ -35,6 +35,7 @@ import { useEditMode } from "@/context/EditModeContext";
 import { InlineText } from "@/components/inline/InlineText";
 import { InlineIcon } from "@/components/inline/InlineIcon";
 import { InlineColor } from "@/components/inline/InlineColor";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface MigrationPageProps {
   onAdminAccess: () => void;
