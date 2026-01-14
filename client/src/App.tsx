@@ -8,14 +8,41 @@ import MigrationPage from "@/pages/migration";
 import { DocumentHeadUpdater } from "@/components/DocumentHeadUpdater";
 import { EditModeProvider, useEditMode } from "@/context/EditModeContext";
 import { AdminToolbar } from "@/components/AdminToolbar";
+import "./i18n"; // Initialize i18n
+import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 
 // Lazy load the AdminPage component to reduce initial bundle size
 const AdminPage = lazy(() => import("@/pages/admin"));
 
 function AppContent() {
+  const { i18n } = useTranslation();
   const [currentView, setCurrentView] = useState<'migration' | 'admin'>('migration');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { enableEditMode } = useEditMode();
+
+  // Fetch settings to get default language
+  const { data: settings } = useQuery({
+    queryKey: ['/api/settings'],
+  });
+
+  // Set default language from settings ONLY if detection failed or no language is set
+  // We trust i18next-browser-languagedetector to have done its job if i18n.language is set
+  useEffect(() => {
+    if (settings?.defaultLanguage) {
+      // If i18n hasn't detected a language (rare) or if the detected language is not supported/loaded
+      // we might want to ensure a fallback. However, i18next usually handles fallbackLng.
+      // We only intervene if we want to enforce the server-side "default" over the library's fallback.
+
+      const hasLanguageSet = !!i18n.language;
+      const hasLocalPreference = !!localStorage.getItem('i18nextLng');
+
+      // If no language is detected/set, or if no local preference exists and the current language is just a fallback 'dev' or similar
+      if (!hasLanguageSet || (!hasLocalPreference && !['de', 'en', 'fr', 'it'].some(l => i18n.language.startsWith(l)))) {
+         i18n.changeLanguage(settings.defaultLanguage);
+      }
+    }
+  }, [settings?.defaultLanguage, i18n, i18n.language]);
 
   // Check if user wants to be in admin view on app load
   useEffect(() => {

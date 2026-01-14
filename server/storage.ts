@@ -9,6 +9,8 @@ import type {
   GeneralSettings,
   InsertGeneralSettings,
   ImportUrlRule,
+  Translation,
+  InsertTranslation,
 } from "@shared/schema";
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
@@ -30,8 +32,15 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const RULES_FILE = path.join(DATA_DIR, "rules.json");
 const TRACKING_FILE = path.join(DATA_DIR, "tracking.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+const TRANSLATIONS_FILE = path.join(DATA_DIR, "translations.json");
 
 export interface IStorage {
+  // Translations
+  getTranslations(lang: string): Promise<Record<string, string>>;
+  getAllTranslations(): Promise<Translation[]>;
+  setTranslation(translation: InsertTranslation): Promise<Translation>;
+  seedTranslations(): Promise<void>;
+
   // URL-Regeln
   getUrlRules(): Promise<UrlRule[]>;
   getProcessedUrlRules(config: RuleMatchingConfig): Promise<ProcessedUrlRule[]>;
@@ -149,9 +158,11 @@ export class FileStorage implements IStorage {
   private lastCacheConfig: RuleMatchingConfig | null = null;
   private settingsCache: GeneralSettings | null = null;
   private trackingCache: UrlTracking[] | null = null;
+  private translationsCache: Translation[] | null = null;
 
   constructor() {
     this.ensureDataDirectory();
+    this.seedTranslations();
   }
 
   private async ensureDataDirectory() {
@@ -322,6 +333,180 @@ export class FileStorage implements IStorage {
   async getCleanUrlRules(): Promise<UrlRule[]> {
     const rules = await this.ensureRulesLoaded();
     return this.cleanRulesForSave(rules);
+  }
+
+  // Translation Implementation
+  private async ensureTranslationsLoaded(): Promise<Translation[]> {
+    if (this.translationsCache) return this.translationsCache;
+    const data = await this.readJsonFile<Translation>(TRANSLATIONS_FILE, []);
+    this.translationsCache = data;
+    return data;
+  }
+
+  async getTranslations(lang: string): Promise<Record<string, string>> {
+    const all = await this.ensureTranslationsLoaded();
+    const map: Record<string, string> = {};
+    all.filter(t => t.lang === lang).forEach(t => {
+      map[t.key] = t.value;
+    });
+    return map;
+  }
+
+  async getAllTranslations(): Promise<Translation[]> {
+    return this.ensureTranslationsLoaded();
+  }
+
+  async setTranslation(translation: InsertTranslation): Promise<Translation> {
+    const all = await this.ensureTranslationsLoaded();
+    const index = all.findIndex(t => t.key === translation.key && t.lang === translation.lang);
+
+    if (index !== -1) {
+      all[index] = translation;
+    } else {
+      all.push(translation);
+    }
+
+    await this.writeJsonFile(TRANSLATIONS_FILE, all);
+    this.translationsCache = all;
+    return translation;
+  }
+
+  async seedTranslations(): Promise<void> {
+    const all = await this.ensureTranslationsLoaded();
+    if (all.length > 0) return;
+
+    // Initial Seed
+    const seed: Translation[] = [
+      // Navigation & Layout
+      { key: "nav.overview", lang: "de", value: "Übersicht" },
+      { key: "nav.overview", lang: "en", value: "Overview" },
+      { key: "nav.overview", lang: "fr", value: "Aperçu" },
+      { key: "nav.overview", lang: "it", value: "Panoramica" },
+
+      { key: "nav.rules", lang: "de", value: "Regeln" },
+      { key: "nav.rules", lang: "en", value: "Rules" },
+      { key: "nav.rules", lang: "fr", value: "Règles" },
+      { key: "nav.rules", lang: "it", value: "Regole" },
+
+      { key: "nav.stats", lang: "de", value: "Statistiken" },
+      { key: "nav.stats", lang: "en", value: "Statistics" },
+      { key: "nav.stats", lang: "fr", value: "Statistiques" },
+      { key: "nav.stats", lang: "it", value: "Statistiche" },
+
+      { key: "nav.settings", lang: "de", value: "Einstellungen" },
+      { key: "nav.settings", lang: "en", value: "Settings" },
+      { key: "nav.settings", lang: "fr", value: "Paramètres" },
+      { key: "nav.settings", lang: "it", value: "Impostazioni" },
+
+      { key: "nav.danger", lang: "de", value: "Gefahrenzone" },
+      { key: "nav.danger", lang: "en", value: "Danger Zone" },
+      { key: "nav.danger", lang: "fr", value: "Zone dangereuse" },
+      { key: "nav.danger", lang: "it", value: "Zona pericolosa" },
+
+      { key: "nav.translations", lang: "de", value: "Übersetzungen" },
+      { key: "nav.translations", lang: "en", value: "Translations" },
+      { key: "nav.translations", lang: "fr", value: "Traductions" },
+      { key: "nav.translations", lang: "it", value: "Traduzioni" },
+
+      // Common
+      { key: "common.save", lang: "de", value: "Speichern" },
+      { key: "common.save", lang: "en", value: "Save" },
+      { key: "common.save", lang: "fr", value: "Enregistrer" },
+      { key: "common.save", lang: "it", value: "Salva" },
+
+      { key: "common.cancel", lang: "de", value: "Abbrechen" },
+      { key: "common.cancel", lang: "en", value: "Cancel" },
+      { key: "common.cancel", lang: "fr", value: "Annuler" },
+      { key: "common.cancel", lang: "it", value: "Annulla" },
+
+      { key: "common.delete", lang: "de", value: "Löschen" },
+      { key: "common.delete", lang: "en", value: "Delete" },
+      { key: "common.delete", lang: "fr", value: "Supprimer" },
+      { key: "common.delete", lang: "it", value: "Elimina" },
+
+      { key: "common.edit", lang: "de", value: "Bearbeiten" },
+      { key: "common.edit", lang: "en", value: "Edit" },
+      { key: "common.edit", lang: "fr", value: "Modifier" },
+      { key: "common.edit", lang: "it", value: "Modifica" },
+
+      // Settings
+      { key: "settings.language.default", lang: "de", value: "Hauptsprache" },
+      { key: "settings.language.default", lang: "en", value: "Default Language" },
+      { key: "settings.language.default", lang: "fr", value: "Langue par défaut" },
+      { key: "settings.language.default", lang: "it", value: "Lingua predefinita" },
+
+      { key: "settings.title", lang: "de", value: "Allgemeine Einstellungen" },
+      { key: "settings.title", lang: "en", value: "General Settings" },
+      { key: "settings.title", lang: "fr", value: "Paramètres généraux" },
+      { key: "settings.title", lang: "it", value: "Impostazioni generali" },
+
+      // Dashboard
+      { key: "dashboard.total_requests", lang: "de", value: "Aufrufe Gesamt" },
+      { key: "dashboard.total_requests", lang: "en", value: "Total Requests" },
+      { key: "dashboard.total_requests", lang: "fr", value: "Total des demandes" },
+      { key: "dashboard.total_requests", lang: "it", value: "Totale richieste" },
+
+      { key: "dashboard.today", lang: "de", value: "Heute" },
+      { key: "dashboard.today", lang: "en", value: "Today" },
+      { key: "dashboard.today", lang: "fr", value: "Aujourd'hui" },
+      { key: "dashboard.today", lang: "it", value: "Oggi" },
+
+      // Editor / Migration
+      { key: "editor.mode_active", lang: "de", value: "Editier-Modus" },
+      { key: "editor.mode_active", lang: "en", value: "Edit Mode" },
+      { key: "editor.mode_active", lang: "fr", value: "Mode édition" },
+      { key: "editor.mode_active", lang: "it", value: "Modalità modifica" },
+
+      // Rules Table
+      { key: "rules.matcher", lang: "de", value: "Matcher" },
+      { key: "rules.matcher", lang: "en", value: "Matcher" },
+      { key: "rules.matcher", lang: "fr", value: "Matcher" },
+      { key: "rules.matcher", lang: "it", value: "Corrispondenza" },
+
+      { key: "rules.target", lang: "de", value: "Ziel" },
+      { key: "rules.target", lang: "en", value: "Target" },
+      { key: "rules.target", lang: "fr", value: "Cible" },
+      { key: "rules.target", lang: "it", value: "Destinazione" },
+
+      { key: "rules.type", lang: "de", value: "Typ" },
+      { key: "rules.type", lang: "en", value: "Type" },
+      { key: "rules.type", lang: "fr", value: "Type" },
+      { key: "rules.type", lang: "it", value: "Tipo" },
+
+      { key: "rules.created", lang: "de", value: "Erstellt" },
+      { key: "rules.created", lang: "en", value: "Created" },
+      { key: "rules.created", lang: "fr", value: "Créé" },
+      { key: "rules.created", lang: "it", value: "Creato" },
+
+      { key: "rules.actions", lang: "de", value: "Aktionen" },
+      { key: "rules.actions", lang: "en", value: "Actions" },
+      { key: "rules.actions", lang: "fr", value: "Actions" },
+      { key: "rules.actions", lang: "it", value: "Azioni" },
+
+      // Stats Table
+      { key: "stats.old_url", lang: "de", value: "Alte URL" },
+      { key: "stats.old_url", lang: "en", value: "Old URL" },
+      { key: "stats.old_url", lang: "fr", value: "Ancienne URL" },
+      { key: "stats.old_url", lang: "it", value: "Vecchia URL" },
+
+      { key: "stats.new_url", lang: "de", value: "Neue URL" },
+      { key: "stats.new_url", lang: "en", value: "New URL" },
+      { key: "stats.new_url", lang: "fr", value: "Nouvelle URL" },
+      { key: "stats.new_url", lang: "it", value: "Nuova URL" },
+
+      { key: "stats.timestamp", lang: "de", value: "Zeitstempel" },
+      { key: "stats.timestamp", lang: "en", value: "Timestamp" },
+      { key: "stats.timestamp", lang: "fr", value: "Horodatage" },
+      { key: "stats.timestamp", lang: "it", value: "Data e ora" },
+
+      { key: "stats.quality", lang: "de", value: "Qualität" },
+      { key: "stats.quality", lang: "en", value: "Quality" },
+      { key: "stats.quality", lang: "fr", value: "Qualité" },
+      { key: "stats.quality", lang: "it", value: "Qualità" },
+    ];
+
+    await this.writeJsonFile(TRANSLATIONS_FILE, seed);
+    this.translationsCache = seed;
   }
 
   // URL-Regeln implementierung
@@ -1232,6 +1417,7 @@ export class FileStorage implements IStorage {
         feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
         feedbackButtonYes: "Ja, OK",
         feedbackButtonNo: "Nein",
+        defaultLanguage: "de",
       };
 
       // Save default settings directly to avoid infinite loop

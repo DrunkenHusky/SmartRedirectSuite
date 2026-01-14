@@ -153,8 +153,18 @@ export const importRulesRequestSchema = z.object({
 /**
  * Enhanced General Settings Schema with comprehensive validation
  */
+export const translationSchema = z.object({
+  key: z.string().min(1),
+  lang: z.string().length(2), // 'de', 'en', 'fr', 'it'
+  value: z.string(),
+});
+
+export const insertTranslationSchema = translationSchema;
+
 export const generalSettingsSchema = z.object({
   id: z.string().uuid("Invalid settings ID"),
+
+  defaultLanguage: z.string().length(2).default("de"),
   
   // Header section with validation
   headerTitle: z.string()
@@ -421,3 +431,5 @@ export type ImportRulesRequest = z.infer<typeof importRulesRequestSchema>;
 export type ImportSettingsRequest = z.infer<typeof importSettingsRequestSchema>;
 export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
 export type InsertGeneralSettings = z.infer<typeof insertGeneralSettingsSchema>;
+export type Translation = z.infer<typeof translationSchema>;
+export type InsertTranslation = z.infer<typeof insertTranslationSchema>;

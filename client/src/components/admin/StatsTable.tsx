@@ -1,5 +1,6 @@
 
 import React, { memo } from 'react';
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +35,7 @@ const StatsTable = memo(({
   formatTimestamp,
   showReferrer = true
 }: StatsTableProps) => {
+  const { t } = useTranslation();
 
   const { columnWidths, handleResizeStart } = useResizableColumns({
     initialWidths: {
@@ -67,7 +69,7 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-                  Zeitstempel
+                  {t('stats.timestamp')}
                   {getSortIcon('timestamp')}
                 </span>
               </Button>
@@ -81,7 +83,7 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-                  Alte URL
+                  {t('stats.old_url')}
                   {getSortIcon('oldUrl')}
                 </span>
               </Button>
@@ -95,7 +97,7 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-                  Neue URL
+                  {t('stats.new_url')}
                   {getSortIcon('newUrl')}
                 </span>
               </Button>
@@ -109,7 +111,7 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-                  Pfad
+                  Path
                   {getSortIcon('path')}
                 </span>
               </Button>
@@ -132,7 +134,7 @@ const StatsTable = memo(({
             </th>
             )}
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.rule }}>
-              Regel
+              {t('nav.rules')}
               <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
             </th>
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.matchQuality }}>
@@ -143,7 +145,7 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-                  Qualität
+                  {t('stats.quality')}
                   {getSortIcon('matchQuality')}
                 </span>
               </Button>
