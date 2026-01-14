@@ -410,7 +410,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     } catch (error) {
       toast({
         title: t('migration.copy_fail_title', "Kopieren fehlgeschlagen"),
-        description: t('migration.copy_fail', "Bitte kopieren Sie die URL manuell."),
+        description: t('migration.copy_fail_desc', "Bitte kopieren Sie die URL manuell."),
         variant: "destructive",
       });
     }
@@ -468,7 +468,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const addInfoItem = () => {
     if (!settings) return;
     const newInfoItems = [...(settings.infoItems || [])];
-    newInfoItems.push("New Info Item");
+    newInfoItems.push(t('migration.new_info_item', "New Info Item"));
     const newInfoIcons = [...(settings.infoIcons || [])];
     newInfoIcons.push("Info" as const);
     updateSetting("infoItems", newInfoItems);
@@ -491,7 +491,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               {settings?.headerLogoUrl ? (
                 <img 
                   src={settings.headerLogoUrl}
-                  alt="Logo" 
+                  alt={t('migration.logo_alt', "Logo")}
                   className="h-8 w-auto object-contain"
                   onError={(e) => {
                     // Fallback to icon if logo fails to load
