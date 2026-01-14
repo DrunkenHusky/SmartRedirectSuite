@@ -464,8 +464,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
   const addInfoItem = () => {
     if (!settings) return;
-    const newInfoItems = [...(settings.infoItems || []), "New Info Item"];
-    const newInfoIcons = [...(settings.infoIcons || []), "Info" as const];
+    const newInfoItems = [...(settings.infoItems || [])];
+    newInfoItems.push("New Info Item");
+    const newInfoIcons = [...(settings.infoIcons || [])];
+    newInfoIcons.push("Info" as const);
     updateSetting("infoItems", newInfoItems);
     updateSetting("infoIcons", newInfoIcons);
   };
@@ -787,7 +789,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 w-6 p-0 text-destructive opacity-0 group-hover/item:opacity-100"
+                                    className="h-6 w-6 p-0 text-destructive opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100"
                                     onClick={() => {
                                         const newItems = [...settings.infoItems];
                                         newItems.splice(index, 1);

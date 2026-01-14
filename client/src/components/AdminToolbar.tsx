@@ -5,7 +5,7 @@ import { Save, X, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminToolbar() {
-  const { isEditMode, saveChanges, discardChanges, hasUnsavedChanges, isLoading } = useEditMode();
+  const { isEditMode, saveChanges, discardChanges, hasUnsavedChanges, isLoading, disableEditMode } = useEditMode();
   const [isSaving, setIsSaving] = React.useState(false);
 
   if (!isEditMode) return null;
