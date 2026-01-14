@@ -229,6 +229,11 @@ export const generalSettingsSchema = z.object({
     .min(1, "Text für Such-Weiterleitung darf nicht leer sein")
     .max(500, "Text für Such-Weiterleitung ist zu lang")
     .default("Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet."),
+
+  smartSearchRegex: z.string()
+    .max(500, "Regex ist zu lang")
+    .optional()
+    .nullable(),
     
   // Button texts with validation
   copyButtonText: z.string()

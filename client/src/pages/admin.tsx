@@ -670,6 +670,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+        smartSearchRegex: settingsData.smartSearchRegex || "",
         enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
         feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
         feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
@@ -2342,19 +2343,47 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                           {/* Field 3: Search Base URL (Conditional) */}
                           {generalSettings.defaultRedirectMode === 'search' && (
-                              <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Such-Basis-URL <span className="text-red-500">*</span>
-                                </label>
-                                <DebouncedInput
-                                  value={generalSettings.defaultSearchUrl || ''}
-                                  onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
-                                  placeholder="https://newapp.com/?q="
-                                  className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Beispiel: https://newapp.com/?q=
-                                </p>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Such-Basis-URL <span className="text-red-500">*</span>
+                                  </label>
+                                  <DebouncedInput
+                                    value={generalSettings.defaultSearchUrl || ''}
+                                    onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
+                                    placeholder="https://newapp.com/?q="
+                                    className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Beispiel: https://newapp.com/?q=
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Extraktions-Regex (Optional)
+                                  </label>
+                                  <div className="flex gap-2">
+                                    <DebouncedInput
+                                      value={generalSettings.smartSearchRegex || ''}
+                                      onChange={(value) => setGeneralSettings({ ...generalSettings, smartSearchRegex: value as string })}
+                                      placeholder="Standard: Letztes Pfadsegment"
+                                      className="bg-white dark:bg-gray-700"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => setGeneralSettings({ ...generalSettings, smartSearchRegex: '[?&]file=([^&]+)' })}
+                                      title="Fügt einen Regex ein, der den Wert des Parameters 'file' extrahiert"
+                                    >
+                                      Beispiel-Regex
+                                    </Button>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Definieren Sie einen Regex mit einer Capture Group (), um den Suchbegriff aus der URL zu extrahieren.
+                                    Wenn nichts gefunden wird, wird als Fallback das letzte Pfadsegment verwendet.
+                                  </p>
+                                </div>
                               </div>
                           )}
 
