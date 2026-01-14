@@ -6,13 +6,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import MigrationPage from "@/pages/migration";
 import { DocumentHeadUpdater } from "@/components/DocumentHeadUpdater";
+import { EditModeProvider, useEditMode } from "@/context/EditModeContext";
+import { AdminToolbar } from "@/components/AdminToolbar";
 
 // Lazy load the AdminPage component to reduce initial bundle size
 const AdminPage = lazy(() => import("@/pages/admin"));
 
-function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<'migration' | 'admin'>('migration');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { enableEditMode } = useEditMode();
 
   // Check if user wants to be in admin view on app load
   useEffect(() => {
@@ -65,6 +68,18 @@ function App() {
     setCurrentView('migration');
   };
 
+  const handleOpenVisualEditor = () => {
+    // Clean up URL to prevent auto-redirect back to admin
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('admin')) {
+      url.searchParams.delete('admin');
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    handleAdminClose(); // Switch to migration view
+    enableEditMode(); // Activate edit mode
+  };
+
   // Show loading while checking authentication
   if (isCheckingAuth) {
     return (
@@ -78,14 +93,17 @@ function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <DocumentHeadUpdater />
       <TooltipProvider>
         <Toaster />
         <Switch>
           <Route path="*">
             {currentView === 'migration' ? (
-              <MigrationPage onAdminAccess={handleAdminAccess} />
+              <>
+                <MigrationPage onAdminAccess={handleAdminAccess} />
+                <AdminToolbar />
+              </>
             ) : (
               <Suspense fallback={
                 <div className="min-h-screen bg-background flex items-center justify-center">
@@ -95,12 +113,25 @@ function App() {
                   </div>
                 </div>
               }>
-                <AdminPage onClose={handleAdminClose} />
+                <AdminPage
+                  onClose={handleAdminClose}
+                  onOpenVisualEditor={handleOpenVisualEditor}
+                />
               </Suspense>
             )}
           </Route>
         </Switch>
       </TooltipProvider>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <EditModeProvider>
+        <AppContent />
+      </EditModeProvider>
     </QueryClientProvider>
   );
 }

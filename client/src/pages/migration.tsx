@@ -17,20 +17,23 @@ import {
   Bookmark,
   Share2,
   Clock,
-  BarChart3,
   Settings,
   Star,
   Heart,
   Bell,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Plus
 } from "lucide-react";
 import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordModal } from "@/components/ui/password-modal";
 import { QualityGauge } from "@/components/ui/quality-gauge";
-import { useQuery } from "@tanstack/react-query";
-import type { UrlRule, GeneralSettings } from "@shared/schema";
+import type { UrlRule } from "@shared/schema";
+import { useEditMode } from "@/context/EditModeContext";
+import { InlineText } from "@/components/inline/InlineText";
+import { InlineIcon } from "@/components/inline/InlineIcon";
+import { InlineColor } from "@/components/inline/InlineColor";
 
 interface MigrationPageProps {
   onAdminAccess: () => void;
@@ -68,6 +71,8 @@ const getBackgroundColor = (color: string) => {
 };
 
 export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
+  const { settings, isLoading: settingsLoading, updateSetting, isEditMode } = useEditMode();
+
   const [currentUrl, setCurrentUrl] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [matchingRule, setMatchingRule] = useState<UrlRule | null>(null);
@@ -134,16 +139,11 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     }
   };
 
-  // Fetch general settings for customizable texts
-  const { data: settings, isLoading: settingsLoading } = useQuery<GeneralSettings>({
-    queryKey: ["/api/settings"],
-  });
-
   useEffect(() => {
-    if (settings) {
+    if (settings && !isEditMode) {
       setShowMainDialog(settings.popupMode === 'active');
     }
-  }, [settings]);
+  }, [settings, isEditMode]);
 
   useEffect(() => {
     const initializePage = async () => {
@@ -162,13 +162,20 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       const urlParams = new URLSearchParams(window.location.search);
       const isAdminAccess = urlParams.get('admin') === 'true';
       
-      if (isAdminAccess) {
+      if (isAdminAccess && !isEditMode) {
         // Admin access requested - trigger login process directly
         setIsLoading(false);
         handleAdminAccess();
         return;
       }
       
+      // Don't auto-redirect if in Edit Mode
+      if (isEditMode) {
+          setNewUrl(generateNewUrl(url, settings.defaultNewDomain));
+          setIsLoading(false);
+          return;
+      }
+
       // Normal flow - check for auto-redirect and generate URL
       try {
         // Check for matching URL rules first
@@ -369,7 +376,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     };
 
     initializePage();
-  }, [settings, settingsLoading]); // Re-run when settings are loaded
+  }, [settings, settingsLoading, isEditMode]); // Re-run when settings are loaded or edit mode changes
 
   // Update URLs when settings are loaded (but not when matchingRule changes to avoid loops)
   useEffect(() => {
@@ -441,11 +448,39 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     onAdminAccess();
   };
 
+  const handleInfoItemChange = (index: number, value: string) => {
+    if (!settings) return;
+    const newInfoItems = [...settings.infoItems];
+    newInfoItems[index] = value;
+    updateSetting("infoItems", newInfoItems);
+  };
+
+  const handleInfoIconChange = (index: number, value: string) => {
+    if (!settings) return;
+    const newInfoIcons = [...settings.infoIcons];
+    newInfoIcons[index] = value as any;
+    updateSetting("infoIcons", newInfoIcons);
+  };
+
+  const addInfoItem = () => {
+    if (!settings) return;
+    const newInfoItems = [...settings.infoItems, "New Info Item"];
+    const newInfoIcons = [...settings.infoIcons, "Info" as const];
+    updateSetting("infoItems", newInfoItems);
+    updateSetting("infoIcons", newInfoIcons);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="bg-surface shadow-sm border-b border-border" style={{ backgroundColor: settings?.headerBackgroundColor || 'white' }}>
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <header className="bg-surface shadow-sm border-b border-border transition-colors duration-200" style={{ backgroundColor: settings?.headerBackgroundColor || 'white' }}>
+        <div className="max-w-4xl mx-auto px-4 py-4 relative group/header">
+          {isEditMode && <div className="absolute top-2 right-2 z-10">
+              <InlineColor
+                  value={settings?.headerBackgroundColor || '#ffffff'}
+                  onChange={(val) => updateSetting('headerBackgroundColor', val)}
+              />
+          </div>}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {settings?.headerLogoUrl ? (
@@ -458,14 +493,18 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-              ) : settings?.headerIcon && settings.headerIcon !== "none" ? (
-                (() => {
-                  const IconComponent = getIconComponent(settings.headerIcon);
-                  return <IconComponent className="text-primary text-2xl" />;
-                })()
-              ) : null}
+              ) : (
+                <InlineIcon
+                    value={settings?.headerIcon || "none"}
+                    onChange={(val) => updateSetting('headerIcon', val as any)}
+                    className="text-primary text-2xl"
+                />
+              )}
               <h1 className="text-xl font-semibold text-foreground">
-                {settings?.headerTitle || "URL Migration Tool"}
+                <InlineText
+                    value={settings?.headerTitle || "URL Migration Tool"}
+                    onChange={(val) => updateSetting('headerTitle', val)}
+                />
               </h1>
             </div>
             <div></div>
@@ -493,34 +532,66 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
           {!isLoading && (
             <div className="space-y-6">
-              {settings?.popupMode === 'inline' && (
-                <div className={`${getBackgroundColor(settings?.alertBackgroundColor || 'yellow')} rounded-lg p-4 flex items-start space-x-3`}>
-                  {(() => {
-                    const IconComponent = getIconComponent(settings?.alertIcon || 'AlertTriangle');
-                    return <IconComponent className="h-5 w-5 mt-0.5" />;
-                  })()}
-                  <div>
-                    <h3 className="font-semibold">{settings?.mainTitle || "Veralteter Link erkannt"}</h3>
-                    <p className="text-sm mt-1">{settings?.mainDescription || "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten."}</p>
+              {(settings?.popupMode === 'inline' || isEditMode) && (
+                <div className={`${getBackgroundColor(settings?.alertBackgroundColor || 'yellow')} rounded-lg p-4 flex items-start space-x-3 relative group/alert`}>
+                    {isEditMode && <div className="absolute top-2 right-2 z-10">
+                      <div className="flex gap-1">
+                          <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs px-2 bg-background/50 hover:bg-background"
+                              onClick={() => updateSetting('popupMode', settings?.popupMode === 'inline' ? 'active' : 'inline')}
+                          >
+                              {settings?.popupMode === 'inline' ? 'Switch to Popup' : 'Switch to Inline'}
+                          </Button>
+                      </div>
+                    </div>}
+                  <InlineIcon
+                    value={settings?.alertIcon || 'AlertTriangle'}
+                    onChange={(val) => updateSetting('alertIcon', val as any)}
+                    className="h-5 w-5 mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-semibold">
+                        <InlineText
+                            value={settings?.mainTitle || "Veralteter Link erkannt"}
+                            onChange={(val) => updateSetting('mainTitle', val)}
+                        />
+                    </h3>
+                    <p className="text-sm mt-1">
+                        <InlineText
+                            value={settings?.mainDescription || ""}
+                            onChange={(val) => updateSetting('mainDescription', val)}
+                            multiline
+                        />
+                    </p>
                   </div>
                 </div>
               )}
 
               {/* URL Comparison Section - Shown on main page when requested */}
               {showUrlComparison && (
-                <Card className="animate-fade-in border-green-200 bg-green-50" style={{ backgroundColor: settings?.urlComparisonBackgroundColor || 'white' }}>
+                <Card className="animate-fade-in border-green-200 bg-green-50 relative group/comparison" style={{ backgroundColor: settings?.urlComparisonBackgroundColor || 'white' }}>
+                    {isEditMode && <div className="absolute top-2 right-2 z-10">
+                        <InlineColor
+                            value={settings?.urlComparisonBackgroundColor || '#ffffff'}
+                            onChange={(val) => updateSetting('urlComparisonBackgroundColor', val)}
+                        />
+                    </div>}
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center space-x-2 text-green-800">
-                        {settings?.urlComparisonIcon && settings.urlComparisonIcon !== "none" ? (
-                          (() => {
-                            const IconComponent = getIconComponent(settings.urlComparisonIcon);
-                            return <IconComponent className="h-5 w-5" />;
-                          })()
-                        ) : (
-                          <ArrowRightLeft className="h-5 w-5" />
-                        )}
-                        <span>{settings?.urlComparisonTitle || "URL-Vergleich"}</span>
+                        <InlineIcon
+                            value={settings?.urlComparisonIcon || "ArrowRightLeft"}
+                            onChange={(val) => updateSetting('urlComparisonIcon', val as any)}
+                            className="h-5 w-5"
+                        />
+                        <span>
+                            <InlineText
+                                value={settings?.urlComparisonTitle || "URL-Vergleich"}
+                                onChange={(val) => updateSetting('urlComparisonTitle', val)}
+                            />
+                        </span>
                       </CardTitle>
 
                       {/* Quality Gauge in Top Right */}
@@ -534,7 +605,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <CheckCircle className="inline text-green-500 mr-2" />
-                        {settings?.newUrlLabel || "Neue URL (verwenden Sie diese)"}
+                        <InlineText
+                            value={settings?.newUrlLabel || "Neue URL (verwenden Sie diese)"}
+                            onChange={(val) => updateSetting('newUrlLabel', val)}
+                        />
                       </label>
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
@@ -575,22 +649,37 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         className="flex items-center space-x-2 transition-all duration-200"
                         aria-label={isCopied ? "URL kopiert" : "Neue URL in Zwischenablage kopieren"}
                         variant={isCopied ? "outline" : "default"}
+                        disabled={isEditMode}
                       >
                         {isCopied ? (
                           <Check className="h-4 w-4" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
-                        <span>{isCopied ? "Kopiert!" : (settings?.copyButtonText || "URL kopieren")}</span>
+                        <span>
+                            {isCopied ? "Kopiert!" : (
+                                <InlineText
+                                    value={settings?.copyButtonText || "URL kopieren"}
+                                    onChange={(val) => updateSetting('copyButtonText', val)}
+                                    className={isEditMode ? "pointer-events-none" : ""}
+                                />
+                            )}
+                        </span>
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={handleOpenNewTab}
                         className="flex items-center space-x-2"
                         aria-label="Neue URL in neuem Tab öffnen"
+                        disabled={isEditMode}
                       >
                         <ExternalLink className="h-4 w-4" />
-                        <span>{settings?.openButtonText || "In neuem Tab öffnen"}</span>
+                        <span>
+                            <InlineText
+                                value={settings?.openButtonText || "In neuem Tab öffnen"}
+                                onChange={(val) => updateSetting('openButtonText', val)}
+                            />
+                        </span>
                       </Button>
                     </div>
 
@@ -607,16 +696,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     {/* Special hints for this URL - always shown below buttons */}
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center space-x-2 mb-2">
-                        {settings?.specialHintsIcon && settings.specialHintsIcon !== "none" ? (
-                          (() => {
-                            const IconComponent = getIconComponent(settings.specialHintsIcon);
-                            return <IconComponent className="h-4 w-4 text-blue-600" />;
-                          })()
-                        ) : (
-                          <Info className="h-4 w-4 text-blue-600" />
-                        )}
+                        <InlineIcon
+                            value={settings?.specialHintsIcon || "Info"}
+                            onChange={(val) => updateSetting('specialHintsIcon', val as any)}
+                            className="h-4 w-4 text-blue-600"
+                        />
                         <span className="text-sm font-bold text-blue-800">
-                          {settings?.specialHintsTitle || "Spezielle Hinweise für diese URL"}
+                          <InlineText
+                              value={settings?.specialHintsTitle || "Spezielle Hinweise für diese URL"}
+                              onChange={(val) => updateSetting('specialHintsTitle', val)}
+                          />
                         </span>
                       </div>
                       <div className="text-sm text-blue-700 space-y-2">
@@ -625,7 +714,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             <p key={index}>{line}</p>
                           ))
                         ) : (
-                          <p>{settings?.specialHintsDescription || "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL."}</p>
+                          <p>
+                              <InlineText
+                                  value={settings?.specialHintsDescription || "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL."}
+                                  onChange={(val) => updateSetting('specialHintsDescription', val)}
+                                  multiline
+                              />
+                          </p>
                         )}
                       </div>
                     </div>
@@ -634,7 +729,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <XCircle className="inline text-red-500 mr-2" />
-                        {settings?.oldUrlLabel || "Alte URL (veraltet)"}
+                        <InlineText
+                            value={settings?.oldUrlLabel || "Alte URL (veraltet)"}
+                            onChange={(val) => updateSetting('oldUrlLabel', val)}
+                        />
                       </label>
                       <div className="bg-red-50 border border-red-200 rounded-md p-3">
                         <code className="text-sm text-red-800 break-all">
@@ -646,36 +744,68 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 </Card>
               )}
 
-              {/* Additional Information Card - Only show if there are info items */}
-              {settings?.infoItems && settings.infoItems.some(item => item && item.trim()) && (
-                <Card className="animate-fade-in">
+              {/* Additional Information Card - Only show if there are info items or in edit mode */}
+              {(isEditMode || (settings?.infoItems && settings.infoItems.some(item => item && item.trim()))) && (
+                <Card className="animate-fade-in group/info relative">
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
-                      {settings?.infoTitleIcon && settings.infoTitleIcon !== "none" ? (
-                        (() => {
-                          const IconComponent = getIconComponent(settings.infoTitleIcon);
-                          return <IconComponent className="h-5 w-5 text-primary" />;
-                        })()
-                      ) : (
-                        <Info className="h-5 w-5 text-primary" />
-                      )}
-                      <span>{settings?.infoTitle || "Wichtige Hinweise"}</span>
+                        <InlineIcon
+                            value={settings?.infoTitleIcon || "Info"}
+                            onChange={(val) => updateSetting('infoTitleIcon', val as any)}
+                            className="h-5 w-5 text-primary"
+                        />
+                        <span>
+                            <InlineText
+                                value={settings?.infoTitle || "Wichtige Hinweise"}
+                                onChange={(val) => updateSetting('infoTitle', val)}
+                            />
+                        </span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-3 text-muted-foreground">
-                      {settings.infoItems.map((item, index) => (
-                        item && item.trim() ? (
-                          <li key={index} className="flex items-start space-x-3">
-                            {(() => {
-                              const iconName = settings?.infoIcons?.[index] || 'Bookmark';
-                              const IconComponent = getIconComponent(iconName);
-                              return <IconComponent className="h-4 w-4 text-primary mt-1 flex-shrink-0" />;
-                            })()}
-                            <span>{item}</span>
+                      {settings?.infoItems.map((item, index) => (
+                        (isEditMode || (item && item.trim())) ? (
+                          <li key={index} className="flex items-start space-x-3 group/item relative">
+                            <InlineIcon
+                                value={settings?.infoIcons?.[index] || 'Bookmark'}
+                                onChange={(val) => handleInfoIconChange(index, val)}
+                                className="h-4 w-4 text-primary mt-1 flex-shrink-0"
+                            />
+                            <div className="flex-1">
+                                <InlineText
+                                    value={item}
+                                    onChange={(val) => handleInfoItemChange(index, val)}
+                                    placeholder="Empty info item"
+                                />
+                            </div>
+                            {isEditMode && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-destructive opacity-0 group-hover/item:opacity-100"
+                                    onClick={() => {
+                                        const newItems = [...settings.infoItems];
+                                        newItems.splice(index, 1);
+                                        const newIcons = [...settings.infoIcons];
+                                        newIcons.splice(index, 1);
+                                        updateSetting("infoItems", newItems);
+                                        updateSetting("infoIcons", newIcons);
+                                    }}
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                </Button>
+                            )}
                           </li>
                         ) : null
                       ))}
+                      {isEditMode && (
+                          <li>
+                              <Button variant="outline" size="sm" onClick={addInfoItem} className="w-full border-dashed">
+                                  <Plus className="w-4 h-4 mr-2" /> Add Info Item
+                              </Button>
+                          </li>
+                      )}
                     </ul>
                   </CardContent>
                 </Card>
@@ -686,10 +816,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 w-full z-50 bg-background border-t border-border py-4">
+      <footer className="fixed bottom-0 w-full z-40 bg-background border-t border-border py-4">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
+            <InlineText
+                value={settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
+                onChange={(val) => updateSetting('footerCopyright', val)}
+            />
             <span className="ml-2 text-xs opacity-50">v{__APP_VERSION__}</span>
           </div>
           <div className="flex items-center space-x-2">
@@ -710,33 +843,69 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       </footer>
 
       {/* Main Migration Dialog (Popup) */}
-      {settings?.popupMode === 'active' && (
+      {/* We only show the dialog if NOT in edit mode, OR if we are in edit mode but editing the popup specifically?
+          Actually, editing the popup inline is tricky if it's a dialog.
+          Let's allow editing the popup if it's open.
+      */}
+      {showMainDialog && (
       <Dialog open={showMainDialog} onOpenChange={setShowMainDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ backgroundColor: settings?.mainBackgroundColor || 'white' }}>
+            {isEditMode && <div className="absolute top-2 right-12 z-50">
+                <InlineColor
+                    value={settings?.mainBackgroundColor || '#ffffff'}
+                    onChange={(val) => updateSetting('mainBackgroundColor', val)}
+                />
+            </div>}
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center relative group/alert-icon ${
                 settings?.alertBackgroundColor === 'red' ? 'bg-red-100 dark:bg-red-900/30' :
                 settings?.alertBackgroundColor === 'orange' ? 'bg-orange-100 dark:bg-orange-900/30' :
                 settings?.alertBackgroundColor === 'blue' ? 'bg-blue-100 dark:bg-blue-900/30' :
                 settings?.alertBackgroundColor === 'gray' ? 'bg-gray-100 dark:bg-gray-900/30' :
                 'bg-yellow-100 dark:bg-yellow-900/30'
               }`}>
-                {(() => {
-                  const IconComponent = getIconComponent(settings?.alertIcon || 'AlertTriangle');
-                  const iconColor = 
-                    settings?.alertBackgroundColor === 'red' ? 'text-red-600 dark:text-red-400' :
-                    settings?.alertBackgroundColor === 'orange' ? 'text-orange-600 dark:text-orange-400' :
-                    settings?.alertBackgroundColor === 'blue' ? 'text-blue-600 dark:text-blue-400' :
-                    settings?.alertBackgroundColor === 'gray' ? 'text-gray-600 dark:text-gray-400' :
-                    'text-yellow-600 dark:text-yellow-400';
-                  return <IconComponent className={`text-lg ${iconColor}`} />;
-                })()}
+                <InlineIcon
+                    value={settings?.alertIcon || 'AlertTriangle'}
+                    onChange={(val) => updateSetting('alertIcon', val as any)}
+                    className={`text-lg ${
+                        settings?.alertBackgroundColor === 'red' ? 'text-red-600 dark:text-red-400' :
+                        settings?.alertBackgroundColor === 'orange' ? 'text-orange-600 dark:text-orange-400' :
+                        settings?.alertBackgroundColor === 'blue' ? 'text-blue-600 dark:text-blue-400' :
+                        settings?.alertBackgroundColor === 'gray' ? 'text-gray-600 dark:text-gray-400' :
+                        'text-yellow-600 dark:text-yellow-400'
+                    }`}
+                />
+                {isEditMode && (
+                    <div className="absolute -bottom-6 left-0 w-full flex justify-center">
+                        <select
+                            className="text-[10px] border rounded bg-background"
+                            value={settings?.alertBackgroundColor || 'yellow'}
+                            onChange={(e) => updateSetting('alertBackgroundColor', e.target.value as any)}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <option value="yellow">Yellow</option>
+                            <option value="red">Red</option>
+                            <option value="orange">Orange</option>
+                            <option value="blue">Blue</option>
+                            <option value="gray">Gray</option>
+                        </select>
+                    </div>
+                )}
               </div>
-              <span>{settings?.mainTitle || "Veralteter Link erkannt"}</span>
+              <span>
+                  <InlineText
+                      value={settings?.mainTitle || "Veralteter Link erkannt"}
+                      onChange={(val) => updateSetting('mainTitle', val)}
+                  />
+              </span>
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {settings?.mainDescription || "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten."}
+                <InlineText
+                    value={settings?.mainDescription || ""}
+                    onChange={(val) => updateSetting('mainDescription', val)}
+                    multiline
+                />
             </DialogDescription>
           </DialogHeader>
           
@@ -751,7 +920,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                   className="flex items-center space-x-2"
                 >
                   <ArrowRightLeft className="h-4 w-4" />
-                  <span>{settings?.showUrlButtonText || "Zeige mir die neue URL"}</span>
+                  <span>
+                      <InlineText
+                          value={settings?.showUrlButtonText || "Zeige mir die neue URL"}
+                          onChange={(val) => updateSetting('showUrlButtonText', val)}
+                      />
+                  </span>
                 </Button>
               </div>
             </div>
@@ -774,12 +948,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <Check className="h-6 w-6 text-green-600" />
               </div>
-              <DialogTitle className="text-xl">{settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!"}</DialogTitle>
+              <DialogTitle className="text-xl">
+                  {settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!"}
+              </DialogTitle>
             </div>
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle>{settings?.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?"}</DialogTitle>
+                <DialogTitle>
+                    {settings?.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?"}
+                </DialogTitle>
                 <DialogDescription>
                   {settings?.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite."}
                 </DialogDescription>
