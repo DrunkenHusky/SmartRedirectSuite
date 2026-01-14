@@ -16,7 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 const AdminPage = lazy(() => import("@/pages/admin"));
 
 function AppContent() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [currentView, setCurrentView] = useState<'migration' | 'admin'>('migration');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { enableEditMode } = useEditMode();
@@ -113,7 +113,7 @@ function AppContent() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{useTranslation().t('app.loading', 'Lade Anwendung...')}</p>
+          <p className="text-muted-foreground">{t('app.loading', 'Lade Anwendung...')}</p>
         </div>
       </div>
     );
@@ -136,7 +136,7 @@ function AppContent() {
                 <div className="min-h-screen bg-background flex items-center justify-center">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">{useTranslation().t('admin.loading', 'Lade Administrator-Bereich...')}</p>
+                    <p className="text-muted-foreground">{t('admin.loading', 'Lade Administrator-Bereich...')}</p>
                   </div>
                 </div>
               }>

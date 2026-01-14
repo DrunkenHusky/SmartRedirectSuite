@@ -1,0 +1,15 @@
+
+> smartredirectsuite@2.14.0 dev
+> cross-env NODE_ENV=development tsx server/index.ts
+
+WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.
+WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.
+Created upload directory: /app/data/uploads
+INFO: Alle existierenden Sitzungen wurden bereinigt.
+9:00:25 PM [express] serving on port 5000
+9:00:40 PM [express] GET /api/translations/en-US 200 in 4ms :: {}
+9:00:40 PM [express] GET /api/translations/en 200 in 1ms :: {"nav.overview":"Overview","nav.rules":"Rules","nav.stats":"Statistics","nav.settings":"Settings","nav.danger"…
+9:00:40 PM [express] GET /api/translations/de 200 in 1ms :: {"nav.overview":"Übersicht","nav.rules":"Regeln","nav.stats":"Statistiken","nav.settings":"Einstellungen","nav…
+9:00:40 PM [express] GET /api/settings 200 in 9ms :: {"id":"fd19faba-b08a-4c83-b6eb-e101fba86607","headerTitle":"SmartRedirect Suite","headerIcon":"Info","headerBackgroun…
+9:00:40 PM [express] POST /api/check-rules 200 in 18ms :: {"rule":null,"hasMatch":false,"matchQuality":0,"matchLevel":"red"}
+9:00:40 PM [express] POST /api/track 200 in 4ms :: {"oldUrl":"http://localhost:5000/","newUrl":"https://new.example.com/","path":"/","timestamp":"2026-01-14T21:00:40.369Z…
