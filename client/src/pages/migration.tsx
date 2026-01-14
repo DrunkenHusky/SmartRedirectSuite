@@ -73,8 +73,8 @@ const getBackgroundColor = (color: string) => {
 };
 
 export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
-  const { t } = useTranslation();
-  const { settings, isLoading: settingsLoading, updateSetting, isEditMode } = useEditMode();
+  const { t, i18n } = useTranslation();
+  const { settings, isLoading: settingsLoading, updateSetting, isEditMode, updateTranslation, getLocalizedText } = useEditMode();
 
   const [currentUrl, setCurrentUrl] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -507,8 +507,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               )}
               <h1 className="text-xl font-semibold text-foreground">
                 <InlineText
-                    value={settings?.headerTitle || "URL Migration Tool"}
-                    onChange={(val) => updateSetting('headerTitle', val)}
+                    value={getLocalizedText('content.headerTitle', settings?.headerTitle || "URL Migration Tool")}
+                    onChange={(val) => updateTranslation('content.headerTitle', val, i18n.language)}
                     className="text-xl font-semibold"
                 />
               </h1>
@@ -560,15 +560,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                   <div className="flex-1">
                     <h3 className="font-semibold">
                         <InlineText
-                            value={settings?.mainTitle || "Veralteter Link erkannt"}
-                            onChange={(val) => updateSetting('mainTitle', val)}
+                            value={getLocalizedText('content.mainTitle', settings?.mainTitle || "Veralteter Link erkannt")}
+                            onChange={(val) => updateTranslation('content.mainTitle', val, i18n.language)}
                             className="font-semibold"
                         />
                     </h3>
                     <p className="text-sm mt-1">
                         <InlineText
-                            value={settings?.mainDescription || ""}
-                            onChange={(val) => updateSetting('mainDescription', val)}
+                            value={getLocalizedText('content.mainDescription', settings?.mainDescription || "")}
+                            onChange={(val) => updateTranslation('content.mainDescription', val, i18n.language)}
                             multiline
                             className="text-sm"
                         />
@@ -596,8 +596,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         />
                         <span>
                             <InlineText
-                                value={settings?.urlComparisonTitle || "URL-Vergleich"}
-                                onChange={(val) => updateSetting('urlComparisonTitle', val)}
+                                value={getLocalizedText('content.urlComparisonTitle', settings?.urlComparisonTitle || "URL-Vergleich")}
+                                onChange={(val) => updateTranslation('content.urlComparisonTitle', val, i18n.language)}
                                 className="font-semibold"
                             />
                         </span>
@@ -615,8 +615,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <CheckCircle className="inline text-green-500 mr-2" />
                         <InlineText
-                            value={settings?.newUrlLabel || "Neue URL (verwenden Sie diese)"}
-                            onChange={(val) => updateSetting('newUrlLabel', val)}
+                            value={getLocalizedText('content.newUrlLabel', settings?.newUrlLabel || "Neue URL (verwenden Sie diese)")}
+                            onChange={(val) => updateTranslation('content.newUrlLabel', val, i18n.language)}
                         />
                       </label>
                       <div className="flex flex-col sm:flex-row gap-4">
@@ -668,8 +668,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         <span>
                             {isCopied ? "Kopiert!" : (
                                 <InlineText
-                                    value={settings?.copyButtonText || "URL kopieren"}
-                                    onChange={(val) => updateSetting('copyButtonText', val)}
+                                    value={getLocalizedText('content.copyButtonText', settings?.copyButtonText || "URL kopieren")}
+                                    onChange={(val) => updateTranslation('content.copyButtonText', val, i18n.language)}
                                     className={isEditMode ? "pointer-events-none" : ""}
                                 />
                             )}
@@ -685,8 +685,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         <ExternalLink className="h-4 w-4" />
                         <span>
                             <InlineText
-                                value={settings?.openButtonText || "In neuem Tab öffnen"}
-                                onChange={(val) => updateSetting('openButtonText', val)}
+                                value={getLocalizedText('content.openButtonText', settings?.openButtonText || "In neuem Tab öffnen")}
+                                onChange={(val) => updateTranslation('content.openButtonText', val, i18n.language)}
                             />
                         </span>
                       </Button>
@@ -712,8 +712,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         />
                         <span className="text-sm font-bold text-blue-800">
                           <InlineText
-                              value={settings?.specialHintsTitle || "Spezielle Hinweise für diese URL"}
-                              onChange={(val) => updateSetting('specialHintsTitle', val)}
+                              value={getLocalizedText('content.specialHintsTitle', settings?.specialHintsTitle || "Spezielle Hinweise für diese URL")}
+                              onChange={(val) => updateTranslation('content.specialHintsTitle', val, i18n.language)}
                           />
                         </span>
                       </div>
@@ -725,8 +725,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         ) : (
                           <p>
                               <InlineText
-                                  value={settings?.specialHintsDescription || "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL."}
-                                  onChange={(val) => updateSetting('specialHintsDescription', val)}
+                                  value={getLocalizedText('content.specialHintsDescription', settings?.specialHintsDescription || "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL.")}
+                                  onChange={(val) => updateTranslation('content.specialHintsDescription', val, i18n.language)}
                                   multiline
                               />
                           </p>
@@ -739,8 +739,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <XCircle className="inline text-red-500 mr-2" />
                         <InlineText
-                            value={settings?.oldUrlLabel || "Alte URL (veraltet)"}
-                            onChange={(val) => updateSetting('oldUrlLabel', val)}
+                            value={getLocalizedText('content.oldUrlLabel', settings?.oldUrlLabel || "Alte URL (veraltet)")}
+                            onChange={(val) => updateTranslation('content.oldUrlLabel', val, i18n.language)}
                         />
                       </label>
                       <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -765,8 +765,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         />
                         <span>
                             <InlineText
-                                value={settings?.infoTitle || "Wichtige Hinweise"}
-                                onChange={(val) => updateSetting('infoTitle', val)}
+                                value={getLocalizedText('content.infoTitle', settings?.infoTitle || "Wichtige Hinweise")}
+                                onChange={(val) => updateTranslation('content.infoTitle', val, i18n.language)}
                             />
                         </span>
                     </CardTitle>
@@ -783,8 +783,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             />
                             <div className="flex-1">
                                 <InlineText
-                                    value={item}
-                                    onChange={(val) => handleInfoItemChange(index, val)}
+                                    value={getLocalizedText(`content.infoItem_${index}`, item)}
+                                    onChange={(val) => updateTranslation(`content.infoItem_${index}`, val, i18n.language)}
                                     placeholder="Empty info item"
                                 />
                             </div>
@@ -829,8 +829,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             <InlineText
-                value={settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
-                onChange={(val) => updateSetting('footerCopyright', val)}
+                value={getLocalizedText('content.footerCopyright', settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`)}
+                onChange={(val) => updateTranslation('content.footerCopyright', val, i18n.language)}
             />
             <span className="ml-2 text-xs opacity-50">v{__APP_VERSION__}</span>
           </div>
@@ -913,15 +913,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               </div>
               <span>
                   <InlineText
-                      value={settings?.mainTitle || "Veralteter Link erkannt"}
-                      onChange={(val) => updateSetting('mainTitle', val)}
+                      value={getLocalizedText('content.mainTitle', settings?.mainTitle || "Veralteter Link erkannt")}
+                      onChange={(val) => updateTranslation('content.mainTitle', val, i18n.language)}
                   />
               </span>
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
                 <InlineText
-                    value={settings?.mainDescription || ""}
-                    onChange={(val) => updateSetting('mainDescription', val)}
+                    value={getLocalizedText('content.mainDescription', settings?.mainDescription || "")}
+                    onChange={(val) => updateTranslation('content.mainDescription', val, i18n.language)}
                     multiline
                 />
             </DialogDescription>
@@ -940,8 +940,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                   <ArrowRightLeft className="h-4 w-4" />
                   <span>
                       <InlineText
-                          value={settings?.showUrlButtonText || "Zeige mir die neue URL"}
-                          onChange={(val) => updateSetting('showUrlButtonText', val)}
+                          value={getLocalizedText('content.showUrlButtonText', settings?.showUrlButtonText || "Zeige mir die neue URL")}
+                          onChange={(val) => updateTranslation('content.showUrlButtonText', val, i18n.language)}
                       />
                   </span>
                 </Button>
@@ -967,17 +967,17 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 <Check className="h-6 w-6 text-green-600" />
               </div>
               <DialogTitle className="text-xl">
-                  {settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!"}
+                  {getLocalizedText('content.feedbackSuccessMessage', settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!")}
               </DialogTitle>
             </div>
           ) : (
             <>
               <DialogHeader>
                 <DialogTitle>
-                    {settings?.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?"}
+                    {getLocalizedText('content.feedbackSurveyTitle', settings?.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?")}
                 </DialogTitle>
                 <DialogDescription>
-                  {settings?.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite."}
+                  {getLocalizedText('content.feedbackSurveyQuestion', settings?.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.")}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-center gap-6 py-6">
@@ -988,7 +988,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                   onClick={() => handleFeedback('OK')}
                 >
                   <ThumbsUp className="h-8 w-8" />
-                  <span>{settings?.feedbackButtonYes || "Ja, OK"}</span>
+                  <span>{getLocalizedText('content.feedbackButtonYes', settings?.feedbackButtonYes || "Ja, OK")}</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -997,7 +997,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                   onClick={() => handleFeedback('NOK')}
                 >
                   <ThumbsDown className="h-8 w-8" />
-                  <span>{settings?.feedbackButtonNo || "Nein"}</span>
+                  <span>{getLocalizedText('content.feedbackButtonNo', settings?.feedbackButtonNo || "Nein")}</span>
                 </Button>
               </div>
             </>

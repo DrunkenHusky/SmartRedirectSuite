@@ -373,7 +373,7 @@ export class FileStorage implements IStorage {
 
   async seedTranslations(): Promise<void> {
     const all = await this.ensureTranslationsLoaded();
-    if (all.length > 0) return;
+    const existingKeys = new Set(all.map(t => `${t.lang}:${t.key}`));
 
     // Initial Seed
     const seed: Translation[] = [
@@ -408,6 +408,26 @@ export class FileStorage implements IStorage {
       { key: "nav.translations", lang: "fr", value: "Traductions" },
       { key: "nav.translations", lang: "it", value: "Traduzioni" },
 
+      // Auth
+      { key: "auth.login.title", lang: "de", value: "Administrator-Anmeldung" },
+      { key: "auth.login.title", lang: "en", value: "Administrator Login" },
+      { key: "auth.login.description", lang: "de", value: "Bitte geben Sie das Administrator-Passwort ein." },
+      { key: "auth.login.description", lang: "en", value: "Please enter the administrator password." },
+      { key: "auth.password.label", lang: "de", value: "Passwort" },
+      { key: "auth.password.label", lang: "en", value: "Password" },
+      { key: "auth.password.placeholder", lang: "de", value: "Administrator-Passwort eingeben" },
+      { key: "auth.password.placeholder", lang: "en", value: "Enter administrator password" },
+      { key: "auth.login.button", lang: "de", value: "Anmelden" },
+      { key: "auth.login.button", lang: "en", value: "Login" },
+      { key: "auth.login.cancel", lang: "de", value: "Abbrechen" },
+      { key: "auth.login.cancel", lang: "en", value: "Cancel" },
+
+      // Admin Header
+      { key: "admin.header.title", lang: "de", value: "Administrator-Bereich" },
+      { key: "admin.header.title", lang: "en", value: "Administrator Area" },
+      { key: "admin.logout", lang: "de", value: "Abmelden" },
+      { key: "admin.logout", lang: "en", value: "Logout" },
+
       // Common
       { key: "common.save", lang: "de", value: "Speichern" },
       { key: "common.save", lang: "en", value: "Save" },
@@ -429,6 +449,9 @@ export class FileStorage implements IStorage {
       { key: "common.edit", lang: "fr", value: "Modifier" },
       { key: "common.edit", lang: "it", value: "Modifica" },
 
+      { key: "common.close", lang: "de", value: "Schließen" },
+      { key: "common.close", lang: "en", value: "Close" },
+
       // Settings
       { key: "settings.language.default", lang: "de", value: "Hauptsprache" },
       { key: "settings.language.default", lang: "en", value: "Default Language" },
@@ -439,6 +462,73 @@ export class FileStorage implements IStorage {
       { key: "settings.title", lang: "en", value: "General Settings" },
       { key: "settings.title", lang: "fr", value: "Paramètres généraux" },
       { key: "settings.title", lang: "it", value: "Impostazioni generali" },
+
+      { key: "settings.description", lang: "de", value: "Hier können Sie alle Texte der Anwendung anpassen." },
+      { key: "settings.description", lang: "en", value: "Here you can customize all application texts." },
+
+      { key: "settings.save.button", lang: "de", value: "Einstellungen speichern" },
+      { key: "settings.save.button", lang: "en", value: "Save Settings" },
+
+      // Settings Sections
+      { key: "settings.header_section.title", lang: "de", value: "Header-Einstellungen" },
+      { key: "settings.header_section.title", lang: "en", value: "Header Settings" },
+      { key: "settings.header_section.description", lang: "de", value: "Anpassung des oberen Bereichs der Anwendung - wird auf jeder Seite angezeigt" },
+      { key: "settings.header_section.description", lang: "en", value: "Customize the top area of the application - displayed on every page" },
+
+      { key: "settings.popup_section.title", lang: "de", value: "PopUp-Einstellungen" },
+      { key: "settings.popup_section.title", lang: "en", value: "Popup Settings" },
+      { key: "settings.popup_section.description", lang: "de", value: "Dialog-Fenster das automatisch erscheint, wenn ein Nutzer eine veraltete URL aufruft" },
+      { key: "settings.popup_section.description", lang: "en", value: "Dialog window that appears automatically when a user visits an outdated URL" },
+
+      { key: "settings.routing_section.title", lang: "de", value: "Routing & Fallback-Verhalten" },
+      { key: "settings.routing_section.title", lang: "en", value: "Routing & Fallback Behavior" },
+      { key: "settings.routing_section.description", lang: "de", value: "Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung" },
+      { key: "settings.routing_section.description", lang: "en", value: "Configuration of behavior when there is no exact match" },
+
+      { key: "settings.info_section.title", lang: "de", value: "Zusätzliche Informationen" },
+      { key: "settings.info_section.title", lang: "en", value: "Additional Information" },
+
+      { key: "settings.footer_section.title", lang: "de", value: "Footer" },
+      { key: "settings.footer_section.title", lang: "en", value: "Footer" },
+
+      { key: "settings.performance_section.title", lang: "de", value: "Link-Erkennung & Leistung" },
+      { key: "settings.performance_section.title", lang: "en", value: "Link Detection & Performance" },
+
+      { key: "settings.autoredirect_section.title", lang: "de", value: "Automatische Weiterleitung" },
+      { key: "settings.autoredirect_section.title", lang: "en", value: "Automatic Redirect" },
+
+      { key: "settings.feedback_section.title", lang: "de", value: "Benutzer-Feedback-Umfrage" },
+      { key: "settings.feedback_section.title", lang: "en", value: "User Feedback Survey" },
+
+      // Content Keys (User Configurable via Settings, defaults)
+      { key: "content.headerTitle", lang: "de", value: "URL Migration Tool" },
+      { key: "content.headerTitle", lang: "en", value: "URL Migration Tool" },
+      { key: "content.mainTitle", lang: "de", value: "Veralteter Link erkannt" },
+      { key: "content.mainTitle", lang: "en", value: "Outdated Link Detected" },
+      { key: "content.mainDescription", lang: "de", value: "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten." },
+      { key: "content.mainDescription", lang: "en", value: "You are using an outdated link. Please update your bookmarks and use the new URL below." },
+      { key: "content.urlComparisonTitle", lang: "de", value: "URL-Vergleich" },
+      { key: "content.urlComparisonTitle", lang: "en", value: "URL Comparison" },
+      { key: "content.oldUrlLabel", lang: "de", value: "Alte URL (veraltet)" },
+      { key: "content.oldUrlLabel", lang: "en", value: "Old URL (deprecated)" },
+      { key: "content.newUrlLabel", lang: "de", value: "Neue URL (verwenden Sie diese)" },
+      { key: "content.newUrlLabel", lang: "en", value: "New URL (use this one)" },
+      { key: "content.copyButtonText", lang: "de", value: "URL kopieren" },
+      { key: "content.copyButtonText", lang: "en", value: "Copy URL" },
+      { key: "content.openButtonText", lang: "de", value: "In neuem Tab öffnen" },
+      { key: "content.openButtonText", lang: "en", value: "Open in new tab" },
+      { key: "content.showUrlButtonText", lang: "de", value: "Zeige mir die neue URL" },
+      { key: "content.showUrlButtonText", lang: "en", value: "Show me the new URL" },
+      { key: "content.popupButtonText", lang: "de", value: "Zeige mir die neue URL" },
+      { key: "content.popupButtonText", lang: "en", value: "Show me the new URL" },
+      { key: "content.specialHintsTitle", lang: "de", value: "Spezielle Hinweise für diese URL" },
+      { key: "content.specialHintsTitle", lang: "en", value: "Special Hints for this URL" },
+      { key: "content.specialHintsDescription", lang: "de", value: "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL." },
+      { key: "content.specialHintsDescription", lang: "en", value: "Here you will find specific information and hints for migrating this URL." },
+      { key: "content.infoTitle", lang: "de", value: "Zusätzliche Informationen" },
+      { key: "content.infoTitle", lang: "en", value: "Additional Information" },
+      { key: "content.footerCopyright", lang: "de", value: "© 2024 URL Migration Service. Alle Rechte vorbehalten." },
+      { key: "content.footerCopyright", lang: "en", value: "© 2024 URL Migration Service. All rights reserved." },
 
       // Dashboard
       { key: "dashboard.total_requests", lang: "de", value: "Aufrufe Gesamt" },
@@ -483,6 +573,15 @@ export class FileStorage implements IStorage {
       { key: "rules.actions", lang: "fr", value: "Actions" },
       { key: "rules.actions", lang: "it", value: "Azioni" },
 
+      { key: "rules.title", lang: "de", value: "URL-Transformationsregeln" },
+      { key: "rules.title", lang: "en", value: "URL Transformation Rules" },
+      { key: "rules.description", lang: "de", value: "Verwalten Sie URL-Transformations-Regeln für die Migration." },
+      { key: "rules.description", lang: "en", value: "Manage URL transformation rules for migration." },
+      { key: "rules.new_rule", lang: "de", value: "Neue Regel" },
+      { key: "rules.new_rule", lang: "en", value: "New Rule" },
+      { key: "rules.search_placeholder", lang: "de", value: "Regeln durchsuchen..." },
+      { key: "rules.search_placeholder", lang: "en", value: "Search rules..." },
+
       // Stats Table
       { key: "stats.old_url", lang: "de", value: "Alte URL" },
       { key: "stats.old_url", lang: "en", value: "Old URL" },
@@ -505,8 +604,13 @@ export class FileStorage implements IStorage {
       { key: "stats.quality", lang: "it", value: "Qualità" },
     ];
 
-    await this.writeJsonFile(TRANSLATIONS_FILE, seed);
-    this.translationsCache = seed;
+    const newTranslations = seed.filter(t => !existingKeys.has(`${t.lang}:${t.key}`));
+
+    if (newTranslations.length > 0) {
+        const updated = [...all, ...newTranslations];
+        await this.writeJsonFile(TRANSLATIONS_FILE, updated);
+        this.translationsCache = updated;
+    }
   }
 
   // URL-Regeln implementierung
