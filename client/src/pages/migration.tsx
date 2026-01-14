@@ -240,11 +240,25 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     try {
                         let searchTerm = "";
 
-                        // Try regex first if configured
-                        if (settings.smartSearchRegex) {
+                        // Try regex rules if configured
+                        if (settings.smartSearchRules && settings.smartSearchRules.length > 0) {
+                          for (const rule of settings.smartSearchRules) {
+                            try {
+                              const regex = new RegExp(rule.pattern);
+                              const match = regex.exec(url); // Search in full URL including query params
+                              if (match && match[1]) {
+                                searchTerm = match[1];
+                                break; // Stop at first match (rules are ordered)
+                              }
+                            } catch (regexError) {
+                              console.error("Invalid smart search regex rule:", rule.pattern, regexError);
+                            }
+                          }
+                        } else if (settings.smartSearchRegex) {
+                          // Fallback to legacy single regex if rules are empty but regex exists
                           try {
                             const regex = new RegExp(settings.smartSearchRegex);
-                            const match = regex.exec(url); // Search in full URL including query params
+                            const match = regex.exec(url);
                             if (match && match[1]) {
                               searchTerm = match[1];
                             }

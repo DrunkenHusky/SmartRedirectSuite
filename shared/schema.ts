@@ -234,6 +234,11 @@ export const generalSettingsSchema = z.object({
     .max(500, "Regex ist zu lang")
     .optional()
     .nullable(),
+
+  smartSearchRules: z.array(z.object({
+    pattern: z.string().min(1, "Pattern cannot be empty"),
+    order: z.number().int().default(0)
+  })).optional().default([]),
     
   // Button texts with validation
   copyButtonText: z.string()
@@ -413,6 +418,11 @@ export const insertGeneralSettingsSchema = generalSettingsSchema.omit({
 // Import-Schema for general settings (must be after insertGeneralSettingsSchema)
 export const importSettingsRequestSchema = z.object({
   settings: insertGeneralSettingsSchema,
+});
+
+export const smartSearchRuleSchema = z.object({
+  pattern: z.string().min(1, "Pattern cannot be empty"),
+  order: z.number().int().default(0)
 });
 
 export type UrlRule = z.infer<typeof urlRuleSchema>;
