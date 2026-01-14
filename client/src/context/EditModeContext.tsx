@@ -43,7 +43,11 @@ export function EditModeProvider({ children }: { children: React.ReactNode }) {
         // or the API might handle partial updates.
         // Based on AdminPage, it sends the full object.
         if (!settings) throw new Error("Settings not loaded");
-        return apiRequest("PUT", "/api/admin/settings", { ...settings, ...newSettings });
+
+        // Remove id and updatedAt from the payload as they are not allowed in the update schema
+        const { id, updatedAt, ...payload } = { ...settings, ...newSettings };
+
+        return apiRequest("PUT", "/api/admin/settings", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
