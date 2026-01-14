@@ -1,0 +1,10 @@
+
+> smartredirectsuite@2.14.0 dev
+> cross-env NODE_ENV=development tsx server/index.ts
+
+WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.
+WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.
+INFO: Alle existierenden Sitzungen wurden bereinigt.
+3:35:32 PM [express] serving on port 5000
+3:36:51 PM [express] GET /api/translations/de 200 in 13ms :: {"nav.overview":"Übersicht","nav.rules":"Regeln","nav.stats":"Statistiken","nav.settings":"Einstellungen","na…
+3:36:51 PM [express] GET /api/translations/en 200 in 4ms :: {"nav.overview":"Overview","nav.rules":"Rules","nav.stats":"Statistics","nav.settings":"Settings","nav.danger"…

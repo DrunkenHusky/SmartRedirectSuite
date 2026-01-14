@@ -116,6 +116,7 @@ interface AdminAuthFormProps {
 }
 
 function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const { toast } = useToast();
 
@@ -158,23 +159,23 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
           <div className="flex justify-center mb-4">
             <Shield className="text-primary text-4xl" />
           </div>
-          <CardTitle className="text-2xl">Administrator-Anmeldung</CardTitle>
+          <CardTitle className="text-2xl">{t('auth.title')}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Bitte geben Sie das Administrator-Passwort ein.
+            {t('auth.desc')}
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Passwort
+                {t('auth.password')}
               </label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Administrator-Passwort eingeben"
+                placeholder={t('auth.password')}
                 required
                 disabled={authMutation.isPending}
               />
@@ -185,7 +186,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
                 className="flex-1"
                 disabled={authMutation.isPending}
               >
-                {authMutation.isPending ? "Anmelden..." : "Anmelden"}
+                {authMutation.isPending ? t('auth.login') + "..." : t('auth.login')}
               </Button>
               <Button
                 type="button"
@@ -193,7 +194,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
                 onClick={onClose}
                 disabled={authMutation.isPending}
               >
-                Abbrechen
+                {t('common.cancel')}
               </Button>
             </div>
           </form>
@@ -696,7 +697,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel erstellt", description: "Die URL-Regel wurde erfolgreich erstellt." });
+      toast({ title: t('toast.rule_created'), description: t('toast.rule_created_desc') });
     },
     onError: (error: any) => {
       console.error('Create rule error:', error);
@@ -706,8 +707,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('toast.auth_required'),
+          description: t('toast.auth_required_desc'),
           variant: "destructive" 
         });
         window.location.reload();
@@ -716,26 +717,26 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       
       // Extract German error message from the server response
       let errorMessage = "Die Regel konnte nicht erstellt werden.";
-      let title = "Fehler";
+      let title = t('toast.error');
       
       // Check different possible error structures for createRuleMutation
       if (error?.error) {
         errorMessage = error.error;
-        title = "Validierungsfehler";
+        title = t('toast.validation_error');
       } else if (error?.message) {
         errorMessage = error.message;
-        title = "Validierungsfehler";
+        title = t('toast.validation_error');
       } else if (typeof error === 'string') {
         errorMessage = error;
-        title = "Validierungsfehler";
+        title = t('toast.validation_error');
       } else {
         // Fallback for unknown error structures
         errorMessage = JSON.stringify(error);
-        title = "Unbekannter Fehler";
+        title = t('toast.error');
       }
       
       // Show validation error with save anyway option
-      if (title === "Validierungsfehler") {
+      if (title === t('toast.validation_error')) {
         setValidationError(errorMessage);
         setShowValidationDialog(true);
       } else {
@@ -758,7 +759,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde erfolgreich aktualisiert." });
+      toast({ title: t('toast.rule_updated'), description: t('toast.rule_updated_desc') });
     },
     onError: (error: any) => {
       console.error('Update rule error:', error);
@@ -768,8 +769,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('toast.auth_required'),
+          description: t('toast.auth_required_desc'),
           variant: "destructive" 
         });
         window.location.reload();
@@ -778,26 +779,26 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       
       // Extract German error message from the server response
       let errorMessage = "Die Regel konnte nicht aktualisiert werden.";
-      let title = "Fehler";
+      let title = t('toast.error');
       
       // Check different possible error structures for updateRuleMutation
       if (error?.error) {
         errorMessage = error.error;
-        title = "Validierungsfehler";
+        title = t('toast.validation_error');
       } else if (error?.message) {
         errorMessage = error.message;
-        title = "Validierungsfehler";
+        title = t('toast.validation_error');
       } else if (typeof error === 'string') {
         errorMessage = error;
-        title = "Validierungsfehler";
+        title = t('toast.validation_error');
       } else {
         // Fallback for unknown error structures
         errorMessage = JSON.stringify(error);
-        title = "Unbekannter Fehler";
+        title = t('toast.error');
       }
       
       // Show validation error with save anyway option
-      if (title === "Validierungsfehler") {
+      if (title === t('toast.validation_error')) {
         setValidationError(errorMessage);
         setShowValidationDialog(true);
       } else {
@@ -816,8 +817,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
       toast({
-        title: "Regel gelöscht",
-        description: "1 Regel wurde erfolgreich gelöscht.",
+        title: t('toast.rule_deleted'),
+        description: t('toast.rule_deleted_desc'),
       });
     },
     onError: (error: any) => {
@@ -825,8 +826,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('toast.auth_required'),
+          description: t('toast.auth_required_desc'),
           variant: "destructive" 
         });
         window.location.reload();
@@ -834,7 +835,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       toast({ 
-        title: "Fehler", 
+        title: t('toast.error'),
         description: "Die Regel konnte nicht gelöscht werden.",
         variant: "destructive" 
       });
@@ -854,13 +855,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setShowDeleteAllStatsDialog(false);
       setDeleteAllStatsConfirmationText("");
       toast({
-        title: "Alle Statistiken gelöscht",
-        description: "Alle Tracking-Daten wurden erfolgreich gelöscht.",
+        title: t('toast.all_stats_deleted'),
+        description: t('toast.all_stats_deleted_desc'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
+        title: t('toast.error'),
         description: error.message || "Fehler beim Löschen aller Statistiken.",
         variant: "destructive",
       });
@@ -877,13 +878,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setShowClearBlockedIpsDialog(false);
       setClearBlockedIpsConfirmationText("");
       toast({
-        title: "Blockierte IPs gelöscht",
-        description: "Alle blockierten IP-Adressen wurden erfolgreich gelöscht.",
+        title: t('toast.ips_cleared'),
+        description: t('toast.ips_cleared_desc'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
+        title: t('toast.error'),
         description: error.message || "Fehler beim Löschen der blockierten IPs.",
         variant: "destructive",
       });
@@ -913,7 +914,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       toast({ title: "IP blockiert", description: "Die IP-Adresse wurde erfolgreich blockiert." });
     },
     onError: (error: any) => {
-       toast({ title: "Fehler", description: error.message || "IP konnte nicht blockiert werden.", variant: "destructive" });
+       toast({ title: t('toast.error'), description: error.message || "IP konnte nicht blockiert werden.", variant: "destructive" });
     }
   });
 
@@ -927,7 +928,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       toast({ title: "IP entsperrt", description: "Die IP-Adresse wurde erfolgreich entsperrt." });
     },
     onError: (error: any) => {
-       toast({ title: "Fehler", description: error.message || "IP konnte nicht entsperrt werden.", variant: "destructive" });
+       toast({ title: t('toast.error'), description: error.message || "IP konnte nicht entsperrt werden.", variant: "destructive" });
     }
   });
 
@@ -971,7 +972,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
         });
       } else {
         toast({
-          title: "Regeln gelöscht",
+          title: t('toast.rules_deleted'),
           description: `${deletedCount} ${deletedCount === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht.`
         });
       }
@@ -984,8 +985,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({
-          title: "Authentifizierung erforderlich",
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('toast.auth_required'),
+          description: t('toast.auth_required_desc'),
           variant: "destructive",
         });
         window.location.reload();
@@ -1013,8 +1014,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('toast.auth_required'),
+          description: t('toast.auth_required_desc'),
           variant: "destructive" 
         });
         window.location.reload();
@@ -1041,7 +1042,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       toast({ 
-        title: "Validierungsfehler", 
+        title: t('toast.validation_error'),
         description: errorMessage,
         variant: "destructive" 
       });
@@ -1055,7 +1056,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({ 
-        title: "Import erfolgreich", 
+        title: t('toast.import_success'),
         description: "Die Einstellungen wurden erfolgreich importiert." 
       });
     },
@@ -1064,8 +1065,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('toast.auth_required'),
+          description: t('toast.auth_required_desc'),
           variant: "destructive" 
         });
         window.location.reload();
@@ -1073,7 +1074,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       toast({ 
-        title: "Import fehlgeschlagen", 
+        title: t('toast.import_failed'),
         description: "Die Einstellungen konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
         variant: "destructive" 
       });
@@ -1097,11 +1098,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel erstellt", description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
+      toast({ title: t('toast.rule_created'), description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
     },
     onError: (error: any) => {
       toast({ 
-        title: "Fehler", 
+        title: t('toast.error'),
         description: "Die Regel konnte auch mit Force-Option nicht erstellt werden.",
         variant: "destructive" 
       });
@@ -1117,11 +1118,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
+      toast({ title: t('toast.rule_updated'), description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
     },
     onError: (error: any) => {
       toast({ 
-        title: "Fehler", 
+        title: t('toast.error'),
         description: "Die Regel konnte auch mit Force-Option nicht aktualisiert werden.",
         variant: "destructive" 
       });
@@ -1406,14 +1407,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       localStorage.removeItem('adminActiveTab'); // Clear saved tab on logout
       localStorage.removeItem('adminStatsView'); // Clear saved stats view on logout
       toast({
-        title: "Erfolgreich abgemeldet",
+        title: t('auth.logout'),
         description: "Sie wurden erfolgreich abgemeldet.",
       });
       onClose();
     },
     onError: (error: any) => {
       toast({
-        title: "Abmeldung fehlgeschlagen",
+        title: t('toast.error'),
         description: error.message || "Ein Fehler ist aufgetreten",
         variant: "destructive",
       });
@@ -1444,7 +1445,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     },
     onError: (error: any) => {
       toast({
-        title: "Vorschau fehlgeschlagen",
+        title: t('toast.error'),
         description: error.message || "Die Datei konnte nicht gelesen werden.",
         variant: "destructive",
       });
@@ -1463,7 +1464,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
       if (data.errors && data.errors.length > 0) {
         toast({
-          title: "Import mit Validierungsfehlern",
+          title: t('toast.validation_error'),
           description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
           variant: "destructive"
         });
@@ -1471,7 +1472,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
         const imported = data.imported || 0;
         const updated = data.updated || 0;
         toast({
-          title: "Import erfolgreich",
+          title: t('toast.import_success'),
           description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.`
         });
       }
@@ -1481,8 +1482,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({
-          title: "Authentifizierung erforderlich",
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('toast.auth_required'),
+          description: t('toast.auth_required_desc'),
           variant: "destructive"
         });
         window.location.reload();
@@ -1492,7 +1493,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       // Handle PayloadTooLargeError (413) specifically
       if (error?.status === 413 || error?.message?.includes('too large')) {
         toast({
-          title: "Datei zu groß",
+          title: t('toast.error'),
           description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
           variant: "destructive",
           duration: 10000
@@ -1501,7 +1502,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
 
       toast({
-        title: "Import fehlgeschlagen",
+        title: t('toast.import_failed'),
         description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
         variant: "destructive"
       });
@@ -1516,13 +1517,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     },
     onSuccess: () => {
       toast({
-        title: "Cache neu aufgebaut",
-        description: "Der Regel-Cache wurde erfolgreich neu erstellt.",
+        title: t('toast.cache_rebuilt'),
+        description: t('toast.cache_rebuilt_desc'),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler beim Cache-Neuaufbau",
+        title: t('toast.error'),
         description: error.message || "Der Cache konnte nicht neu erstellt werden.",
         variant: "destructive",
       });
@@ -1540,13 +1541,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setShowDeleteAllDialog(false);
       setDeleteAllConfirmationText("");
       toast({
-        title: "Alle Regeln gelöscht",
+        title: t('toast.all_rules_deleted'),
         description: "Alle URL-Regeln wurden erfolgreich gelöscht.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
+        title: t('toast.error'),
         description: error.message || "Fehler beim Löschen aller Regeln.",
         variant: "destructive",
       });
@@ -1792,7 +1793,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Shield className="text-primary text-xl sm:text-2xl" />
               <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">
-                <span className="hidden sm:inline">Administrator-Bereich</span>
+                <span className="hidden sm:inline">{t('admin.title')}</span>
                 <span className="sm:hidden">Admin</span>
               </h1>
             </div>
@@ -1804,11 +1805,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
                 className="text-muted-foreground hover:text-orange-600"
-                aria-label={logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
+                aria-label={logoutMutation.isPending ? t('admin.logout') + "..." : t('admin.logout')}
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
-                  {logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
+                  {logoutMutation.isPending ? t('admin.logout') + "..." : t('admin.logout')}
                 </span>
               </Button>
               <Button
@@ -1816,10 +1817,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 size="sm"
                 onClick={onClose}
                 className="text-muted-foreground hover:text-destructive"
-                aria-label="Schließen"
+                aria-label={t('admin.close')}
               >
                 <X className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Schließen</span>
+                <span className="hidden sm:inline">{t('admin.close')}</span>
               </Button>
             </div>
           </div>
@@ -1862,15 +1863,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 <CardHeader>
                   <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row gap-4">
                     <div>
-                      <CardTitle>Allgemeine Einstellungen</CardTitle>
+                      <CardTitle>{t('settings.title')}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        Hier können Sie alle Texte der Anwendung anpassen.
+                        {t('settings.description')}
                       </p>
                     </div>
                     {onOpenVisualEditor && (
                       <Button onClick={onOpenVisualEditor} variant="outline" className="flex items-center gap-2">
                         <Edit className="w-4 h-4" />
-                        Visueller Editor
+                        {t('settings.visual_editor')}
                       </Button>
                     )}
                   </div>
@@ -1888,7 +1889,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 text-xs sm:text-sm font-semibold">0</div>
                           <div>
                             <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('settings.language.default')}</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Standardsprache für die Anwendung.</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.language.default')}.</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -1921,8 +1922,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-semibold">1</div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground">Header-Einstellungen</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Anpassung des oberen Bereichs der Anwendung - wird auf jeder Seite angezeigt</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('settings.section.header')}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.section.header')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -1930,7 +1931,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             {/* Title */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel <span className="text-red-500">*</span>
+                                {t('settings.field.title')} <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
                                 value={generalSettings.headerTitle}
@@ -1939,14 +1940,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
                               />
                               <p className="text-xs text-gray-500 mt-1">
-                                Wird als Haupttitel im Header der Anwendung angezeigt
+                                {t('settings.field.title')}
                               </p>
                             </div>
                             
                             {/* Icon */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${generalSettings.headerLogoUrl ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                Icon {generalSettings.headerLogoUrl && '(deaktiviert - Logo wird verwendet)'}
+                                {t('settings.field.icon')} {generalSettings.headerLogoUrl && '(deaktiviert - Logo wird verwendet)'}
                               </label>
                               <Select 
                                 value={generalSettings.headerIcon} 
@@ -1979,7 +1980,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             {/* Background Color */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Hintergrundfarbe
+                                {t('settings.field.bgcolor')}
                               </label>
                               <div className="flex items-center gap-3">
                                 <input
@@ -2002,7 +2003,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           <div className="pt-4">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Logo hochladen
+                                {t('settings.field.logo')}
                               </label>
                               <div className="space-y-2">
                                 <input
@@ -2162,7 +2163,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
                                       >
                                         <Trash2 className="h-3 w-3 mr-1" />
-                                        Löschen
+                                        {t('common.delete')}
                                       </Button>
                                     </div>
                                     <div className="flex justify-center p-4 bg-white dark:bg-gray-700 border rounded">
@@ -2194,8 +2195,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-xs sm:text-sm font-semibold">2</div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground">PopUp-Einstellungen</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Dialog-Fenster das automatisch erscheint, wenn ein Nutzer eine veraltete URL aufruft</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('settings.section.popup')}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.section.popup')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -2220,7 +2221,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel <span className="text-red-500">*</span>
+                                {t('settings.field.title')} <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
                                 value={generalSettings.mainTitle}
@@ -2232,7 +2233,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon
+                                {t('settings.field.icon')}
                               </label>
                               <Select value={generalSettings.alertIcon} onValueChange={(value) =>
                                 setGeneralSettings({ ...generalSettings, alertIcon: value as any })
@@ -2251,7 +2252,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           </div>
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Beschreibung <span className="text-red-500">*</span>
+                              {t('settings.field.description')} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedTextarea
                               value={generalSettings.mainDescription}
@@ -2262,12 +2263,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
+                              {t('settings.field.description')}
                             </p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              PopUp Button-Text
+                              {t('settings.field.popup_button')}
                             </label>
                             <DebouncedInput
                               value={generalSettings.popupButtonText}
@@ -2277,7 +2278,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Text für den Button der das PopUp-Fenster öffnet
+                              {t('settings.field.popup_button')}
                             </p>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2331,8 +2332,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">3</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Routing & Fallback-Verhalten</h3>
-                            <p className="text-sm text-muted-foreground">Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.section.routing')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.section.routing')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2340,7 +2341,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {/* Field 1: Target Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Ziel-Domain (Standard neue Domain) <span className="text-red-500">*</span>
+                              {t('settings.field.target_domain')} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               value={generalSettings.defaultNewDomain}
@@ -2349,14 +2350,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain ? 'border-red-500' : ''}`}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Verwendet für Partial Matches und spezifische Regeln.
+                              {t('settings.field.target_domain')}
                             </p>
                           </div>
 
                           {/* Field 2: Fallback Strategy */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Fallback-Strategie
+                                {t('settings.field.fallback_strategy')}
                             </label>
                             <Select
                                 value={generalSettings.defaultRedirectMode}
@@ -2366,31 +2367,31 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             >
                                 <SelectTrigger className="h-auto min-h-[40px] bg-white dark:bg-gray-700">
                                     <SelectValue>
-                                        {generalSettings.defaultRedirectMode === "domain" && "Einfacher Domain-Austausch"}
-                                        {generalSettings.defaultRedirectMode === "search" && "Intelligente Such-Weiterleitung"}
+                                        {generalSettings.defaultRedirectMode === "domain" && t('settings.strategy.simple')}
+                                        {generalSettings.defaultRedirectMode === "search" && t('settings.strategy.smart')}
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent className="w-[calc(100vw-2rem)] sm:w-[var(--radix-select-trigger-width)]">
                                     <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Einfacher Domain-Austausch</span>
+                                            <span className="font-medium text-sm">{t('settings.strategy.simple')}</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
-                                                Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.
+                                                {t('settings.strategy.simple')}
                                             </span>
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="search" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Intelligente Such-Weiterleitung</span>
+                                            <span className="font-medium text-sm">{t('settings.strategy.smart')}</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
-                                                Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.
+                                                {t('settings.strategy.smart')}
                                             </span>
                                         </div>
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 mt-1">
-                                Definiert was passiert, wenn KEINE Regel (Exakt oder Partial) greift.
+                                {t('settings.field.fallback_strategy')}
                             </p>
                           </div>
 
@@ -2398,7 +2399,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {generalSettings.defaultRedirectMode === 'search' && (
                               <div>
                                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Such-Basis-URL <span className="text-red-500">*</span>
+                                  {t('settings.field.search_base_url')} <span className="text-red-500">*</span>
                                 </label>
                                 <DebouncedInput
                                   value={generalSettings.defaultSearchUrl || ''}
@@ -2414,15 +2415,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                            {/* Field 4: Fallback Info Messages (Grouped) */}
                            <div className="border-t pt-4 mt-4">
-                                <h4 className="text-sm font-medium mb-4">Fallback-Info-Nachrichten</h4>
+                                <h4 className="text-sm font-medium mb-4">{t('settings.field.fallback_messages')}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
+                                        <label className="block text-sm font-medium mb-2">{t('settings.field.special_hints_title')}</label>
                                         <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
+                                        <label className="block text-sm font-medium mb-2">{t('settings.field.special_hints_icon')}</label>
                                          <Select value={generalSettings.specialHintsIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, specialHintsIcon: val as any})}>
                                             <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
                                             <SelectContent>
@@ -2446,7 +2447,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     {/* Standard Info Text */}
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Standard Info Text (Beschreibung)
+                                            {t('settings.field.standard_info_text')}
                                         </label>
                                         <DebouncedTextarea
                                             value={generalSettings.specialHintsDescription}
@@ -2455,7 +2456,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                             className="bg-white dark:bg-gray-700"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
+                                            {t('settings.field.standard_info_text.desc')}
                                         </p>
                                     </div>
 
@@ -2463,7 +2464,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     {generalSettings.defaultRedirectMode === 'search' && (
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Smart Search Nachricht
+                                            {t('settings.field.smart_search_message')}
                                         </label>
                                         <DebouncedTextarea
                                             value={generalSettings.defaultSearchMessage}
@@ -2472,7 +2473,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                             className="bg-white dark:bg-gray-700"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).
+                                            {t('settings.field.smart_search_message.desc')}
                                         </p>
                                     </div>
                                     )}
@@ -2481,15 +2482,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                            {/* Visualization Settings */}
                            <div className="mt-6 pt-6 border-t border-dashed">
-                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">Visualisierung</h4>
+                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">{t('settings.section.visualization')}</h4>
                                <div className="space-y-6">
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Titel</label>
+                                           <label className="block text-sm font-medium mb-2">{t('settings.field.title')}</label>
                                            <DebouncedInput value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className="bg-white dark:bg-gray-700"/>
                                        </div>
                                        <div>
-                                         <label className="block text-sm font-medium mb-2">Icon</label>
+                                         <label className="block text-sm font-medium mb-2">{t('settings.field.icon')}</label>
                                          <Select value={generalSettings.urlComparisonIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, urlComparisonIcon: val as any})}>
                                             <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
                                             <SelectContent>
@@ -2510,7 +2511,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                          </Select>
                                        </div>
                                        <div>
-                                          <label className="block text-sm font-medium mb-2">Hintergrundfarbe</label>
+                                          <label className="block text-sm font-medium mb-2">{t('settings.field.bgcolor')}</label>
                                           <div className="flex items-center gap-3">
                                               <input type="color" value={generalSettings.urlComparisonBackgroundColor} onChange={(e) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: e.target.value})} className="w-20 h-10 p-1 rounded-md border cursor-pointer"/>
                                               <DebouncedInput value={generalSettings.urlComparisonBackgroundColor} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: val as string})} className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"/>
@@ -2520,11 +2521,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Label für alte URL</label>
+                                           <label className="block text-sm font-medium mb-2">{t('settings.field.old_url_label')}</label>
                                            <DebouncedInput value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
                                        </div>
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Label für neue URL</label>
+                                           <label className="block text-sm font-medium mb-2">{t('settings.field.new_url_label')}</label>
                                            <DebouncedInput value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
                                        </div>
                                    </div>
@@ -2536,7 +2537,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                    <div className="flex items-center gap-3">
                                      <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
                                      <div>
-                                       <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                       <p className="text-sm font-medium text-green-800 dark:text-green-200">{t('settings.section.link_quality')}</p>
                                      </div>
                                    </div>
                                    <Switch
@@ -2551,23 +2552,23 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                  {generalSettings.showLinkQualityGauge && (
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (100%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.field.quality_high')}</label>
                                        <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (75%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.field.quality_medium')}</label>
                                        <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung (50%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.field.quality_low')}</label>
                                        <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer (100%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.field.quality_root')}</label>
                                        <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung (0%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.field.quality_none')}</label>
                                        <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
                                      </div>
                                    </div>
@@ -2578,11 +2579,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
+                                       <label className="block text-sm font-medium mb-2">{t('settings.field.copy_button')}</label>
                                        <DebouncedInput value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className="bg-white dark:bg-gray-700" />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
+                                       <label className="block text-sm font-medium mb-2">{t('settings.field.open_button')}</label>
                                        <DebouncedInput value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className="bg-white dark:bg-gray-700" />
                                      </div>
                                    </div>
@@ -2596,29 +2597,26 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-semibold">4</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Zusätzliche Informationen</h3>
-                            <p className="text-sm text-muted-foreground">Wird nur angezeigt wenn mindestens ein Info-Punkt konfiguriert ist</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.section.additional_info')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.section.additional_info.desc')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel der Sektion
+                                {t('settings.field.section_title')}
                               </label>
                               <DebouncedInput
                                 value={generalSettings.infoTitle}
-                                onChange={(val) => setGeneralSettings({ ...generalSettings, infoTitle: val as string })}
-                                placeholder="Zusätzliche Informationen"
+                                onChange={(val) => setGeneralSettings({ ...generalSettings,infoTitle: val as string })}
+                                placeholder={t('settings.field.section_title')}
                                 className="bg-white dark:bg-gray-700"
                               />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Überschrift für den Bereich mit zusätzlichen Informationen
-                              </p>
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon für den Titel
+                                {t('settings.field.title_icon')}
                               </label>
                               <Select value={generalSettings.infoTitleIcon} onValueChange={(value) => 
                                 setGeneralSettings({ ...generalSettings, infoTitleIcon: value as any })
@@ -2647,10 +2645,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           <div>
                             <div className="flex items-center justify-between mb-4">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Informations-Punkte
+                                {t('settings.field.info_points')}
                               </label>
                               <p className="text-xs text-gray-500 mb-2">
-                                Liste von Stichpunkten die unter dem Info-Text angezeigt werden
+                                {t('settings.field.info_points.desc')}
                               </p>
                               <Button
                                 type="button"
@@ -2660,7 +2658,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 className="flex items-center gap-2 bg-white dark:bg-gray-700"
                               >
                                 <Plus className="h-4 w-4" />
-                                <span>Hinzufügen</span>
+                                <span>{t('settings.button.add')}</span>
                               </Button>
                             </div>
                             <div className="space-y-3">
@@ -2670,7 +2668,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     <DebouncedInput
                                       value={item}
                                       onChange={(val) => handleInfoItemChange(index, val as string)}
-                                      placeholder={`Informationspunkt ${index + 1}`}
+                                      placeholder={`${t('settings.placeholder.info_point')} ${index + 1}`}
                                       className="border-0 bg-transparent focus:ring-1 focus:ring-blue-500"
                                     />
                                   </div>
@@ -2709,7 +2707,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               {generalSettings.infoItems.length === 0 && (
                                 <div className="text-center p-8 bg-white dark:bg-gray-700 rounded-lg border border-dashed">
                                   <p className="text-sm text-muted-foreground">
-                                    Keine Info-Punkte vorhanden. Klicken Sie "Hinzufügen" um welche zu erstellen.
+                                    {t('settings.no_info_points')}
                                   </p>
                                 </div>
                               )}
@@ -2723,14 +2721,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 text-sm font-semibold">5</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Footer</h3>
-                            <p className="text-sm text-muted-foreground">Copyright und Fußzeile der Anwendung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.section.footer')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.section.footer.desc')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Copyright-Text <span className="text-red-500">*</span>
+                              {t('settings.field.copyright')} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               value={generalSettings.footerCopyright}
@@ -2749,8 +2747,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung & Leistung</h3>
-                            <p className="text-sm text-muted-foreground">Einstellungen zur Erkennungslogik und Systemleistung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.section.detection')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.section.detection.desc')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2759,9 +2757,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
                               <div>
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Groß-/Kleinschreibung beachten</p>
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">{t('settings.field.case_sensitive')}</p>
                                 <p className="text-xs text-green-700 dark:text-green-300">
-                                  Wenn aktiviert, werden Regeln nur bei exakt gleicher Schreibweise erkannt. Standard ist deaktiviert.
+                                  {t('settings.field.case_sensitive.desc')}
                                 </p>
                               </div>
                             </div>
@@ -2779,9 +2777,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <Share2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Referrer Tracking aktivieren</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('settings.field.referrer')}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Erfasst die Herkunfts-URL (Referrer) der Besucher für statistische Auswertungen.
+                                  {t('settings.field.referrer.desc')}
                                 </p>
                               </div>
                             </div>
@@ -2799,9 +2797,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Tracking-Cache aktivieren (RAM)</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('settings.field.cache')}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Speichert Statistik-Daten im Arbeitsspeicher für schnellen Zugriff. Erhöht die Systemgeschwindigkeit massiv, benötigt aber mehr RAM bei vielen Daten.
+                                  {t('settings.field.cache.desc')}
                                 </p>
                               </div>
                             </div>
@@ -2819,9 +2817,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3 flex-1 mr-4">
                               <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Max. Statistik-Einträge</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('settings.field.max_stats')}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Begrenzt die Anzahl der gespeicherten Statistik-Einträge in der tracking.json. Älteste Einträge werden bei Überschreitung gelöscht. (0 = Unbegrenzt)
+                                  {t('settings.field.max_stats.desc')}
                                 </p>
                               </div>
                             </div>
@@ -2838,8 +2836,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Empfehlung:</p>
-                                <p>Lassen Sie den Tracking-Cache aktiviert (Standard), es sei denn, Ihr Server hat sehr wenig Arbeitsspeicher (&lt; 512MB) oder Sie haben extrem viele Tracking-Daten (&gt; 1 Mio. Einträge).</p>
+                                <p className="font-medium">{t('settings.recommendation')}</p>
+                                <p>{t('settings.recommendation.cache')}</p>
                               </div>
                             </div>
                           </div>
@@ -2851,8 +2849,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 text-sm font-semibold">7</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
-                            <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.section.auto_redirect')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.section.auto_redirect.desc')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2860,9 +2858,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <ArrowRightLeft className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                               <div>
-                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Automatische Weiterleitung aktivieren</p>
+                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{t('settings.field.auto_redirect')}</p>
                                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                                  Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
+                                  {t('settings.field.auto_redirect.desc')}
                                 </p>
                               </div>
                             </div>
@@ -2884,8 +2882,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Admin-Zugriff:</p>
-                                <p>Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">?admin=true</code> erreichen.</p>
+                                <p className="font-medium">{t('settings.info.admin_access')}</p>
+                                <p>{t('settings.info.admin_access.desc')}</p>
                               </div>
                             </div>
                           </div>
@@ -2897,8 +2895,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center text-pink-600 dark:text-pink-400 text-sm font-semibold">8</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Benutzer-Feedback-Umfrage</h3>
-                            <p className="text-sm text-muted-foreground">Erfassen Sie Feedback von Nutzern zur Qualität der Weiterleitung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('settings.section.feedback')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('settings.section.feedback.desc')}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2906,9 +2904,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                               <div>
-                                <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Feedback-Umfrage aktivieren</p>
+                                <p className="text-sm font-medium text-pink-800 dark:text-pink-200">{t('settings.field.feedback_enable')}</p>
                                 <p className="text-xs text-pink-700 dark:text-pink-300">
-                                  Zeigt ein Popup an, wenn Nutzer auf "Kopieren" oder "Öffnen" klicken, um zu fragen, ob der Link funktioniert hat.
+                                  {t('settings.field.feedback_enable.desc')}
                                 </p>
                               </div>
                             </div>
@@ -2924,7 +2922,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {generalSettings.enableFeedbackSurvey && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                               <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.field.feedback_title')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackSurveyTitle}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
@@ -2933,7 +2931,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.field.feedback_question')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackSurveyQuestion}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
@@ -2942,7 +2940,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.field.feedback_success')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackSuccessMessage}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
@@ -2951,7 +2949,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Button Ja (OK) <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.field.feedback_yes')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackButtonYes}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonYes: val as string })}
@@ -2961,7 +2959,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Button Nein (NOK) <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.field.feedback_no')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={generalSettings.feedbackButtonNo}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonNo: val as string })}
@@ -2980,7 +2978,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">
-                            Speichern Sie Ihre Änderungen um sie auf der Website anzuwenden.
+                            {t('settings.save_hint')}
                           </p>
                         </div>
                         <Button
@@ -2989,7 +2987,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           className="min-w-48 px-6"
                           disabled={updateSettingsMutation.isPending}
                         >
-                          {updateSettingsMutation.isPending ? "Speichere..." : "Einstellungen speichern"}
+                          {updateSettingsMutation.isPending ? t('settings.saving') : t('settings.save_button')}
                         </Button>
                       </div>
                     </div>
@@ -3005,9 +3003,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                     <div className="flex-1">
-                      <CardTitle className="text-lg sm:text-xl">URL-Transformationsregeln</CardTitle>
+                      <CardTitle className="text-lg sm:text-xl">{t('rules.title')}</CardTitle>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                        Verwalten Sie URL-Transformations-Regeln für die Migration.
+                        {t('rules.description')}
                       </p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
@@ -3020,7 +3018,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           className="flex-1 sm:flex-initial"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          {selectedRuleIds.length} löschen
+                          {selectedRuleIds.length} {t('rules.delete_selected')}
                         </Button>
                       )}
                       
@@ -3034,7 +3032,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         className="flex-1 sm:flex-initial sm:w-auto"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Neue Regel
+                        {t('rules.create_new')}
                       </Button>
                     </div>
                   </div>
@@ -3046,11 +3044,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         ref={rulesSearchInputRef}
-                        placeholder="Regeln durchsuchen..."
+                        placeholder={t('rules.search_placeholder')}
                         value={rulesSearchQuery}
                         onChange={(e) => setRulesSearchQuery(e.target.value)}
                         className="pl-10"
-                        aria-label="Regeln durchsuchen"
+                        aria-label={t('rules.search_placeholder')}
                       />
                     </div>
                     
@@ -3058,11 +3056,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
                       <div>
                         {rulesLoading ? (
-                          "Lade Regeln..."
+                          t('rules.loading')
                         ) : debouncedRulesSearchQuery ? (
-                          `${totalRules} von ${paginatedRulesData?.totalAllRules || totalRules} Regel${totalRules !== 1 ? 'n' : ''} gefunden`
+                          `${totalRules} ${t('rules.of')} ${paginatedRulesData?.totalAllRules || totalRules} ${t('rules.count_found')}`
                         ) : (
-                          `${paginatedRulesData?.totalAllRules || totalRules} Regel${(paginatedRulesData?.totalAllRules || totalRules) !== 1 ? 'n' : ''} insgesamt`
+                          `${paginatedRulesData?.totalAllRules || totalRules} ${t('rules.count_total')}`
                         )}
                         {rulesSearchQuery !== debouncedRulesSearchQuery && (
                           <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">Suche...</span>
@@ -3070,24 +3068,24 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       </div>
                       {!rulesLoading && totalFilteredRules > 0 && (
                         <div>
-                          Seite {rulesPage} von {totalPages}
+                          {t('rules.page')} {rulesPage} {t('rules.of')} {totalPages}
                         </div>
                       )}
                     </div>
 
                     {/* Content Area */}
                     {rulesLoading ? (
-                      <div className="text-center py-8">Lade Regeln...</div>
+                      <div className="text-center py-8">{t('rules.loading')}</div>
                     ) : rules.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         {debouncedRulesSearchQuery ? (
                           <>
-                            Keine Regeln für "{debouncedRulesSearchQuery}" gefunden.
+                            {t('rules.no_results')}
                             <br />
                             <span className="text-xs mt-1 block">Versuchen Sie einen anderen Suchbegriff oder erstellen Sie eine neue Regel.</span>
                           </>
                         ) : (
-                          "Keine Regeln vorhanden. Erstellen Sie eine neue Regel."
+                          t('rules.no_rules')
                         )}
                       </div>
                     ) : (
@@ -3123,7 +3121,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               onClick={() => setRulesPage(1)}
                               disabled={rulesPage === 1}
                             >
-                              Erste
+                              {t('rules.first')}
                             </Button>
                             <Button
                               variant="outline"
@@ -3131,12 +3129,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               onClick={() => setRulesPage(rulesPage - 1)}
                               disabled={rulesPage === 1}
                             >
-                              Vorherige
+                              {t('rules.prev')}
                             </Button>
                           </div>
                           
                           <div className="text-sm text-muted-foreground">
-                            Zeige {startIndex + 1}-{Math.min(endIndex, totalFilteredRules)} von {totalFilteredRules}
+                            {t('rules.show_range')} {startIndex + 1}-{Math.min(endIndex, totalFilteredRules)} {t('rules.of')} {totalFilteredRules}
                           </div>
                           
                           <div className="flex items-center gap-2">
@@ -3146,7 +3144,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               onClick={() => setRulesPage(rulesPage + 1)}
                               disabled={rulesPage === totalPages}
                             >
-                              Nächste
+                              {t('rules.next')}
                             </Button>
                             <Button
                               variant="outline"
@@ -3154,7 +3152,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               onClick={() => setRulesPage(totalPages)}
                               disabled={rulesPage === totalPages}
                             >
-                              Letzte
+                              {t('rules.last')}
                             </Button>
                           </div>
                         </div>
@@ -3177,7 +3175,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                     onClick={() => handleStatsViewChange('top100')}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Top 100
+                    {t('stats.top100')}
                   </Button>
                   <Button
                     variant={statsView === 'browser' ? 'default' : 'outline'}
@@ -3185,7 +3183,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                     onClick={() => handleStatsViewChange('browser')}
                   >
                     <List className="h-4 w-4 mr-2" />
-                    Alle Einträge
+                    {t('stats.all_entries')}
                   </Button>
                 </div>
                 {/* Time filter for top100 */}
@@ -3195,9 +3193,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="24h">Letzte 24h</SelectItem>
-                      <SelectItem value="7d">Letzte 7 Tage</SelectItem>
-                      <SelectItem value="all">Alle Zeit</SelectItem>
+                      <SelectItem value="24h">{t('stats.last_24h')}</SelectItem>
+                      <SelectItem value="7d">{t('stats.last_7d')}</SelectItem>
+                      <SelectItem value="all">{t('stats.all_time')}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -3210,11 +3208,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       <input
                         ref={statsSearchInputRef}
                         type="text"
-                        placeholder="Einträge suchen..."
+                        placeholder={t('stats.search_placeholder')}
                         value={statsSearchQuery}
                         onChange={(e) => setStatsSearchQuery(e.target.value)}
                         className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
-                        aria-label="Statistiken durchsuchen"
+                        aria-label={t('stats.search_placeholder')}
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -3223,12 +3221,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Regel-Filter" />
+                          <SelectValue placeholder={t('stats.filter_rule')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Alle Einträge</SelectItem>
-                          <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
-                          <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
+                          <SelectItem value="all">{t('stats.filter_all')}</SelectItem>
+                          <SelectItem value="with_rule">{t('stats.filter_with_rule')}</SelectItem>
+                          <SelectItem value="no_rule">{t('stats.filter_no_rule')}</SelectItem>
                         </SelectContent>
                       </Select>
 
@@ -3237,10 +3235,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         onValueChange={(value) => setStatsQualityFilter(value)}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Qualität" />
+                          <SelectValue placeholder={t('stats.filter_quality')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Alle Qualitäten</SelectItem>
+                          <SelectItem value="all">{t('stats.filter_all')}</SelectItem>
                           <SelectItem value="100">100% (Exakt)</SelectItem>
                           <SelectItem value="75">75% (Fast exakt)</SelectItem>
                           <SelectItem value="50">50% (Teilweise)</SelectItem>
@@ -3253,10 +3251,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         onValueChange={(value) => setStatsFeedbackFilter(value as 'all' | 'OK' | 'NOK' | 'empty')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Feedback" />
+                          <SelectValue placeholder={t('stats.filter_feedback')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Alle Feedbacks</SelectItem>
+                          <SelectItem value="all">{t('stats.filter_all')}</SelectItem>
                           <SelectItem value="OK">👍 OK</SelectItem>
                           <SelectItem value="NOK">👎 NOK</SelectItem>
                           <SelectItem value="empty">Kein Feedback</SelectItem>
@@ -3307,14 +3305,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Top URLs</CardTitle>
+                      <CardTitle>{t('stats.top_urls')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {top100Loading ? (
-                        <div className="text-center py-8">Lade URLs...</div>
+                        <div className="text-center py-8">{t('rules.loading')}</div>
                       ) : !topUrlsData?.length ? (
                         <div className="text-center py-8 text-muted-foreground">
-                          Keine URL-Aufrufe vorhanden.
+                          {t('stats.no_data')}
                         </div>
                       ) : (
                         <>
@@ -3323,9 +3321,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               <thead className="bg-muted/50 border-b">
                                 <tr>
                                   <th className="text-left p-2 sm:p-3 font-medium w-12">#</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium">URL-Pfad</th>
-                                  <th className="text-right p-2 sm:p-3 font-medium w-20">Aufrufe</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium w-24">Anteil</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium">{t('stats.path')}</th>
+                                  <th className="text-right p-2 sm:p-3 font-medium w-20">{t('stats.views')}</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-24">{t('stats.share')}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -3364,14 +3362,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   {generalSettings.enableReferrerTracking && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Top Referrer</CardTitle>
+                      <CardTitle>{t('stats.top_referrers')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {topReferrersLoading ? (
-                        <div className="text-center py-8">Lade Referrer...</div>
+                        <div className="text-center py-8">{t('rules.loading')}</div>
                       ) : !topReferrersData?.length ? (
                         <div className="text-center py-8 text-muted-foreground">
-                          Keine Referrer-Daten vorhanden.
+                          {t('stats.no_data')}
                         </div>
                       ) : (
                         <>
@@ -3380,9 +3378,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               <thead className="bg-muted/50 border-b">
                                 <tr>
                                   <th className="text-left p-2 sm:p-3 font-medium w-12">#</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium">Domain</th>
-                                  <th className="text-right p-2 sm:p-3 font-medium w-20">Anzahl</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium w-24">Anteil</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium">{t('stats.domain')}</th>
+                                  <th className="text-right p-2 sm:p-3 font-medium w-20">{t('stats.count')}</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-24">{t('stats.share')}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -3434,14 +3432,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               {statsView === 'browser' && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Alle Tracking-Einträge</CardTitle>
+                    <CardTitle>{t('stats.all_entries')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {entriesLoading ? (
-                      <div className="text-center py-8">Lade Einträge...</div>
+                      <div className="text-center py-8">{t('rules.loading')}</div>
                     ) : !trackingEntries?.length ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        {statsSearchQuery ? `Keine Einträge für "${statsSearchQuery}" gefunden.` : 'Keine Tracking-Einträge vorhanden.'}
+                        {statsSearchQuery ? `${t('rules.no_results')} "${statsSearchQuery}"` : t('stats.no_data')}
                       </div>
                     ) : (
                       <>
@@ -3516,20 +3514,19 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileSpreadsheet className="h-6 w-6 text-primary" />
-                        <CardTitle>Standard Import / Export (Excel, CSV)</CardTitle>
+                        <CardTitle>{t('export.title_standard')}</CardTitle>
                     </div>
                     <CardDescription>
-                        Benutzerfreundlicher Import und Export für Redirect Rules. Unterstützt Excel (.xlsx) und CSV.
-                        Mit Vorschau-Funktion vor dem Import.
+                        {t('export.desc_standard')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Import Section */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Importieren</h3>
+                            <h3 className="font-medium text-foreground">{t('export.import_rules')}</h3>
                             <div className="text-sm text-muted-foreground space-y-2">
-                                <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
+                                <p>{t('export.import_desc')}</p>
                                 <ul className="list-disc list-inside text-xs">
                                         <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
                                         <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
@@ -3543,12 +3540,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (Excel)
+                                    {t('export.sample_excel')}
                                   </a>
                                   <span className="text-muted-foreground">|</span>
                                   <a href="/sample-rules-import.csv" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (CSV)
+                                    {t('export.sample_csv')}
                                   </a>
                                 </div>
                             </div>
@@ -3574,14 +3571,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                             {previewMutation.isPending ? (
                                                 <div className="animate-pulse flex flex-col items-center">
                                                     <div className="h-8 w-8 mb-3 rounded-full bg-muted"></div>
-                                                    <div className="text-sm text-muted-foreground">Analysiere Datei...</div>
+                                                    <div className="text-sm text-muted-foreground">{t('export.analyzing')}</div>
                                                 </div>
                                             ) : (
                                                 <>
                                                     <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
                                                     <p className="mb-1 text-sm text-foreground font-medium">
-                                                        Klicken zum Auswählen
-                                                        <span className="text-muted-foreground font-normal"> oder Datei hierher ziehen</span>
+                                                        {t('export.click_to_select')}
+                                                        <span className="text-muted-foreground font-normal"> {t('export.drag_drop')}</span>
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">
                                                         Excel (.xlsx) oder CSV
@@ -3597,9 +3594,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 <div className="flex items-start gap-3 flex-1">
                                     <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
                                     <div>
-                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">URLs automatisch kodieren</p>
+                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">{t('export.auto_encode')}</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                                            Sonderzeichen in URLs automatisch konvertieren (encodeURI)
+                                            {t('export.auto_encode_desc')}
                                         </p>
                                     </div>
                                 </div>
@@ -3618,19 +3615,18 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                         {/* Export Section */}
                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Exportieren</h3>
+                            <h3 className="font-medium text-foreground">{t('export.export_rules')}</h3>
                             <p className="text-sm text-muted-foreground">
-                                Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
-                                Die Dateien können später wieder importiert werden.
+                                {t('export.export_desc')}
                             </p>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (Excel)
+                                    {t('export.download_excel')}
                                 </Button>
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
                                     <FileText className="h-4 w-4 mr-2" />
-                                    Herunterladen (CSV)
+                                    {t('export.download_csv')}
                                 </Button>
                             </div>
                         </div>
@@ -3643,10 +3639,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileJson className="h-6 w-6 text-orange-600" />
-                        <CardTitle>Erweiterter Regel-Import/Export</CardTitle>
+                        <CardTitle>{t('export.title_advanced')}</CardTitle>
                     </div>
                     <CardDescription>
-                        Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.
+                        {t('export.desc_advanced')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -3655,7 +3651,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                          <div className="space-y-4 border rounded-lg p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                Regel-Rohdaten (JSON)
+                                {t('export.json_raw')}
                             </h3>
                             <div className="space-y-2">
                                 <Button
@@ -3664,7 +3660,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     onClick={() => handleExport('rules', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (JSON)
+                                    {t('export.download_json')}
                                 </Button>
                                 <div className="relative">
                                     <input
@@ -3679,7 +3675,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         disabled={importMutation.isPending}
                                     >
                                         <Upload className="h-4 w-4 mr-2" />
-                                        Importieren (JSON)
+                                        {t('export.import_json')}
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -3689,7 +3685,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                   </a>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-2">
-                                    <strong>Warnung:</strong> Keine Vorschau. Überschreibt bestehende Regeln bei ID-Konflikt sofort.
+                                    {t('export.warning_json')}
                                 </p>
                             </div>
                          </div>
@@ -3702,10 +3698,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <Settings className="h-6 w-6 text-blue-600" />
-                        <CardTitle>System & Statistiken</CardTitle>
+                        <CardTitle>{t('export.title_system')}</CardTitle>
                     </div>
                     <CardDescription>
-                        Verwaltung von Systemeinstellungen und Statistiken.
+                        {t('export.desc_system')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -3714,10 +3710,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                System-Einstellungen
+                                {t('export.system_settings')}
                             </h3>
                             <p className="text-xs text-muted-foreground">
-                                Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.
+                                {t('export.system_settings_desc')}
                             </p>
                             <div className="space-y-2">
                                 <Button
@@ -3726,7 +3722,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     onClick={() => handleExport('settings', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (JSON)
+                                    {t('export.download_json')}
                                 </Button>
                                 <div className="relative">
                                   <input
@@ -3741,7 +3737,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     disabled={importSettingsMutation.isPending}
                                   >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    Importieren (JSON)
+                                    {t('export.import_json')}
                                   </Button>
                                 </div>
                             </div>
@@ -3751,10 +3747,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <BarChart3 className="h-4 w-4" />
-                                Statistiken
+                                {t('export.stats')}
                             </h3>
                             <p className="text-xs text-muted-foreground">
-                                Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.
+                                {t('export.stats_desc')}
                             </p>
                             <div className="space-y-2">
                                 <Button
@@ -3763,7 +3759,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     onClick={() => handleExport('statistics', 'csv')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (CSV)
+                                    {t('export.download_csv')}
                                 </Button>
                             </div>
                          </div>
@@ -3776,13 +3772,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5 text-red-500" />
-                        <CardTitle className="text-red-500">Gefahrenzone!</CardTitle>
+                        <CardTitle className="text-red-500">{t('nav.danger')}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
-                            <h4 className="font-medium text-sm">Cache Wartung</h4>
+                            <h4 className="font-medium text-sm">{t('danger.cache_maintenance')}</h4>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <Button
                                     variant="outline"
@@ -3790,16 +3786,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     disabled={rebuildCacheMutation.isPending}
                                     className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 w-full sm:w-auto"
                                 >
-                                    {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
+                                    {rebuildCacheMutation.isPending ? t('danger.rebuild_cache') + "..." : t('danger.rebuild_cache')}
                                 </Button>
                                 <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                    Nur bei Problemen mit der Regelerkennung notwendig.
+                                    {t('danger.rebuild_cache_desc')}
                                 </p>
                             </div>
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
-                            <h4 className="font-medium text-sm">Sicherheit</h4>
+                            <h4 className="font-medium text-sm">{t('danger.security')}</h4>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <Button
                                     variant="outline"
@@ -3807,16 +3803,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     className="w-full sm:w-auto"
                                 >
                                     <Shield className="h-4 w-4 mr-2" />
-                                    Blockierte IPs anzeigen und verwalten
+                                    {t('danger.manage_ips')}
                                 </Button>
                                 <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                    Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
+                                    {t('danger.manage_ips_desc')}
                                 </p>
                             </div>
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
-                            <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
+                            <h4 className="font-medium text-sm text-red-600">{t('danger.destructive')}</h4>
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
@@ -3828,10 +3824,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Alle Regeln löschen
+                                        {t('danger.delete_rules')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
+                                        {t('danger.delete_rules_desc')}
                                     </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -3844,10 +3840,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Alle Statistiken löschen
+                                        {t('danger.delete_stats')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle erfassten Tracking-Daten unwiderruflich.
+                                        {t('danger.delete_stats_desc')}
                                     </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -3860,10 +3856,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         className="w-full sm:w-auto"
                                     >
                                         <Shield className="h-4 w-4 mr-2" />
-                                        Blockierte IPs löschen
+                                        {t('danger.delete_ips')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
+                                        {t('danger.delete_ips_desc')}
                                     </p>
                                 </div>
                             </div>
@@ -3999,10 +3995,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
-              {editingRule ? "Regel bearbeiten" : "Neue Regel erstellen"}
+              {editingRule ? t('dialog.rule.edit') : t('dialog.rule.create')}
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              {editingRule ? "Bearbeiten Sie die existierende Regel hier." : "Erstellen Sie hier eine neue Regel."}
+              {editingRule ? t('dialog.rule.edit_desc') : t('dialog.rule.create_desc')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitRule} className="space-y-4 sm:space-y-6">
@@ -4156,7 +4152,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 className="flex-1"
                 onClick={() => setIsRuleDialogOpen(false)}
               >
-                Abbrechen
+                {t('common.cancel')}
               </Button>
             </div>
           </form>
@@ -4199,7 +4195,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               }}
               className="w-full sm:w-auto"
             >
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button 
               onClick={() => {
@@ -4221,10 +4217,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <Shield className="h-5 w-5" />
-              Blockierte IPs löschen?
+              {t('dialog.delete_ips')}?
             </DialogTitle>
             <DialogDescription>
-              Dies löscht alle derzeit blockierten IP-Adressen. Nutzer können sich sofort wieder anmelden.
+              {t('dialog.delete_ips_desc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -4258,13 +4254,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowClearBlockedIpsDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowClearBlockedIpsDialog(false)}>{t('common.cancel')}</Button>
             <Button
               variant="destructive"
               onClick={() => clearBlockedIpsMutation.mutate()}
               disabled={clearBlockedIpsConfirmationText !== "DELETE" || clearBlockedIpsMutation.isPending}
             >
-              {clearBlockedIpsMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+              {clearBlockedIpsMutation.isPending ? t('common.delete') + "..." : t('dialog.delete_all_confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4274,9 +4270,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       <Dialog open={showManageBlockedIpsDialog} onOpenChange={setShowManageBlockedIpsDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Blockierte IPs verwalten</DialogTitle>
+            <DialogTitle>{t('danger.manage_ips')}</DialogTitle>
             <DialogDescription>
-              Hier können Sie aktuell blockierte IP-Adressen einsehen und verwalten.
+              {t('danger.manage_ips_desc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -4345,7 +4341,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </div>
 
           <DialogFooter>
-             <Button variant="outline" onClick={() => setShowManageBlockedIpsDialog(false)}>Schließen</Button>
+             <Button variant="outline" onClick={() => setShowManageBlockedIpsDialog(false)}>{t('common.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -4356,10 +4352,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Alle Statistiken löschen?
+              {t('dialog.delete_all_stats')}
             </DialogTitle>
             <DialogDescription>
-              Dies löscht alle erfassten Tracking-Daten unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('dialog.delete_all_stats_desc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -4391,13 +4387,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>{t('common.cancel')}</Button>
             <Button
               variant="destructive"
               onClick={() => deleteAllStatsMutation.mutate()}
               disabled={deleteAllStatsConfirmationText !== "DELETE" || deleteAllStatsMutation.isPending}
             >
-              {deleteAllStatsMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+              {deleteAllStatsMutation.isPending ? t('common.delete') + "..." : t('dialog.delete_all_confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4409,10 +4405,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <AlertDialogHeader className="flex-shrink-0">
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Validierungswarnung
+              {t('dialog.validation')}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground text-sm">
-              Möchten Sie die Regel trotz der folgenden Warnung(en) speichern?
+              {t('dialog.validation_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           
@@ -4425,15 +4421,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </div>
           
           <AlertDialogFooter className="flex-shrink-0">
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleForceSave}
               disabled={forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {(forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending) 
-                ? 'Speichere...' 
-                : 'Trotzdem speichern'}
+                ? t('common.save') + "..."
+                : t('dialog.save_anyway')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4443,16 +4439,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Regeln löschen</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog.delete_rules')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie die ausgewählten {selectedRuleIds.length} {selectedRuleIds.length === 1 ? 'Regel' : 'Regeln'} löschen möchten?
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('dialog.delete_rules_confirm')}
               <br /><br />
-              <strong>Hinweis:</strong> Es werden nur die auf der aktuellen Seite ausgewählten Regeln gelöscht.
+              <strong>{t('dialog.delete_all_confirm')}</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 // Critical fix: Only delete rules that are on current page
@@ -4468,7 +4463,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={bulkDeleteRulesMutation.isPending}
             >
-              {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+              {bulkDeleteRulesMutation.isPending ? t('common.delete') + "..." : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4497,12 +4492,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStatsLimitChange}
               className="bg-yellow-600 hover:bg-yellow-700"
             >
-              Verstanden & Speichern
+              {t('common.save')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4514,10 +4509,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Alle Regeln löschen?
+              {t('dialog.delete_all_rules')}
             </DialogTitle>
             <DialogDescription>
-              Dies löscht alle vorhandenen Regeln unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('dialog.delete_all_rules_desc')}
             </DialogDescription>
           </DialogHeader>
           
@@ -4532,7 +4527,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 className="w-full"
             >
                 <Download className="h-4 w-4 mr-2" />
-                Backup herunterladen (JSON)
+                {t('export.download_json')}
             </Button>
 
             <div className="space-y-2">
@@ -4549,13 +4544,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)}>{t('common.cancel')}</Button>
             <Button
               variant="destructive"
               onClick={() => deleteAllRulesMutation.mutate()}
               disabled={deleteAllConfirmationText !== "DELETE" || deleteAllRulesMutation.isPending}
             >
-              {deleteAllRulesMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+              {deleteAllRulesMutation.isPending ? t('common.delete') + "..." : t('dialog.delete_all_confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
