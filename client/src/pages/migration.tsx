@@ -409,8 +409,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       }, 3000);
     } catch (error) {
       toast({
-        title: "Kopieren fehlgeschlagen",
-        description: "Bitte kopieren Sie die URL manuell.",
+        title: t('migration.copy_fail_title', "Kopieren fehlgeschlagen"),
+        description: t('migration.copy_fail', "Bitte kopieren Sie die URL manuell."),
         variant: "destructive",
       });
     }
@@ -529,7 +529,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">URL wird analysiert...</p>
+                    <p className="text-muted-foreground">{t('migration.analyzing', 'URL wird analysiert...')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -548,7 +548,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                               className="h-6 text-xs px-2 bg-background/50 hover:bg-background"
                               onClick={() => updateSetting('popupMode', settings?.popupMode === 'inline' ? 'active' : 'inline')}
                           >
-                              {settings?.popupMode === 'inline' ? 'Switch to Popup' : 'Switch to Inline'}
+                              {settings?.popupMode === 'inline' ? t('migration.switch_popup', 'Switch to Popup') : t('migration.switch_inline', 'Switch to Inline')}
                           </Button>
                       </div>
                     </div>}
@@ -642,7 +642,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                                 </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                <p>Klicken zum Kopieren</p>
+                                <p>{t('migration.copy_tooltip', 'Klicken zum Kopieren')}</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -666,7 +666,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                           <Copy className="h-4 w-4" />
                         )}
                         <span>
-                            {isCopied ? "Kopiert!" : (
+                            {isCopied ? t('migration.copied', 'Kopiert!') : (
                                 <InlineText
                                     value={getLocalizedText('content.copyButtonText', settings?.copyButtonText || "URL kopieren")}
                                     onChange={(val) => updateTranslation('content.copyButtonText', val, i18n.language)}
@@ -697,7 +697,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       <Alert className="border-green-200 bg-green-50">
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertDescription className="text-green-800">
-                          URL erfolgreich in die Zwischenablage kopiert!
+                          {t('migration.copy_success', 'URL erfolgreich in die Zwischenablage kopiert!')}
                         </AlertDescription>
                       </Alert>
                     )}
@@ -811,7 +811,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       {isEditMode && (
                           <li>
                               <Button variant="outline" size="sm" onClick={addInfoItem} className="w-full border-dashed">
-                                  <Plus className="w-4 h-4 mr-2" /> Add Info Item
+                                  <Plus className="w-4 h-4 mr-2" /> {t('migration.add_info', 'Add Info Item')}
                               </Button>
                           </li>
                       )}
@@ -867,7 +867,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     className="h-6 text-xs px-2 bg-background/50 hover:bg-background"
                     onClick={() => updateSetting('popupMode', 'inline')}
                 >
-                    Switch to Inline
+                    {t('migration.switch_inline', 'Switch to Inline')}
                 </Button>
                 <InlineColor
                     value={settings?.mainBackgroundColor || '#ffffff'}

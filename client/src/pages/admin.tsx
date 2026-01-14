@@ -2043,7 +2043,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             {/* Icon */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${generalSettings.headerLogoUrl ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                Icon {generalSettings.headerLogoUrl && '(deaktiviert - Logo wird verwendet)'}
+                                {t('settings.header.icon', 'Icon')} {generalSettings.headerLogoUrl && '(deaktiviert - Logo wird verwendet)'}
                               </label>
                               <Select 
                                 value={generalSettings.headerIcon} 
@@ -2076,7 +2076,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             {/* Background Color */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Hintergrundfarbe
+                                {t('settings.header.bg_color', 'Hintergrundfarbe')}
                               </label>
                               <div className="flex items-center gap-3">
                                 <input
@@ -2099,7 +2099,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           <div className="pt-4">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Logo hochladen
+                                {t('settings.header.logo_upload', 'Logo hochladen')}
                               </label>
                               <div className="space-y-2">
                                 <input
@@ -2183,10 +2183,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer cursor-pointer"
                                 />
                                 <div className="text-xs text-muted-foreground">
-                                  <strong>Empfehlung:</strong> PNG mit transparentem Hintergrund, 200x50 Pixel (max. 5MB)
+                                  {t('settings.header.logo_recommendation', 'Empfehlung: PNG mit transparentem Hintergrund, 200x50 Pixel (max. 5MB)')}
                                 </div>
                                 <div className="text-xs text-gray-500 mt-2">
-                                  <strong>Funktion:</strong> Wenn ein Logo hochgeladen wird, ersetzt es das gewählte Icon links neben dem Header-Titel. Ohne Logo wird das gewählte Icon angezeigt.
+                                  {t('settings.header.logo_function', 'Funktion: Wenn ein Logo hochgeladen wird, ersetzt es das gewählte Icon links neben dem Header-Titel. Ohne Logo wird das gewählte Icon angezeigt.')}
                                 </div>
                                 
                                 {/* Logo Preview and Delete */}
@@ -2194,7 +2194,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                   <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-800 border rounded-lg">
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Aktuelles Logo:
+                                        {t('settings.header.current_logo', 'Aktuelles Logo:')}
                                       </span>
                                       <Button 
                                         variant="outline" 
@@ -2275,7 +2275,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     <div className="flex items-center gap-2 justify-center">
                                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                       <span className="text-xs text-green-700 dark:text-green-300">
-                                        Logo aktiv - wird anstelle des Icons angezeigt
+                                        {t('settings.header.logo_active', 'Logo aktiv - wird anstelle des Icons angezeigt')}
                                       </span>
                                     </div>
                                   </div>
@@ -2298,7 +2298,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              PopUp-Anzeige
+                              {t('settings.popup.display', 'PopUp-Anzeige')}
                             </label>
                             <Select value={generalSettings.popupMode} onValueChange={(value) =>
                               setGeneralSettings({ ...generalSettings, popupMode: value as any })
@@ -2307,9 +2307,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="active">Aktiv</SelectItem>
-                                <SelectItem value="inline">Inline</SelectItem>
-                                <SelectItem value="disabled">Deaktiviert</SelectItem>
+                                <SelectItem value="active">{t('settings.popup.mode_active', 'Aktiv')}</SelectItem>
+                                <SelectItem value="inline">{t('settings.popup.mode_inline', 'Inline')}</SelectItem>
+                                <SelectItem value="disabled">{t('settings.popup.mode_disabled', 'Deaktiviert')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -2329,7 +2329,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon
+                                {t('settings.header.icon', 'Icon')}
                               </label>
                               <Select value={generalSettings.alertIcon} onValueChange={(value) =>
                                 setGeneralSettings({ ...generalSettings, alertIcon: value as any })
@@ -2359,12 +2359,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
+                              {t('settings.popup.description_desc', 'Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte')}
                             </p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              PopUp Button-Text
+                              {t('settings.popup.button_text_label', 'PopUp Button-Text')}
                             </label>
                             <DebouncedInput
                               value={getTranslatedValue('content.popupButtonText', generalSettings.popupButtonText)}
@@ -2374,13 +2374,13 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Text für den Button der das PopUp-Fenster öffnet
+                              {t('settings.popup.button_text_desc', 'Text für den Button der das PopUp-Fenster öffnet')}
                             </p>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Alert-Hintergrundfarbe
+                                {t('settings.popup.bg_color_alert', 'Alert-Hintergrundfarbe')}
                               </label>
                               <Select value={generalSettings.alertBackgroundColor} onValueChange={(value) =>
                                 setGeneralSettings({ ...generalSettings, alertBackgroundColor: value as any })
@@ -2399,7 +2399,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Hauptinhalt-Hintergrundfarbe
+                                {t('settings.popup.bg_color_content', 'Hauptinhalt-Hintergrundfarbe')}
                               </label>
                               <div className="flex items-center gap-3">
                                 <input
@@ -2437,7 +2437,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {/* Field 1: Target Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              {t('settings.field.target_domain', 'Ziel-Domain (Standard neue Domain)')} <span className="text-red-500">*</span>
+                              {t('settings.routing.target_domain', 'Ziel-Domain (Standard neue Domain)')} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               value={generalSettings.defaultNewDomain}
@@ -2446,14 +2446,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain ? 'border-red-500' : ''}`}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Verwendet für Partial Matches und spezifische Regeln.
+                              {t('settings.routing.target_domain_desc', 'Verwendet für Partial Matches und spezifische Regeln.')}
                             </p>
                           </div>
 
                           {/* Field 2: Fallback Strategy */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                {t('settings.field.fallback_strategy', 'Fallback-Strategie')}
+                                {t('settings.routing.fallback_strategy', 'Fallback-Strategie')}
                             </label>
                             <Select
                                 value={generalSettings.defaultRedirectMode}
@@ -2463,31 +2463,31 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             >
                                 <SelectTrigger className="h-auto min-h-[40px] bg-white dark:bg-gray-700">
                                     <SelectValue>
-                                        {generalSettings.defaultRedirectMode === "domain" && "Einfacher Domain-Austausch"}
-                                        {generalSettings.defaultRedirectMode === "search" && "Intelligente Such-Weiterleitung"}
+                                        {generalSettings.defaultRedirectMode === "domain" && t('settings.routing.strategy_domain', 'Einfacher Domain-Austausch')}
+                                        {generalSettings.defaultRedirectMode === "search" && t('settings.routing.strategy_search', 'Intelligente Such-Weiterleitung')}
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent className="w-[calc(100vw-2rem)] sm:w-[var(--radix-select-trigger-width)]">
                                     <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Einfacher Domain-Austausch</span>
+                                            <span className="font-medium text-sm">{t('settings.routing.strategy_domain', 'Einfacher Domain-Austausch')}</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
-                                                Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.
+                                                {t('settings.routing.strategy_domain_desc', 'Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.')}
                                             </span>
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="search" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Intelligente Such-Weiterleitung</span>
+                                            <span className="font-medium text-sm">{t('settings.routing.strategy_search', 'Intelligente Such-Weiterleitung')}</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
-                                                Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.
+                                                {t('settings.routing.strategy_search_desc', 'Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.')}
                                             </span>
                                         </div>
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 mt-1">
-                                Definiert was passiert, wenn KEINE Regel (Exakt oder Partial) greift.
+                                {t('settings.routing.strategy_desc_help', 'Definiert was passiert, wenn KEINE Regel (Exakt oder Partial) greift.')}
                             </p>
                           </div>
 
@@ -2495,7 +2495,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {generalSettings.defaultRedirectMode === 'search' && (
                               <div>
                                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  {t('settings.field.search_base_url', 'Such-Basis-URL')} <span className="text-red-500">*</span>
+                                  {t('settings.routing.search_base_url', 'Such-Basis-URL')} <span className="text-red-500">*</span>
                                 </label>
                                 <DebouncedInput
                                   value={generalSettings.defaultSearchUrl || ''}
@@ -2504,18 +2504,18 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                   className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                  Beispiel: https://newapp.com/?q=
+                                  {t('settings.routing.search_base_url_help', 'Beispiel: https://newapp.com/?q=')}
                                 </p>
                               </div>
                           )}
 
                            {/* Field 4: Fallback Info Messages (Grouped) */}
                            <div className="border-t pt-4 mt-4">
-                                <h4 className="text-sm font-medium mb-4">Fallback-Info-Nachrichten</h4>
+                                <h4 className="text-sm font-medium mb-4">{t('settings.routing.fallback_messages', 'Fallback-Info-Nachrichten')}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
+                                        <label className="block text-sm font-medium mb-2">{t('settings.routing.special_hints_title', 'Spezielle Hinweise - Titel')}</label>
                                         <DebouncedInput
                                             value={getTranslatedValue('content.specialHintsTitle', generalSettings.specialHintsTitle)}
                                             onChange={(val) => handleTranslationChange('content.specialHintsTitle', val as string)}
@@ -2523,7 +2523,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
+                                        <label className="block text-sm font-medium mb-2">{t('settings.routing.special_hints_icon', 'Spezielle Hinweise - Icon')}</label>
                                          <Select value={generalSettings.specialHintsIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, specialHintsIcon: val as any})}>
                                             <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
                                             <SelectContent>
@@ -2547,7 +2547,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     {/* Standard Info Text */}
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Standard Info Text (Beschreibung)
+                                            {t('settings.routing.standard_info_text', 'Standard Info Text (Beschreibung)')}
                                         </label>
                                         <DebouncedTextarea
                                             value={getTranslatedValue('content.specialHintsDescription', generalSettings.specialHintsDescription)}
@@ -2556,7 +2556,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                             className="bg-white dark:bg-gray-700"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
+                                            {t('settings.routing.standard_info_help', 'Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.')}
                                         </p>
                                     </div>
 
@@ -2564,7 +2564,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     {generalSettings.defaultRedirectMode === 'search' && (
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Smart Search Nachricht
+                                            {t('settings.routing.smart_search_msg', 'Smart Search Nachricht')}
                                         </label>
                                         <DebouncedTextarea
                                             value={getTranslatedValue('content.defaultSearchMessage', generalSettings.defaultSearchMessage)}
@@ -2573,7 +2573,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                             className="bg-white dark:bg-gray-700"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).
+                                            {t('settings.routing.smart_search_msg_help', 'Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).')}
                                         </p>
                                     </div>
                                     )}
@@ -2582,7 +2582,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                            {/* Visualization Settings */}
                            <div className="mt-6 pt-6 border-t border-dashed">
-                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">Visualisierung</h4>
+                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">{t('settings.visual.title', 'Visualisierung')}</h4>
                                <div className="space-y-6">
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
@@ -2594,7 +2594,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                            />
                                        </div>
                                        <div>
-                                         <label className="block text-sm font-medium mb-2">Icon</label>
+                                         <label className="block text-sm font-medium mb-2">{t('settings.visual.icon', 'Icon')}</label>
                                          <Select value={generalSettings.urlComparisonIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, urlComparisonIcon: val as any})}>
                                             <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
                                             <SelectContent>
@@ -2615,7 +2615,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                          </Select>
                                        </div>
                                        <div>
-                                          <label className="block text-sm font-medium mb-2">Hintergrundfarbe</label>
+                                          <label className="block text-sm font-medium mb-2">{t('settings.visual.bg_color', 'Hintergrundfarbe')}</label>
                                           <div className="flex items-center gap-3">
                                               <input type="color" value={generalSettings.urlComparisonBackgroundColor} onChange={(e) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: e.target.value})} className="w-20 h-10 p-1 rounded-md border cursor-pointer"/>
                                               <DebouncedInput value={generalSettings.urlComparisonBackgroundColor} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: val as string})} className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"/>
@@ -2625,7 +2625,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Label für alte URL</label>
+                                           <label className="block text-sm font-medium mb-2">{t('settings.visual.label_old_url', 'Label für alte URL')}</label>
                                            <DebouncedInput
                                                value={getTranslatedValue('content.oldUrlLabel', generalSettings.oldUrlLabel)}
                                                onChange={(val) => handleTranslationChange('content.oldUrlLabel', val as string)}
@@ -2633,7 +2633,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                            />
                                        </div>
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Label für neue URL</label>
+                                           <label className="block text-sm font-medium mb-2">{t('settings.visual.label_new_url', 'Label für neue URL')}</label>
                                            <DebouncedInput
                                                value={getTranslatedValue('content.newUrlLabel', generalSettings.newUrlLabel)}
                                                onChange={(val) => handleTranslationChange('content.newUrlLabel', val as string)}
@@ -2649,7 +2649,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                    <div className="flex items-center gap-3">
                                      <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
                                      <div>
-                                       <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                       <p className="text-sm font-medium text-green-800 dark:text-green-200">{t('settings.visual.gauge_title', 'Link-Qualitätstacho anzeigen')}</p>
                                      </div>
                                    </div>
                                    <Switch
@@ -2664,7 +2664,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                  {generalSettings.showLinkQualityGauge && (
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (100%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.visual.match_high', 'Text für hohe Übereinstimmung (100%)')}</label>
                                        <DebouncedInput
                                            value={getTranslatedValue('content.matchHighExplanation', generalSettings.matchHighExplanation)}
                                            onChange={(val) => handleTranslationChange('content.matchHighExplanation', val as string)}
@@ -2672,7 +2672,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                        />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (75%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.visual.match_medium', 'Text für mittlere Übereinstimmung (75%)')}</label>
                                        <DebouncedInput
                                            value={getTranslatedValue('content.matchMediumExplanation', generalSettings.matchMediumExplanation)}
                                            onChange={(val) => handleTranslationChange('content.matchMediumExplanation', val as string)}
@@ -2680,7 +2680,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                        />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung (50%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.visual.match_low', 'Text für geringe Übereinstimmung (50%)')}</label>
                                        <DebouncedInput
                                            value={getTranslatedValue('content.matchLowExplanation', generalSettings.matchLowExplanation)}
                                            onChange={(val) => handleTranslationChange('content.matchLowExplanation', val as string)}
@@ -2688,7 +2688,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                        />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer (100%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.visual.match_root', 'Text für Startseiten-Treffer (100%)')}</label>
                                        <DebouncedInput
                                            value={getTranslatedValue('content.matchRootExplanation', generalSettings.matchRootExplanation)}
                                            onChange={(val) => handleTranslationChange('content.matchRootExplanation', val as string)}
@@ -2696,7 +2696,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                        />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung (0%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('settings.visual.match_none', 'Text für keine Übereinstimmung (0%)')}</label>
                                        <DebouncedInput
                                            value={getTranslatedValue('content.matchNoneExplanation', generalSettings.matchNoneExplanation)}
                                            onChange={(val) => handleTranslationChange('content.matchNoneExplanation', val as string)}
@@ -2711,7 +2711,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
+                                       <label className="block text-sm font-medium mb-2">{t('settings.visual.btn_copy', 'Button-Text "URL kopieren"')}</label>
                                        <DebouncedInput
                                            value={getTranslatedValue('content.copyButtonText', generalSettings.copyButtonText)}
                                            onChange={(val) => handleTranslationChange('content.copyButtonText', val as string)}
@@ -2719,7 +2719,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                        />
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
+                                       <label className="block text-sm font-medium mb-2">{t('settings.visual.btn_open', 'Button-Text "In neuem Tab öffnen"')}</label>
                                        <DebouncedInput
                                            value={getTranslatedValue('content.openButtonText', generalSettings.openButtonText)}
                                            onChange={(val) => handleTranslationChange('content.openButtonText', val as string)}
@@ -2745,7 +2745,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                {t('settings.field.title', 'Titel der Sektion')}
+                                {t('settings.info.title_label', 'Titel der Sektion')}
                               </label>
                               <DebouncedInput
                                 value={getTranslatedValue('content.infoTitle', generalSettings.infoTitle)}
@@ -2754,12 +2754,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 className="bg-white dark:bg-gray-700"
                               />
                               <p className="text-xs text-gray-500 mt-1">
-                                Überschrift für den Bereich mit zusätzlichen Informationen
+                                {t('settings.info.title_help', 'Überschrift für den Bereich mit zusätzlichen Informationen')}
                               </p>
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon für den Titel
+                                {t('settings.info.icon_label', 'Icon für den Titel')}
                               </label>
                               <Select value={generalSettings.infoTitleIcon} onValueChange={(value) => 
                                 setGeneralSettings({ ...generalSettings, infoTitleIcon: value as any })
@@ -2787,12 +2787,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           </div>
                           <div>
                             <div className="flex items-center justify-between mb-4">
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Informations-Punkte
-                              </label>
-                              <p className="text-xs text-gray-500 mb-2">
-                                Liste von Stichpunkten die unter dem Info-Text angezeigt werden
-                              </p>
+                              <div>
+                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {t('settings.info.items_label', 'Informations-Punkte')}
+                                  </label>
+                                  <p className="text-xs text-gray-500 mb-2">
+                                    {t('settings.info.items_help', 'Liste von Stichpunkten die unter dem Info-Text angezeigt werden')}
+                                  </p>
+                              </div>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -2801,7 +2803,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 className="flex items-center gap-2 bg-white dark:bg-gray-700"
                               >
                                 <Plus className="h-4 w-4" />
-                                <span>Hinzufügen</span>
+                                <span>{t('settings.info.add_button', 'Hinzufügen')}</span>
                               </Button>
                             </div>
                             <div className="space-y-3">
@@ -2811,7 +2813,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     <DebouncedInput
                                       value={item}
                                       onChange={(val) => handleInfoItemChange(index, val as string)}
-                                      placeholder={`Informationspunkt ${index + 1}`}
+                                      placeholder={`${t('settings.info.placeholder', 'Informationspunkt')} ${index + 1}`}
                                       className="border-0 bg-transparent focus:ring-1 focus:ring-blue-500"
                                     />
                                   </div>
@@ -2850,7 +2852,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                               {generalSettings.infoItems.length === 0 && (
                                 <div className="text-center p-8 bg-white dark:bg-gray-700 rounded-lg border border-dashed">
                                   <p className="text-sm text-muted-foreground">
-                                    Keine Info-Punkte vorhanden. Klicken Sie "Hinzufügen" um welche zu erstellen.
+                                    {t('settings.info.no_items_msg', 'Keine Info-Punkte vorhanden. Klicken Sie "Hinzufügen" um welche zu erstellen.')}
                                   </p>
                                 </div>
                               )}
@@ -2871,7 +2873,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Copyright-Text <span className="text-red-500">*</span>
+                              {t('settings.footer.copyright_label', 'Copyright-Text')} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               value={getTranslatedValue('content.footerCopyright', generalSettings.footerCopyright)}
@@ -2900,9 +2902,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
                               <div>
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Groß-/Kleinschreibung beachten</p>
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">{t('settings.perf.case_sensitive', 'Groß-/Kleinschreibung beachten')}</p>
                                 <p className="text-xs text-green-700 dark:text-green-300">
-                                  Wenn aktiviert, werden Regeln nur bei exakt gleicher Schreibweise erkannt. Standard ist deaktiviert.
+                                  {t('settings.perf.case_sensitive_desc', 'Wenn aktiviert, werden Regeln nur bei exakt gleicher Schreibweise erkannt. Standard ist deaktiviert.')}
                                 </p>
                               </div>
                             </div>
@@ -2920,9 +2922,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <Share2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Referrer Tracking aktivieren</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('settings.perf.referrer_tracking', 'Referrer Tracking aktivieren')}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Erfasst die Herkunfts-URL (Referrer) der Besucher für statistische Auswertungen.
+                                  {t('settings.perf.referrer_tracking_desc', 'Erfasst die Herkunfts-URL (Referrer) der Besucher für statistische Auswertungen.')}
                                 </p>
                               </div>
                             </div>
@@ -2940,9 +2942,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Tracking-Cache aktivieren (RAM)</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('settings.perf.tracking_cache', 'Tracking-Cache aktivieren (RAM)')}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Speichert Statistik-Daten im Arbeitsspeicher für schnellen Zugriff. Erhöht die Systemgeschwindigkeit massiv, benötigt aber mehr RAM bei vielen Daten.
+                                  {t('settings.perf.tracking_cache_desc', 'Speichert Statistik-Daten im Arbeitsspeicher für schnellen Zugriff. Erhöht die Systemgeschwindigkeit massiv, benötigt aber mehr RAM bei vielen Daten.')}
                                 </p>
                               </div>
                             </div>
@@ -2960,9 +2962,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3 flex-1 mr-4">
                               <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Max. Statistik-Einträge</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('settings.perf.max_stats', 'Max. Statistik-Einträge')}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Begrenzt die Anzahl der gespeicherten Statistik-Einträge in der tracking.json. Älteste Einträge werden bei Überschreitung gelöscht. (0 = Unbegrenzt)
+                                  {t('settings.perf.max_stats_desc', 'Begrenzt die Anzahl der gespeicherten Statistik-Einträge in der tracking.json. Älteste Einträge werden bei Überschreitung gelöscht. (0 = Unbegrenzt)')}
                                 </p>
                               </div>
                             </div>
@@ -2979,8 +2981,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Empfehlung:</p>
-                                <p>Lassen Sie den Tracking-Cache aktiviert (Standard), es sei denn, Ihr Server hat sehr wenig Arbeitsspeicher (&lt; 512MB) oder Sie haben extrem viele Tracking-Daten (&gt; 1 Mio. Einträge).</p>
+                                <p className="font-medium">{t('settings.perf.recommendation', 'Empfehlung:')}</p>
+                                <p>{t('settings.perf.recommendation_text', 'Lassen Sie den Tracking-Cache aktiviert (Standard), es sei denn, Ihr Server hat sehr wenig Arbeitsspeicher (< 512MB) oder Sie haben extrem viele Tracking-Daten (> 1 Mio. Einträge).')}</p>
                               </div>
                             </div>
                           </div>
@@ -3001,9 +3003,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <ArrowRightLeft className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                               <div>
-                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Automatische Weiterleitung aktivieren</p>
+                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{t('settings.autoredirect.enable', 'Automatische Weiterleitung aktivieren')}</p>
                                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                                  Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
+                                  {t('settings.autoredirect.desc', 'Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.')}
                                 </p>
                               </div>
                             </div>
@@ -3025,8 +3027,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Admin-Zugriff:</p>
-                                <p>Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">?admin=true</code> erreichen.</p>
+                                <p className="font-medium">{t('settings.autoredirect.admin_access', 'Admin-Zugriff:')}</p>
+                                <p>{t('settings.autoredirect.admin_access_text', 'Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter ?admin=true erreichen.')} <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">?admin=true</code></p>
                               </div>
                             </div>
                           </div>
@@ -3047,9 +3049,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                             <div className="flex items-center gap-3">
                               <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                               <div>
-                                <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Feedback-Umfrage aktivieren</p>
+                                <p className="text-sm font-medium text-pink-800 dark:text-pink-200">{t('settings.feedback.enable', 'Feedback-Umfrage aktivieren')}</p>
                                 <p className="text-xs text-pink-700 dark:text-pink-300">
-                                  Zeigt ein Popup an, wenn Nutzer auf "Kopieren" oder "Öffnen" klicken, um zu fragen, ob der Link funktioniert hat.
+                                  {t('settings.feedback.desc', 'Zeigt ein Popup an, wenn Nutzer auf "Kopieren" oder "Öffnen" klicken, um zu fragen, ob der Link funktioniert hat.')}
                                 </p>
                               </div>
                             </div>
@@ -3065,7 +3067,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           {generalSettings.enableFeedbackSurvey && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                               <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-2">{t('feedback.title', 'Umfrage Titel')} <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.feedback.title_label', 'Umfrage Titel')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={getTranslatedValue('content.feedbackSurveyTitle', generalSettings.feedbackSurveyTitle)}
                                   onChange={(val) => handleTranslationChange('content.feedbackSurveyTitle', val as string)}
@@ -3074,7 +3076,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">{t('feedback.question', 'Umfrage Frage')} <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.feedback.question_label', 'Umfrage Frage')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={getTranslatedValue('content.feedbackSurveyQuestion', generalSettings.feedbackSurveyQuestion)}
                                   onChange={(val) => handleTranslationChange('content.feedbackSurveyQuestion', val as string)}
@@ -3083,7 +3085,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">{t('feedback.success', 'Erfolgsmeldung')} <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.feedback.success_label', 'Erfolgsmeldung')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={getTranslatedValue('content.feedbackSuccessMessage', generalSettings.feedbackSuccessMessage)}
                                   onChange={(val) => handleTranslationChange('content.feedbackSuccessMessage', val as string)}
@@ -3092,24 +3094,24 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">{t('feedback.yes', 'Button Ja (OK)')} <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.feedback.yes_label', 'Button Ja (OK)')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={getTranslatedValue('content.feedbackButtonYes', generalSettings.feedbackButtonYes)}
                                   onChange={(val) => handleTranslationChange('content.feedbackButtonYes', val as string)}
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="Ja, OK"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
+                                <p className="text-xs text-muted-foreground mt-1">{t('settings.feedback.yes_help', 'Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)')}</p>
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">{t('feedback.no', 'Button Nein (NOK)')} <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('settings.feedback.no_label', 'Button Nein (NOK)')} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   value={getTranslatedValue('content.feedbackButtonNo', generalSettings.feedbackButtonNo)}
                                   onChange={(val) => handleTranslationChange('content.feedbackButtonNo', val as string)}
                                   className="bg-white dark:bg-gray-700"
                                   placeholder="Nein"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
+                                <p className="text-xs text-muted-foreground mt-1">{t('settings.feedback.no_help', 'Text auf dem Button für negative Rückmeldung (Standard: Nein)')}</p>
                               </div>
                             </div>
                           )}
@@ -3121,7 +3123,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">
-                            Speichern Sie Ihre Änderungen um sie auf der Website anzuwenden.
+                            {t('settings.save.helper', 'Speichern Sie Ihre Änderungen um sie auf der Website anzuwenden.')}
                           </p>
                         </div>
                         <Button
@@ -3161,7 +3163,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                           className="flex-1 sm:flex-initial"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          {selectedRuleIds.length} {t('common.delete', 'löschen')}
+                          {selectedRuleIds.length} {t('rules.bulk_delete', 'löschen')}
                         </Button>
                       )}
                       
@@ -3175,7 +3177,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         className="flex-1 sm:flex-initial sm:w-auto"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        {t('rules.new_rule', 'Neue Regel')}
+                        {t('rules.create_new', 'Neue Regel')}
                       </Button>
                     </div>
                   </div>
@@ -3223,12 +3225,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                       <div className="text-center py-8 text-muted-foreground">
                         {debouncedRulesSearchQuery ? (
                           <>
-                            Keine Regeln für "{debouncedRulesSearchQuery}" gefunden.
+                            {t('rules.no_rules_found', 'Keine Regeln gefunden.')} "{debouncedRulesSearchQuery}"
                             <br />
                             <span className="text-xs mt-1 block">Versuchen Sie einen anderen Suchbegriff oder erstellen Sie eine neue Regel.</span>
                           </>
                         ) : (
-                          "Keine Regeln vorhanden. Erstellen Sie eine neue Regel."
+                          t('rules.no_rules_found', 'Keine Regeln gefunden.') + " " + t('rules.create_new', 'Neue Regel erstellen')
                         )}
                       </div>
                     ) : (
@@ -3364,10 +3366,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Regel-Filter" />
+                          <SelectValue placeholder={t('stats.filter_rule', 'Regel-Filter')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Alle Einträge</SelectItem>
+                          <SelectItem value="all">{t('stats.all_entries', 'Alle Einträge')}</SelectItem>
                           <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
                           <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
                         </SelectContent>
@@ -3378,7 +3380,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         onValueChange={(value) => setStatsQualityFilter(value)}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Qualität" />
+                          <SelectValue placeholder={t('stats.filter_quality', 'Qualität')} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Alle Qualitäten</SelectItem>
@@ -3394,7 +3396,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         onValueChange={(value) => setStatsFeedbackFilter(value as 'all' | 'OK' | 'NOK' | 'empty')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Feedback" />
+                          <SelectValue placeholder={t('stats.filter_feedback', 'Feedback')} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Alle Feedbacks</SelectItem>
@@ -3448,7 +3450,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Top URLs</CardTitle>
+                      <CardTitle>{t('stats.top_urls', 'Top URLs')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {top100Loading ? (
@@ -3505,7 +3507,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   {generalSettings.enableReferrerTracking && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Top Referrer</CardTitle>
+                      <CardTitle>{t('stats.top_referrers', 'Top Referrer')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {topReferrersLoading ? (
@@ -3575,7 +3577,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               {statsView === 'browser' && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Alle Tracking-Einträge</CardTitle>
+                    <CardTitle>{t('stats.all_entries', 'Alle Tracking-Einträge')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {entriesLoading ? (
@@ -3931,7 +3933,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     disabled={rebuildCacheMutation.isPending}
                                     className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 w-full sm:w-auto"
                                 >
-                                    {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
+                                    {rebuildCacheMutation.isPending ? "Erstelle neu..." : t('danger.cache_rebuild', 'Cache neu aufbauen')}
                                 </Button>
                                 <p className="text-xs text-muted-foreground text-center sm:text-left">
                                     Nur bei Problemen mit der Regelerkennung notwendig.
@@ -3940,7 +3942,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
-                            <h4 className="font-medium text-sm">Sicherheit</h4>
+                            <h4 className="font-medium text-sm">{t('danger.security', 'Sicherheit')}</h4>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <Button
                                     variant="outline"
@@ -3948,7 +3950,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     className="w-full sm:w-auto"
                                 >
                                     <Shield className="h-4 w-4 mr-2" />
-                                    Blockierte IPs anzeigen und verwalten
+                                    {t('danger.blocked_ips', 'Blockierte IPs anzeigen und verwalten')}
                                 </Button>
                                 <p className="text-xs text-muted-foreground text-center sm:text-left">
                                     Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
@@ -3957,7 +3959,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
-                            <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
+                            <h4 className="font-medium text-sm text-red-600">{t('danger.destructive', 'Destruktive Aktionen')}</h4>
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
@@ -3969,7 +3971,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Alle Regeln löschen
+                                        {t('danger.delete_all_rules', 'Alle Regeln löschen')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
@@ -3985,7 +3987,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Alle Statistiken löschen
+                                        {t('danger.delete_all_stats', 'Alle Statistiken löschen')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle erfassten Tracking-Daten unwiderruflich.
@@ -4001,7 +4003,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         className="w-full sm:w-auto"
                                     >
                                         <Shield className="h-4 w-4 mr-2" />
-                                        Blockierte IPs löschen
+                                        {t('danger.delete_blocked_ips', 'Blockierte IPs löschen')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
                                         Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
