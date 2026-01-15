@@ -32,7 +32,7 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2025-12-05T20:44:01.321Z",
+  "updatedAt": "2026-01-15T14:37:51.760Z",
   "popupMode": "inline",
   "showLinkQualityGauge": true,
   "headerLogoUrl": "",
@@ -53,5 +53,7 @@
   "feedbackSurveyQuestion": "Bitte bewerten Sie die Zielseite.",
   "feedbackSuccessMessage": "Danke für Ihr Feedback!",
   "feedbackButtonYes": "Ja, OK",
-  "feedbackButtonNo": "Nein"
+  "feedbackButtonNo": "Nein",
+  "smartSearchRules": [],
+  "smartSearchRegex": ""
 }
