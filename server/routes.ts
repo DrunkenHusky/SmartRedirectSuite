@@ -986,15 +986,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If it's a Zod validation error, return the specific validation messages
       if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
+        const zodValidationErrors = (error.errors || []).map(err => ({
           field: err.path.join('.'),
           message: err.message
         }));
         
         res.status(400).json({ 
           error: "Validierungsfehler",
-          validationErrors: validationErrors,
-          details: validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
+          validationErrors: zodValidationErrors,
+          details: zodValidationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
         });
       } else {
         res.status(400).json({ error: "Ungültige Einstellungsdaten" });

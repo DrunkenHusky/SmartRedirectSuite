@@ -57,6 +57,7 @@ import {
   AlertTriangle,
   Info,
   CheckCircle,
+  XCircle,
   FileSpreadsheet,
   Filter,
   Share2
@@ -251,6 +252,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Max stats warning state
   const [showMaxStatsWarningDialog, setShowMaxStatsWarningDialog] = useState(false);
+
+  // Settings validation error state
+  const [settingsValidationErrors, setSettingsValidationErrors] = useState<string[]>([]);
+  const [showSettingsErrorDialog, setShowSettingsErrorDialog] = useState(false);
 
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
@@ -1018,29 +1023,39 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       
       let errorMessage = "Die Einstellungen konnten nicht gespeichert werden.";
+      let detailedErrors: string[] = [];
       
       // Check for validation errors in the response
       if (error?.serverError?.validationErrors) {
         const validationErrors = error.serverError.validationErrors;
-        errorMessage = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`).join(', ');
+        detailedErrors = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`);
+        errorMessage = detailedErrors.join(', ');
+      } else if (error?.response?.data?.validationErrors) {
+        const validationErrors = error.response.data.validationErrors;
+        detailedErrors = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`);
+        errorMessage = detailedErrors.join(', ');
       } else if (error?.serverError?.details) {
         errorMessage = error.serverError.details;
       } else if (error?.serverError?.error) {
         errorMessage = error.serverError.error;
-      } else if (error?.response?.data?.validationErrors) {
-        const validationErrors = error.response.data.validationErrors;
-        errorMessage = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`).join(', ');
       } else if (error?.response?.data?.details) {
         errorMessage = error.response.data.details;
       } else if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
       
-      toast({ 
-        title: "Validierungsfehler", 
-        description: errorMessage,
-        variant: "destructive" 
-      });
+      // If we have detailed errors, show them in the dialog
+      if (detailedErrors.length > 0) {
+        setSettingsValidationErrors(detailedErrors);
+        setShowSettingsErrorDialog(true);
+      } else {
+        // Fallback to toast for non-validation errors or if no details found
+        toast({
+          title: "Fehler beim Speichern",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     },
   });
 
@@ -4523,6 +4538,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               disabled={bulkDeleteRulesMutation.isPending}
             >
               {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Settings Validation Error Dialog */}
+      <AlertDialog open={showSettingsErrorDialog} onOpenChange={setShowSettingsErrorDialog}>
+        <AlertDialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <AlertDialogHeader className="flex-shrink-0">
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Validierungsfehler
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground text-sm">
+              Die Einstellungen konnten aufgrund folgender Fehler nicht gespeichert werden:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="flex-1 min-h-0 my-4">
+            <div className="max-h-60 overflow-y-auto border rounded-md p-3 bg-red-50 dark:bg-red-900/10">
+              <ul className="list-disc list-inside space-y-1 text-sm text-foreground">
+                {settingsValidationErrors.map((err, index) => (
+                  <li key={index} className="break-words">{err}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <AlertDialogFooter className="flex-shrink-0">
+            <AlertDialogAction onClick={() => setShowSettingsErrorDialog(false)}>
+              Verstanden
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
