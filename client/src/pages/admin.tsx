@@ -34,6 +34,7 @@ import {
 import { 
   Shield, 
   X, 
+  XCircle,
   Plus, 
   Edit, 
   Trash2, 
@@ -249,6 +250,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [showManageBlockedIpsDialog, setShowManageBlockedIpsDialog] = useState(false);
   const [newBlockedIp, setNewBlockedIp] = useState("");
 
+  // Settings validation state
+  const [settingsValidationErrors, setSettingsValidationErrors] = useState<Record<string, string>>({});
+  const [showSettingsErrorDialog, setShowSettingsErrorDialog] = useState(false);
+
   // Max stats warning state
   const [showMaxStatsWarningDialog, setShowMaxStatsWarningDialog] = useState(false);
 
@@ -386,6 +391,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Get current base URL
   const getCurrentBaseUrl = () => {
     return `${window.location.protocol}//${window.location.host}`;
+  };
+
+  const scrollToFirstError = (errors: Record<string, string>) => {
+    const firstErrorField = Object.keys(errors)[0];
+    if (firstErrorField) {
+      // Small delay to ensure state updates and DOM re-render have happened
+      setTimeout(() => {
+        const element = document.getElementById(`settings-${firstErrorField}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus();
+
+          // Add a temporary highlight effect
+          element.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+          }, 2000);
+        }
+      }, 100);
+    }
   };
 
   const { toast } = useToast();
@@ -1000,6 +1025,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", "/api/admin/settings", settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      setSettingsValidationErrors({});
     },
     onError: (error: any) => {
       console.error("Settings save error:", error);
@@ -1017,29 +1043,48 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       
       let errorMessage = "Die Einstellungen konnten nicht gespeichert werden.";
+      let newValidationErrors: Record<string, string> = {};
+      let hasValidationErrors = false;
+
+      const processValidationErrors = (errors: any[]) => {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            newValidationErrors[err.field] = err.message;
+          }
+        });
+        if (errors.length > 0) {
+          errorMessage = errors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`).join('\n');
+          hasValidationErrors = true;
+        }
+      };
       
       // Check for validation errors in the response
       if (error?.serverError?.validationErrors) {
-        const validationErrors = error.serverError.validationErrors;
-        errorMessage = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`).join(', ');
+        processValidationErrors(error.serverError.validationErrors);
+      } else if (error?.response?.data?.validationErrors) {
+        processValidationErrors(error.response.data.validationErrors);
       } else if (error?.serverError?.details) {
         errorMessage = error.serverError.details;
       } else if (error?.serverError?.error) {
         errorMessage = error.serverError.error;
-      } else if (error?.response?.data?.validationErrors) {
-        const validationErrors = error.response.data.validationErrors;
-        errorMessage = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`).join(', ');
       } else if (error?.response?.data?.details) {
         errorMessage = error.response.data.details;
       } else if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
       
-      toast({ 
-        title: "Validierungsfehler", 
-        description: errorMessage,
-        variant: "destructive" 
-      });
+      setSettingsValidationErrors(newValidationErrors);
+
+      if (hasValidationErrors) {
+        setShowSettingsErrorDialog(true);
+        scrollToFirstError(newValidationErrors);
+      } else {
+        toast({
+          title: "Fehler beim Speichern",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     },
   });
 
@@ -1879,11 +1924,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
+                                id="settings-headerTitle"
                                 value={generalSettings.headerTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, headerTitle: val as string })}
                                 placeholder="Smart Redirect Service"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.headerTitle ? 'border-red-500 focus-visible:ring-red-500' : (!generalSettings.headerTitle?.trim() ? 'border-red-500 focus:border-red-500' : '')}`}
                               />
+                              {settingsValidationErrors.headerTitle && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.headerTitle}
+                                </p>
+                              )}
                               <p className="text-xs text-gray-500 mt-1">
                                 Wird als Haupttitel im Header der Anwendung angezeigt
                               </p>
@@ -1935,12 +1986,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="w-20 h-10 p-1 rounded-md border cursor-pointer"
                                 />
                                 <DebouncedInput
+                                  id="settings-headerBackgroundColor"
                                   value={generalSettings.headerBackgroundColor}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, headerBackgroundColor: val as string })}
                                   placeholder="#ffffff"
-                                  className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
+                                  className={`flex-1 bg-white dark:bg-gray-700 font-mono text-sm ${settingsValidationErrors.headerBackgroundColor ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                 />
                               </div>
+                              {settingsValidationErrors.headerBackgroundColor && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.headerBackgroundColor}
+                                </p>
+                              )}
                             </div>
                           </div>
                           
@@ -2169,12 +2226,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
+                                id="settings-mainTitle"
                                 value={generalSettings.mainTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, mainTitle: val as string })}
                                 placeholder="URL veraltet - Aktualisierung erforderlich"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.mainTitle ? 'border-red-500 focus-visible:ring-red-500' : (!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : '')}`}
                                 disabled={generalSettings.popupMode === 'disabled'}
                               />
+                              {settingsValidationErrors.mainTitle && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.mainTitle}
+                                </p>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -2200,13 +2263,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Beschreibung <span className="text-red-500">*</span>
                             </label>
                             <DebouncedTextarea
+                              id="settings-mainDescription"
                               value={generalSettings.mainDescription}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, mainDescription: val as string })}
                               placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
                               rows={3}
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.mainDescription ? 'border-red-500 focus-visible:ring-red-500' : (!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : '')}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
+                            {settingsValidationErrors.mainDescription && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.mainDescription}
+                                </p>
+                            )}
                             <p className="text-xs text-gray-500 mt-1">
                               Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
                             </p>
@@ -2216,12 +2285,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               PopUp Button-Text
                             </label>
                             <DebouncedInput
+                              id="settings-popupButtonText"
                               value={generalSettings.popupButtonText}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, popupButtonText: val as string })}
                               placeholder="Zeige mir die neue URL"
-                              className="bg-white dark:bg-gray-700"
+                              className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.popupButtonText ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
+                            {settingsValidationErrors.popupButtonText && (
+                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.popupButtonText}
+                              </p>
+                            )}
                             <p className="text-xs text-gray-500 mt-1">
                               Text für den Button der das PopUp-Fenster öffnet
                             </p>
@@ -2259,13 +2334,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   disabled={generalSettings.popupMode === 'disabled'}
                                 />
                                 <DebouncedInput
+                                  id="settings-mainBackgroundColor"
                                   value={generalSettings.mainBackgroundColor}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: val as string })}
                                   placeholder="#ffffff"
-                                  className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
+                                  className={`flex-1 bg-white dark:bg-gray-700 font-mono text-sm ${settingsValidationErrors.mainBackgroundColor ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                   disabled={generalSettings.popupMode === 'disabled'}
                                 />
                               </div>
+                              {settingsValidationErrors.mainBackgroundColor && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.mainBackgroundColor}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2289,11 +2370,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Ziel-Domain (Standard neue Domain) <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
+                              id="settings-defaultNewDomain"
                               value={generalSettings.defaultNewDomain}
                               onChange={(value) => setGeneralSettings({ ...generalSettings, defaultNewDomain: value as string })}
                               placeholder="https://thisisthenewurl.com/"
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain ? 'border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.defaultNewDomain ? 'border-red-500 focus-visible:ring-red-500' : (!generalSettings.defaultNewDomain ? 'border-red-500' : '')}`}
                             />
+                            {settingsValidationErrors.defaultNewDomain && (
+                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.defaultNewDomain}
+                              </p>
+                            )}
                             <p className="text-xs text-gray-500 mt-1">
                               Verwendet für Partial Matches und spezifische Regeln.
                             </p>
@@ -2347,11 +2434,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   Such-Basis-URL <span className="text-red-500">*</span>
                                 </label>
                                 <DebouncedInput
+                                  id="settings-defaultSearchUrl"
                                   value={generalSettings.defaultSearchUrl || ''}
                                   onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
                                   placeholder="https://newapp.com/?q="
-                                  className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                  className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.defaultSearchUrl ? 'border-red-500 focus-visible:ring-red-500' : (!generalSettings.defaultSearchUrl ? 'border-red-500' : '')}`}
                                 />
+                                {settingsValidationErrors.defaultSearchUrl && (
+                                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                    <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.defaultSearchUrl}
+                                  </p>
+                                )}
                                 <p className="text-xs text-gray-500 mt-1">
                                   Beispiel: https://newapp.com/?q=
                                 </p>
@@ -2365,7 +2458,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
-                                        <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                        <DebouncedInput
+                                          id="settings-specialHintsTitle"
+                                          value={generalSettings.specialHintsTitle}
+                                          onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})}
+                                          className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.specialHintsTitle ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                        />
+                                        {settingsValidationErrors.specialHintsTitle && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.specialHintsTitle}
+                                          </p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
@@ -2395,11 +2498,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Standard Info Text (Beschreibung)
                                         </label>
                                         <DebouncedTextarea
+                                            id="settings-specialHintsDescription"
                                             value={generalSettings.specialHintsDescription}
                                             onChange={(value) => setGeneralSettings({ ...generalSettings, specialHintsDescription: value as string })}
                                             rows={3}
-                                            className="bg-white dark:bg-gray-700"
+                                            className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.specialHintsDescription ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                         />
+                                        {settingsValidationErrors.specialHintsDescription && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.specialHintsDescription}
+                                          </p>
+                                        )}
                                         <p className="text-xs text-gray-500 mt-1">
                                             Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
                                         </p>
@@ -2412,11 +2521,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Smart Search Nachricht
                                         </label>
                                         <DebouncedTextarea
+                                            id="settings-defaultSearchMessage"
                                             value={generalSettings.defaultSearchMessage}
                                             onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchMessage: value as string })}
                                             rows={3}
-                                            className="bg-white dark:bg-gray-700"
+                                            className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.defaultSearchMessage ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                         />
+                                        {settingsValidationErrors.defaultSearchMessage && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.defaultSearchMessage}
+                                          </p>
+                                        )}
                                         <p className="text-xs text-gray-500 mt-1">
                                             Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).
                                         </p>
@@ -2432,7 +2547,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Titel</label>
-                                           <DebouncedInput value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput
+                                             id="settings-urlComparisonTitle"
+                                             value={generalSettings.urlComparisonTitle}
+                                             onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})}
+                                             className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.urlComparisonTitle ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                            />
+                                            {settingsValidationErrors.urlComparisonTitle && (
+                                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.urlComparisonTitle}
+                                              </p>
+                                            )}
                                        </div>
                                        <div>
                                          <label className="block text-sm font-medium mb-2">Icon</label>
@@ -2459,19 +2584,49 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                           <label className="block text-sm font-medium mb-2">Hintergrundfarbe</label>
                                           <div className="flex items-center gap-3">
                                               <input type="color" value={generalSettings.urlComparisonBackgroundColor} onChange={(e) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: e.target.value})} className="w-20 h-10 p-1 rounded-md border cursor-pointer"/>
-                                              <DebouncedInput value={generalSettings.urlComparisonBackgroundColor} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: val as string})} className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"/>
+                                              <DebouncedInput
+                                                id="settings-urlComparisonBackgroundColor"
+                                                value={generalSettings.urlComparisonBackgroundColor}
+                                                onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: val as string})}
+                                                className={`flex-1 bg-white dark:bg-gray-700 font-mono text-sm ${settingsValidationErrors.urlComparisonBackgroundColor ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                              />
                                           </div>
+                                          {settingsValidationErrors.urlComparisonBackgroundColor && (
+                                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.urlComparisonBackgroundColor}
+                                              </p>
+                                            )}
                                        </div>
                                    </div>
 
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für alte URL</label>
-                                           <DebouncedInput value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput
+                                             id="settings-oldUrlLabel"
+                                             value={generalSettings.oldUrlLabel}
+                                             onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})}
+                                             className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.oldUrlLabel ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                           />
+                                            {settingsValidationErrors.oldUrlLabel && (
+                                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.oldUrlLabel}
+                                              </p>
+                                            )}
                                        </div>
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für neue URL</label>
-                                           <DebouncedInput value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput
+                                             id="settings-newUrlLabel"
+                                             value={generalSettings.newUrlLabel}
+                                             onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})}
+                                             className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.newUrlLabel ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                           />
+                                            {settingsValidationErrors.newUrlLabel && (
+                                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                                <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.newUrlLabel}
+                                              </p>
+                                            )}
                                        </div>
                                    </div>
                                </div>
@@ -2498,23 +2653,73 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                         id="settings-matchHighExplanation"
+                                         value={generalSettings.matchHighExplanation}
+                                         onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })}
+                                         className={`bg-white dark:bg-gray-800 ${settingsValidationErrors.matchHighExplanation ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                       />
+                                       {settingsValidationErrors.matchHighExplanation && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.matchHighExplanation}
+                                          </p>
+                                        )}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (75%)</label>
-                                       <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                         id="settings-matchMediumExplanation"
+                                         value={generalSettings.matchMediumExplanation}
+                                         onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })}
+                                         className={`bg-white dark:bg-gray-800 ${settingsValidationErrors.matchMediumExplanation ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                       />
+                                       {settingsValidationErrors.matchMediumExplanation && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.matchMediumExplanation}
+                                          </p>
+                                        )}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung (50%)</label>
-                                       <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                         id="settings-matchLowExplanation"
+                                         value={generalSettings.matchLowExplanation}
+                                         onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })}
+                                         className={`bg-white dark:bg-gray-800 ${settingsValidationErrors.matchLowExplanation ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                       />
+                                       {settingsValidationErrors.matchLowExplanation && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.matchLowExplanation}
+                                          </p>
+                                        )}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                         id="settings-matchRootExplanation"
+                                         value={generalSettings.matchRootExplanation}
+                                         onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })}
+                                         className={`bg-white dark:bg-gray-800 ${settingsValidationErrors.matchRootExplanation ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                       />
+                                       {settingsValidationErrors.matchRootExplanation && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.matchRootExplanation}
+                                          </p>
+                                        )}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung (0%)</label>
-                                       <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput
+                                         id="settings-matchNoneExplanation"
+                                         value={generalSettings.matchNoneExplanation}
+                                         onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })}
+                                         className={`bg-white dark:bg-gray-800 ${settingsValidationErrors.matchNoneExplanation ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                       />
+                                       {settingsValidationErrors.matchNoneExplanation && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.matchNoneExplanation}
+                                          </p>
+                                        )}
                                      </div>
                                    </div>
                                  )}
@@ -2525,11 +2730,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
-                                       <DebouncedInput value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput
+                                         id="settings-copyButtonText"
+                                         value={generalSettings.copyButtonText}
+                                         onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })}
+                                         className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.copyButtonText ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                       />
+                                       {settingsValidationErrors.copyButtonText && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.copyButtonText}
+                                          </p>
+                                        )}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
-                                       <DebouncedInput value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput
+                                         id="settings-openButtonText"
+                                         value={generalSettings.openButtonText}
+                                         onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })}
+                                         className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.openButtonText ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                       />
+                                       {settingsValidationErrors.openButtonText && (
+                                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                            <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.openButtonText}
+                                          </p>
+                                        )}
                                      </div>
                                    </div>
                                </div>
@@ -2553,11 +2778,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel der Sektion
                               </label>
                               <DebouncedInput
+                                id="settings-infoTitle"
                                 value={generalSettings.infoTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, infoTitle: val as string })}
                                 placeholder="Zusätzliche Informationen"
-                                className="bg-white dark:bg-gray-700"
+                                className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.infoTitle ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                               />
+                              {settingsValidationErrors.infoTitle && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.infoTitle}
+                                </p>
+                              )}
                               <p className="text-xs text-gray-500 mt-1">
                                 Überschrift für den Bereich mit zusätzlichen Informationen
                               </p>
@@ -2679,11 +2910,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Copyright-Text <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
+                              id="settings-footerCopyright"
                               value={generalSettings.footerCopyright}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, footerCopyright: val as string })}
                               placeholder="Proudly brewed with Generative AI."
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.footerCopyright ? 'border-red-500 focus-visible:ring-red-500' : (!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : '')}`}
                             />
+                            {settingsValidationErrors.footerCopyright && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.footerCopyright}
+                                </p>
+                              )}
                           </div>
                           
 
@@ -2872,48 +3109,78 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <div className="md:col-span-2">
                                 <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="settings-feedbackSurveyTitle"
                                   value={generalSettings.feedbackSurveyTitle}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.feedbackSurveyTitle ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                   placeholder="War die neue URL korrekt?"
                                 />
+                                {settingsValidationErrors.feedbackSurveyTitle && (
+                                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.feedbackSurveyTitle}
+                                    </p>
+                                  )}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="settings-feedbackSurveyQuestion"
                                   value={generalSettings.feedbackSurveyQuestion}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.feedbackSurveyQuestion ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                   placeholder="Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."
                                 />
+                                {settingsValidationErrors.feedbackSurveyQuestion && (
+                                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.feedbackSurveyQuestion}
+                                    </p>
+                                  )}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="settings-feedbackSuccessMessage"
                                   value={generalSettings.feedbackSuccessMessage}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.feedbackSuccessMessage ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                   placeholder="Vielen Dank für deine Rückmeldung."
                                 />
+                                {settingsValidationErrors.feedbackSuccessMessage && (
+                                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.feedbackSuccessMessage}
+                                    </p>
+                                  )}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Button Ja (OK) <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="settings-feedbackButtonYes"
                                   value={generalSettings.feedbackButtonYes}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonYes: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.feedbackButtonYes ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                   placeholder="Ja, OK"
                                 />
+                                {settingsValidationErrors.feedbackButtonYes && (
+                                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.feedbackButtonYes}
+                                    </p>
+                                  )}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Button Nein (NOK) <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="settings-feedbackButtonNo"
                                   value={generalSettings.feedbackButtonNo}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonNo: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${settingsValidationErrors.feedbackButtonNo ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                   placeholder="Nein"
                                 />
+                                {settingsValidationErrors.feedbackButtonNo && (
+                                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" /> {settingsValidationErrors.feedbackButtonNo}
+                                    </p>
+                                  )}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
                               </div>
                             </div>
@@ -4410,6 +4677,40 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               disabled={bulkDeleteRulesMutation.isPending}
             >
               {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Settings Validation Error Dialog */}
+      <AlertDialog open={showSettingsErrorDialog} onOpenChange={setShowSettingsErrorDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Validierungsfehler
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Die Einstellungen konnten aufgrund folgender Fehler nicht gespeichert werden:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-[300px] overflow-y-auto my-4 p-3 bg-red-50 dark:bg-red-900/10 rounded-md border border-red-100 dark:border-red-900/20">
+            <ul className="list-disc list-inside space-y-1 text-sm text-red-800 dark:text-red-300">
+              {Object.entries(settingsValidationErrors).map(([field, message]) => (
+                <li key={field}>
+                  <span className="font-medium">{getUIFieldName(field)}:</span> {message}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setShowSettingsErrorDialog(false);
+              scrollToFirstError(settingsValidationErrors);
+            }}>
+              Verstanden & Korrigieren
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
