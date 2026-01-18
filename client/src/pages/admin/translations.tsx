@@ -40,7 +40,7 @@ export function TranslationsManager() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/translations"] });
       // Invalidate specific language cache for frontend
       queryClient.invalidateQueries({ queryKey: ["translations"] });
-      toast({ title: t("common.save"), description: "Translation updated" });
+      toast({ title: t("common.save"), description: t('toast.settings.saved_desc', "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert.") });
       setEditing(null);
     },
   });
@@ -68,7 +68,7 @@ export function TranslationsManager() {
     <Card>
       <CardHeader>
         <CardTitle>{t("nav.translations")}</CardTitle>
-        <CardDescription>Manage application text for all supported languages.</CardDescription>
+        <CardDescription>{t('settings.description', "Hier können Sie alle Texte der Anwendung anpassen.")}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
