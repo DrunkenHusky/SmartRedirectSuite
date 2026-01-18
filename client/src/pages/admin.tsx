@@ -785,8 +785,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('auth.required.title', "Authentifizierung erforderlich"),
+          description: t('auth.required.desc', "Bitte melden Sie sich erneut an."),
           variant: "destructive" 
         });
         window.location.reload();
@@ -842,8 +842,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('auth.required.title', "Authentifizierung erforderlich"),
+          description: t('auth.required.desc', "Bitte melden Sie sich erneut an."),
           variant: "destructive" 
         });
         window.location.reload();
@@ -851,8 +851,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       toast({ 
-        title: "Fehler", 
-        description: "Die Regel konnte nicht gelöscht werden.",
+        title: t('toast.error.title', "Fehler"),
+        description: t('toast.rule.delete_error', "Die Regel konnte nicht gelöscht werden."),
         variant: "destructive" 
       });
     },
@@ -877,8 +877,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
-        description: error.message || "Fehler beim Löschen aller Statistiken.",
+        title: t('toast.error.title', "Fehler"),
+        description: error.message || t('toast.stats.delete_all_error', "Fehler beim Löschen aller Statistiken."),
         variant: "destructive",
       });
     },
@@ -900,8 +900,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
-        description: error.message || "Fehler beim Löschen der blockierten IPs.",
+        title: t('toast.error.title', "Fehler"),
+        description: error.message || t('toast.ips.delete_error', "Fehler beim Löschen der blockierten IPs."),
         variant: "destructive",
       });
     },
@@ -1038,7 +1038,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
         return;
       }
       
-      let errorMessage = "Die Einstellungen konnten nicht gespeichert werden.";
+      let errorMessage = t('toast.settings.save_error', "Die Einstellungen konnten nicht gespeichert werden.");
       
       // Check for validation errors in the response
       if (error?.serverError?.validationErrors) {
@@ -1058,7 +1058,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       toast({ 
-        title: "Validierungsfehler", 
+        title: t('toast.validation_error', "Validierungsfehler"),
         description: errorMessage,
         variant: "destructive" 
       });
@@ -1072,8 +1072,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({ 
-        title: "Import erfolgreich", 
-        description: "Die Einstellungen wurden erfolgreich importiert." 
+        title: t('toast.import.settings_success', "Import erfolgreich"),
+        description: t('toast.import.settings_success', "Die Einstellungen wurden erfolgreich importiert.")
       });
     },
     onError: (error: any) => {
@@ -1081,8 +1081,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('auth.required.title', "Authentifizierung erforderlich"),
+          description: t('auth.required.desc', "Bitte melden Sie sich erneut an."),
           variant: "destructive" 
         });
         window.location.reload();
@@ -1090,8 +1090,8 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       }
       
       toast({ 
-        title: "Import fehlgeschlagen", 
-        description: "Die Einstellungen konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
+        title: t('import.failed', "Import fehlgeschlagen"),
+        description: t('toast.import.settings_error', "Die Einstellungen konnten nicht importiert werden. Überprüfen Sie das Dateiformat."),
         variant: "destructive" 
       });
     },
@@ -1114,12 +1114,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel erstellt", description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
+      toast({ title: t('toast.rule.force_create_success', "Regel erstellt"), description: t('toast.rule.force_create_success', "Die URL-Regel wurde trotz Warnung erfolgreich erstellt.") });
     },
     onError: (error: any) => {
       toast({ 
-        title: "Fehler", 
-        description: "Die Regel konnte auch mit Force-Option nicht erstellt werden.",
+        title: t('toast.error.title', "Fehler"),
+        description: t('toast.rule.force_create_error', "Die Regel konnte auch mit Force-Option nicht erstellt werden."),
         variant: "destructive" 
       });
     },
@@ -1134,12 +1134,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
-      toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
+      toast({ title: t('toast.rule.force_update_success', "Regel aktualisiert"), description: t('toast.rule.force_update_success', "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert.") });
     },
     onError: (error: any) => {
       toast({ 
-        title: "Fehler", 
-        description: "Die Regel konnte auch mit Force-Option nicht aktualisiert werden.",
+        title: t('toast.error.title', "Fehler"),
+        description: t('toast.rule.force_update_error', "Die Regel konnte auch mit Force-Option nicht aktualisiert werden."),
         variant: "destructive" 
       });
     },
@@ -1448,14 +1448,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       localStorage.removeItem('adminActiveTab'); // Clear saved tab on logout
       localStorage.removeItem('adminStatsView'); // Clear saved stats view on logout
       toast({
-        title: "Erfolgreich abgemeldet",
-        description: "Sie wurden erfolgreich abgemeldet.",
+        title: t('toast.logout.success', "Sie wurden erfolgreich abgemeldet."),
+        description: t('toast.logout.success', "Sie wurden erfolgreich abgemeldet."),
       });
       onClose();
     },
     onError: (error: any) => {
       toast({
-        title: "Abmeldung fehlgeschlagen",
+        title: t('toast.logout.error', "Abmeldung fehlgeschlagen"),
         description: error.message || "Ein Fehler ist aufgetreten",
         variant: "destructive",
       });
@@ -1629,20 +1629,20 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
   // Helper function to map technical field names to UI field names
   const getUIFieldName = (technicalName: string): string => {
     const fieldNameMap: Record<string, string> = {
-      headerTitle: "Titel",
-      mainTitle: "Titel", 
-      mainDescription: "Beschreibung",
-      footerCopyright: "Copyright-Text",
-      urlComparisonTitle: "Titel",
-      oldUrlLabel: "Alte URL Label",
-      newUrlLabel: "Neue URL Label",
-      defaultNewDomain: "Standard-Domain",
-      copyButtonText: "Kopieren Button-Text",
-      openButtonText: "Öffnen Button-Text",
-      showUrlButtonText: "URL anzeigen Button-Text",
-      popupButtonText: "PopUp Button-Text",
-      specialHintsTitle: "Titel",
-      specialHintsDescription: "Standard-Beschreibung"
+      headerTitle: t('settings.field.headerTitle', "Titel"),
+      mainTitle: t('settings.field.mainTitle', "Titel"),
+      mainDescription: t('settings.field.mainDescription', "Beschreibung"),
+      footerCopyright: t('settings.field.footerCopyright', "Copyright-Text"),
+      urlComparisonTitle: t('settings.field.urlComparisonTitle', "Titel"),
+      oldUrlLabel: t('settings.field.oldUrlLabel', "Alte URL Label"),
+      newUrlLabel: t('settings.field.newUrlLabel', "Neue URL Label"),
+      defaultNewDomain: t('settings.field.defaultNewDomain', "Standard-Domain"),
+      copyButtonText: t('settings.field.copyButtonText', "Kopieren Button-Text"),
+      openButtonText: t('settings.field.openButtonText', "Öffnen Button-Text"),
+      showUrlButtonText: t('settings.field.showUrlButtonText', "URL anzeigen Button-Text"),
+      popupButtonText: t('settings.field.popupButtonText', "PopUp Button-Text"),
+      specialHintsTitle: t('settings.field.specialHintsTitle', "Titel"),
+      specialHintsDescription: t('settings.field.specialHintsDescription', "Standard-Beschreibung")
     };
     return fieldNameMap[technicalName] || technicalName;
   };
@@ -3670,20 +3670,19 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileSpreadsheet className="h-6 w-6 text-primary" />
-                        <CardTitle>Standard Import / Export (Excel, CSV)</CardTitle>
+                        <CardTitle>{t('export.standard.title', "Standard Import / Export (Excel, CSV)")}</CardTitle>
                     </div>
                     <CardDescription>
-                        Benutzerfreundlicher Import und Export für Redirect Rules. Unterstützt Excel (.xlsx) und CSV.
-                        Mit Vorschau-Funktion vor dem Import.
+                        {t('export.standard.desc', "Benutzerfreundlicher Import und Export für Redirect Rules. Unterstützt Excel (.xlsx) und CSV. Mit Vorschau-Funktion vor dem Import.")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Import Section */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Importieren</h3>
+                            <h3 className="font-medium text-foreground">{t('export.import.title', "Regeln Importieren")}</h3>
                             <div className="text-sm text-muted-foreground space-y-2">
-                                <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
+                                <p>{t('export.import.desc', "Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:")}</p>
                                 <ul className="list-disc list-inside text-xs">
                                         <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
                                         <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
@@ -3697,12 +3696,12 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (Excel)
+                                    {t('export.sample.excel', "Musterdatei (Excel)")}
                                   </a>
                                   <span className="text-muted-foreground">|</span>
                                   <a href="/sample-rules-import.csv" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (CSV)
+                                    {t('export.sample.csv', "Musterdatei (CSV)")}
                                   </a>
                                 </div>
                             </div>
@@ -3734,11 +3733,11 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                                 <>
                                                     <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
                                                     <p className="mb-1 text-sm text-foreground font-medium">
-                                                        Klicken zum Auswählen
-                                                        <span className="text-muted-foreground font-normal"> oder Datei hierher ziehen</span>
+                                                        {t('export.upload.label', "Klicken zum Auswählen")}
+                                                        <span className="text-muted-foreground font-normal"> {t('export.upload.drag', "oder Datei hierher ziehen")}</span>
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">
-                                                        Excel (.xlsx) oder CSV
+                                                        {t('export.upload.formats', "Excel (.xlsx) oder CSV")}
                                                     </p>
                                                 </>
                                             )}
@@ -3751,9 +3750,9 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                 <div className="flex items-start gap-3 flex-1">
                                     <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
                                     <div>
-                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">URLs automatisch kodieren</p>
+                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">{t('export.encode.title', "URLs automatisch kodieren")}</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                                            Sonderzeichen in URLs automatisch konvertieren (encodeURI)
+                                            {t('export.encode.desc', "Sonderzeichen in URLs automatisch konvertieren (encodeURI)")}
                                         </p>
                                     </div>
                                 </div>
@@ -3772,19 +3771,18 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
 
                         {/* Export Section */}
                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Exportieren</h3>
+                            <h3 className="font-medium text-foreground">{t('export.export_rules.title', "Regeln Exportieren")}</h3>
                             <p className="text-sm text-muted-foreground">
-                                Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
-                                Die Dateien können später wieder importiert werden.
+                                {t('export.export_rules.desc', "Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup. Die Dateien können später wieder importiert werden.")}
                             </p>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (Excel)
+                                    {t('export.download.excel', "Herunterladen (Excel)")}
                                 </Button>
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
                                     <FileText className="h-4 w-4 mr-2" />
-                                    Herunterladen (CSV)
+                                    {t('export.download.csv', "Herunterladen (CSV)")}
                                 </Button>
                             </div>
                         </div>
@@ -3797,10 +3795,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileJson className="h-6 w-6 text-orange-600" />
-                        <CardTitle>Erweiterter Regel-Import/Export</CardTitle>
+                        <CardTitle>{t('export.advanced.title', "Erweiterter Regel-Import/Export")}</CardTitle>
                     </div>
                     <CardDescription>
-                        Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.
+                        {t('export.advanced.desc', "Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -3809,7 +3807,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                          <div className="space-y-4 border rounded-lg p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                Regel-Rohdaten (JSON)
+                                {t('export.advanced.json_title', "Regel-Rohdaten (JSON)")}
                             </h3>
                             <div className="space-y-2">
                                 <Button
@@ -3818,7 +3816,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     onClick={() => handleExport('rules', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (JSON)
+                                    {t('export.download.json', "Herunterladen (JSON)")}
                                 </Button>
                                 <div className="relative">
                                     <input
@@ -3833,17 +3831,17 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         disabled={importMutation.isPending}
                                     >
                                         <Upload className="h-4 w-4 mr-2" />
-                                        Importieren (JSON)
+                                        {t('export.advanced.import_button', "Importieren (JSON)")}
                                     </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.json" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (JSON)
+                                    {t('dialog.backup.download_json', "Musterdatei (JSON)")}
                                   </a>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-2">
-                                    <strong>Warnung:</strong> Keine Vorschau. Überschreibt bestehende Regeln bei ID-Konflikt sofort.
+                                    <strong>{t('export.advanced.warning', "Warnung: Keine Vorschau. Überschreibt bestehende Regeln bei ID-Konflikt sofort.")}</strong>
                                 </p>
                             </div>
                          </div>
@@ -3856,10 +3854,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <Settings className="h-6 w-6 text-blue-600" />
-                        <CardTitle>System & Statistiken</CardTitle>
+                        <CardTitle>{t('export.system.title', "System & Statistiken")}</CardTitle>
                     </div>
                     <CardDescription>
-                        Verwaltung von Systemeinstellungen und Statistiken.
+                        {t('export.system.desc', "Verwaltung von Systemeinstellungen und Statistiken.")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -3868,10 +3866,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                System-Einstellungen
+                                {t('export.settings.title', "System-Einstellungen")}
                             </h3>
                             <p className="text-xs text-muted-foreground">
-                                Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.
+                                {t('export.settings.desc', "Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.")}
                             </p>
                             <div className="space-y-2">
                                 <Button
@@ -3880,7 +3878,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     onClick={() => handleExport('settings', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (JSON)
+                                    {t('export.download.json', "Herunterladen (JSON)")}
                                 </Button>
                                 <div className="relative">
                                   <input
@@ -3895,7 +3893,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     disabled={importSettingsMutation.isPending}
                                   >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    Importieren (JSON)
+                                    {t('export.advanced.import_button', "Importieren (JSON)")}
                                   </Button>
                                 </div>
                             </div>
@@ -3905,10 +3903,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <BarChart3 className="h-4 w-4" />
-                                Statistiken
+                                {t('export.stats.title', "Statistiken")}
                             </h3>
                             <p className="text-xs text-muted-foreground">
-                                Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.
+                                {t('export.stats.desc', "Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.")}
                             </p>
                             <div className="space-y-2">
                                 <Button
@@ -3917,7 +3915,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                     onClick={() => handleExport('statistics', 'csv')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (CSV)
+                                    {t('export.download.csv', "Herunterladen (CSV)")}
                                 </Button>
                             </div>
                          </div>
@@ -3985,7 +3983,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         {t('danger.delete_all_rules', 'Alle Regeln löschen')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
+                                        {t('danger.delete_rules.desc', "Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.")}
                                     </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -4001,7 +3999,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         {t('danger.delete_all_stats', 'Alle Statistiken löschen')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle erfassten Tracking-Daten unwiderruflich.
+                                        {t('danger.delete_stats.desc', "Löscht alle erfassten Tracking-Daten unwiderruflich.")}
                                     </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -4017,7 +4015,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                                         {t('danger.delete_blocked_ips', 'Blockierte IPs löschen')}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
+                                        {t('danger.delete_ips.desc', "Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.")}
                                     </p>
                                 </div>
                             </div>
@@ -4323,7 +4321,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-yellow-600">
               <AlertTriangle className="h-5 w-5" />
-              Wichtiger Hinweis
+              {t('dialog.auto_redirect.title', "Wichtiger Hinweis")}
             </DialogTitle>
             <DialogDescription className="sr-only">
               Bestätigung für die Aktivierung der automatischen Weiterleitung
@@ -4331,14 +4329,14 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Sie sind dabei, die automatische sofortige Weiterleitung für alle Besucher und alle URLs zu aktivieren. Besucher werden so automatisch sofort zur neuen URL ohne Anzeige der Seite weitergeleitet.
+              {t('dialog.auto_redirect.content', "Sie sind dabei, die automatische sofortige Weiterleitung für alle Besucher und alle URLs zu aktivieren. Besucher werden so automatisch sofort zur neuen URL ohne Anzeige der Seite weitergeleitet.")}
             </p>
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                  <p className="font-medium">Wichtiger Hinweis:</p>
-                  <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
+                  <p className="font-medium">{t('dialog.auto_redirect.warning_title', "Wichtiger Hinweis:")}</p>
+                  <p>{t('dialog.auto_redirect.warning_text', "Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter")} <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
                   <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
                 </div>
               </div>
@@ -4353,7 +4351,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               }}
               className="w-full sm:w-auto"
             >
-              Abbrechen
+              {t('dialog.auto_redirect.cancel', "Abbrechen")}
             </Button>
             <Button 
               onClick={() => {
@@ -4363,7 +4361,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               }}
               className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700"
             >
-              Ich habe verstanden
+              {t('dialog.auto_redirect.confirm', "Ich habe verstanden")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4375,16 +4373,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <Shield className="h-5 w-5" />
-              Blockierte IPs löschen?
+              {t('dialog.delete_ips.title', "Blockierte IPs löschen?")}
             </DialogTitle>
             <DialogDescription>
-              Dies löscht alle derzeit blockierten IP-Adressen. Nutzer können sich sofort wieder anmelden.
+              {t('dialog.delete_ips.content', "Dies löscht alle derzeit blockierten IP-Adressen. Nutzer können sich sofort wieder anmelden.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-               Diese Aktion hebt den Brute-Force-Schutz für alle aktuell gesperrten Nutzer auf.
+               {t('dialog.delete_ips.warning', "Diese Aktion hebt den Brute-Force-Schutz für alle aktuell gesperrten Nutzer auf.")}
             </div>
 
             <Button
@@ -4395,30 +4393,30 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 className="w-full"
             >
                 <Download className="h-4 w-4 mr-2" />
-                Backup herunterladen (Excel)
+                {t('dialog.backup.download_csv', "Backup herunterladen (CSV)")}
             </Button>
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">
-                    Bestätigung erforderlich
+                    {t('dialog.delete_stats.confirm_label', "Bestätigung erforderlich")}
                 </label>
                 <Input
                     value={clearBlockedIpsConfirmationText}
                     onChange={(e) => setClearBlockedIpsConfirmationText(e.target.value)}
-                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    placeholder={t('dialog.delete_stats.confirm_placeholder', 'Tippen Sie "DELETE" zur Bestätigung')}
                     className={clearBlockedIpsConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
                 />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowClearBlockedIpsDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowClearBlockedIpsDialog(false)}>{t('common.cancel', "Abbrechen")}</Button>
             <Button
               variant="destructive"
               onClick={() => clearBlockedIpsMutation.mutate()}
               disabled={clearBlockedIpsConfirmationText !== "DELETE" || clearBlockedIpsMutation.isPending}
             >
-              {clearBlockedIpsMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+              {clearBlockedIpsMutation.isPending ? t('common.delete', 'Löschen...') : t('dialog.delete_stats.button', 'Alles löschen')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4428,16 +4426,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       <Dialog open={showManageBlockedIpsDialog} onOpenChange={setShowManageBlockedIpsDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Blockierte IPs verwalten</DialogTitle>
+            <DialogTitle>{t('dialog.manage_ips.title', "Blockierte IPs verwalten")}</DialogTitle>
             <DialogDescription>
-              Hier können Sie aktuell blockierte IP-Adressen einsehen und verwalten.
+              {t('dialog.manage_ips.desc', "Hier können Sie aktuell blockierte IP-Adressen einsehen und verwalten.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 my-4">
             <div className="flex gap-2">
                <Input
-                 placeholder="IP-Adresse (z.B. 192.168.1.1)"
+                 placeholder={t('dialog.manage_ips.placeholder', "IP-Adresse (z.B. 192.168.1.1)")}
                  value={newBlockedIp}
                  onChange={(e) => setNewBlockedIp(e.target.value)}
                />
@@ -4447,7 +4445,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                  }}
                  disabled={!newBlockedIp || blockIpMutation.isPending}
                >
-                 Blockieren
+                 {t('dialog.manage_ips.block_button', "Blockieren")}
                </Button>
             </div>
 
@@ -4455,16 +4453,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>IP-Adresse</TableHead>
-                    <TableHead>Fehlversuche</TableHead>
-                    <TableHead>Blockiert bis</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
+                    <TableHead>{t('dialog.manage_ips.table.ip', "IP-Adresse")}</TableHead>
+                    <TableHead>{t('dialog.manage_ips.table.attempts', "Fehlversuche")}</TableHead>
+                    <TableHead>{t('dialog.manage_ips.table.blocked_until', "Blockiert bis")}</TableHead>
+                    <TableHead className="text-right">{t('dialog.manage_ips.table.actions', "Aktionen")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {blockedIpsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">Lade...</TableCell>
+                      <TableCell colSpan={4} className="text-center">{t('admin.loading', "Lade...")}</TableCell>
                     </TableRow>
                   ) : blockedIps && blockedIps.length > 0 ? (
                     blockedIps.map((entry) => (
@@ -4489,7 +4487,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                   ) : (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        Keine blockierten IP-Adressen.
+                        {t('dialog.manage_ips.no_data', "Keine blockierten IP-Adressen.")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -4499,7 +4497,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </div>
 
           <DialogFooter>
-             <Button variant="outline" onClick={() => setShowManageBlockedIpsDialog(false)}>Schließen</Button>
+             <Button variant="outline" onClick={() => setShowManageBlockedIpsDialog(false)}>{t('common.close', "Schließen")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -4510,16 +4508,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Alle Statistiken löschen?
+              {t('dialog.delete_stats.title', "Alle Statistiken löschen?")}
             </DialogTitle>
             <DialogDescription>
-              Dies löscht alle erfassten Tracking-Daten unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('dialog.delete_stats.content', "Dies löscht alle erfassten Tracking-Daten unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-               Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.
+               {t('dialog.delete_stats.warning', "Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.")}
             </div>
 
             <Button
@@ -4528,30 +4526,30 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 className="w-full"
             >
                 <Download className="h-4 w-4 mr-2" />
-                Backup herunterladen (CSV)
+                {t('dialog.backup.download_csv', "Backup herunterladen (CSV)")}
             </Button>
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">
-                    Bestätigung erforderlich
+                    {t('dialog.delete_stats.confirm_label', "Bestätigung erforderlich")}
                 </label>
                 <Input
                     value={deleteAllStatsConfirmationText}
                     onChange={(e) => setDeleteAllStatsConfirmationText(e.target.value)}
-                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    placeholder={t('dialog.delete_stats.confirm_placeholder', 'Tippen Sie "DELETE" zur Bestätigung')}
                     className={deleteAllStatsConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
                 />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>{t('common.cancel', "Abbrechen")}</Button>
             <Button
               variant="destructive"
               onClick={() => deleteAllStatsMutation.mutate()}
               disabled={deleteAllStatsConfirmationText !== "DELETE" || deleteAllStatsMutation.isPending}
             >
-              {deleteAllStatsMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+              {deleteAllStatsMutation.isPending ? t('common.delete', 'Löschen...') : t('dialog.delete_stats.button', 'Alles löschen')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4563,10 +4561,10 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <AlertDialogHeader className="flex-shrink-0">
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Validierungswarnung
+              {t('dialog.validation.title', "Validierungswarnung")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground text-sm">
-              Möchten Sie die Regel trotz der folgenden Warnung(en) speichern?
+              {t('dialog.validation.content', "Möchten Sie die Regel trotz der folgenden Warnung(en) speichern?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           
@@ -4579,15 +4577,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           </div>
           
           <AlertDialogFooter className="flex-shrink-0">
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel', "Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleForceSave}
               disabled={forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {(forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending) 
-                ? 'Speichere...' 
-                : 'Trotzdem speichern'}
+                ? t('settings.save.loading', 'Speichere...')
+                : t('dialog.validation.save_anyway', 'Trotzdem speichern')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4597,16 +4595,15 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Regeln löschen</AlertDialogTitle>
+            <AlertDialogTitle>{t('dialog.bulk_delete.title', "Regeln löschen")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie die ausgewählten {selectedRuleIds.length} {selectedRuleIds.length === 1 ? 'Regel' : 'Regeln'} löschen möchten?
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('dialog.bulk_delete.content', { count: selectedRuleIds.length }).replace('{count}', selectedRuleIds.length.toString())}
               <br /><br />
-              <strong>Hinweis:</strong> Es werden nur die auf der aktuellen Seite ausgewählten Regeln gelöscht.
+              <strong>{t('dialog.bulk_delete.note', "Hinweis: Es werden nur die auf der aktuellen Seite ausgewählten Regeln gelöscht.")}</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel', "Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 // Critical fix: Only delete rules that are on current page
@@ -4622,7 +4619,7 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={bulkDeleteRulesMutation.isPending}
             >
-              {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+              {bulkDeleteRulesMutation.isPending ? t('common.delete', 'Löschen...') : t('common.delete', 'Löschen')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4637,26 +4634,28 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-yellow-600">
               <AlertTriangle className="h-5 w-5" />
-              Statistik-Limitierung ändern?
+              {t('dialog.stats_limit.title', "Statistik-Limitierung ändern?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Sie ändern das Limit für Statistik-Einträge von {(settingsData?.maxStatsEntries || 0) === 0 ? '"Unbegrenzt"' : settingsData?.maxStatsEntries} auf{" "}
-              {generalSettings.maxStatsEntries}.
+              {t('dialog.stats_limit.content_part1', "Sie ändern das Limit für Statistik-Einträge von {old} auf {new}.")
+                .replace('{old}', (settingsData?.maxStatsEntries || 0) === 0 ? `"${t('dialog.stats_limit.unlimited', 'Unbegrenzt')}"` : String(settingsData?.maxStatsEntries))
+                .replace('{new}', String(generalSettings.maxStatsEntries))
+              }
               <br />
               <br />
-              <strong>Warnung:</strong> Wenn aktuell mehr als{" "}
-              {generalSettings.maxStatsEntries} Einträge vorhanden sind (aktuell:{" "}
-              {statsData?.stats?.total || 0}), werden die ältesten Einträge beim
-              Speichern <strong>unwiderruflich gelöscht</strong>.
+              <strong>{t('dialog.stats_limit.content_part2', "Warnung: Wenn aktuell mehr als {new} Einträge vorhanden sind (aktuell: {total}), werden die ältesten Einträge beim Speichern unwiderruflich gelöscht.")
+                .replace('{new}', String(generalSettings.maxStatsEntries))
+                .replace('{total}', String(statsData?.stats?.total || 0))
+              }</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel', "Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStatsLimitChange}
               className="bg-yellow-600 hover:bg-yellow-700"
             >
-              Verstanden & Speichern
+              {t('dialog.stats_limit.confirm', "Verstanden & Speichern")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4668,16 +4667,16 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Alle Regeln löschen?
+              {t('dialog.delete_all_rules.title', "Alle Regeln löschen?")}
             </DialogTitle>
             <DialogDescription>
-              Dies löscht alle vorhandenen Regeln unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('dialog.delete_all_rules.content', "Dies löscht alle vorhandenen Regeln unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.")}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-               Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.
+               {t('dialog.delete_stats.warning', "Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.")}
             </div>
             
             <Button 
@@ -4686,30 +4685,30 @@ export default function AdminPage({ onClose, onOpenVisualEditor }: AdminPageProp
                 className="w-full"
             >
                 <Download className="h-4 w-4 mr-2" />
-                Backup herunterladen (JSON)
+                {t('dialog.backup.download_json', "Backup herunterladen (JSON)")}
             </Button>
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">
-                    Bestätigung erforderlich
+                    {t('dialog.delete_stats.confirm_label', "Bestätigung erforderlich")}
                 </label>
                 <Input 
                     value={deleteAllConfirmationText}
                     onChange={(e) => setDeleteAllConfirmationText(e.target.value)}
-                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    placeholder={t('dialog.delete_stats.confirm_placeholder', 'Tippen Sie "DELETE" zur Bestätigung')}
                     className={deleteAllConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
                 />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)}>{t('common.cancel', "Abbrechen")}</Button>
             <Button
               variant="destructive"
               onClick={() => deleteAllRulesMutation.mutate()}
               disabled={deleteAllConfirmationText !== "DELETE" || deleteAllRulesMutation.isPending}
             >
-              {deleteAllRulesMutation.isPending ? 'Lösche...' : 'Alles löschen'}
+              {deleteAllRulesMutation.isPending ? t('common.delete', 'Löschen...') : t('dialog.delete_stats.button', 'Alles löschen')}
             </Button>
           </DialogFooter>
         </DialogContent>
