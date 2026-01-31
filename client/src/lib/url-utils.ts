@@ -278,13 +278,17 @@ function extractLastPathSegment(url: string): string | null {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
-      return segments.length > 0 ? segments[segments.length - 1] : null;
+      return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
   } catch (e) {
       // Fallback for invalid URLs
-      const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
-      const path = pathMatch?.[1] || '/';
-      const segments = path.split('/').filter(s => s && s.trim().length > 0);
-      return segments.length > 0 ? segments[segments.length - 1] : null;
+      try {
+        const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
+        const path = pathMatch?.[1] || '/';
+        const segments = path.split('/').filter(s => s && s.trim().length > 0);
+        return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
+      } catch (err) {
+        return null;
+      }
   }
 }
 
@@ -345,7 +349,11 @@ export function extractSearchTerm(
         const regex = new RegExp(rule.pattern);
         const match = regex.exec(url);
         if (match && match[1]) {
-          searchTerm = match[1];
+          try {
+            searchTerm = decodeURIComponent(match[1]);
+          } catch {
+            searchTerm = match[1];
+          }
           if (rule.searchUrl) {
             searchUrl = rule.searchUrl;
           }
@@ -364,7 +372,11 @@ export function extractSearchTerm(
       const regex = new RegExp(legacyRegex);
       const match = regex.exec(url);
       if (match && match[1]) {
-        searchTerm = match[1];
+        try {
+          searchTerm = decodeURIComponent(match[1]);
+        } catch {
+          searchTerm = match[1];
+        }
         return { searchTerm, searchUrl: null, skipEncoding: undefined };
       }
     } catch (regexError) {

@@ -78,9 +78,15 @@ const testCases = [
     {
         name: "Skip Encoding Rule (Match)",
         url: "https://oldurtl.com/anywhere?raw=some%20value",
-        expectedSearchTerm: "some%20value",
+        expectedSearchTerm: "some value", // Should be decoded
         expectedSearchUrl: "https://newapp.com/raw?q=",
         expectedSkipEncoding: true
+    },
+    {
+        name: "Encoded Path Segment (Should Decode)",
+        url: "https://oldurtl.com/docs/manual%20v1.pdf",
+        expectedSearchTerm: "manual v1.pdf",
+        expectedSearchUrl: "https://newapp.com/docs?q="
     }
 ];
 
