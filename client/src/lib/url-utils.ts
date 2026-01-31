@@ -297,22 +297,34 @@ export function extractSearchTerm(
 
   // 1. Try Rules
   if (rules && rules.length > 0) {
-    for (const rule of rules) {
-      try {
-        // Path Matcher Check
-        if (rule.pathPattern) {
-           try {
-             const pathRegex = new RegExp(rule.pathPattern);
-             const path = extractPath(url);
-             if (!pathRegex.test(path)) {
-               continue; // Path doesn't match, skip this rule
-             }
-           } catch (e) {
-             console.error("Invalid path pattern regex:", rule.pathPattern, e);
-             continue; // Skip invalid regex
-           }
-        }
+    // Filter and Sort rules:
+    // 1. Filter: Include only rules where pathPattern matches (or is empty)
+    // 2. Sort: Prioritize rules WITH a pattern over rules WITHOUT a pattern (to ensure specific regex wins over generic fallback)
 
+    const candidateRules = rules.filter(rule => {
+        if (!rule.pathPattern) return true;
+        try {
+            const pathRegex = new RegExp(rule.pathPattern);
+            const path = extractPath(url);
+            return pathRegex.test(path);
+        } catch (e) {
+            console.error("Invalid path pattern regex:", rule.pathPattern, e);
+            return false;
+        }
+    });
+
+    // Stable sort prioritizing defined patterns
+    candidateRules.sort((a, b) => {
+        const aHasPattern = !!(a.pattern && a.pattern.trim() !== '');
+        const bHasPattern = !!(b.pattern && b.pattern.trim() !== '');
+
+        if (aHasPattern && !bHasPattern) return -1; // a comes first
+        if (!aHasPattern && bHasPattern) return 1;  // b comes first
+        return 0; // maintain original relative order
+    });
+
+    for (const rule of candidateRules) {
+      try {
         // Check if pattern is missing or empty -> Use Last Part Logic
         if (!rule.pattern || rule.pattern.trim() === '') {
             const term = extractLastPathSegment(url);
