@@ -697,6 +697,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Satisfaction Trend
+  app.get("/api/admin/stats/trend", requireAuth, async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const trend = await storage.getSatisfactionTrend(days);
+      res.json(trend);
+    } catch (error) {
+      console.error("Trend stats error:", error);
+      res.status(500).json({ error: "Failed to fetch satisfaction trend" });
+    }
+  });
+
   // Comprehensive tracking entries with search and sort
   app.get("/api/admin/stats/entries", requireAuth, async (req, res) => {
     try {

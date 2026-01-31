@@ -90,6 +90,8 @@ export interface IStorage {
     };
   }>;
 
+  getSatisfactionTrend(days?: number): Promise<Array<{ date: string; score: number; count: number }>>;
+
   // Import functionality
   importUrlRules(
     rules: ImportUrlRule[],
@@ -864,6 +866,73 @@ export class FileStorage implements IStorage {
     }
 
     return { total, today, week, quality, feedback };
+  }
+
+  async getSatisfactionTrend(days: number = 30): Promise<Array<{ date: string; score: number; count: number }>> {
+    const trackingData = await this.ensureTrackingLoaded();
+    const now = new Date();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - days);
+    // Reset time part to ensure full day coverage
+    cutoffDate.setHours(0, 0, 0, 0);
+    const cutoffIso = cutoffDate.toISOString();
+
+    // Filter data by time range
+    const filteredData = trackingData.filter(t => t.timestamp >= cutoffIso && t.path !== "/");
+
+    // Group by date (YYYY-MM-DD)
+    const dailyStats = new Map<string, { totalScore: number; count: number }>();
+
+    for (const track of filteredData) {
+      // Extract date part YYYY-MM-DD
+      const date = track.timestamp.substring(0, 10);
+
+      let entryScore = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+
+      // Feedback overrides quality if present
+      if (track.feedback === 'OK') {
+        entryScore = 100;
+      } else if (track.feedback === 'NOK') {
+        entryScore = 0;
+      }
+      // If no feedback, use matchQuality as the score
+
+      const current = dailyStats.get(date) || { totalScore: 0, count: 0 };
+      dailyStats.set(date, {
+        totalScore: current.totalScore + entryScore,
+        count: current.count + 1
+      });
+    }
+
+    // Convert map to sorted array and fill missing days
+    const result: Array<{ date: string; score: number; count: number }> = [];
+
+    // Create array of all dates in range
+    for (let i = 0; i <= days; i++) {
+        const d = new Date(cutoffDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().substring(0, 10);
+
+        // Stop if future
+        if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
+
+        const stats = dailyStats.get(dateStr);
+        if (stats) {
+            result.push({
+                date: dateStr,
+                score: Math.round(stats.totalScore / stats.count),
+                count: stats.count
+            });
+        } else {
+            result.push({
+                date: dateStr,
+                score: 0,
+                count: 0
+            });
+        }
+    }
+
+    return result;
   }
 
   // Paginated statistics methods
