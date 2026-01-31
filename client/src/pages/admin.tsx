@@ -60,7 +60,9 @@ import {
   XCircle,
   FileSpreadsheet,
   Filter,
-  Share2
+  Share2,
+  TrendingUp,
+  Activity
 } from "lucide-react";
 import {
   Table,
@@ -101,6 +103,81 @@ interface ImportPreviewData {
     update: number;
     invalid: number;
   };
+}
+
+// Simple Line Chart Component
+function SatisfactionChart({ data }: { data: Array<{ date: string; score: number; count: number }> }) {
+  if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">Nicht genügend Daten für Trendanzeige</div>;
+
+  // Calculate SVG path
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = 100 - d.score; // Invert Y (0 is top)
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <div className="w-full h-[200px] flex flex-col">
+        <div className="flex-1 relative w-full h-full min-h-[150px]">
+            <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                {/* Background Grid */}
+                {[0, 25, 50, 75, 100].map(y => (
+                    <line
+                        key={y}
+                        x1="0"
+                        y1={y}
+                        x2="100"
+                        y2={y}
+                        stroke="currentColor"
+                        strokeOpacity="0.1"
+                        strokeDasharray="2"
+                        vectorEffect="non-scaling-stroke"
+                        className="text-foreground"
+                    />
+                ))}
+
+                {/* Area (Gradient fill) */}
+                <defs>
+                    <linearGradient id="scoreGradient" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" className="text-primary" />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" className="text-primary" />
+                    </linearGradient>
+                </defs>
+                <polygon
+                    points={`0,100 ${points} 100,100`}
+                    fill="url(#scoreGradient)"
+                    className="text-primary"
+                />
+
+                {/* Line */}
+                <polyline
+                    points={points}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    vectorEffect="non-scaling-stroke"
+                    className="text-primary"
+                />
+            </svg>
+
+            {/* Axis Labels (Overlay) */}
+            <div className="absolute top-0 left-0 h-full flex flex-col justify-between text-[10px] text-muted-foreground pointer-events-none -ml-6">
+                <span>100%</span>
+                <span>75%</span>
+                <span>50%</span>
+                <span>25%</span>
+                <span>0%</span>
+            </div>
+        </div>
+
+        {/* X-Axis Labels */}
+        <div className="flex justify-between text-[10px] text-muted-foreground mt-2 px-1">
+            <span>{new Date(data[0].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
+            <span className="hidden sm:inline">{new Date(data[Math.floor(data.length / 2)].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
+            <span>{new Date(data[data.length - 1].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
+        </div>
+    </div>
+  );
 }
 
 interface AdminPageProps {
@@ -369,6 +446,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
     smartSearchRegex: "" as string | undefined | null,
     smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string }[],
+    showSatisfactionTrend: true,
+    satisfactionTrendDays: 30,
   });
 
   // Statistics filters and state
@@ -456,6 +535,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     };
   }, []); // Remove dependencies to prevent continuous re-checking
 
+  const { data: trendData, isLoading: trendLoading } = useQuery({
+    queryKey: ["/api/admin/stats/trend", generalSettings.satisfactionTrendDays],
+    enabled: isAuthenticated && statsView === 'top100' && generalSettings.showSatisfactionTrend,
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/stats/trend?days=${generalSettings.satisfactionTrendDays || 30}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch trend');
+      return response.json();
+    },
+  });
+
   // Queries - Use paginated API for better performance with large datasets
   const { data: paginatedRulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ["/api/admin/rules/paginated", rulesPage, rulesPerPage, debouncedRulesSearchQuery, rulesSortBy, rulesSortOrder],
@@ -492,7 +583,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const totalPagesFromAPI = paginatedRulesData?.totalPages || 1;
 
   const { data: statsData, isLoading: statsLoading } = useQuery<{
-    stats: { total: number; today: number; week: number };
+    stats: {
+      total: number;
+      today: number;
+      week: number;
+      quality: { match100: number; match75: number; match50: number; match0: number };
+      feedback: { ok: number; nok: number; missing: number };
+    };
     topUrls: Array<{ path: string; count: number }>;
   }>({
     queryKey: ["/api/admin/stats/all", statsFilter],
@@ -686,6 +783,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         feedbackSuccessMessage: settingsData.feedbackSuccessMessage || "Danke für Ihr Feedback!",
         feedbackButtonYes: settingsData.feedbackButtonYes || "Ja, OK",
         feedbackButtonNo: settingsData.feedbackButtonNo || "Nein",
+    showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
+    satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
       });
     }
   }, [settingsData]);
@@ -3093,6 +3192,33 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                           {generalSettings.enableFeedbackSurvey && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                              {/* New Trend Config */}
+                              <div className="md:col-span-2 p-4 border rounded-lg bg-muted/20 mb-4">
+                                  <div className="flex items-center justify-between mb-4">
+                                      <div className="space-y-0.5">
+                                          <label className="text-base font-medium">Trend-Anzeige</label>
+                                          <p className="text-xs text-muted-foreground">Konfiguration für den "Redirect Satisfaction Trend"</p>
+                                      </div>
+                                      <Switch
+                                          checked={generalSettings.showSatisfactionTrend}
+                                          onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, showSatisfactionTrend: checked })}
+                                      />
+                                  </div>
+                                  {generalSettings.showSatisfactionTrend && (
+                                      <div>
+                                          <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
+                                          <Input
+                                              type="number"
+                                              min="7"
+                                              max="365"
+                                              value={generalSettings.satisfactionTrendDays}
+                                              onChange={(e) => setGeneralSettings({ ...generalSettings, satisfactionTrendDays: parseInt(e.target.value) || 30 })}
+                                              className="max-w-[200px]"
+                                          />
+                                      </div>
+                                  )}
+                              </div>
+
                               <div className="md:col-span-2">
                                 <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
                                 <DebouncedInput
@@ -3357,7 +3483,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     onClick={() => handleStatsViewChange('top100')}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Top 100
+                    Overall
                   </Button>
                   <Button
                     variant={statsView === 'browser' ? 'default' : 'outline'}
@@ -3484,7 +3610,238 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
               {/* Top 100 View */}
               {statsView === 'top100' && (
-                <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
+                <div className="space-y-6">
+                  {/* Summary Cards Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{statsData?.stats?.total?.toLocaleString('de-DE') || 0}</div>
+                            <p className="text-xs text-muted-foreground">Gesamte Weiterleitungen</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{statsData?.stats?.today?.toLocaleString('de-DE') || 0}</div>
+                            <p className="text-xs text-muted-foreground">Heute</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{statsData?.stats?.week?.toLocaleString('de-DE') || 0}</div>
+                            <p className="text-xs text-muted-foreground">Letzte 7 Tage</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">
+                                {statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100) : 0}%
+                            </div>
+                            <p className="text-xs text-muted-foreground">Exakte Trefferquote</p>
+                        </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Trend Chart (Configurable) */}
+                  {generalSettings.showSatisfactionTrend && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <TrendingUp className="h-5 w-5 text-primary" />
+                                <CardTitle>Redirect Satisfaction Trend</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Entwicklung der Qualität und Nutzerzufriedenheit über die letzten {generalSettings.satisfactionTrendDays} Tage.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {trendLoading ? (
+                                <div className="h-[200px] flex items-center justify-center text-muted-foreground">Lade Trend...</div>
+                            ) : (
+                                <SatisfactionChart data={trendData as any} />
+                            )}
+                        </CardContent>
+                    </Card>
+                  )}
+
+                  {/* New Statistics Graphics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Link Quality Card */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Activity className="h-5 w-5 text-primary" />
+                            <CardTitle>Link Quality</CardTitle>
+                        </div>
+                        <CardDescription>Qualitätsverteilung der Link-Matches</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {statsLoading ? (
+                          <div className="text-center py-8">Lade Statistiken...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* Exact Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('100');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Exakter Treffer (100%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match100 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                            </div>
+
+                            {/* High Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('75');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Hoher Treffer (75%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match75 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match75 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match75 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-blue-100 dark:bg-blue-900/20 [&>div]:bg-blue-600" />
+                            </div>
+
+                            {/* Medium Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('50');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Mittlerer Treffer (50%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match50 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match50 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match50 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-yellow-100 dark:bg-yellow-900/20 [&>div]:bg-yellow-600" />
+                            </div>
+
+                            {/* No Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('0');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Kein Treffer (0%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match0 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match0 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match0 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* User Feedback Card */}
+                    {generalSettings.enableFeedbackSurvey && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Nutzer-Feedback</CardTitle>
+                        <CardDescription>Rückmeldungen zu Weiterleitungen</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {statsLoading ? (
+                          <div className="text-center py-8">Lade Statistiken...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* OK */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsFeedbackFilter('OK');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>{generalSettings.feedbackButtonYes || "Positiv (OK)"}</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.feedback?.ok || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                            </div>
+
+                            {/* NOK */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsFeedbackFilter('NOK');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>{generalSettings.feedbackButtonNo || "Negativ (NOK)"}</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.feedback?.nok || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                            </div>
+
+                            {/* Missing */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsFeedbackFilter('empty');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Kein Feedback</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.feedback?.missing || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-gray-100 dark:bg-gray-800 [&>div]:bg-gray-400" />
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    )}
+                  </div>
+
+                  <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
                   <Card>
                     <CardHeader>
                       <CardTitle>Top URLs</CardTitle>
@@ -3607,6 +3964,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </CardContent>
                   </Card>
                   )}
+                  </div>
                 </div>
               )}
 
