@@ -362,6 +362,15 @@ export const generalSettingsSchema = z.object({
     .max(50, "Button-Text für Nein ist zu lang")
     .default("Nein"),
 
+  // Satisfaction Trend Chart
+  showSatisfactionTrend: z.boolean()
+    .default(true),
+  satisfactionTrendDays: z.number()
+    .int()
+    .min(7, "Zeitraum muss mindestens 7 Tage sein")
+    .max(365, "Zeitraum darf maximal 365 Tage sein")
+    .default(30),
+
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {
   if (data.defaultRedirectMode === 'search') {

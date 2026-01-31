@@ -73,7 +73,24 @@ export interface IStorage {
     limit?: number,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<Array<{ domain: string; count: number }>>;
-  getTrackingStats(): Promise<{ total: number; today: number; week: number }>;
+  getTrackingStats(): Promise<{
+    total: number;
+    today: number;
+    week: number;
+    quality: {
+      match100: number;
+      match75: number;
+      match50: number;
+      match0: number;
+    };
+    feedback: {
+      ok: number;
+      nok: number;
+      missing: number;
+    };
+  }>;
+
+  getSatisfactionTrend(days?: number): Promise<Array<{ date: string; score: number; count: number }>>;
 
   // Import functionality
   importUrlRules(
@@ -786,6 +803,17 @@ export class FileStorage implements IStorage {
     total: number;
     today: number;
     week: number;
+    quality: {
+      match100: number;
+      match75: number;
+      match50: number;
+      match0: number;
+    };
+    feedback: {
+      ok: number;
+      nok: number;
+      missing: number;
+    };
   }> {
     const trackingData = await this.ensureTrackingLoaded();
     const now = new Date();
@@ -802,6 +830,19 @@ export class FileStorage implements IStorage {
     let today = 0;
     let week = 0;
 
+    const quality = {
+      match100: 0,
+      match75: 0,
+      match50: 0,
+      match0: 0,
+    };
+
+    const feedback = {
+      ok: 0,
+      nok: 0,
+      missing: 0,
+    };
+
     for (const track of trackingData) {
       if (track.path === "/") continue;
 
@@ -810,9 +851,88 @@ export class FileStorage implements IStorage {
       // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
       if (track.timestamp >= todayIso) today++;
       if (track.timestamp >= weekIso) week++;
+
+      // Quality stats
+      const q = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+      if (q >= 100) quality.match100++;
+      else if (q >= 75) quality.match75++;
+      else if (q >= 50) quality.match50++;
+      else quality.match0++;
+
+      // Feedback stats
+      if (track.feedback === 'OK') feedback.ok++;
+      else if (track.feedback === 'NOK') feedback.nok++;
+      else feedback.missing++;
     }
 
-    return { total, today, week };
+    return { total, today, week, quality, feedback };
+  }
+
+  async getSatisfactionTrend(days: number = 30): Promise<Array<{ date: string; score: number; count: number }>> {
+    const trackingData = await this.ensureTrackingLoaded();
+    const now = new Date();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - days);
+    // Reset time part to ensure full day coverage
+    cutoffDate.setHours(0, 0, 0, 0);
+    const cutoffIso = cutoffDate.toISOString();
+
+    // Filter data by time range
+    const filteredData = trackingData.filter(t => t.timestamp >= cutoffIso && t.path !== "/");
+
+    // Group by date (YYYY-MM-DD)
+    const dailyStats = new Map<string, { totalScore: number; count: number }>();
+
+    for (const track of filteredData) {
+      // Extract date part YYYY-MM-DD
+      const date = track.timestamp.substring(0, 10);
+
+      let entryScore = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+
+      // Feedback overrides quality if present
+      if (track.feedback === 'OK') {
+        entryScore = 100;
+      } else if (track.feedback === 'NOK') {
+        entryScore = 0;
+      }
+      // If no feedback, use matchQuality as the score
+
+      const current = dailyStats.get(date) || { totalScore: 0, count: 0 };
+      dailyStats.set(date, {
+        totalScore: current.totalScore + entryScore,
+        count: current.count + 1
+      });
+    }
+
+    // Convert map to sorted array and fill missing days
+    const result: Array<{ date: string; score: number; count: number }> = [];
+
+    // Create array of all dates in range
+    for (let i = 0; i <= days; i++) {
+        const d = new Date(cutoffDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().substring(0, 10);
+
+        // Stop if future
+        if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
+
+        const stats = dailyStats.get(dateStr);
+        if (stats) {
+            result.push({
+                date: dateStr,
+                score: Math.round(stats.totalScore / stats.count),
+                count: stats.count
+            });
+        } else {
+            result.push({
+                date: dateStr,
+                score: 0,
+                count: 0
+            });
+        }
+    }
+
+    return result;
   }
 
   // Paginated statistics methods
