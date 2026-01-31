@@ -11,6 +11,7 @@ import {
   type InsertUrlRule,
 } from "@shared/schema";
 import { urlRuleSchemaWithValidation, updateUrlRuleSchemaWithValidation } from "@shared/validation";
+import { urlUtils } from "@shared/utils";
 import { z } from "zod";
 import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts, resetAllLoginAttempts, getBlockedIps, blockIp } from "./middleware/bruteForce";
@@ -47,6 +48,38 @@ const requireAuth = (req: any, res: any, next: any) => {
   }
   next();
 };
+
+// Helper to standardize error handling
+function handleZodError(error: any, res: any, defaultMessage: string = "Invalid data") {
+  if (error instanceof z.ZodError) {
+    const validationErrors = error.errors.map(err => ({
+      field: err.path.join('.'),
+      message: err.message
+    }));
+
+    res.status(400).json({
+      error: defaultMessage,
+      validationErrors: validationErrors,
+      details: validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
+    });
+  } else if (error instanceof Error) {
+    // Handle the case where ZodError message was stringified into an Error message
+    if (error.message.includes('[') && error.message.includes('"message"')) {
+      try {
+        const zodErrors = JSON.parse(error.message);
+        if (Array.isArray(zodErrors) && zodErrors.length > 0) {
+          res.status(400).json({ error: zodErrors[0].message || defaultMessage });
+          return;
+        }
+      } catch (parseError) {
+        // fall through
+      }
+    }
+    res.status(400).json({ error: error.message });
+  } else {
+    res.status(400).json({ error: defaultMessage });
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -161,20 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tracking);
     } catch (error) {
       console.error("Tracking error:", error);
-
-      if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }));
-
-        res.status(400).json({
-          error: "Invalid tracking data",
-          details: validationErrors
-        });
-      } else {
-        res.status(400).json({ error: "Invalid tracking data" });
-      }
+      handleZodError(error, res, "Invalid tracking data");
     }
   });
 
@@ -207,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const trackingEntry: any = {
         oldUrl: url || "Manual Feedback",
-        path: rule ? rule.matcher : (url ? extractPath(url) : "unknown"),
+        path: rule ? rule.matcher : (url ? urlUtils.extractPath(url) : "unknown"),
         ruleId: ruleId || undefined,
         matchQuality: 100, // Explicit manual match
         timestamp: new Date().toISOString(),
@@ -222,15 +242,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid feedback data" });
     }
   });
-
-  function extractPath(url: string): string {
-    try {
-      const u = new URL(url);
-      return u.pathname;
-    } catch {
-      return url.startsWith('/') ? url : '/' + url;
-    }
-  }
 
   // URL-Regel Matching endpoint
   app.post("/api/check-rules", apiRateLimiter, async (req, res) => {
@@ -409,29 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Create rule error:", error instanceof Error ? error.message : String(error));
-      if (error instanceof Error) {
-        // Extract clean error message from Zod validation errors
-        let cleanMessage = error.message;
-        
-        // Handle Zod validation errors specifically
-        if (error.message.includes('[') && error.message.includes('"message"')) {
-          try {
-            const zodErrors = JSON.parse(error.message);
-            if (Array.isArray(zodErrors) && zodErrors.length > 0) {
-              cleanMessage = zodErrors[0].message || "Ungültige Eingabedaten";
-            }
-          } catch (parseError) {
-            // If parsing fails, use a generic message
-            cleanMessage = "Ungültige Eingabedaten. Bitte überprüfen Sie Ihre Eingaben.";
-          }
-        }
-        
-        res.status(400).json({ 
-          error: cleanMessage
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Regel-Daten" });
-      }
+      handleZodError(error, res, "Ungültige Regel-Daten");
     }
   });
 
@@ -464,29 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(rule);
     } catch (error) {
       console.error("Update rule error:", error instanceof Error ? error.message : String(error));
-      if (error instanceof Error) {
-        // Extract clean error message from Zod validation errors
-        let cleanMessage = error.message;
-        
-        // Handle Zod validation errors specifically
-        if (error.message.includes('[') && error.message.includes('"message"')) {
-          try {
-            const zodErrors = JSON.parse(error.message);
-            if (Array.isArray(zodErrors) && zodErrors.length > 0) {
-              cleanMessage = zodErrors[0].message || "Ungültige Eingabedaten";
-            }
-          } catch (parseError) {
-            // If parsing fails, use a generic message
-            cleanMessage = "Ungültige Eingabedaten. Bitte überprüfen Sie Ihre Eingaben.";
-          }
-        }
-        
-        res.status(400).json({ 
-          error: cleanMessage
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Regel-Daten" });
-      }
+      handleZodError(error, res, "Ungültige Regel-Daten");
     }
   });
 
@@ -983,22 +950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       console.error("Update settings error:", error);
-      
-      // If it's a Zod validation error, return the specific validation messages
-      if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }));
-        
-        res.status(400).json({ 
-          error: "Validierungsfehler",
-          validationErrors: validationErrors,
-          details: validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Einstellungsdaten" });
-      }
+      handleZodError(error, res, "Ungültige Einstellungsdaten");
     }
   });
 

@@ -14,18 +14,6 @@ import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
-// Helper to ensure only relevant flags are stored
-function sanitizeRuleFlags(rule: any): any {
-  if (rule.redirectType === "wildcard") {
-    // Wildcard rules only use forwardQueryParams
-    delete rule.discardQueryParams;
-  } else if (rule.redirectType === "partial" || rule.redirectType === "domain") {
-    // Partial and domain rules only use discardQueryParams
-    delete rule.forwardQueryParams;
-  }
-  return rule;
-}
-
 const DATA_DIR = path.join(process.cwd(), "data");
 const RULES_FILE = path.join(DATA_DIR, "rules.json");
 const TRACKING_FILE = path.join(DATA_DIR, "tracking.json");
@@ -128,6 +116,41 @@ export interface IStorage {
 }
 
 export class FileStorage implements IStorage {
+  // Helper to ensure only relevant flags are stored
+  private sanitizeRuleFlags(rule: any): any {
+    if (rule.redirectType === "wildcard") {
+      // Wildcard rules only use forwardQueryParams
+      delete rule.discardQueryParams;
+    } else if (rule.redirectType === "partial" || rule.redirectType === "domain") {
+      // Partial and domain rules only use discardQueryParams
+      delete rule.forwardQueryParams;
+    }
+    return rule;
+  }
+
+  // Validate rule constraints (duplicates)
+  private validateRuleConstraints(
+    rule: InsertUrlRule | Partial<InsertUrlRule>,
+    existingRules: UrlRule[],
+    excludeId?: string
+  ): void {
+    if (rule.matcher) {
+      const validationErrors: string[] = [];
+      const existingRuleWithSameMatcher = existingRules.find(
+        (r) => r.matcher === rule.matcher && r.id !== excludeId
+      );
+      if (existingRuleWithSameMatcher) {
+        validationErrors.push(
+          `URL-Matcher bereits vorhanden: "${rule.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`
+        );
+      }
+
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join("; "));
+      }
+    }
+  }
+
   private async enforceMaxStatsLimit(limit: number): Promise<void> {
     if (limit <= 0) return;
 
@@ -423,26 +446,7 @@ export class FileStorage implements IStorage {
 
     // Skip validation if force flag is set
     if (!force) {
-      // Validate for duplicates and overlaps
-      const validationErrors: string[] = [];
-
-      // Check for exact duplicates
-      const existingRuleWithSameMatcher = rules.find(
-        (r) => r.matcher === insertRule.matcher,
-      );
-      if (existingRuleWithSameMatcher) {
-        validationErrors.push(
-          `URL-Matcher bereits vorhanden: "${insertRule.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
-        );
-      }
-
-      // Check for overlapping patterns
-      // Overlapping matchers are allowed and resolved by specificity (length/specificity of match)
-      // So we don't block them here.
-
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join("; "));
-      }
+      this.validateRuleConstraints(insertRule, rules);
     }
 
     const rawRule: UrlRule = {
@@ -452,7 +456,7 @@ export class FileStorage implements IStorage {
     };
 
     // Sanitize flags based on redirect type
-    sanitizeRuleFlags(rawRule);
+    this.sanitizeRuleFlags(rawRule);
 
     // Process the new rule using current config (or default if not loaded, but ensureRulesLoaded called above ensures we have one)
     const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
@@ -480,27 +484,9 @@ export class FileStorage implements IStorage {
     const index = rules.findIndex((rule) => rule.id === id);
     if (index === -1) return undefined;
 
-    // Skip validation if force flag is set or if matcher is not being updated
-    if (!force && updateData.matcher) {
-      const validationErrors: string[] = [];
-
-      // Check for exact duplicates (excluding the current rule being updated)
-      const existingRuleWithSameMatcher = rules.find(
-        (r) => r.matcher === updateData.matcher && r.id !== id,
-      );
-      if (existingRuleWithSameMatcher) {
-        validationErrors.push(
-          `URL-Matcher bereits vorhanden: "${updateData.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
-        );
-      }
-
-      // Check for overlapping patterns (excluding the current rule being updated)
-      // Overlapping matchers are allowed and resolved by specificity
-      // So we don't block them here.
-
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join("; "));
-      }
+    // Skip validation if force flag is set
+    if (!force) {
+      this.validateRuleConstraints(updateData, rules, id);
     }
 
     // Create shallow copy of rules
@@ -510,7 +496,7 @@ export class FileStorage implements IStorage {
     const updatedRaw = { ...newRules[index], ...updateData };
 
     // Sanitize flags based on redirect type
-    sanitizeRuleFlags(updatedRaw);
+    this.sanitizeRuleFlags(updatedRaw);
 
     // Re-process the updated rule
     const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
@@ -1089,7 +1075,7 @@ export class FileStorage implements IStorage {
         };
 
         // Sanitize flags
-        sanitizeRuleFlags(updatedRule);
+        this.sanitizeRuleFlags(updatedRule);
 
         newRules[index] = preprocessRule(updatedRule, config);
         // Update matcher index
@@ -1109,7 +1095,7 @@ export class FileStorage implements IStorage {
           createdAt: new Date().toISOString(),
         };
         // Sanitize flags
-        sanitizeRuleFlags(newRule);
+        this.sanitizeRuleFlags(newRule);
 
         const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
         rulesById.set(newRule.id, newIndex);
@@ -1133,7 +1119,7 @@ export class FileStorage implements IStorage {
          };
 
          // Sanitize flags
-         sanitizeRuleFlags(updatedRule);
+         this.sanitizeRuleFlags(updatedRule);
 
          newRules[index] = preprocessRule(updatedRule, config);
          // Matcher index is already correct
@@ -1152,7 +1138,7 @@ export class FileStorage implements IStorage {
           createdAt: new Date().toISOString(),
         };
         // Sanitize flags
-        sanitizeRuleFlags(newRule);
+        this.sanitizeRuleFlags(newRule);
 
         const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
         rulesById.set(newRule.id, newIndex);

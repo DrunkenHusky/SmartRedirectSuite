@@ -74,6 +74,18 @@ export const urlUtils = {
   },
 
   /**
+   * Robustly extracts path from URL or string
+   */
+  extractPath(url: string): string {
+    try {
+      const u = new URL(url);
+      return u.pathname;
+    } catch {
+      return url.startsWith('/') ? url : '/' + url;
+    }
+  },
+
+  /**
    * Checks if two URL matchers overlap. A matcher can appear at any position
    * within a path, therefore we test if their segment patterns can align at
    * any offset.
