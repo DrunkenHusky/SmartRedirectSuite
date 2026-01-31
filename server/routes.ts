@@ -181,16 +181,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Feedback Endpoint
   app.post("/api/feedback", apiRateLimiter, async (req, res) => {
     try {
-      const { ruleId, feedback, url, trackingId } = z.object({
+      const { ruleId, feedback, url, trackingId, userProposedUrl } = z.object({
         ruleId: z.string().optional(),
         feedback: z.enum(['OK', 'NOK']),
         url: z.string().optional(),
-        trackingId: z.string().optional()
+        trackingId: z.string().optional(),
+        userProposedUrl: z.string().optional()
       }).parse(req.body);
 
       if (trackingId) {
         // Update existing tracking entry
-        const success = await storage.updateUrlTracking(trackingId, { feedback });
+        const success = await storage.updateUrlTracking(trackingId, { feedback, userProposedUrl });
         if (success) {
            res.json({ success: true, id: trackingId });
            return;
@@ -212,7 +213,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matchQuality: 100, // Explicit manual match
         timestamp: new Date().toISOString(),
         userAgent: "Manual Verification",
-        feedback: feedback
+        feedback: feedback,
+        userProposedUrl: userProposedUrl
       };
 
       const tracking = await storage.trackUrlAccess(trackingEntry);

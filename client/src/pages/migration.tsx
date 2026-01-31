@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -83,6 +84,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  const [showCommentStep, setShowCommentStep] = useState(false);
+  const [commentUrl, setCommentUrl] = useState("");
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [hasAskedFeedback, setHasAskedFeedback] = useState(false);
@@ -414,7 +417,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     }
   };
 
-  const handleFeedback = async (feedback: 'OK' | 'NOK') => {
+  const submitFeedback = async (feedback: 'OK' | 'NOK', userProposedUrl?: string) => {
     try {
       await fetch("/api/feedback", {
         method: "POST",
@@ -423,18 +426,33 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
           ruleId: matchingRule?.id,
           trackingId: trackingId || undefined,
           feedback,
-          url: currentUrl
+          url: currentUrl,
+          userProposedUrl
         }),
       });
       setFeedbackSuccess(true);
       setTimeout(() => {
         setShowFeedbackPopup(false);
+        setShowCommentStep(false);
+        setCommentUrl("");
         setFeedbackSuccess(false); // Reset for next time
       }, 2000);
     } catch (error) {
       console.error("Feedback error:", error);
       setShowFeedbackPopup(false);
     }
+  };
+
+  const handleFeedback = async (feedback: 'OK' | 'NOK') => {
+    if (feedback === 'NOK' && settings?.enableFeedbackComment) {
+      setShowCommentStep(true);
+      return;
+    }
+    submitFeedback(feedback);
+  };
+
+  const handleCommentSubmit = () => {
+    submitFeedback('NOK', commentUrl);
   };
 
   const handleAdminSuccess = () => {
@@ -767,7 +785,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       />
 
       {/* Feedback Survey Dialog */}
-      <Dialog open={showFeedbackPopup} onOpenChange={setShowFeedbackPopup}>
+      <Dialog open={showFeedbackPopup} onOpenChange={(open) => {
+        setShowFeedbackPopup(open);
+        if (!open) {
+          // Small delay to allow animation to finish before resetting state
+          setTimeout(() => {
+            setShowCommentStep(false);
+            setCommentUrl("");
+          }, 300);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           {feedbackSuccess ? (
             <div className="flex flex-col items-center justify-center py-6 space-y-4 text-center animate-fade-in">
@@ -776,6 +803,37 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               </div>
               <DialogTitle className="text-xl">{settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!"}</DialogTitle>
             </div>
+          ) : showCommentStep ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>{settings?.feedbackCommentTitle || "Kennen Sie die korrekte URL?"}</DialogTitle>
+                <DialogDescription>
+                  {settings?.feedbackCommentDescription || "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                 <Input
+                    placeholder={settings?.feedbackCommentPlaceholder || "https://..."}
+                    value={commentUrl}
+                    onChange={(e) => setCommentUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCommentSubmit();
+                      }
+                    }}
+                    autoFocus
+                 />
+                 <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => submitFeedback('NOK')}>
+                      Überspringen
+                    </Button>
+                    <Button onClick={handleCommentSubmit}>
+                      {settings?.feedbackCommentButton || "Absenden"}
+                    </Button>
+                 </div>
+              </div>
+            </>
           ) : (
             <>
               <DialogHeader>
