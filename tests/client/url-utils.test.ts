@@ -28,6 +28,13 @@ const rules = [
         order: 3,
         searchUrl: 'https://newapp.com/kb?search=',
         pathPattern: '/kb'
+    },
+    {
+        pattern: '[?&]raw=([^&]+)',
+        order: 4,
+        searchUrl: 'https://newapp.com/raw?q=',
+        pathPattern: null,
+        skipEncoding: true
     }
 ];
 
@@ -67,6 +74,13 @@ const testCases = [
         url: "https://oldurtl.com/kb/article-123",
         expectedSearchTerm: "article-123",
         expectedSearchUrl: "https://newapp.com/kb?search="
+    },
+    {
+        name: "Skip Encoding Rule (Match)",
+        url: "https://oldurtl.com/anywhere?raw=some%20value",
+        expectedSearchTerm: "some%20value",
+        expectedSearchUrl: "https://newapp.com/raw?q=",
+        expectedSkipEncoding: true
     }
 ];
 
@@ -87,6 +101,13 @@ for (const tc of testCases) {
         const actualSearchUrl = result.searchUrl || null;
         if (actualSearchUrl !== tc.expectedSearchUrl) {
              throw new Error(`Expected searchUrl '${tc.expectedSearchUrl}', got '${actualSearchUrl}'`);
+        }
+
+        // Check skipEncoding
+        if ((tc as any).expectedSkipEncoding !== undefined) {
+             if (result.skipEncoding !== (tc as any).expectedSkipEncoding) {
+                 throw new Error(`Expected skipEncoding '${(tc as any).expectedSkipEncoding}', got '${result.skipEncoding}'`);
+             }
         }
 
         console.log("  PASS");

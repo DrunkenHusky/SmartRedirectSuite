@@ -368,7 +368,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     defaultSearchUrl: "" as string | undefined | null,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
     smartSearchRegex: "" as string | undefined | null,
-    smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string }[],
+    smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string; skipEncoding?: boolean }[],
   });
 
   // Statistics filters and state
@@ -2463,6 +2463,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                         placeholder="https://newapp.com/?q="
                                                         className="w-full bg-background"
                                                     />
+                                                </div>
+                                                <div className="md:col-span-2 pt-2">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Switch
+                                                            id={`skip-encoding-${index}`}
+                                                            checked={!!rule.skipEncoding}
+                                                            onCheckedChange={(checked) => {
+                                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                                newRules[index] = { ...newRules[index], skipEncoding: checked };
+                                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                            }}
+                                                        />
+                                                        <label
+                                                            htmlFor={`skip-encoding-${index}`}
+                                                            className="text-xs font-medium text-gray-500"
+                                                        >
+                                                            Suchbegriff nicht kodieren (No URL Encoding)
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
 

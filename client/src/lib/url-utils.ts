@@ -270,6 +270,7 @@ export interface SmartSearchRule {
   order: number;
   searchUrl?: string | null;
   pathPattern?: string | null;
+  skipEncoding?: boolean;
 }
 
 function extractLastPathSegment(url: string): string | null {
@@ -291,9 +292,10 @@ export function extractSearchTerm(
   url: string,
   rules: SmartSearchRule[] = [],
   legacyRegex?: string | null
-): { searchTerm: string | null; searchUrl?: string | null } {
+): { searchTerm: string | null; searchUrl?: string | null; skipEncoding?: boolean } {
   let searchTerm: string | null = null;
   let searchUrl: string | null = null;
+  let skipEncoding: boolean | undefined = undefined;
 
   // 1. Try Rules
   if (rules && rules.length > 0) {
@@ -334,7 +336,8 @@ export function extractSearchTerm(
                 if (rule.searchUrl) {
                     searchUrl = rule.searchUrl;
                 }
-                return { searchTerm, searchUrl };
+                skipEncoding = rule.skipEncoding;
+                return { searchTerm, searchUrl, skipEncoding };
             }
             continue;
         }
@@ -346,7 +349,8 @@ export function extractSearchTerm(
           if (rule.searchUrl) {
             searchUrl = rule.searchUrl;
           }
-          return { searchTerm, searchUrl };
+          skipEncoding = rule.skipEncoding;
+          return { searchTerm, searchUrl, skipEncoding };
         }
       } catch (regexError) {
         console.error("Invalid smart search regex rule:", rule.pattern, regexError);
@@ -361,7 +365,7 @@ export function extractSearchTerm(
       const match = regex.exec(url);
       if (match && match[1]) {
         searchTerm = match[1];
-        return { searchTerm, searchUrl: null };
+        return { searchTerm, searchUrl: null, skipEncoding: undefined };
       }
     } catch (regexError) {
       console.error("Invalid smart search regex:", regexError);
@@ -373,5 +377,5 @@ export function extractSearchTerm(
     searchTerm = extractLastPathSegment(url);
   }
 
-  return { searchTerm, searchUrl };
+  return { searchTerm, searchUrl, skipEncoding };
 }

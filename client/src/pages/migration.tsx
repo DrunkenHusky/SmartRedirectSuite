@@ -238,12 +238,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
                     // Extract last segment or use Regex
                     try {
-                        const { searchTerm, searchUrl: ruleSearchUrl } = extractSearchTerm(url, settings.smartSearchRules, settings.smartSearchRegex);
+                        const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding } = extractSearchTerm(url, settings.smartSearchRules, settings.smartSearchRegex);
 
                         const targetSearchUrl = ruleSearchUrl || settings.defaultSearchUrl;
 
                         if (searchTerm && targetSearchUrl) {
-                            generatedNewUrl = targetSearchUrl + encodeURIComponent(searchTerm);
+                            const finalSearchTerm = skipEncoding ? searchTerm : encodeURIComponent(searchTerm);
+                            generatedNewUrl = targetSearchUrl + finalSearchTerm;
                             redirectUrl = generatedNewUrl;
 
                             if (settings.autoRedirect) {
