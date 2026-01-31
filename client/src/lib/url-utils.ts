@@ -270,6 +270,7 @@ export interface SmartSearchRule {
   order: number;
   searchUrl?: string | null;
   pathPattern?: string | null;
+  skipEncoding?: boolean;
 }
 
 function extractLastPathSegment(url: string): string | null {
@@ -277,13 +278,17 @@ function extractLastPathSegment(url: string): string | null {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
-      return segments.length > 0 ? segments[segments.length - 1] : null;
+      return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
   } catch (e) {
       // Fallback for invalid URLs
-      const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
-      const path = pathMatch?.[1] || '/';
-      const segments = path.split('/').filter(s => s && s.trim().length > 0);
-      return segments.length > 0 ? segments[segments.length - 1] : null;
+      try {
+        const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
+        const path = pathMatch?.[1] || '/';
+        const segments = path.split('/').filter(s => s && s.trim().length > 0);
+        return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
+      } catch (err) {
+        return null;
+      }
   }
 }
 
@@ -291,9 +296,10 @@ export function extractSearchTerm(
   url: string,
   rules: SmartSearchRule[] = [],
   legacyRegex?: string | null
-): { searchTerm: string | null; searchUrl?: string | null } {
+): { searchTerm: string | null; searchUrl?: string | null; skipEncoding?: boolean } {
   let searchTerm: string | null = null;
   let searchUrl: string | null = null;
+  let skipEncoding: boolean | undefined = undefined;
 
   // 1. Try Rules
   if (rules && rules.length > 0) {
@@ -334,7 +340,8 @@ export function extractSearchTerm(
                 if (rule.searchUrl) {
                     searchUrl = rule.searchUrl;
                 }
-                return { searchTerm, searchUrl };
+                skipEncoding = rule.skipEncoding;
+                return { searchTerm, searchUrl, skipEncoding };
             }
             continue;
         }
@@ -342,11 +349,16 @@ export function extractSearchTerm(
         const regex = new RegExp(rule.pattern);
         const match = regex.exec(url);
         if (match && match[1]) {
-          searchTerm = match[1];
+          try {
+            searchTerm = decodeURIComponent(match[1]);
+          } catch {
+            searchTerm = match[1];
+          }
           if (rule.searchUrl) {
             searchUrl = rule.searchUrl;
           }
-          return { searchTerm, searchUrl };
+          skipEncoding = rule.skipEncoding;
+          return { searchTerm, searchUrl, skipEncoding };
         }
       } catch (regexError) {
         console.error("Invalid smart search regex rule:", rule.pattern, regexError);
@@ -360,8 +372,12 @@ export function extractSearchTerm(
       const regex = new RegExp(legacyRegex);
       const match = regex.exec(url);
       if (match && match[1]) {
-        searchTerm = match[1];
-        return { searchTerm, searchUrl: null };
+        try {
+          searchTerm = decodeURIComponent(match[1]);
+        } catch {
+          searchTerm = match[1];
+        }
+        return { searchTerm, searchUrl: null, skipEncoding: undefined };
       }
     } catch (regexError) {
       console.error("Invalid smart search regex:", regexError);
@@ -373,5 +389,5 @@ export function extractSearchTerm(
     searchTerm = extractLastPathSegment(url);
   }
 
-  return { searchTerm, searchUrl };
+  return { searchTerm, searchUrl, skipEncoding };
 }

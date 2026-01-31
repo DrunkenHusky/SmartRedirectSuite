@@ -239,7 +239,8 @@ export const generalSettingsSchema = z.object({
     pattern: z.string().max(500, "Pattern too long").optional(),
     order: z.number().int().default(0),
     searchUrl: z.string().max(500, "Search URL too long").optional().nullable(),
-    pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable()
+    pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable(),
+    skipEncoding: z.boolean().default(false)
   })).optional().default([]),
     
   // Button texts with validation
@@ -435,7 +436,8 @@ export const smartSearchRuleSchema = z.object({
   pattern: z.string().max(500, "Pattern too long").optional(),
   order: z.number().int().default(0),
   searchUrl: z.string().max(500, "Search URL too long").optional().nullable(),
-  pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable()
+  pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable(),
+  skipEncoding: z.boolean().default(false)
 });
 
 export type UrlRule = z.infer<typeof urlRuleSchema>;
