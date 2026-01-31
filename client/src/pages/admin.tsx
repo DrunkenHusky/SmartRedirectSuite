@@ -256,6 +256,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Settings validation error state
   const [settingsValidationErrors, setSettingsValidationErrors] = useState<string[]>([]);
   const [showSettingsErrorDialog, setShowSettingsErrorDialog] = useState(false);
+  const [validationFieldErrors, setValidationFieldErrors] = useState<Record<string, string>>({});
 
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
@@ -1006,6 +1007,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", "/api/admin/settings", settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      setValidationFieldErrors({}); // Clear errors on success
     },
     onError: (error: any) => {
       console.error("Settings save error:", error);
@@ -1024,15 +1026,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       
       let errorMessage = "Die Einstellungen konnten nicht gespeichert werden.";
       let detailedErrors: string[] = [];
+      let fieldErrors: Record<string, string> = {};
       
+      // Clear previous field errors first
+      setValidationFieldErrors({});
+
       // Check for validation errors in the response
       if (error?.serverError?.validationErrors) {
         const validationErrors = error.serverError.validationErrors;
         detailedErrors = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`);
+        validationErrors.forEach((err: any) => {
+            fieldErrors[err.field] = err.message;
+        });
         errorMessage = detailedErrors.join(', ');
       } else if (error?.response?.data?.validationErrors) {
         const validationErrors = error.response.data.validationErrors;
         detailedErrors = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`);
+        validationErrors.forEach((err: any) => {
+            fieldErrors[err.field] = err.message;
+        });
         errorMessage = detailedErrors.join(', ');
       } else if (error?.serverError?.details) {
         errorMessage = error.serverError.details;
@@ -1044,10 +1056,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         errorMessage = error.response.data.error;
       }
       
-      // If we have detailed errors, show them in the dialog
+      // Update field errors state
+      setValidationFieldErrors(fieldErrors);
+
+      // If we have detailed errors, show them in the dialog and scroll to first error
       if (detailedErrors.length > 0) {
         setSettingsValidationErrors(detailedErrors);
         setShowSettingsErrorDialog(true);
+
+        // Scroll to the first error field
+        const firstErrorField = Object.keys(fieldErrors)[0];
+        if (firstErrorField) {
+            setTimeout(() => {
+                const element = document.getElementById(firstErrorField);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.focus();
+                }
+            }, 300); // Small delay to allow popup to open/close or UI to update
+        }
       } else {
         // Fallback to toast for non-validation errors or if no details found
         toast({
@@ -1895,11 +1922,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
+                                id="headerTitle"
                                 value={generalSettings.headerTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, headerTitle: val as string })}
                                 placeholder="Smart Redirect Service"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() || validationFieldErrors.headerTitle ? 'border-red-500 focus:border-red-500' : ''}`}
                               />
+                              {validationFieldErrors.headerTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.headerTitle}</p>}
                               <p className="text-xs text-gray-500 mt-1">
                                 Wird als Haupttitel im Header der Anwendung angezeigt
                               </p>
@@ -2185,12 +2214,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
+                                id="mainTitle"
                                 value={generalSettings.mainTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, mainTitle: val as string })}
                                 placeholder="URL veraltet - Aktualisierung erforderlich"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() || validationFieldErrors.mainTitle ? 'border-red-500 focus:border-red-500' : ''}`}
                                 disabled={generalSettings.popupMode === 'disabled'}
                               />
+                              {validationFieldErrors.mainTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.mainTitle}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -2216,13 +2247,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Beschreibung <span className="text-red-500">*</span>
                             </label>
                             <DebouncedTextarea
+                              id="mainDescription"
                               value={generalSettings.mainDescription}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, mainDescription: val as string })}
                               placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
                               rows={3}
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() || validationFieldErrors.mainDescription ? 'border-red-500 focus:border-red-500' : ''}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
+                            {validationFieldErrors.mainDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.mainDescription}</p>}
                             <p className="text-xs text-gray-500 mt-1">
                               Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
                             </p>
@@ -2232,12 +2265,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               PopUp Button-Text
                             </label>
                             <DebouncedInput
+                              id="popupButtonText"
                               value={generalSettings.popupButtonText}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, popupButtonText: val as string })}
                               placeholder="Zeige mir die neue URL"
-                              className="bg-white dark:bg-gray-700"
+                              className={`bg-white dark:bg-gray-700 ${validationFieldErrors.popupButtonText ? 'border-red-500 focus:border-red-500' : ''}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
+                            {validationFieldErrors.popupButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.popupButtonText}</p>}
                             <p className="text-xs text-gray-500 mt-1">
                               Text für den Button der das PopUp-Fenster öffnet
                             </p>
@@ -2305,11 +2340,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Ziel-Domain (Standard neue Domain) <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
+                              id="defaultNewDomain"
                               value={generalSettings.defaultNewDomain}
                               onChange={(value) => setGeneralSettings({ ...generalSettings, defaultNewDomain: value as string })}
                               placeholder="https://thisisthenewurl.com/"
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain ? 'border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain || validationFieldErrors.defaultNewDomain ? 'border-red-500' : ''}`}
                             />
+                            {validationFieldErrors.defaultNewDomain && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultNewDomain}</p>}
                             <p className="text-xs text-gray-500 mt-1">
                               Verwendet für Partial Matches und spezifische Regeln.
                             </p>
@@ -2364,11 +2401,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     Such-Basis-URL <span className="text-red-500">*</span>
                                   </label>
                                   <DebouncedInput
+                                    id="defaultSearchUrl"
                                     value={generalSettings.defaultSearchUrl || ''}
                                     onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
                                     placeholder="https://newapp.com/?q="
-                                    className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                    className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl || validationFieldErrors.defaultSearchUrl ? 'border-red-500' : ''}`}
                                   />
+                                  {validationFieldErrors.defaultSearchUrl && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchUrl}</p>}
                                   <p className="text-xs text-gray-500 mt-1">
                                     Beispiel: https://newapp.com/?q=
                                   </p>
@@ -2527,7 +2566,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
-                                        <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                        <DebouncedInput id="specialHintsTitle" value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.specialHintsTitle ? 'border-red-500' : ''}`}/>
+                                        {validationFieldErrors.specialHintsTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.specialHintsTitle}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
@@ -2557,11 +2597,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Standard Info Text (Beschreibung)
                                         </label>
                                         <DebouncedTextarea
+                                            id="specialHintsDescription"
                                             value={generalSettings.specialHintsDescription}
                                             onChange={(value) => setGeneralSettings({ ...generalSettings, specialHintsDescription: value as string })}
                                             rows={3}
-                                            className="bg-white dark:bg-gray-700"
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.specialHintsDescription ? 'border-red-500' : ''}`}
                                         />
+                                        {validationFieldErrors.specialHintsDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.specialHintsDescription}</p>}
                                         <p className="text-xs text-gray-500 mt-1">
                                             Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
                                         </p>
@@ -2574,11 +2616,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Smart Search Nachricht
                                         </label>
                                         <DebouncedTextarea
+                                            id="defaultSearchMessage"
                                             value={generalSettings.defaultSearchMessage}
                                             onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchMessage: value as string })}
                                             rows={3}
-                                            className="bg-white dark:bg-gray-700"
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.defaultSearchMessage ? 'border-red-500' : ''}`}
                                         />
+                                        {validationFieldErrors.defaultSearchMessage && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchMessage}</p>}
                                         <p className="text-xs text-gray-500 mt-1">
                                             Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).
                                         </p>
@@ -2594,7 +2638,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Titel</label>
-                                           <DebouncedInput value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput id="urlComparisonTitle" value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.urlComparisonTitle ? 'border-red-500' : ''}`}/>
+                                           {validationFieldErrors.urlComparisonTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.urlComparisonTitle}</p>}
                                        </div>
                                        <div>
                                          <label className="block text-sm font-medium mb-2">Icon</label>
@@ -2629,11 +2674,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für alte URL</label>
-                                           <DebouncedInput value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput id="oldUrlLabel" value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.oldUrlLabel ? 'border-red-500' : ''}`}/>
+                                           {validationFieldErrors.oldUrlLabel && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.oldUrlLabel}</p>}
                                        </div>
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für neue URL</label>
-                                           <DebouncedInput value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput id="newUrlLabel" value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.newUrlLabel ? 'border-red-500' : ''}`}/>
+                                           {validationFieldErrors.newUrlLabel && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.newUrlLabel}</p>}
                                        </div>
                                    </div>
                                </div>
@@ -2660,23 +2707,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchHighExplanation" value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchHighExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchHighExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchHighExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (75%)</label>
-                                       <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchMediumExplanation" value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchMediumExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchMediumExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchMediumExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung (50%)</label>
-                                       <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchLowExplanation" value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchLowExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchLowExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchLowExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchRootExplanation" value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchRootExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchRootExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchRootExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung (0%)</label>
-                                       <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchNoneExplanation" value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchNoneExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchNoneExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchNoneExplanation}</p>}
                                      </div>
                                    </div>
                                  )}
@@ -2687,11 +2739,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
-                                       <DebouncedInput value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
-                                       <DebouncedInput value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
                                      </div>
                                    </div>
                                </div>
@@ -2715,11 +2769,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel der Sektion
                               </label>
                               <DebouncedInput
+                                id="infoTitle"
                                 value={generalSettings.infoTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, infoTitle: val as string })}
                                 placeholder="Zusätzliche Informationen"
-                                className="bg-white dark:bg-gray-700"
+                                className={`bg-white dark:bg-gray-700 ${validationFieldErrors.infoTitle ? 'border-red-500' : ''}`}
                               />
+                              {validationFieldErrors.infoTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.infoTitle}</p>}
                               <p className="text-xs text-gray-500 mt-1">
                                 Überschrift für den Bereich mit zusätzlichen Informationen
                               </p>
@@ -2841,11 +2897,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Copyright-Text <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
+                              id="footerCopyright"
                               value={generalSettings.footerCopyright}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, footerCopyright: val as string })}
                               placeholder="Proudly brewed with Generative AI."
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() || validationFieldErrors.footerCopyright ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
+                            {validationFieldErrors.footerCopyright && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.footerCopyright}</p>}
                           </div>
                           
 
@@ -3034,48 +3092,58 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <div className="md:col-span-2">
                                 <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackSurveyTitle"
                                   value={generalSettings.feedbackSurveyTitle}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSurveyTitle ? 'border-red-500' : ''}`}
                                   placeholder="War die neue URL korrekt?"
                                 />
+                                {validationFieldErrors.feedbackSurveyTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSurveyTitle}</p>}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackSurveyQuestion"
                                   value={generalSettings.feedbackSurveyQuestion}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSurveyQuestion ? 'border-red-500' : ''}`}
                                   placeholder="Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."
                                 />
+                                {validationFieldErrors.feedbackSurveyQuestion && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSurveyQuestion}</p>}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackSuccessMessage"
                                   value={generalSettings.feedbackSuccessMessage}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSuccessMessage ? 'border-red-500' : ''}`}
                                   placeholder="Vielen Dank für deine Rückmeldung."
                                 />
+                                {validationFieldErrors.feedbackSuccessMessage && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSuccessMessage}</p>}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Button Ja (OK) <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackButtonYes"
                                   value={generalSettings.feedbackButtonYes}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonYes: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackButtonYes ? 'border-red-500' : ''}`}
                                   placeholder="Ja, OK"
                                 />
+                                {validationFieldErrors.feedbackButtonYes && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonYes}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Button Nein (NOK) <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackButtonNo"
                                   value={generalSettings.feedbackButtonNo}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonNo: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackButtonNo ? 'border-red-500' : ''}`}
                                   placeholder="Nein"
                                 />
+                                {validationFieldErrors.feedbackButtonNo && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonNo}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
                               </div>
                             </div>
