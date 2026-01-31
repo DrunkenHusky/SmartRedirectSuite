@@ -2380,73 +2380,107 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   </label>
                                   <div className="space-y-2">
                                     {(generalSettings.smartSearchRules || []).map((rule, index) => (
-                                      <div key={index} className="flex gap-2 items-center">
-                                        <DebouncedInput
-                                          value={rule.pattern}
-                                          onChange={(value) => {
-                                            const newRules = [...(generalSettings.smartSearchRules || [])];
-                                            newRules[index] = { ...newRules[index], pattern: value as string };
-                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
-                                          }}
-                                          placeholder="Regex Pattern (z.B. [?&]q=([^&]+))"
-                                          className="flex-1 bg-white dark:bg-gray-700"
-                                        />
-                                        <div className="flex flex-col gap-0.5">
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-4 w-6 p-0"
-                                            onClick={() => {
-                                              if (index > 0) {
-                                                const newRules = [...(generalSettings.smartSearchRules || [])];
-                                                const temp = newRules[index];
-                                                newRules[index] = newRules[index - 1];
-                                                newRules[index - 1] = temp;
-                                                // Sync order property with array index
-                                                newRules.forEach((r, i) => r.order = i);
-                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
-                                              }
-                                            }}
-                                            disabled={index === 0}
-                                          >
-                                            <ArrowUp className="h-3 w-3" />
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-4 w-6 p-0"
-                                            onClick={() => {
-                                              if (index < (generalSettings.smartSearchRules || []).length - 1) {
-                                                const newRules = [...(generalSettings.smartSearchRules || [])];
-                                                const temp = newRules[index];
-                                                newRules[index] = newRules[index + 1];
-                                                newRules[index + 1] = temp;
-                                                // Sync order property with array index
-                                                newRules.forEach((r, i) => r.order = i);
-                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
-                                              }
-                                            }}
-                                            disabled={index === (generalSettings.smartSearchRules || []).length - 1}
-                                          >
-                                            <ArrowDown className="h-3 w-3" />
-                                          </Button>
+                                      <div key={index} className="flex flex-col gap-3 p-3 border rounded-lg bg-white dark:bg-gray-700 mb-2">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Regex Pattern (Extraction)</label>
+                                                    <DebouncedInput
+                                                        value={rule.pattern}
+                                                        onChange={(value) => {
+                                                            const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                            newRules[index] = { ...newRules[index], pattern: value as string };
+                                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                        }}
+                                                        placeholder="[?&]file=([^&]+)"
+                                                        className="w-full bg-background"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Path Matcher (Optional)</label>
+                                                    <DebouncedInput
+                                                        value={rule.pathPattern || ''}
+                                                        onChange={(value) => {
+                                                            const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                            newRules[index] = { ...newRules[index], pathPattern: value as string };
+                                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                        }}
+                                                        placeholder="/teams (Regex)"
+                                                        className="w-full bg-background"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Custom Search Base URL (Optional)</label>
+                                                    <DebouncedInput
+                                                        value={rule.searchUrl || ''}
+                                                        onChange={(value) => {
+                                                            const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                            newRules[index] = { ...newRules[index], searchUrl: value as string };
+                                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                        }}
+                                                        placeholder="https://newapp.com/?q="
+                                                        className="w-full bg-background"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-1 ml-2">
+                                                <div className="flex flex-col gap-1">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0"
+                                                        onClick={() => {
+                                                            if (index > 0) {
+                                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                                const temp = newRules[index];
+                                                                newRules[index] = newRules[index - 1];
+                                                                newRules[index - 1] = temp;
+                                                                newRules.forEach((r, i) => r.order = i);
+                                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                            }
+                                                        }}
+                                                        disabled={index === 0}
+                                                    >
+                                                        <ArrowUp className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0"
+                                                        onClick={() => {
+                                                            if (index < (generalSettings.smartSearchRules || []).length - 1) {
+                                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                                const temp = newRules[index];
+                                                                newRules[index] = newRules[index + 1];
+                                                                newRules[index + 1] = temp;
+                                                                newRules.forEach((r, i) => r.order = i);
+                                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                            }
+                                                        }}
+                                                        disabled={index === (generalSettings.smartSearchRules || []).length - 1}
+                                                    >
+                                                        <ArrowDown className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-auto"
+                                                    onClick={() => {
+                                                        const newRules = (generalSettings.smartSearchRules || [])
+                                                            .filter((_, i) => i !== index)
+                                                            .map((r, i) => ({ ...r, order: i }));
+                                                        setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                          onClick={() => {
-                                            const newRules = (generalSettings.smartSearchRules || [])
-                                              .filter((_, i) => i !== index)
-                                              .map((r, i) => ({ ...r, order: i })); // Sync order after delete
-                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
                                       </div>
                                     ))}
                                     <div className="flex gap-2">
