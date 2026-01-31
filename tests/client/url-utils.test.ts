@@ -16,6 +16,18 @@ const rules = [
         order: 1,
         searchUrl: null,
         pathPattern: null
+    },
+    {
+        pattern: '', // Empty pattern - should use last segment logic
+        order: 2,
+        searchUrl: 'https://newapp.com/docs?q=',
+        pathPattern: '/docs'
+    },
+    {
+        pattern: undefined, // Undefined pattern - should use last segment logic
+        order: 3,
+        searchUrl: 'https://newapp.com/kb?search=',
+        pathPattern: '/kb'
     }
 ];
 
@@ -43,6 +55,18 @@ const testCases = [
         url: "https://oldurtl.com/teams/page.aspx",
         expectedSearchTerm: "page.aspx", // Fallback to last segment
         expectedSearchUrl: null
+    },
+    {
+        name: "Empty Pattern + Path Matcher (Match)",
+        url: "https://oldurtl.com/docs/manual.pdf",
+        expectedSearchTerm: "manual.pdf",
+        expectedSearchUrl: "https://newapp.com/docs?q="
+    },
+    {
+        name: "Undefined Pattern + Path Matcher (Match)",
+        url: "https://oldurtl.com/kb/article-123",
+        expectedSearchTerm: "article-123",
+        expectedSearchUrl: "https://newapp.com/kb?search="
     }
 ];
 

@@ -266,10 +266,25 @@ export async function copyToClipboard(text: string): Promise<void> {
 }
 
 export interface SmartSearchRule {
-  pattern: string;
+  pattern?: string;
   order: number;
   searchUrl?: string | null;
   pathPattern?: string | null;
+}
+
+function extractLastPathSegment(url: string): string | null {
+  try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
+      return segments.length > 0 ? segments[segments.length - 1] : null;
+  } catch (e) {
+      // Fallback for invalid URLs
+      const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
+      const path = pathMatch?.[1] || '/';
+      const segments = path.split('/').filter(s => s && s.trim().length > 0);
+      return segments.length > 0 ? segments[segments.length - 1] : null;
+  }
 }
 
 export function extractSearchTerm(
@@ -296,6 +311,19 @@ export function extractSearchTerm(
              console.error("Invalid path pattern regex:", rule.pathPattern, e);
              continue; // Skip invalid regex
            }
+        }
+
+        // Check if pattern is missing or empty -> Use Last Part Logic
+        if (!rule.pattern || rule.pattern.trim() === '') {
+            const term = extractLastPathSegment(url);
+            if (term) {
+                searchTerm = term;
+                if (rule.searchUrl) {
+                    searchUrl = rule.searchUrl;
+                }
+                return { searchTerm, searchUrl };
+            }
+            continue;
         }
 
         const regex = new RegExp(rule.pattern);
@@ -329,18 +357,7 @@ export function extractSearchTerm(
 
   // 3. Fallback to last path segment
   if (!searchTerm) {
-    try {
-        const urlObj = new URL(url);
-        const pathname = urlObj.pathname;
-        const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
-        searchTerm = segments.length > 0 ? segments[segments.length - 1] : null;
-    } catch (e) {
-        // Fallback for invalid URLs
-        const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
-        const path = pathMatch?.[1] || '/';
-        const segments = path.split('/').filter(s => s && s.trim().length > 0);
-        searchTerm = segments.length > 0 ? segments[segments.length - 1] : null;
-    }
+    searchTerm = extractLastPathSegment(url);
   }
 
   return { searchTerm, searchUrl };

@@ -236,7 +236,7 @@ export const generalSettingsSchema = z.object({
     .nullable(),
 
   smartSearchRules: z.array(z.object({
-    pattern: z.string().min(1, "Pattern cannot be empty"),
+    pattern: z.string().max(500, "Pattern too long").optional(),
     order: z.number().int().default(0),
     searchUrl: z.string().max(500, "Search URL too long").optional().nullable(),
     pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable()
@@ -423,7 +423,7 @@ export const importSettingsRequestSchema = z.object({
 });
 
 export const smartSearchRuleSchema = z.object({
-  pattern: z.string().min(1, "Pattern cannot be empty"),
+  pattern: z.string().max(500, "Pattern too long").optional(),
   order: z.number().int().default(0),
   searchUrl: z.string().max(500, "Search URL too long").optional().nullable(),
   pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable()
