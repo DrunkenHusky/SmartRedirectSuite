@@ -1362,6 +1362,13 @@ export class FileStorage implements IStorage {
         feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
         feedbackButtonYes: "Ja, OK",
         feedbackButtonNo: "Nein",
+
+        // Feedback Comment Defaults
+        enableFeedbackComment: false,
+        feedbackCommentTitle: "Kennen Sie die korrekte URL?",
+        feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+        feedbackCommentPlaceholder: "https://...",
+        feedbackCommentButton: "Absenden",
       };
 
       // Save default settings directly to avoid infinite loop

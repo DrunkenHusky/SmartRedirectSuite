@@ -446,6 +446,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
     smartSearchRegex: "" as string | undefined | null,
     smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string; skipEncoding?: boolean }[],
+    enableFeedbackSurvey: false,
+    feedbackSurveyTitle: "Hat die Weiterleitung funktioniert?",
+    feedbackSurveyQuestion: "Bitte bewerten Sie die Zielseite.",
+    feedbackSuccessMessage: "Danke für Ihr Feedback!",
+    feedbackButtonYes: "Ja, OK",
+    feedbackButtonNo: "Nein",
+    enableFeedbackComment: false,
+    feedbackCommentTitle: "Kennen Sie die korrekte URL?",
+    feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+    feedbackCommentPlaceholder: "https://...",
+    feedbackCommentButton: "Absenden",
     showSatisfactionTrend: true,
     satisfactionTrendDays: 30,
   });
@@ -783,6 +794,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         feedbackSuccessMessage: settingsData.feedbackSuccessMessage || "Danke für Ihr Feedback!",
         feedbackButtonYes: settingsData.feedbackButtonYes || "Ja, OK",
         feedbackButtonNo: settingsData.feedbackButtonNo || "Nein",
+        enableFeedbackComment: settingsData.enableFeedbackComment ?? false,
+        feedbackCommentTitle: settingsData.feedbackCommentTitle || "Kennen Sie die korrekte URL?",
+        feedbackCommentDescription: settingsData.feedbackCommentDescription || "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+        feedbackCommentPlaceholder: settingsData.feedbackCommentPlaceholder || "https://...",
+        feedbackCommentButton: settingsData.feedbackCommentButton || "Absenden",
     showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
     satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
       });
@@ -3295,6 +3311,72 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 {validationFieldErrors.feedbackButtonNo && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonNo}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
                               </div>
+
+                              <div className="md:col-span-2 pt-4 border-t">
+                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Kommentar-Funktion bei "Nein" aktivieren</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">
+                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={generalSettings.enableFeedbackComment}
+                                        onCheckedChange={(checked) =>
+                                            setGeneralSettings({ ...generalSettings, enableFeedbackComment: checked })
+                                        }
+                                        className="data-[state=checked]:bg-pink-600"
+                                    />
+                                </div>
+                              </div>
+
+                              {generalSettings.enableFeedbackComment && (
+                                <>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Kommentar Titel</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentTitle"
+                                            value={generalSettings.feedbackCommentTitle}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentTitle: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentTitle ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentTitle}</p>}
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Kommentar Beschreibung</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentDescription"
+                                            value={generalSettings.feedbackCommentDescription}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentDescription: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentDescription ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentDescription}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Platzhalter</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentPlaceholder"
+                                            value={generalSettings.feedbackCommentPlaceholder}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentPlaceholder: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentPlaceholder ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentPlaceholder && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentPlaceholder}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Button Text</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentButton"
+                                            value={generalSettings.feedbackCommentButton}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentButton: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentButton ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentButton && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentButton}</p>}
+                                    </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>

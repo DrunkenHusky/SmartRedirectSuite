@@ -95,6 +95,10 @@ export const urlTrackingSchema = z.object({
   feedback: z.enum(['OK', 'NOK'])
     .optional()
     .nullable(),
+  userProposedUrl: z.string()
+    .max(8000, "Proposed URL too long")
+    .optional()
+    .nullable(),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
@@ -361,6 +365,22 @@ export const generalSettingsSchema = z.object({
   feedbackButtonNo: z.string()
     .max(50, "Button-Text für Nein ist zu lang")
     .default("Nein"),
+
+  // Feedback Comment (Proposed URL)
+  enableFeedbackComment: z.boolean()
+    .default(false),
+  feedbackCommentTitle: z.string()
+    .max(100, "Titel für Feedback-Kommentar ist zu lang")
+    .default("Kennen Sie die korrekte URL?"),
+  feedbackCommentDescription: z.string()
+    .max(500, "Beschreibung für Feedback-Kommentar ist zu lang")
+    .default("Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können."),
+  feedbackCommentPlaceholder: z.string()
+    .max(100, "Platzhalter für Feedback-Kommentar ist zu lang")
+    .default("https://..."),
+  feedbackCommentButton: z.string()
+    .max(50, "Button-Text für Feedback-Kommentar ist zu lang")
+    .default("Absenden"),
 
   // Satisfaction Trend Chart
   showSatisfactionTrend: z.boolean()
