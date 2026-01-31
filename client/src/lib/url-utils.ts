@@ -264,3 +264,84 @@ export async function copyToClipboard(text: string): Promise<void> {
     });
   }
 }
+
+export interface SmartSearchRule {
+  pattern: string;
+  order: number;
+  searchUrl?: string | null;
+  pathPattern?: string | null;
+}
+
+export function extractSearchTerm(
+  url: string,
+  rules: SmartSearchRule[] = [],
+  legacyRegex?: string | null
+): { searchTerm: string | null; searchUrl?: string | null } {
+  let searchTerm: string | null = null;
+  let searchUrl: string | null = null;
+
+  // 1. Try Rules
+  if (rules && rules.length > 0) {
+    for (const rule of rules) {
+      try {
+        // Path Matcher Check
+        if (rule.pathPattern) {
+           try {
+             const pathRegex = new RegExp(rule.pathPattern);
+             const path = extractPath(url);
+             if (!pathRegex.test(path)) {
+               continue; // Path doesn't match, skip this rule
+             }
+           } catch (e) {
+             console.error("Invalid path pattern regex:", rule.pathPattern, e);
+             continue; // Skip invalid regex
+           }
+        }
+
+        const regex = new RegExp(rule.pattern);
+        const match = regex.exec(url);
+        if (match && match[1]) {
+          searchTerm = match[1];
+          if (rule.searchUrl) {
+            searchUrl = rule.searchUrl;
+          }
+          return { searchTerm, searchUrl };
+        }
+      } catch (regexError) {
+        console.error("Invalid smart search regex rule:", rule.pattern, regexError);
+      }
+    }
+  }
+
+  // 2. Legacy Regex Fallback
+  if (!searchTerm && legacyRegex) {
+    try {
+      const regex = new RegExp(legacyRegex);
+      const match = regex.exec(url);
+      if (match && match[1]) {
+        searchTerm = match[1];
+        return { searchTerm, searchUrl: null };
+      }
+    } catch (regexError) {
+      console.error("Invalid smart search regex:", regexError);
+    }
+  }
+
+  // 3. Fallback to last path segment
+  if (!searchTerm) {
+    try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
+        searchTerm = segments.length > 0 ? segments[segments.length - 1] : null;
+    } catch (e) {
+        // Fallback for invalid URLs
+        const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
+        const path = pathMatch?.[1] || '/';
+        const segments = path.split('/').filter(s => s && s.trim().length > 0);
+        searchTerm = segments.length > 0 ? segments[segments.length - 1] : null;
+    }
+  }
+
+  return { searchTerm, searchUrl };
+}
