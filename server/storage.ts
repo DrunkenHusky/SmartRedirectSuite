@@ -73,7 +73,22 @@ export interface IStorage {
     limit?: number,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<Array<{ domain: string; count: number }>>;
-  getTrackingStats(): Promise<{ total: number; today: number; week: number }>;
+  getTrackingStats(): Promise<{
+    total: number;
+    today: number;
+    week: number;
+    quality: {
+      match100: number;
+      match75: number;
+      match50: number;
+      match0: number;
+    };
+    feedback: {
+      ok: number;
+      nok: number;
+      missing: number;
+    };
+  }>;
 
   // Import functionality
   importUrlRules(
@@ -786,6 +801,17 @@ export class FileStorage implements IStorage {
     total: number;
     today: number;
     week: number;
+    quality: {
+      match100: number;
+      match75: number;
+      match50: number;
+      match0: number;
+    };
+    feedback: {
+      ok: number;
+      nok: number;
+      missing: number;
+    };
   }> {
     const trackingData = await this.ensureTrackingLoaded();
     const now = new Date();
@@ -802,6 +828,19 @@ export class FileStorage implements IStorage {
     let today = 0;
     let week = 0;
 
+    const quality = {
+      match100: 0,
+      match75: 0,
+      match50: 0,
+      match0: 0,
+    };
+
+    const feedback = {
+      ok: 0,
+      nok: 0,
+      missing: 0,
+    };
+
     for (const track of trackingData) {
       if (track.path === "/") continue;
 
@@ -810,9 +849,21 @@ export class FileStorage implements IStorage {
       // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
       if (track.timestamp >= todayIso) today++;
       if (track.timestamp >= weekIso) week++;
+
+      // Quality stats
+      const q = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+      if (q >= 100) quality.match100++;
+      else if (q >= 75) quality.match75++;
+      else if (q >= 50) quality.match50++;
+      else quality.match0++;
+
+      // Feedback stats
+      if (track.feedback === 'OK') feedback.ok++;
+      else if (track.feedback === 'NOK') feedback.nok++;
+      else feedback.missing++;
     }
 
-    return { total, today, week };
+    return { total, today, week, quality, feedback };
   }
 
   // Paginated statistics methods

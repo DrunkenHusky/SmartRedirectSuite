@@ -492,7 +492,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const totalPagesFromAPI = paginatedRulesData?.totalPages || 1;
 
   const { data: statsData, isLoading: statsLoading } = useQuery<{
-    stats: { total: number; today: number; week: number };
+    stats: {
+      total: number;
+      today: number;
+      week: number;
+      quality: { match100: number; match75: number; match50: number; match0: number };
+      feedback: { ok: number; nok: number; missing: number };
+    };
     topUrls: Array<{ path: string; count: number }>;
   }>({
     queryKey: ["/api/admin/stats/all", statsFilter],
@@ -3357,7 +3363,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     onClick={() => handleStatsViewChange('top100')}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Top 100
+                    Overall
                   </Button>
                   <Button
                     variant={statsView === 'browser' ? 'default' : 'outline'}
@@ -3484,7 +3490,139 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
               {/* Top 100 View */}
               {statsView === 'top100' && (
-                <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
+                <div className="space-y-6">
+                  {/* New Statistics Graphics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Link Quality Card */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Link Quality</CardTitle>
+                        <CardDescription>Qualitätsverteilung der Link-Matches</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {statsLoading ? (
+                          <div className="text-center py-8">Lade Statistiken...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* Exact Match */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>Exakter Treffer (100%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match100 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                            </div>
+
+                            {/* High Match */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>Hoher Treffer (75%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match75 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match75 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match75 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-blue-100 dark:bg-blue-900/20 [&>div]:bg-blue-600" />
+                            </div>
+
+                            {/* Medium Match */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>Mittlerer Treffer (50%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match50 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match50 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match50 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-yellow-100 dark:bg-yellow-900/20 [&>div]:bg-yellow-600" />
+                            </div>
+
+                            {/* No Match */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>Kein Treffer (0%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match0 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match0 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match0 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* User Feedback Card */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Nutzer-Feedback</CardTitle>
+                        <CardDescription>Rückmeldungen zu Weiterleitungen</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {statsLoading ? (
+                          <div className="text-center py-8">Lade Statistiken...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* OK */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>Positiv (OK)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.feedback?.ok || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                            </div>
+
+                            {/* NOK */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>Negativ (NOK)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.feedback?.nok || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                            </div>
+
+                            {/* Missing */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>Kein Feedback</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.feedback?.missing || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-gray-100 dark:bg-gray-800 [&>div]:bg-gray-400" />
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
                   <Card>
                     <CardHeader>
                       <CardTitle>Top URLs</CardTitle>
@@ -3607,6 +3745,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </CardContent>
                   </Card>
                   )}
+                  </div>
                 </div>
               )}
 
