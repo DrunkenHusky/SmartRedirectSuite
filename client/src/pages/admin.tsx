@@ -366,6 +366,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+    smartSearchRegex: "" as string | undefined | null,
+    smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string }[],
   });
 
   // Statistics filters and state
@@ -676,6 +678,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
         smartSearchRegex: settingsData.smartSearchRegex || "",
+        smartSearchRules: settingsData.smartSearchRules || [],
         enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
         feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
         feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
