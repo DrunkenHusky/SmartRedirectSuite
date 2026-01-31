@@ -367,6 +367,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+    smartSearchRegex: "" as string | undefined | null,
+    smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string }[],
   });
 
   // Statistics filters and state
@@ -677,6 +679,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
         smartSearchRegex: settingsData.smartSearchRegex || "",
+        smartSearchRules: settingsData.smartSearchRules || [],
         enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
         feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
         feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
@@ -2423,9 +2426,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Regex Pattern (Extraction)</label>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Regex Pattern (Extraction - optional)</label>
                                                     <DebouncedInput
-                                                        value={rule.pattern}
+                                                        value={rule.pattern ?? ''}
                                                         onChange={(value) => {
                                                             const newRules = [...(generalSettings.smartSearchRules || [])];
                                                             newRules[index] = { ...newRules[index], pattern: value as string };
@@ -2436,7 +2439,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Path Matcher (Optional)</label>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Path Matcher (Prefix)</label>
                                                     <DebouncedInput
                                                         value={rule.pathPattern || ''}
                                                         onChange={(value) => {
@@ -2551,9 +2554,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     </div>
                                   </div>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    Definieren Sie eine Liste von Regex-Patterns. Die Regeln werden von oben nach unten geprüft.
-                                    Jedes Regex muss eine Capture Group () enthalten, um den Suchbegriff zu extrahieren.
-                                    Wenn keine Regel greift, wird als Fallback das letzte Pfadsegment verwendet.
+                                    Definieren Sie eine Liste von Regeln. Die Regeln werden von oben nach unten geprüft.
+                                    Wenn Sie ein Regex-Pattern definieren, muss es eine Capture Group () enthalten.
+                                    <b>Lassen Sie das Feld "Regex Pattern" leer, um automatisch das letzte Pfadsegment zu verwenden.</b>
+                                    Wenn keine Regel greift, wird als Fallback ebenfalls das letzte Pfadsegment verwendet.
                                   </p>
                                 </div>
                               </div>
