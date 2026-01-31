@@ -304,11 +304,12 @@ export function extractSearchTerm(
     const candidateRules = rules.filter(rule => {
         if (!rule.pathPattern) return true;
         try {
-            const pathRegex = new RegExp(rule.pathPattern);
             const path = extractPath(url);
-            return pathRegex.test(path);
+            // Standard prefix matching (case-insensitive)
+            // Behaves like 'partial' match in generateUrlWithRule
+            return path.toLowerCase().startsWith(rule.pathPattern.toLowerCase());
         } catch (e) {
-            console.error("Invalid path pattern regex:", rule.pathPattern, e);
+            console.error("Error matching path pattern:", rule.pathPattern, e);
             return false;
         }
     });

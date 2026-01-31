@@ -2397,7 +2397,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Path Matcher (Optional)</label>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Path Matcher (Prefix)</label>
                                                     <DebouncedInput
                                                         value={rule.pathPattern || ''}
                                                         onChange={(value) => {
