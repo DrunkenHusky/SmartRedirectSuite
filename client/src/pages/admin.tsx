@@ -3505,7 +3505,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         ) : (
                           <div className="space-y-4">
                             {/* Exact Match */}
-                            <div className="space-y-1">
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('100');
+                              }}
+                            >
                               <div className="flex justify-between text-sm">
                                 <span>Exakter Treffer (100%)</span>
                                 <span className="font-medium">
@@ -3519,7 +3525,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
 
                             {/* High Match */}
-                            <div className="space-y-1">
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('75');
+                              }}
+                            >
                               <div className="flex justify-between text-sm">
                                 <span>Hoher Treffer (75%)</span>
                                 <span className="font-medium">
@@ -3533,7 +3545,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
 
                             {/* Medium Match */}
-                            <div className="space-y-1">
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('50');
+                              }}
+                            >
                               <div className="flex justify-between text-sm">
                                 <span>Mittlerer Treffer (50%)</span>
                                 <span className="font-medium">
@@ -3547,7 +3565,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
 
                             {/* No Match */}
-                            <div className="space-y-1">
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('0');
+                              }}
+                            >
                               <div className="flex justify-between text-sm">
                                 <span>Kein Treffer (0%)</span>
                                 <span className="font-medium">
@@ -3565,6 +3589,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </Card>
 
                     {/* User Feedback Card */}
+                    {generalSettings.enableFeedbackSurvey && (
                     <Card>
                       <CardHeader>
                         <CardTitle>Nutzer-Feedback</CardTitle>
@@ -3576,9 +3601,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         ) : (
                           <div className="space-y-4">
                             {/* OK */}
-                            <div className="space-y-1">
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsFeedbackFilter('OK');
+                              }}
+                            >
                               <div className="flex justify-between text-sm">
-                                <span>Positiv (OK)</span>
+                                <span>{generalSettings.feedbackButtonYes || "Positiv (OK)"}</span>
                                 <span className="font-medium">
                                   {statsData?.stats?.feedback?.ok || 0}
                                   <span className="text-muted-foreground ml-1">
@@ -3590,9 +3621,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
 
                             {/* NOK */}
-                            <div className="space-y-1">
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsFeedbackFilter('NOK');
+                              }}
+                            >
                               <div className="flex justify-between text-sm">
-                                <span>Negativ (NOK)</span>
+                                <span>{generalSettings.feedbackButtonNo || "Negativ (NOK)"}</span>
                                 <span className="font-medium">
                                   {statsData?.stats?.feedback?.nok || 0}
                                   <span className="text-muted-foreground ml-1">
@@ -3604,7 +3641,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
 
                             {/* Missing */}
-                            <div className="space-y-1">
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsFeedbackFilter('empty');
+                              }}
+                            >
                               <div className="flex justify-between text-sm">
                                 <span>Kein Feedback</span>
                                 <span className="font-medium">
@@ -3620,6 +3663,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         )}
                       </CardContent>
                     </Card>
+                    )}
                   </div>
 
                   <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
