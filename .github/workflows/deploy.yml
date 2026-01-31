@@ -1,3 +1,4 @@
+
 # Fly.io Deployment Workflow
 #
 # ZWECK:
@@ -15,7 +16,7 @@
 name: Fly Deploy
 
 on:
-  manual
+  workflow_dispatch:
 # push:
 #   branches:
 #      - NextRelease
