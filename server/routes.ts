@@ -186,7 +186,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         feedback: z.enum(['OK', 'NOK']),
         url: z.string().optional(),
         trackingId: z.string().optional(),
-        userProposedUrl: z.string().optional()
+        userProposedUrl: z.string()
+          .refine((val) => !val || val.startsWith('http://') || val.startsWith('https://'), {
+            message: "Proposed URL must be a valid HTTP/HTTPS URL",
+          })
+          .optional()
       }).parse(req.body);
 
       if (trackingId) {
@@ -703,7 +707,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/stats/trend", requireAuth, async (req, res) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
-      const trend = await storage.getSatisfactionTrend(days);
+      const aggregation = (req.query.aggregation as 'day' | 'week' | 'month') || 'day';
+      const trend = await storage.getSatisfactionTrend(days, aggregation);
       res.json(trend);
     } catch (error) {
       console.error("Trend stats error:", error);

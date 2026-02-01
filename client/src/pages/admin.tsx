@@ -106,47 +106,111 @@ interface ImportPreviewData {
 }
 
 // Simple Line Chart Component
-function SatisfactionChart({ data, feedbackOnly }: { data: Array<{ date: string; score: number; count: number; okCount: number; nokCount: number }>, feedbackOnly?: boolean }) {
+function SatisfactionChart({
+  data,
+  feedbackOnly,
+  aggregation = 'day'
+}: {
+  data: Array<{
+    date: string;
+    score: number;
+    count: number;
+    okCount: number;
+    nokCount: number;
+    avgMatchQuality: number;
+    mixedScore: number;
+  }>,
+  feedbackOnly?: boolean,
+  aggregation?: 'day' | 'week' | 'month'
+}) {
   if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">Nicht genügend Daten für Trendanzeige</div>;
 
   // Process data based on feedbackOnly mode
   const chartData = data.map(d => {
-    let score = d.score;
-    // If feedbackOnly, recalculate score based on OK/(OK+NOK)
+    // Determine Satisfaction Score based on mode
+    let satisfactionScore: number | null = d.mixedScore; // Default mixed score
+
     const totalFeedback = (d.okCount || 0) + (d.nokCount || 0);
+
     if (feedbackOnly) {
-       score = totalFeedback > 0 ? Math.round(((d.okCount || 0) / totalFeedback) * 100) : 0;
+       // Strict mode: Only explicit feedback
+       satisfactionScore = totalFeedback > 0 ? Math.round(((d.okCount || 0) / totalFeedback) * 100) : null;
+    } else {
+       // Mixed mode: if count is 0, it's a gap (no traffic)
+       // Backend fills gaps with count=0.
+       if (d.count === 0) {
+           satisfactionScore = null;
+       }
     }
-    return { ...d, score, feedbackCount: totalFeedback };
+
+    return {
+      ...d,
+      satisfactionScore,
+      feedbackCount: totalFeedback,
+      matchQualityScore: d.avgMatchQuality
+    };
   });
 
   const maxCount = Math.max(...chartData.map(d => d.feedbackCount), 5); // Minimum scale 5
 
   // Calculate SVG paths
-  const points = chartData.map((d, i) => {
+
+  // 1. Match Quality Line (Blue)
+  const qualityPoints = chartData.map((d, i) => {
     const x = (i / (chartData.length - 1)) * 100;
-    const y = 100 - d.score; // Invert Y (0 is top)
+    const y = 100 - d.matchQualityScore;
     return `${x},${y}`;
   }).join(' ');
 
-  // Second line for count (normalized to 0-100 for display)
+  // 2. Satisfaction Score Line (Green if FeedbackOnly, else Primary)
+  let satisfactionPathD = "";
+  let isDrawing = false;
+
+  chartData.forEach((d, i) => {
+      const x = (i / (chartData.length - 1)) * 100;
+
+      if (d.satisfactionScore !== null) {
+          const y = 100 - d.satisfactionScore;
+          if (!isDrawing) {
+              satisfactionPathD += `M ${x},${y} `;
+              isDrawing = true;
+          } else {
+              satisfactionPathD += `L ${x},${y} `;
+          }
+      } else {
+          isDrawing = false;
+      }
+  });
+
+  // 3. Feedback Count Line (Purple Dotted)
   const countPoints = chartData.map((d, i) => {
     const x = (i / (chartData.length - 1)) * 100;
     const y = 100 - ((d.feedbackCount / maxCount) * 90); // Use 90% height max
     return `${x},${y}`;
   }).join(' ');
 
+  // Helper for date formatting
+  const formatDate = (dateStr: string) => {
+    if (aggregation === 'month') return dateStr; // YYYY-MM
+    if (aggregation === 'week') return dateStr; // YYYY-Wxx
+    return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  };
+
   return (
     <div className="w-full h-[200px] flex flex-col relative">
         {/* Legends */}
-        <div className="absolute top-2 right-2 flex gap-3 text-[10px] z-10 bg-background/80 p-1 rounded backdrop-blur-sm border">
+        <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-3 text-[10px] z-10 bg-background/80 p-1 rounded backdrop-blur-sm border">
             <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-primary"></div>
-                <span>{feedbackOnly ? "Feedback-Score (OK/Total)" : "Qualität/Score"}</span>
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span>System Match Quality</span>
+            </div>
+            <div className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${feedbackOnly ? 'bg-green-600' : 'bg-primary'}`}></div>
+                <span>{feedbackOnly ? "User Satisfaction (OK/Total)" : "User Satisfaction (Mixed)"}</span>
             </div>
             <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <span>Feedback Anzahl (Max: {maxCount})</span>
+                <span>Feedback Count (Max: {maxCount})</span>
             </div>
         </div>
 
@@ -168,39 +232,53 @@ function SatisfactionChart({ data, feedbackOnly }: { data: Array<{ date: string;
                     />
                 ))}
 
-                {/* Area (Gradient fill) */}
-                <defs>
-                    <linearGradient id="scoreGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" className="text-primary" />
-                        <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" className="text-primary" />
-                    </linearGradient>
-                </defs>
-                <polygon
-                    points={`0,100 ${points} 100,100`}
-                    fill="url(#scoreGradient)"
-                    className="text-primary"
+                {/* Line for Match Quality (Blue) */}
+                <polyline
+                    points={qualityPoints}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="2"
+                    strokeOpacity="0.6"
+                    vectorEffect="non-scaling-stroke"
                 />
 
-                {/* Line for Feedback Count */}
+                {/* Line for Feedback Count (Purple Dotted) */}
                 <polyline
                     points={countPoints}
                     fill="none"
-                    stroke="currentColor"
+                    stroke="#a855f7"
                     strokeWidth="1.5"
                     strokeDasharray="4 2"
                     vectorEffect="non-scaling-stroke"
-                    className="text-purple-500"
                 />
 
-                {/* Line for Score */}
-                <polyline
-                    points={points}
+                {/* Line for Satisfaction Score (Primary/Green) - Using Path for gaps */}
+                <path
+                    d={satisfactionPathD}
                     fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+                    stroke={feedbackOnly ? "#16a34a" : "currentColor"}
+                    strokeWidth="2.5"
                     vectorEffect="non-scaling-stroke"
-                    className="text-primary"
+                    className={feedbackOnly ? "" : "text-primary"}
                 />
+
+                {/* Dots for isolated points or all points for clarity */}
+                {chartData.map((d, i) => {
+                    if (d.satisfactionScore === null) return null;
+                    const x = (i / (chartData.length - 1)) * 100;
+                    const y = 100 - d.satisfactionScore;
+                    return (
+                        <circle
+                            key={i}
+                            cx={x}
+                            cy={y}
+                            r="1.5"
+                            fill={feedbackOnly ? "#16a34a" : "currentColor"}
+                            className={feedbackOnly ? "" : "text-primary"}
+                            vectorEffect="non-scaling-stroke"
+                        />
+                    );
+                })}
             </svg>
 
             {/* Axis Labels (Overlay) */}
@@ -215,9 +293,9 @@ function SatisfactionChart({ data, feedbackOnly }: { data: Array<{ date: string;
 
         {/* X-Axis Labels */}
         <div className="flex justify-between text-[10px] text-muted-foreground mt-2 px-1">
-            <span>{new Date(data[0].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
-            <span className="hidden sm:inline">{new Date(data[Math.floor(data.length / 2)].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
-            <span>{new Date(data[data.length - 1].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
+            <span>{formatDate(data[0].date)}</span>
+            <span className="hidden sm:inline">{formatDate(data[Math.floor(data.length / 2)].date)}</span>
+            <span>{formatDate(data[data.length - 1].date)}</span>
         </div>
     </div>
   );
@@ -409,6 +487,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [previewSortOrder, setPreviewSortOrder] = useState<'asc' | 'desc'>('asc');
   const [previewStatusFilter, setPreviewStatusFilter] = useState<'all' | 'new' | 'update' | 'invalid'>('all');
 
+  // Trend Aggregation
+  const [trendAggregation, setTrendAggregation] = useState<'day' | 'week' | 'month'>('day');
+
   const filteredPreviewData = useMemo(() => {
     if (!importPreviewData) return [];
 
@@ -591,10 +672,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   }, []); // Remove dependencies to prevent continuous re-checking
 
   const { data: trendData, isLoading: trendLoading } = useQuery({
-    queryKey: ["/api/admin/stats/trend", generalSettings.satisfactionTrendDays],
+    queryKey: ["/api/admin/stats/trend", generalSettings.satisfactionTrendDays, trendAggregation],
     enabled: isAuthenticated && statsView === 'top100' && generalSettings.showSatisfactionTrend,
     queryFn: async () => {
-      const response = await fetch(`/api/admin/stats/trend?days=${generalSettings.satisfactionTrendDays || 30}`, {
+      const response = await fetch(`/api/admin/stats/trend?days=${generalSettings.satisfactionTrendDays || 30}&aggregation=${trendAggregation}`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch trend');
@@ -3803,13 +3884,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   {generalSettings.showSatisfactionTrend && (
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <TrendingUp className="h-5 w-5 text-primary" />
-                                <CardTitle>Redirect Satisfaction Trend</CardTitle>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5 text-primary" />
+                                        <CardTitle>Redirect Satisfaction Trend</CardTitle>
+                                    </div>
+                                    <CardDescription>
+                                        Entwicklung der Qualität und Nutzerzufriedenheit über die letzten {generalSettings.satisfactionTrendDays} Tage.
+                                    </CardDescription>
+                                </div>
+                                <Select value={trendAggregation} onValueChange={(v) => setTrendAggregation(v as any)}>
+                                    <SelectTrigger className="w-[120px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="day">Täglich</SelectItem>
+                                        <SelectItem value="week">Wöchentlich</SelectItem>
+                                        <SelectItem value="month">Monatlich</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                            <CardDescription>
-                                Entwicklung der Qualität und Nutzerzufriedenheit über die letzten {generalSettings.satisfactionTrendDays} Tage.
-                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {trendLoading ? (
@@ -3818,6 +3913,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <SatisfactionChart
                                     data={trendData as any}
                                     feedbackOnly={generalSettings.satisfactionTrendFeedbackOnly}
+                                    aggregation={trendAggregation}
                                 />
                             )}
                         </CardContent>

@@ -97,6 +97,9 @@ export const urlTrackingSchema = z.object({
     .nullable(),
   userProposedUrl: z.string()
     .max(8000, "Proposed URL too long")
+    .refine((val) => !val || val.startsWith('http://') || val.startsWith('https://'), {
+      message: "Proposed URL must be a valid HTTP/HTTPS URL",
+    })
     .optional()
     .nullable(),
 });
