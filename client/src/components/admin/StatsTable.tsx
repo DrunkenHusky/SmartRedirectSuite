@@ -163,9 +163,14 @@ const StatsTable = memo(({
               </td>
               <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.oldUrl}>
-                   <code className="text-[10px] sm:text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
-                    {entry.oldUrl}
-                   </code>
+                   <a
+                     href={entry.oldUrl}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="text-[10px] sm:text-xs text-foreground hover:text-blue-600 dark:hover:text-blue-400 break-all inline-block max-w-full truncate align-middle"
+                   >
+                     <code>{entry.oldUrl}</code>
+                   </a>
                 </div>
               </td>
               <td className="p-2 sm:p-3">
@@ -270,7 +275,14 @@ const StatsTable = memo(({
                     {entry.userProposedUrl && (
                       <div className="mt-1 p-1.5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 rounded text-[10px] text-red-800 dark:text-red-300 max-w-[200px] break-all">
                         <span className="font-semibold block mb-0.5">Vorschlag:</span>
-                        {entry.userProposedUrl}
+                        <a
+                          href={entry.userProposedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline text-inherit"
+                        >
+                          {entry.userProposedUrl}
+                        </a>
                       </div>
                     )}
                   </div>
