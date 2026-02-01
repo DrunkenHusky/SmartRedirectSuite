@@ -151,7 +151,7 @@ function SatisfactionChart({
     };
   });
 
-  const maxCount = Math.max(...chartData.map(d => d.feedbackCount), 5); // Minimum scale 5
+  const maxCount = Math.max(...chartData.map(d => d.feedbackCount)) || 1; // Dynamic scale
 
   // Calculate SVG paths
 
@@ -205,7 +205,7 @@ function SatisfactionChart({
                 <span>System Match Quality</span>
             </div>
             <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${feedbackOnly ? 'bg-green-600' : 'bg-primary'}`}></div>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: feedbackOnly ? "#16a34a" : "#f97316" }}></div>
                 <span>{feedbackOnly ? "User Satisfaction (OK/Total)" : "User Satisfaction (Mixed)"}</span>
             </div>
             <div className="flex items-center gap-1">
@@ -252,14 +252,13 @@ function SatisfactionChart({
                     vectorEffect="non-scaling-stroke"
                 />
 
-                {/* Line for Satisfaction Score (Primary/Green) - Using Path for gaps */}
+                {/* Line for Satisfaction Score (Orange/Green) - Using Path for gaps */}
                 <path
                     d={satisfactionPathD}
                     fill="none"
-                    stroke={feedbackOnly ? "#16a34a" : "currentColor"}
+                    stroke={feedbackOnly ? "#16a34a" : "#f97316"}
                     strokeWidth="2.5"
                     vectorEffect="non-scaling-stroke"
-                    className={feedbackOnly ? "" : "text-primary"}
                 />
 
                 {/* Dots for isolated points or all points for clarity */}
@@ -273,8 +272,7 @@ function SatisfactionChart({
                             cx={x}
                             cy={y}
                             r="1.5"
-                            fill={feedbackOnly ? "#16a34a" : "currentColor"}
-                            className={feedbackOnly ? "" : "text-primary"}
+                            fill={feedbackOnly ? "#16a34a" : "#f97316"}
                             vectorEffect="non-scaling-stroke"
                         />
                     );
@@ -4032,65 +4030,81 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <div className="text-center py-8">Lade Statistiken...</div>
                         ) : (
                           <div className="space-y-4">
-                            {/* OK */}
-                            <div
-                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                handleStatsViewChange('browser');
-                                setStatsFeedbackFilter('OK');
-                              }}
-                            >
-                              <div className="flex justify-between text-sm">
-                                <span>{generalSettings.feedbackButtonYes || "Positiv (OK)"}</span>
-                                <span className="font-medium">
-                                  {statsData?.stats?.feedback?.ok || 0}
-                                  <span className="text-muted-foreground ml-1">
-                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100) : 0}%)
-                                  </span>
-                                </span>
-                              </div>
-                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
-                            </div>
+                            {(() => {
+                                const ok = statsData?.stats?.feedback?.ok || 0;
+                                const nok = statsData?.stats?.feedback?.nok || 0;
+                                const missing = statsData?.stats?.feedback?.missing || 0;
+                                const total = statsData?.stats?.total || 0;
 
-                            {/* NOK */}
-                            <div
-                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                handleStatsViewChange('browser');
-                                setStatsFeedbackFilter('NOK');
-                              }}
-                            >
-                              <div className="flex justify-between text-sm">
-                                <span>{generalSettings.feedbackButtonNo || "Negativ (NOK)"}</span>
-                                <span className="font-medium">
-                                  {statsData?.stats?.feedback?.nok || 0}
-                                  <span className="text-muted-foreground ml-1">
-                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100) : 0}%)
-                                  </span>
-                                </span>
-                              </div>
-                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
-                            </div>
+                                // Base for percentage calculation depends on setting
+                                const base = generalSettings.satisfactionTrendFeedbackOnly ? (ok + nok) : total;
 
-                            {/* Missing */}
-                            <div
-                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                handleStatsViewChange('browser');
-                                setStatsFeedbackFilter('empty');
-                              }}
-                            >
-                              <div className="flex justify-between text-sm">
-                                <span>Kein Feedback</span>
-                                <span className="font-medium">
-                                  {statsData?.stats?.feedback?.missing || 0}
-                                  <span className="text-muted-foreground ml-1">
-                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100) : 0}%)
-                                  </span>
-                                </span>
-                              </div>
-                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-gray-100 dark:bg-gray-800 [&>div]:bg-gray-400" />
-                            </div>
+                                return (
+                                <>
+                                    {/* OK */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange('browser');
+                                        setStatsFeedbackFilter('OK');
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <span>{generalSettings.feedbackButtonYes || "Positiv (OK)"}</span>
+                                        <span className="font-medium">
+                                        {ok}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((ok / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (ok / base) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                                    </div>
+
+                                    {/* NOK */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange('browser');
+                                        setStatsFeedbackFilter('NOK');
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <span>{generalSettings.feedbackButtonNo || "Negativ (NOK)"}</span>
+                                        <span className="font-medium">
+                                        {nok}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((nok / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (nok / base) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                                    </div>
+
+                                    {/* Missing (Only show if not in FeedbackOnly mode) */}
+                                    {!generalSettings.satisfactionTrendFeedbackOnly && (
+                                        <div
+                                        className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={() => {
+                                            handleStatsViewChange('browser');
+                                            setStatsFeedbackFilter('empty');
+                                        }}
+                                        >
+                                        <div className="flex justify-between text-sm">
+                                            <span>Kein Feedback</span>
+                                            <span className="font-medium">
+                                            {missing}
+                                            <span className="text-muted-foreground ml-1">
+                                                ({base > 0 ? Math.round((missing / base) * 100) : 0}%)
+                                            </span>
+                                            </span>
+                                        </div>
+                                        <Progress value={base > 0 ? (missing / base) * 100 : 0} className="h-2 bg-gray-100 dark:bg-gray-800 [&>div]:bg-gray-400" />
+                                        </div>
+                                    )}
+                                </>
+                                );
+                            })()}
                           </div>
                         )}
                       </CardContent>
