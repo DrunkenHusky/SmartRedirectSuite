@@ -289,6 +289,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     redirectType: "partial" as "wildcard" | "partial" | "domain",
     autoRedirect: false,
     discardQueryParams: false,
+    keptQueryParams: [] as { keyPattern: string; valuePattern?: string }[],
     forwardQueryParams: false,
   });
   const targetUrlPlaceholder =
@@ -1221,7 +1222,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
-    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, forwardQueryParams: false });
+    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, keptQueryParams: [], forwardQueryParams: false });
     setEditingRule(null);
     setValidationError(null);
     setShowValidationDialog(false);
@@ -1358,6 +1359,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       redirectType: rule.redirectType || "partial",
       autoRedirect: rule.autoRedirect || false,
       discardQueryParams: rule.discardQueryParams || false,
+      keptQueryParams: rule.keptQueryParams || [],
       forwardQueryParams: rule.forwardQueryParams || false,
     });
     setIsRuleDialogOpen(true);
@@ -4654,6 +4656,138 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </p>
                   </div>
                 </div>
+
+                {ruleForm.discardQueryParams && (
+                  <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 ml-4">
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      Parameter beibehalten (Regex)
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Definieren Sie Ausnahmen für Parameter, die trotz Aktivierung erhalten bleiben sollen. Die Reihenfolge bestimmt die Position im neuen Query-String.
+                    </p>
+                    <div className="space-y-3">
+                      {ruleForm.keptQueryParams.map((item, index) => (
+                        <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
+                          <div className="flex gap-2 items-start">
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium">Parameter Key (Regex)</label>
+                                <Input
+                                  value={item.keyPattern}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.keptQueryParams];
+                                    newParams[index] = { ...item, keyPattern: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                  }}
+                                  placeholder="utm_.*"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium">Value Matcher (Optional Regex)</label>
+                                <Input
+                                  value={item.valuePattern || ''}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.keptQueryParams];
+                                    newParams[index] = { ...item, valuePattern: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                  }}
+                                  placeholder=".*"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1 mt-5">
+                                <div className="flex gap-1">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index > 0) {
+                                                const newParams = [...ruleForm.keptQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index - 1];
+                                                newParams[index - 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === 0}
+                                        title="Nach oben"
+                                    >
+                                        <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index < ruleForm.keptQueryParams.length - 1) {
+                                                const newParams = [...ruleForm.keptQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index + 1];
+                                                newParams[index + 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === ruleForm.keptQueryParams.length - 1}
+                                        title="Nach unten"
+                                    >
+                                        <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 mt-5"
+                                onClick={() => {
+                                    const newParams = ruleForm.keptQueryParams.filter((_, i) => i !== index);
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                }}
+                                title="Löschen"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRuleForm(prev => ({
+                                    ...prev,
+                                    keptQueryParams: [...prev.keptQueryParams, { keyPattern: "" }]
+                                }));
+                            }}
+                            className="flex items-center gap-2"
+                        >
+                            <Plus className="h-3 w-3" />
+                            Parameter hinzufügen
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRuleForm(prev => ({
+                                    ...prev,
+                                    keptQueryParams: [...prev.keptQueryParams, { keyPattern: "utm_.*" }]
+                                }));
+                            }}
+                            title="Fügt eine Beispiel-Regex hinzu"
+                        >
+                            Beispiel (UTM) hinzufügen
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

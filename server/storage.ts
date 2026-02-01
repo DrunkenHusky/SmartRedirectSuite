@@ -1183,6 +1183,7 @@ export class FileStorage implements IStorage {
         infoText: rawRule.infoText || "",
         autoRedirect: rawRule.autoRedirect ?? false,
         discardQueryParams: rawRule.discardQueryParams ?? false,
+        keptQueryParams: rawRule.keptQueryParams || [],
         forwardQueryParams: rawRule.forwardQueryParams ?? false,
       };
 
@@ -1205,6 +1206,7 @@ export class FileStorage implements IStorage {
           createdAt: existingRule.createdAt,
           autoRedirect: importRule.autoRedirect,
           discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
         };
 
@@ -1225,6 +1227,7 @@ export class FileStorage implements IStorage {
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
           discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
           createdAt: new Date().toISOString(),
         };
@@ -1249,6 +1252,7 @@ export class FileStorage implements IStorage {
            createdAt: existingRule.createdAt,
            autoRedirect: importRule.autoRedirect,
            discardQueryParams: importRule.discardQueryParams,
+           keptQueryParams: importRule.keptQueryParams,
            forwardQueryParams: importRule.forwardQueryParams,
          };
 
@@ -1268,6 +1272,7 @@ export class FileStorage implements IStorage {
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
           discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
           createdAt: new Date().toISOString(),
         };
