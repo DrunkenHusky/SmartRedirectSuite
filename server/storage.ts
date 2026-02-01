@@ -90,7 +90,7 @@ export interface IStorage {
     };
   }>;
 
-  getSatisfactionTrend(days?: number): Promise<Array<{ date: string; score: number; count: number }>>;
+  getSatisfactionTrend(days?: number): Promise<Array<{ date: string; score: number; count: number; okCount: number; nokCount: number }>>;
 
   // Import functionality
   importUrlRules(
@@ -868,7 +868,7 @@ export class FileStorage implements IStorage {
     return { total, today, week, quality, feedback };
   }
 
-  async getSatisfactionTrend(days: number = 30): Promise<Array<{ date: string; score: number; count: number }>> {
+  async getSatisfactionTrend(days: number = 30): Promise<Array<{ date: string; score: number; count: number; okCount: number; nokCount: number }>> {
     const trackingData = await this.ensureTrackingLoaded();
     const now = new Date();
     const cutoffDate = new Date();
@@ -881,31 +881,37 @@ export class FileStorage implements IStorage {
     const filteredData = trackingData.filter(t => t.timestamp >= cutoffIso && t.path !== "/");
 
     // Group by date (YYYY-MM-DD)
-    const dailyStats = new Map<string, { totalScore: number; count: number }>();
+    const dailyStats = new Map<string, { totalScore: number; count: number; okCount: number; nokCount: number }>();
 
     for (const track of filteredData) {
       // Extract date part YYYY-MM-DD
       const date = track.timestamp.substring(0, 10);
 
       let entryScore = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+      let ok = 0;
+      let nok = 0;
 
       // Feedback overrides quality if present
       if (track.feedback === 'OK') {
         entryScore = 100;
+        ok = 1;
       } else if (track.feedback === 'NOK') {
         entryScore = 0;
+        nok = 1;
       }
       // If no feedback, use matchQuality as the score
 
-      const current = dailyStats.get(date) || { totalScore: 0, count: 0 };
+      const current = dailyStats.get(date) || { totalScore: 0, count: 0, okCount: 0, nokCount: 0 };
       dailyStats.set(date, {
         totalScore: current.totalScore + entryScore,
-        count: current.count + 1
+        count: current.count + 1,
+        okCount: current.okCount + ok,
+        nokCount: current.nokCount + nok
       });
     }
 
     // Convert map to sorted array and fill missing days
-    const result: Array<{ date: string; score: number; count: number }> = [];
+    const result: Array<{ date: string; score: number; count: number; okCount: number; nokCount: number }> = [];
 
     // Create array of all dates in range
     for (let i = 0; i <= days; i++) {
@@ -921,13 +927,17 @@ export class FileStorage implements IStorage {
             result.push({
                 date: dateStr,
                 score: Math.round(stats.totalScore / stats.count),
-                count: stats.count
+                count: stats.count,
+                okCount: stats.okCount,
+                nokCount: stats.nokCount
             });
         } else {
             result.push({
                 date: dateStr,
                 score: 0,
-                count: 0
+                count: 0,
+                okCount: 0,
+                nokCount: 0
             });
         }
     }

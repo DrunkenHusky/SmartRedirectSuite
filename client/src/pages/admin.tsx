@@ -106,18 +106,50 @@ interface ImportPreviewData {
 }
 
 // Simple Line Chart Component
-function SatisfactionChart({ data }: { data: Array<{ date: string; score: number; count: number }> }) {
+function SatisfactionChart({ data, feedbackOnly }: { data: Array<{ date: string; score: number; count: number; okCount: number; nokCount: number }>, feedbackOnly?: boolean }) {
   if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">Nicht genügend Daten für Trendanzeige</div>;
 
-  // Calculate SVG path
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * 100;
+  // Process data based on feedbackOnly mode
+  const chartData = data.map(d => {
+    let score = d.score;
+    // If feedbackOnly, recalculate score based on OK/(OK+NOK)
+    const totalFeedback = (d.okCount || 0) + (d.nokCount || 0);
+    if (feedbackOnly) {
+       score = totalFeedback > 0 ? Math.round(((d.okCount || 0) / totalFeedback) * 100) : 0;
+    }
+    return { ...d, score, feedbackCount: totalFeedback };
+  });
+
+  const maxCount = Math.max(...chartData.map(d => d.feedbackCount), 5); // Minimum scale 5
+
+  // Calculate SVG paths
+  const points = chartData.map((d, i) => {
+    const x = (i / (chartData.length - 1)) * 100;
     const y = 100 - d.score; // Invert Y (0 is top)
     return `${x},${y}`;
   }).join(' ');
 
+  // Second line for count (normalized to 0-100 for display)
+  const countPoints = chartData.map((d, i) => {
+    const x = (i / (chartData.length - 1)) * 100;
+    const y = 100 - ((d.feedbackCount / maxCount) * 90); // Use 90% height max
+    return `${x},${y}`;
+  }).join(' ');
+
   return (
-    <div className="w-full h-[200px] flex flex-col">
+    <div className="w-full h-[200px] flex flex-col relative">
+        {/* Legends */}
+        <div className="absolute top-2 right-2 flex gap-3 text-[10px] z-10 bg-background/80 p-1 rounded backdrop-blur-sm border">
+            <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <span>{feedbackOnly ? "Feedback-Score (OK/Total)" : "Qualität/Score"}</span>
+            </div>
+            <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                <span>Feedback Anzahl (Max: {maxCount})</span>
+            </div>
+        </div>
+
         <div className="flex-1 relative w-full h-full min-h-[150px]">
             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                 {/* Background Grid */}
@@ -149,7 +181,18 @@ function SatisfactionChart({ data }: { data: Array<{ date: string; score: number
                     className="text-primary"
                 />
 
-                {/* Line */}
+                {/* Line for Feedback Count */}
+                <polyline
+                    points={countPoints}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 2"
+                    vectorEffect="non-scaling-stroke"
+                    className="text-purple-500"
+                />
+
+                {/* Line for Score */}
                 <polyline
                     points={points}
                     fill="none"
@@ -458,6 +501,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     feedbackCommentPlaceholder: "https://...",
     feedbackCommentButton: "Absenden",
     showSatisfactionTrend: true,
+    satisfactionTrendFeedbackOnly: false,
     satisfactionTrendDays: 30,
   });
 
@@ -800,6 +844,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         feedbackCommentPlaceholder: settingsData.feedbackCommentPlaceholder || "https://...",
         feedbackCommentButton: settingsData.feedbackCommentButton || "Absenden",
     showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
+    satisfactionTrendFeedbackOnly: settingsData.satisfactionTrendFeedbackOnly ?? false,
     satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
       });
     }
@@ -3240,16 +3285,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       />
                                   </div>
                                   {generalSettings.showSatisfactionTrend && (
-                                      <div>
-                                          <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
-                                          <Input
-                                              type="number"
-                                              min="7"
-                                              max="365"
-                                              value={generalSettings.satisfactionTrendDays}
-                                              onChange={(e) => setGeneralSettings({ ...generalSettings, satisfactionTrendDays: parseInt(e.target.value) || 30 })}
-                                              className="max-w-[200px]"
-                                          />
+                                      <div className="space-y-4">
+                                          <div>
+                                              <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
+                                              <Input
+                                                  type="number"
+                                                  min="7"
+                                                  max="365"
+                                                  value={generalSettings.satisfactionTrendDays}
+                                                  onChange={(e) => setGeneralSettings({ ...generalSettings, satisfactionTrendDays: parseInt(e.target.value) || 30 })}
+                                                  className="max-w-[200px]"
+                                              />
+                                          </div>
+                                          <div className="flex items-center justify-between">
+                                              <div className="space-y-0.5">
+                                                  <label className="text-sm font-medium">Nur Feedback (OK/NOK) anzeigen</label>
+                                                  <p className="text-xs text-muted-foreground">Berechnet den Score ausschließlich basierend auf Benutzer-Feedback, ignoriert automatische Match-Qualität.</p>
+                                              </div>
+                                              <Switch
+                                                  checked={generalSettings.satisfactionTrendFeedbackOnly}
+                                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, satisfactionTrendFeedbackOnly: checked })}
+                                              />
+                                          </div>
                                       </div>
                                   )}
                               </div>
@@ -3758,7 +3815,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             {trendLoading ? (
                                 <div className="h-[200px] flex items-center justify-center text-muted-foreground">Lade Trend...</div>
                             ) : (
-                                <SatisfactionChart data={trendData as any} />
+                                <SatisfactionChart
+                                    data={trendData as any}
+                                    feedbackOnly={generalSettings.satisfactionTrendFeedbackOnly}
+                                />
                             )}
                         </CardContent>
                     </Card>

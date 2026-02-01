@@ -385,6 +385,8 @@ export const generalSettingsSchema = z.object({
   // Satisfaction Trend Chart
   showSatisfactionTrend: z.boolean()
     .default(true),
+  satisfactionTrendFeedbackOnly: z.boolean()
+    .default(false),
   satisfactionTrendDays: z.number()
     .int()
     .min(7, "Zeitraum muss mindestens 7 Tage sein")
