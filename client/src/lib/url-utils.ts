@@ -37,6 +37,8 @@ export function generateUrlWithRule(
     redirectType?: 'wildcard' | 'partial' | 'domain';
     discardQueryParams?: boolean;
     forwardQueryParams?: boolean;
+    keptQueryParams?: { keyPattern: string; valuePattern?: string; targetKey?: string }[];
+    staticQueryParams?: { key: string; value: string }[];
   },
   newDomain?: string
 ): string {
@@ -132,7 +134,21 @@ export function generateUrlWithRule(
       // Ensure path starts with /
       const cleanPath = path.startsWith('/') ? path : '/' + path;
 
-      return cleanDomain + cleanPath;
+      let finalUrl = cleanDomain + cleanPath;
+
+      // 1. Append Static Params
+      if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
+        const staticString = getStaticQueryString(rule.staticQueryParams);
+        finalUrl = appendQueryString(finalUrl, staticString);
+      }
+
+      // 2. Append kept query params if discardQueryParams is active
+      if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
+        const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
+        finalUrl = appendQueryString(finalUrl, keptString);
+      }
+
+      return finalUrl;
 
     } else if (redirectType === 'partial' && rule.targetUrl) {
       // Teilweise: Replace path segments from matcher onwards, preserve additional segments/params/anchors
@@ -208,7 +224,21 @@ export function generateUrlWithRule(
         }
       }
       
-      return cleanDomain + newPath;
+      let finalUrl = cleanDomain + newPath;
+
+      // 1. Append Static Params
+      if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
+        const staticString = getStaticQueryString(rule.staticQueryParams);
+        finalUrl = appendQueryString(finalUrl, staticString);
+      }
+
+      // 2. Append kept query params if discardQueryParams is active
+      if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
+        const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
+        finalUrl = appendQueryString(finalUrl, keptString);
+      }
+
+      return finalUrl;
     } else {
       // No valid rule or no targetUrl - fallback to domain replacement only
       return generateNewUrl(oldUrl, newDomain);
@@ -221,12 +251,13 @@ export function generateUrlWithRule(
 
 export function extractPath(url: string): string {
   try {
-    const urlObj = new URL(url);
+    const urlObj = new URL(url, 'http://dummy.com');
     return urlObj.pathname + urlObj.search + urlObj.hash;
   } catch {
     // Fallback für invalide URLs
     const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
-    return pathMatch?.[1] || '/';
+    if (pathMatch) return pathMatch[1] || '/';
+    return url.startsWith('/') ? url : '/' + url;
   }
 }
 
@@ -289,6 +320,72 @@ function extractLastPathSegment(url: string): string | null {
       } catch (err) {
         return null;
       }
+  }
+}
+
+function getStaticQueryString(staticParams: { key: string; value: string }[]): string {
+  try {
+    const params = new URLSearchParams();
+    staticParams.forEach(p => {
+      if (p.key) {
+        params.append(p.key, p.value || '');
+      }
+    });
+    const str = params.toString();
+    return str ? '?' + str : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string }[]): string {
+  try {
+    const urlObj = new URL(oldUrl, 'http://dummy.com'); // Base needed for relative URLs
+    const entries = Array.from(urlObj.searchParams.entries());
+    const newParams = new URLSearchParams();
+    const addedIndices = new Set<number>();
+
+    for (const rule of keptRules) {
+      if (!rule.keyPattern) continue;
+      try {
+        const keyRegex = new RegExp(rule.keyPattern);
+        const valRegex = rule.valuePattern ? new RegExp(rule.valuePattern) : null;
+
+        entries.forEach(([key, value], index) => {
+          if (!addedIndices.has(index)) {
+            if (keyRegex.test(key)) {
+              if (!valRegex || valRegex.test(value)) {
+                // Use targetKey if present and not empty, otherwise use original key
+                const finalKey = (rule.targetKey && rule.targetKey.trim() !== '') ? rule.targetKey : key;
+                newParams.append(finalKey, value);
+                addedIndices.add(index);
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error("Invalid regex in keptQueryParams", e);
+      }
+    }
+
+    const str = newParams.toString();
+    return str ? '?' + str : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function appendQueryString(url: string, queryString: string): string {
+  if (!queryString) return url;
+
+  const [base, hash] = url.split('#');
+  // queryString includes '?'
+  const queryPart = queryString.substring(1);
+
+  if (base.includes('?')) {
+    return `${base}&${queryPart}${hash ? '#' + hash : ''}`;
+  } else {
+    return `${base}?${queryPart}${hash ? '#' + hash : ''}`;
   }
 }
 

@@ -11,6 +11,8 @@ const COLUMN_MAPPING = {
   infoText: ['Info', 'infoText', 'Beschreibung'],
   autoRedirect: ['Auto Redirect', 'autoRedirect', 'Automatisch'],
   discardQueryParams: ['Discard Query Params', 'discardQueryParams', 'Parameter entfernen'],
+  keptQueryParams: ['Kept Query Params', 'keptQueryParams', 'Parameter Ausnahmen'],
+  staticQueryParams: ['Static Query Params', 'staticQueryParams', 'Statische Parameter'],
   forwardQueryParams: ['Keep Query Params', 'forwardQueryParams', 'Parameter behalten'],
   id: ['ID', 'id']
 };
@@ -97,6 +99,8 @@ export class ImportExportService {
       rule.infoText = getValue(COLUMN_MAPPING.infoText);
       rule.autoRedirect = getValue(COLUMN_MAPPING.autoRedirect);
       rule.discardQueryParams = getValue(COLUMN_MAPPING.discardQueryParams);
+      rule.keptQueryParams = getValue(COLUMN_MAPPING.keptQueryParams);
+      rule.staticQueryParams = getValue(COLUMN_MAPPING.staticQueryParams);
       rule.forwardQueryParams = getValue(COLUMN_MAPPING.forwardQueryParams);
       rule.id = getValue(COLUMN_MAPPING.id);
       // Handle empty string IDs as undefined (common in Excel/CSV imports)
@@ -126,6 +130,60 @@ export class ImportExportService {
         rule.discardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(dqp);
       } else {
         rule.discardQueryParams = false;
+      }
+
+      // Normalize keptQueryParams (parse JSON string if needed)
+      if (rule.keptQueryParams !== undefined && rule.keptQueryParams !== null && rule.keptQueryParams !== '') {
+        try {
+          if (typeof rule.keptQueryParams === 'string') {
+            // Try to parse JSON
+            rule.keptQueryParams = JSON.parse(rule.keptQueryParams);
+          }
+
+          // Validate structure
+          if (!Array.isArray(rule.keptQueryParams)) {
+             rule.keptQueryParams = [];
+             // Only add error if it wasn't empty string (which we filtered out)
+             errors.push('Kept Query Params must be a valid JSON array');
+          } else {
+             // Filter invalid items
+             rule.keptQueryParams = rule.keptQueryParams.filter((item: any) =>
+                item && typeof item === 'object' && typeof item.keyPattern === 'string'
+             );
+          }
+        } catch (e) {
+          errors.push('Invalid JSON format for Kept Query Params');
+          rule.keptQueryParams = [];
+        }
+      } else {
+        rule.keptQueryParams = [];
+      }
+
+      // Normalize staticQueryParams (parse JSON string if needed)
+      if (rule.staticQueryParams !== undefined && rule.staticQueryParams !== null && rule.staticQueryParams !== '') {
+        try {
+          if (typeof rule.staticQueryParams === 'string') {
+            // Try to parse JSON
+            rule.staticQueryParams = JSON.parse(rule.staticQueryParams);
+          }
+
+          // Validate structure
+          if (!Array.isArray(rule.staticQueryParams)) {
+             rule.staticQueryParams = [];
+             // Only add error if it wasn't empty string (which we filtered out)
+             errors.push('Static Query Params must be a valid JSON array');
+          } else {
+             // Filter invalid items
+             rule.staticQueryParams = rule.staticQueryParams.filter((item: any) =>
+                item && typeof item === 'object' && typeof item.key === 'string' && typeof item.value === 'string'
+             );
+          }
+        } catch (e) {
+          errors.push('Invalid JSON format for Static Query Params');
+          rule.staticQueryParams = [];
+        }
+      } else {
+        rule.staticQueryParams = [];
       }
 
       // Normalize forwardQueryParams
@@ -239,6 +297,8 @@ export class ImportExportService {
       Info: this.sanitizeForCSV(rule.infoText),
       'Auto Redirect': rule.autoRedirect ? 'true' : 'false',
       'Discard Query Params': rule.discardQueryParams ? 'true' : 'false',
+      'Kept Query Params': (rule.keptQueryParams && rule.keptQueryParams.length > 0) ? JSON.stringify(rule.keptQueryParams) : '',
+      'Static Query Params': (rule.staticQueryParams && rule.staticQueryParams.length > 0) ? JSON.stringify(rule.staticQueryParams) : '',
       'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false'
     }));
 
@@ -257,6 +317,8 @@ export class ImportExportService {
       Info: this.sanitizeForCSV(rule.infoText),
       'Auto Redirect': rule.autoRedirect,
       'Discard Query Params': rule.discardQueryParams,
+      'Kept Query Params': (rule.keptQueryParams && rule.keptQueryParams.length > 0) ? JSON.stringify(rule.keptQueryParams) : '',
+      'Static Query Params': (rule.staticQueryParams && rule.staticQueryParams.length > 0) ? JSON.stringify(rule.staticQueryParams) : '',
       'Keep Query Params': rule.forwardQueryParams
     }));
 
