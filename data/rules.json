@@ -28,5 +28,38 @@
     "autoRedirect": false,
     "discardQueryParams": false,
     "createdAt": "2025-12-05T20:42:27.114Z"
+  },
+  {
+    "matcher": "/test-persist-1769976200",
+    "targetUrl": "https://example.com",
+    "infoText": "",
+    "redirectType": "partial",
+    "autoRedirect": false,
+    "discardQueryParams": true,
+    "id": "6948328f-854c-4a9f-abaa-6629e6dfe404",
+    "createdAt": "2026-02-01T20:03:23.711Z"
+  },
+  {
+    "matcher": "/test-persist-1769976416",
+    "targetUrl": "https://example.com",
+    "infoText": "",
+    "redirectType": "partial",
+    "autoRedirect": false,
+    "discardQueryParams": true,
+    "keptQueryParams": [
+      {
+        "keyPattern": "keep_key_1769976416",
+        "valuePattern": "val_.*",
+        "targetKey": "renamed_k"
+      }
+    ],
+    "staticQueryParams": [
+      {
+        "key": "static_key_1769976416",
+        "value": "static_val"
+      }
+    ],
+    "id": "fa86e318-da0b-4d1c-9ec9-c5987c80b8c7",
+    "createdAt": "2026-02-01T20:06:59.130Z"
   }
 ]

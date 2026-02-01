@@ -56,6 +56,15 @@ export const urlRuleSchemaWithValidation = z.object({
   redirectType: z.enum(['wildcard', 'partial', 'domain']).default('partial'),
   autoRedirect: z.boolean().default(false),
   discardQueryParams: z.boolean().default(false),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+  })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
@@ -109,6 +118,15 @@ export const updateUrlRuleSchemaWithValidation = z.object({
   redirectType: z.enum(['wildcard', 'partial', 'domain']).optional(),
   autoRedirect: z.boolean().optional(),
   discardQueryParams: z.boolean().optional(),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+  })).optional(),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+  })).optional(),
   forwardQueryParams: z.boolean().optional(),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
@@ -160,6 +178,15 @@ export const importUrlRuleSchemaWithValidation = z.object({
     .optional(),
   autoRedirect: z.boolean().default(false),
   discardQueryParams: z.boolean().default(false),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+  })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
 }).transform((data) => {
   // Validate targetUrl based on redirectType with German error messages
