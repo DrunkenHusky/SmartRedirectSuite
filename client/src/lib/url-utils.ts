@@ -37,7 +37,8 @@ export function generateUrlWithRule(
     redirectType?: 'wildcard' | 'partial' | 'domain';
     discardQueryParams?: boolean;
     forwardQueryParams?: boolean;
-    keptQueryParams?: { keyPattern: string; valuePattern?: string }[];
+    keptQueryParams?: { keyPattern: string; valuePattern?: string; targetKey?: string }[];
+    staticQueryParams?: { key: string; value: string }[];
   },
   newDomain?: string
 ): string {
@@ -135,7 +136,13 @@ export function generateUrlWithRule(
 
       let finalUrl = cleanDomain + cleanPath;
 
-      // Append kept query params if discardQueryParams is active
+      // 1. Append Static Params
+      if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
+        const staticString = getStaticQueryString(rule.staticQueryParams);
+        finalUrl = appendQueryString(finalUrl, staticString);
+      }
+
+      // 2. Append kept query params if discardQueryParams is active
       if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
         const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
         finalUrl = appendQueryString(finalUrl, keptString);
@@ -219,7 +226,13 @@ export function generateUrlWithRule(
       
       let finalUrl = cleanDomain + newPath;
 
-      // Append kept query params if discardQueryParams is active
+      // 1. Append Static Params
+      if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
+        const staticString = getStaticQueryString(rule.staticQueryParams);
+        finalUrl = appendQueryString(finalUrl, staticString);
+      }
+
+      // 2. Append kept query params if discardQueryParams is active
       if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
         const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
         finalUrl = appendQueryString(finalUrl, keptString);
@@ -310,7 +323,22 @@ function extractLastPathSegment(url: string): string | null {
   }
 }
 
-function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string }[]): string {
+function getStaticQueryString(staticParams: { key: string; value: string }[]): string {
+  try {
+    const params = new URLSearchParams();
+    staticParams.forEach(p => {
+      if (p.key) {
+        params.append(p.key, p.value || '');
+      }
+    });
+    const str = params.toString();
+    return str ? '?' + str : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string }[]): string {
   try {
     const urlObj = new URL(oldUrl, 'http://dummy.com'); // Base needed for relative URLs
     const entries = Array.from(urlObj.searchParams.entries());
@@ -327,7 +355,9 @@ function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; val
           if (!addedIndices.has(index)) {
             if (keyRegex.test(key)) {
               if (!valRegex || valRegex.test(value)) {
-                newParams.append(key, value);
+                // Use targetKey if present and not empty, otherwise use original key
+                const finalKey = (rule.targetKey && rule.targetKey.trim() !== '') ? rule.targetKey : key;
+                newParams.append(finalKey, value);
                 addedIndices.add(index);
               }
             }

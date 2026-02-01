@@ -53,6 +53,11 @@ export const urlRuleSchema = z.object({
   keptQueryParams: z.array(z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
@@ -147,6 +152,11 @@ export const importUrlRuleSchema = z.object({
   keptQueryParams: z.array(z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),

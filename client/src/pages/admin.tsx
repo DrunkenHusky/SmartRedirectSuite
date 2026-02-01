@@ -289,7 +289,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     redirectType: "partial" as "wildcard" | "partial" | "domain",
     autoRedirect: false,
     discardQueryParams: false,
-    keptQueryParams: [] as { keyPattern: string; valuePattern?: string }[],
+    keptQueryParams: [] as { keyPattern: string; valuePattern?: string; targetKey?: string }[],
+    staticQueryParams: [] as { key: string; value: string }[],
     forwardQueryParams: false,
   });
   const targetUrlPlaceholder =
@@ -1222,7 +1223,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
-    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, keptQueryParams: [], forwardQueryParams: false });
+    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, keptQueryParams: [], staticQueryParams: [], forwardQueryParams: false });
     setEditingRule(null);
     setValidationError(null);
     setShowValidationDialog(false);
@@ -1360,6 +1361,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       autoRedirect: rule.autoRedirect || false,
       discardQueryParams: rule.discardQueryParams || false,
       keptQueryParams: rule.keptQueryParams || [],
+      staticQueryParams: rule.staticQueryParams || [],
       forwardQueryParams: rule.forwardQueryParams || false,
     });
     setIsRuleDialogOpen(true);
@@ -4641,8 +4643,125 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
             {/* Parameter Handling Options */}
             {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain') && (
-              <div className="border-t pt-4">
-                <div className="flex items-start space-x-3">
+              <div className="border-t pt-4 space-y-4">
+                {/* Static Query Params */}
+                <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      Statische Parameter hinzufügen
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Definieren Sie Parameter, die immer an die Ziel-URL angehängt werden (z.B. ?source=migration).
+                    </p>
+                    <div className="space-y-3">
+                      {ruleForm.staticQueryParams.map((item, index) => (
+                        <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Key</label>
+                                <Input
+                                  value={item.key}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.staticQueryParams];
+                                    newParams[index] = { ...item, key: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                  }}
+                                  placeholder="source"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Value</label>
+                                <Input
+                                  value={item.value || ''}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.staticQueryParams];
+                                    newParams[index] = { ...item, value: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                  }}
+                                  placeholder="migration"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <div className="flex gap-1">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index > 0) {
+                                                const newParams = [...ruleForm.staticQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index - 1];
+                                                newParams[index - 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === 0}
+                                        title="Nach oben"
+                                    >
+                                        <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index < ruleForm.staticQueryParams.length - 1) {
+                                                const newParams = [...ruleForm.staticQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index + 1];
+                                                newParams[index + 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === ruleForm.staticQueryParams.length - 1}
+                                        title="Nach unten"
+                                    >
+                                        <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                    const newParams = ruleForm.staticQueryParams.filter((_, i) => i !== index);
+                                    setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                }}
+                                title="Löschen"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRuleForm(prev => ({
+                                    ...prev,
+                                    staticQueryParams: [...prev.staticQueryParams, { key: "", value: "" }]
+                                }));
+                            }}
+                            className="flex items-center gap-2"
+                        >
+                            <Plus className="h-3 w-3" />
+                            Parameter hinzufügen
+                        </Button>
+                      </div>
+                    </div>
+                </div>
+
+                <div className="flex items-start space-x-3 pt-4 border-t">
                   <Switch
                     checked={ruleForm.discardQueryParams}
                     onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, discardQueryParams: checked }))}
@@ -4692,6 +4811,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
                                   }}
                                   placeholder=".*"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                             <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Neuer Name (Optional)</label>
+                                <Input
+                                  value={item.targetKey || ''}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.keptQueryParams];
+                                    newParams[index] = { ...item, targetKey: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                  }}
+                                  placeholder="f"
                                   className="h-8 text-sm"
                                 />
                             </div>

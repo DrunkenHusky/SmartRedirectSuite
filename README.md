@@ -161,6 +161,35 @@ Beispiele:
 
 Tie‑Breaker: mehr statische Segmente → mehr Query‑Paare → weniger Wildcards → älteres `createdAt`/niedrigere ID.
 
+## Erweiterte Regel-Optionen
+
+### Smart Search Redirects
+Wenn die Option "Intelligente Such-Weiterleitung" als Fallback aktiviert ist, versucht das System, aus der alten URL einen Suchbegriff zu extrahieren, falls keine direkte Regel greift.
+
+*   **Standard:** Das letzte Segment des Pfades wird als Suchbegriff verwendet.
+*   **Regex-Regeln:** Sie können spezifische Regeln definieren (z.B. `[?&]file=([^&]+)`), um IDs oder Dokumentennamen aus Parametern zu extrahieren.
+*   **Reihenfolge:** Die Regeln werden von oben nach unten geprüft.
+
+### Parameter-Handling (Partial Rules)
+
+Bei "Teilweise" (Partial) Redirects können Sie steuern, wie mit URL-Parametern verfahren wird.
+
+1.  **Parameter verwerfen (Discard):** Aktivieren Sie "Alle Link-Parameter entfernen", um standardmäßig alle Query-Parameter der alten URL zu löschen.
+2.  **Ausnahmen definieren (Keep):** Definieren Sie spezifische Parameter, die trotzdem beibehalten werden sollen (z.B. `id`, `lang`).
+    *   **Regex:** Key und Value können per Regex definiert werden.
+    *   **Umbenennen:** Sie können einen "Ziel-Key" angeben. Beispiel: Aus `?file=dokument.pdf` wird `?f=dokument.pdf`. Bleibt das Feld leer, wird der ursprüngliche Name beibehalten.
+3.  **Statische Parameter:** Sie können Parameter definieren, die **immer** angehängt werden (z.B. `?source=migration`).
+
+**Reihenfolge der Parameter in der Ziel-URL:**
+1.  Statische Parameter (in der definierten Reihenfolge)
+2.  Behaltene Parameter (in der definierten Reihenfolge)
+
+**Beispiel:**
+*   Alte URL: `.../page?old=123&ignore=me`
+*   Statisch: `new=A`
+*   Keep: `old` -> `id`
+*   Ergebnis: `.../ziel?new=A&id=123`
+
 ## Einsatzszenarien
 
 - Migrationen (z. B. SharePoint On‑Premises → SharePoint Online)
