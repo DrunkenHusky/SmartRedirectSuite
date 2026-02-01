@@ -4668,9 +4668,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     <div className="space-y-3">
                       {ruleForm.keptQueryParams.map((item, index) => (
                         <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
-                          <div className="flex gap-2 items-start">
+                          <div className="flex gap-2 items-end">
                             <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium">Parameter Key (Regex)</label>
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Parameter Key (Regex)</label>
                                 <Input
                                   value={item.keyPattern}
                                   onChange={(e) => {
@@ -4678,12 +4678,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     newParams[index] = { ...item, keyPattern: e.target.value };
                                     setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
                                   }}
-                                  placeholder="utm_.*"
+                                  placeholder="file"
                                   className="h-8 text-sm"
                                 />
                             </div>
                             <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium">Value Matcher (Optional Regex)</label>
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Value Matcher (Optional Regex)</label>
                                 <Input
                                   value={item.valuePattern || ''}
                                   onChange={(e) => {
@@ -4695,7 +4695,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="h-8 text-sm"
                                 />
                             </div>
-                            <div className="flex flex-col gap-1 mt-5">
+                            <div className="flex flex-col gap-1">
                                 <div className="flex gap-1">
                                     <Button
                                         type="button"
@@ -4741,7 +4741,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 mt-5"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => {
                                     const newParams = ruleForm.keptQueryParams.filter((_, i) => i !== index);
                                     setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
@@ -4777,12 +4777,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             onClick={() => {
                                 setRuleForm(prev => ({
                                     ...prev,
-                                    keptQueryParams: [...prev.keptQueryParams, { keyPattern: "utm_.*" }]
+                                    keptQueryParams: [...prev.keptQueryParams, { keyPattern: "file" }]
                                 }));
                             }}
                             title="Fügt eine Beispiel-Regex hinzu"
                         >
-                            Beispiel (UTM) hinzufügen
+                            Beispiel (File) hinzufügen
                         </Button>
                       </div>
                     </div>
