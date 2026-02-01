@@ -1,5 +1,0 @@
-
-> smartredirectsuite@2.14.0 dev
-> cross-env NODE_ENV=development tsx server/index.ts
-
-sh: 1: cross-env: not found
