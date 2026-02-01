@@ -90,7 +90,15 @@ export interface IStorage {
     };
   }>;
 
-  getSatisfactionTrend(days?: number): Promise<Array<{ date: string; score: number; count: number }>>;
+  getSatisfactionTrend(days?: number, aggregation?: 'day' | 'week' | 'month'): Promise<Array<{
+    date: string;
+    score: number;
+    count: number;
+    okCount: number;
+    nokCount: number;
+    avgMatchQuality: number;
+    mixedScore: number;
+  }>>;
 
   // Import functionality
   importUrlRules(
@@ -868,7 +876,15 @@ export class FileStorage implements IStorage {
     return { total, today, week, quality, feedback };
   }
 
-  async getSatisfactionTrend(days: number = 30): Promise<Array<{ date: string; score: number; count: number }>> {
+  async getSatisfactionTrend(days: number = 30, aggregation: 'day' | 'week' | 'month' = 'day'): Promise<Array<{
+    date: string;
+    score: number;
+    count: number;
+    okCount: number;
+    nokCount: number;
+    avgMatchQuality: number;
+    mixedScore: number;
+  }>> {
     const trackingData = await this.ensureTrackingLoaded();
     const now = new Date();
     const cutoffDate = new Date();
@@ -880,56 +896,138 @@ export class FileStorage implements IStorage {
     // Filter data by time range
     const filteredData = trackingData.filter(t => t.timestamp >= cutoffIso && t.path !== "/");
 
-    // Group by date (YYYY-MM-DD)
-    const dailyStats = new Map<string, { totalScore: number; count: number }>();
+    // Group by aggregation key
+    const statsMap = new Map<string, {
+      totalScore: number;
+      count: number;
+      okCount: number;
+      nokCount: number;
+      totalMatchQuality: number;
+      totalMixedScore: number;
+    }>();
+
+    const getAggregationKey = (date: Date): string => {
+      if (aggregation === 'month') {
+        return date.toISOString().substring(0, 7); // YYYY-MM
+      } else if (aggregation === 'week') {
+        // ISO Week
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+        const yearStart = new Date(d.getFullYear(), 0, 1);
+        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return `${d.getFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+      } else {
+        return date.toISOString().substring(0, 10); // YYYY-MM-DD
+      }
+    };
 
     for (const track of filteredData) {
-      // Extract date part YYYY-MM-DD
-      const date = track.timestamp.substring(0, 10);
+      const trackDate = new Date(track.timestamp);
+      const key = getAggregationKey(trackDate);
 
-      let entryScore = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+      const matchQuality = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+      let mixedEntryScore = matchQuality;
+      let ok = 0;
+      let nok = 0;
 
-      // Feedback overrides quality if present
+      // Feedback overrides quality if present for mixed score
       if (track.feedback === 'OK') {
-        entryScore = 100;
+        mixedEntryScore = 100;
+        ok = 1;
       } else if (track.feedback === 'NOK') {
-        entryScore = 0;
+        mixedEntryScore = 0;
+        nok = 1;
       }
-      // If no feedback, use matchQuality as the score
 
-      const current = dailyStats.get(date) || { totalScore: 0, count: 0 };
-      dailyStats.set(date, {
-        totalScore: current.totalScore + entryScore,
-        count: current.count + 1
+      const current = statsMap.get(key) || {
+        totalScore: 0,
+        count: 0,
+        okCount: 0,
+        nokCount: 0,
+        totalMatchQuality: 0,
+        totalMixedScore: 0
+      };
+
+      statsMap.set(key, {
+        totalScore: current.totalScore + mixedEntryScore, // Legacy score (same as mixed)
+        count: current.count + 1,
+        okCount: current.okCount + ok,
+        nokCount: current.nokCount + nok,
+        totalMatchQuality: current.totalMatchQuality + matchQuality,
+        totalMixedScore: current.totalMixedScore + mixedEntryScore
       });
     }
 
-    // Convert map to sorted array and fill missing days
-    const result: Array<{ date: string; score: number; count: number }> = [];
+    // Convert map to sorted array
+    // Note: For aggregation other than 'day', filling gaps is complex and might not be desired.
+    // For 'day', we usually want to fill gaps. For 'week'/'month', we can just sort existing keys.
+    // To simplify and ensure consistent chart X-axis, we'll sort existing keys.
 
-    // Create array of all dates in range
-    for (let i = 0; i <= days; i++) {
-        const d = new Date(cutoffDate);
-        d.setDate(d.getDate() + i);
-        const dateStr = d.toISOString().substring(0, 10);
+    const sortedKeys = Array.from(statsMap.keys()).sort();
 
-        // Stop if future
-        if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
+    // If 'day', we can try to fill gaps if desired, but for flexible aggregation, usually providing existing data points is safer to avoid huge gaps if date range is large.
+    // However, the chart expects continuous data for lines.
+    // Let's stick to returning available buckets for now, frontend chart libraries handle gaps or we accept them.
+    // Re-implementing gap filling for weeks/months is complex logic (determining next week/month).
+    // Given the previous code filled gaps for days, let's keep it simple: if 'day', fill gaps. If others, just sort.
 
-        const stats = dailyStats.get(dateStr);
-        if (stats) {
-            result.push({
-                date: dateStr,
-                score: Math.round(stats.totalScore / stats.count),
-                count: stats.count
-            });
-        } else {
-            result.push({
-                date: dateStr,
-                score: 0,
-                count: 0
-            });
-        }
+    const result: Array<{
+      date: string;
+      score: number;
+      count: number;
+      okCount: number;
+      nokCount: number;
+      avgMatchQuality: number;
+      mixedScore: number;
+    }> = [];
+
+    if (aggregation === 'day') {
+       // Fill gaps for days
+       for (let i = 0; i <= days; i++) {
+          const d = new Date(cutoffDate);
+          d.setDate(d.getDate() + i);
+          const dateStr = d.toISOString().substring(0, 10);
+
+          if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
+
+          const stats = statsMap.get(dateStr);
+          if (stats) {
+              result.push({
+                  date: dateStr,
+                  score: Math.round(stats.totalMixedScore / stats.count),
+                  count: stats.count,
+                  okCount: stats.okCount,
+                  nokCount: stats.nokCount,
+                  avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
+                  mixedScore: Math.round(stats.totalMixedScore / stats.count)
+              });
+          } else {
+              result.push({
+                  date: dateStr,
+                  score: 0,
+                  count: 0,
+                  okCount: 0,
+                  nokCount: 0,
+                  avgMatchQuality: 0,
+                  mixedScore: 0
+              });
+          }
+       }
+    } else {
+       // Just use sorted keys for week/month
+       for (const key of sortedKeys) {
+          const stats = statsMap.get(key)!;
+          result.push({
+              date: key,
+              score: Math.round(stats.totalMixedScore / stats.count),
+              count: stats.count,
+              okCount: stats.okCount,
+              nokCount: stats.nokCount,
+              avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
+              mixedScore: Math.round(stats.totalMixedScore / stats.count)
+          });
+       }
     }
 
     return result;
@@ -1362,6 +1460,13 @@ export class FileStorage implements IStorage {
         feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
         feedbackButtonYes: "Ja, OK",
         feedbackButtonNo: "Nein",
+
+        // Feedback Comment Defaults
+        enableFeedbackComment: false,
+        feedbackCommentTitle: "Kennen Sie die korrekte URL?",
+        feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+        feedbackCommentPlaceholder: "https://...",
+        feedbackCommentButton: "Absenden",
       };
 
       // Save default settings directly to avoid infinite loop

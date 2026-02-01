@@ -106,18 +106,114 @@ interface ImportPreviewData {
 }
 
 // Simple Line Chart Component
-function SatisfactionChart({ data }: { data: Array<{ date: string; score: number; count: number }> }) {
+function SatisfactionChart({
+  data,
+  feedbackOnly,
+  aggregation = 'day'
+}: {
+  data: Array<{
+    date: string;
+    score: number;
+    count: number;
+    okCount: number;
+    nokCount: number;
+    avgMatchQuality: number;
+    mixedScore: number;
+  }>,
+  feedbackOnly?: boolean,
+  aggregation?: 'day' | 'week' | 'month'
+}) {
   if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">Nicht genügend Daten für Trendanzeige</div>;
 
-  // Calculate SVG path
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * 100;
-    const y = 100 - d.score; // Invert Y (0 is top)
+  // Process data based on feedbackOnly mode
+  const chartData = data.map(d => {
+    // Determine Satisfaction Score based on mode
+    let satisfactionScore: number | null = d.mixedScore; // Default mixed score
+
+    const totalFeedback = (d.okCount || 0) + (d.nokCount || 0);
+
+    if (feedbackOnly) {
+       // Strict mode: Only explicit feedback
+       satisfactionScore = totalFeedback > 0 ? Math.round(((d.okCount || 0) / totalFeedback) * 100) : null;
+    } else {
+       // Mixed mode: if count is 0, it's a gap (no traffic)
+       // Backend fills gaps with count=0.
+       if (d.count === 0) {
+           satisfactionScore = null;
+       }
+    }
+
+    return {
+      ...d,
+      satisfactionScore,
+      feedbackCount: totalFeedback,
+      matchQualityScore: d.avgMatchQuality
+    };
+  });
+
+  const maxCount = Math.max(...chartData.map(d => d.feedbackCount)) || 1; // Dynamic scale
+
+  // Calculate SVG paths
+
+  // 1. Match Quality Line (Blue)
+  const qualityPoints = chartData.map((d, i) => {
+    const x = (i / (chartData.length - 1)) * 100;
+    const y = 100 - d.matchQualityScore;
     return `${x},${y}`;
   }).join(' ');
 
+  // 2. Satisfaction Score Line (Green if FeedbackOnly, else Primary)
+  let satisfactionPathD = "";
+  let isDrawing = false;
+
+  chartData.forEach((d, i) => {
+      const x = (i / (chartData.length - 1)) * 100;
+
+      if (d.satisfactionScore !== null) {
+          const y = 100 - d.satisfactionScore;
+          if (!isDrawing) {
+              satisfactionPathD += `M ${x},${y} `;
+              isDrawing = true;
+          } else {
+              satisfactionPathD += `L ${x},${y} `;
+          }
+      } else {
+          isDrawing = false;
+      }
+  });
+
+  // 3. Feedback Count Line (Purple Dotted)
+  const countPoints = chartData.map((d, i) => {
+    const x = (i / (chartData.length - 1)) * 100;
+    const y = 100 - ((d.feedbackCount / maxCount) * 90); // Use 90% height max
+    return `${x},${y}`;
+  }).join(' ');
+
+  // Helper for date formatting
+  const formatDate = (dateStr: string) => {
+    if (aggregation === 'month') return dateStr; // YYYY-MM
+    if (aggregation === 'week') return dateStr; // YYYY-Wxx
+    return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  };
+
   return (
-    <div className="w-full h-[200px] flex flex-col">
+    <div className="w-full h-[200px] flex flex-col relative">
+        {/* Legends */}
+        <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-3 text-[10px] z-10 bg-background/80 p-1 rounded backdrop-blur-sm border">
+            <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span>System Match Quality</span>
+            </div>
+            <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: feedbackOnly ? "#16a34a" : "#f97316" }}></div>
+                <span>{feedbackOnly ? "User Satisfaction (OK/Total)" : "User Satisfaction (Mixed)"}</span>
+            </div>
+            <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                <span>Feedback Count (Max: {maxCount})</span>
+            </div>
+        </div>
+
         <div className="flex-1 relative w-full h-full min-h-[150px]">
             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                 {/* Background Grid */}
@@ -136,28 +232,51 @@ function SatisfactionChart({ data }: { data: Array<{ date: string; score: number
                     />
                 ))}
 
-                {/* Area (Gradient fill) */}
-                <defs>
-                    <linearGradient id="scoreGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" className="text-primary" />
-                        <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" className="text-primary" />
-                    </linearGradient>
-                </defs>
-                <polygon
-                    points={`0,100 ${points} 100,100`}
-                    fill="url(#scoreGradient)"
-                    className="text-primary"
+                {/* Line for Match Quality (Blue) */}
+                <polyline
+                    points={qualityPoints}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="2"
+                    strokeOpacity="0.6"
+                    vectorEffect="non-scaling-stroke"
                 />
 
-                {/* Line */}
+                {/* Line for Feedback Count (Purple Dotted) */}
                 <polyline
-                    points={points}
+                    points={countPoints}
                     fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+                    stroke="#a855f7"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 2"
                     vectorEffect="non-scaling-stroke"
-                    className="text-primary"
                 />
+
+                {/* Line for Satisfaction Score (Orange/Green) - Using Path for gaps */}
+                <path
+                    d={satisfactionPathD}
+                    fill="none"
+                    stroke={feedbackOnly ? "#16a34a" : "#f97316"}
+                    strokeWidth="2.5"
+                    vectorEffect="non-scaling-stroke"
+                />
+
+                {/* Dots for isolated points or all points for clarity */}
+                {chartData.map((d, i) => {
+                    if (d.satisfactionScore === null) return null;
+                    const x = (i / (chartData.length - 1)) * 100;
+                    const y = 100 - d.satisfactionScore;
+                    return (
+                        <circle
+                            key={i}
+                            cx={x}
+                            cy={y}
+                            r="1.5"
+                            fill={feedbackOnly ? "#16a34a" : "#f97316"}
+                            vectorEffect="non-scaling-stroke"
+                        />
+                    );
+                })}
             </svg>
 
             {/* Axis Labels (Overlay) */}
@@ -172,9 +291,9 @@ function SatisfactionChart({ data }: { data: Array<{ date: string; score: number
 
         {/* X-Axis Labels */}
         <div className="flex justify-between text-[10px] text-muted-foreground mt-2 px-1">
-            <span>{new Date(data[0].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
-            <span className="hidden sm:inline">{new Date(data[Math.floor(data.length / 2)].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
-            <span>{new Date(data[data.length - 1].date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>
+            <span>{formatDate(data[0].date)}</span>
+            <span className="hidden sm:inline">{formatDate(data[Math.floor(data.length / 2)].date)}</span>
+            <span>{formatDate(data[data.length - 1].date)}</span>
         </div>
     </div>
   );
@@ -366,6 +485,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [previewSortOrder, setPreviewSortOrder] = useState<'asc' | 'desc'>('asc');
   const [previewStatusFilter, setPreviewStatusFilter] = useState<'all' | 'new' | 'update' | 'invalid'>('all');
 
+  // Trend Aggregation
+  const [trendAggregation, setTrendAggregation] = useState<'day' | 'week' | 'month'>('day');
+
   const filteredPreviewData = useMemo(() => {
     if (!importPreviewData) return [];
 
@@ -446,7 +568,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
     smartSearchRegex: "" as string | undefined | null,
     smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string; skipEncoding?: boolean }[],
+    enableFeedbackSurvey: false,
+    feedbackSurveyTitle: "Hat die Weiterleitung funktioniert?",
+    feedbackSurveyQuestion: "Bitte bewerten Sie die Zielseite.",
+    feedbackSuccessMessage: "Danke für Ihr Feedback!",
+    feedbackButtonYes: "Ja, OK",
+    feedbackButtonNo: "Nein",
+    enableFeedbackComment: false,
+    feedbackCommentTitle: "Kennen Sie die korrekte URL?",
+    feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+    feedbackCommentPlaceholder: "https://...",
+    feedbackCommentButton: "Absenden",
     showSatisfactionTrend: true,
+    satisfactionTrendFeedbackOnly: false,
     satisfactionTrendDays: 30,
   });
 
@@ -536,10 +670,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   }, []); // Remove dependencies to prevent continuous re-checking
 
   const { data: trendData, isLoading: trendLoading } = useQuery({
-    queryKey: ["/api/admin/stats/trend", generalSettings.satisfactionTrendDays],
+    queryKey: ["/api/admin/stats/trend", generalSettings.satisfactionTrendDays, trendAggregation],
     enabled: isAuthenticated && statsView === 'top100' && generalSettings.showSatisfactionTrend,
     queryFn: async () => {
-      const response = await fetch(`/api/admin/stats/trend?days=${generalSettings.satisfactionTrendDays || 30}`, {
+      const response = await fetch(`/api/admin/stats/trend?days=${generalSettings.satisfactionTrendDays || 30}&aggregation=${trendAggregation}`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch trend');
@@ -783,7 +917,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         feedbackSuccessMessage: settingsData.feedbackSuccessMessage || "Danke für Ihr Feedback!",
         feedbackButtonYes: settingsData.feedbackButtonYes || "Ja, OK",
         feedbackButtonNo: settingsData.feedbackButtonNo || "Nein",
+        enableFeedbackComment: settingsData.enableFeedbackComment ?? false,
+        feedbackCommentTitle: settingsData.feedbackCommentTitle || "Kennen Sie die korrekte URL?",
+        feedbackCommentDescription: settingsData.feedbackCommentDescription || "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+        feedbackCommentPlaceholder: settingsData.feedbackCommentPlaceholder || "https://...",
+        feedbackCommentButton: settingsData.feedbackCommentButton || "Absenden",
     showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
+    satisfactionTrendFeedbackOnly: settingsData.satisfactionTrendFeedbackOnly ?? false,
     satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
       });
     }
@@ -3224,16 +3364,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       />
                                   </div>
                                   {generalSettings.showSatisfactionTrend && (
-                                      <div>
-                                          <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
-                                          <Input
-                                              type="number"
-                                              min="7"
-                                              max="365"
-                                              value={generalSettings.satisfactionTrendDays}
-                                              onChange={(e) => setGeneralSettings({ ...generalSettings, satisfactionTrendDays: parseInt(e.target.value) || 30 })}
-                                              className="max-w-[200px]"
-                                          />
+                                      <div className="space-y-4">
+                                          <div>
+                                              <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
+                                              <Input
+                                                  type="number"
+                                                  min="7"
+                                                  max="365"
+                                                  value={generalSettings.satisfactionTrendDays}
+                                                  onChange={(e) => setGeneralSettings({ ...generalSettings, satisfactionTrendDays: parseInt(e.target.value) || 30 })}
+                                                  className="max-w-[200px]"
+                                              />
+                                          </div>
+                                          <div className="flex items-center justify-between">
+                                              <div className="space-y-0.5">
+                                                  <label className="text-sm font-medium">Nur Feedback (OK/NOK) anzeigen</label>
+                                                  <p className="text-xs text-muted-foreground">Berechnet den Score ausschließlich basierend auf Benutzer-Feedback, ignoriert automatische Match-Qualität.</p>
+                                              </div>
+                                              <Switch
+                                                  checked={generalSettings.satisfactionTrendFeedbackOnly}
+                                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, satisfactionTrendFeedbackOnly: checked })}
+                                              />
+                                          </div>
                                       </div>
                                   )}
                               </div>
@@ -3295,6 +3447,72 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 {validationFieldErrors.feedbackButtonNo && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonNo}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
                               </div>
+
+                              <div className="md:col-span-2 pt-4 border-t">
+                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Kommentar-Funktion bei "Nein" aktivieren</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">
+                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={generalSettings.enableFeedbackComment}
+                                        onCheckedChange={(checked) =>
+                                            setGeneralSettings({ ...generalSettings, enableFeedbackComment: checked })
+                                        }
+                                        className="data-[state=checked]:bg-pink-600"
+                                    />
+                                </div>
+                              </div>
+
+                              {generalSettings.enableFeedbackComment && (
+                                <>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Kommentar Titel</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentTitle"
+                                            value={generalSettings.feedbackCommentTitle}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentTitle: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentTitle ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentTitle}</p>}
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Kommentar Beschreibung</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentDescription"
+                                            value={generalSettings.feedbackCommentDescription}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentDescription: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentDescription ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentDescription}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Platzhalter</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentPlaceholder"
+                                            value={generalSettings.feedbackCommentPlaceholder}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentPlaceholder: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentPlaceholder ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentPlaceholder && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentPlaceholder}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Button Text</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentButton"
+                                            value={generalSettings.feedbackCommentButton}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentButton: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentButton ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentButton && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentButton}</p>}
+                                    </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -3664,19 +3882,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   {generalSettings.showSatisfactionTrend && (
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center gap-2">
-                                <TrendingUp className="h-5 w-5 text-primary" />
-                                <CardTitle>Redirect Satisfaction Trend</CardTitle>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5 text-primary" />
+                                        <CardTitle>Redirect Satisfaction Trend</CardTitle>
+                                    </div>
+                                    <CardDescription>
+                                        Entwicklung der Qualität und Nutzerzufriedenheit über die letzten {generalSettings.satisfactionTrendDays} Tage.
+                                    </CardDescription>
+                                </div>
+                                <Select value={trendAggregation} onValueChange={(v) => setTrendAggregation(v as any)}>
+                                    <SelectTrigger className="w-[120px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="day">Täglich</SelectItem>
+                                        <SelectItem value="week">Wöchentlich</SelectItem>
+                                        <SelectItem value="month">Monatlich</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                            <CardDescription>
-                                Entwicklung der Qualität und Nutzerzufriedenheit über die letzten {generalSettings.satisfactionTrendDays} Tage.
-                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {trendLoading ? (
                                 <div className="h-[200px] flex items-center justify-center text-muted-foreground">Lade Trend...</div>
                             ) : (
-                                <SatisfactionChart data={trendData as any} />
+                                <SatisfactionChart
+                                    data={trendData as any}
+                                    feedbackOnly={generalSettings.satisfactionTrendFeedbackOnly}
+                                    aggregation={trendAggregation}
+                                />
                             )}
                         </CardContent>
                     </Card>
@@ -3794,65 +4030,81 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <div className="text-center py-8">Lade Statistiken...</div>
                         ) : (
                           <div className="space-y-4">
-                            {/* OK */}
-                            <div
-                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                handleStatsViewChange('browser');
-                                setStatsFeedbackFilter('OK');
-                              }}
-                            >
-                              <div className="flex justify-between text-sm">
-                                <span>{generalSettings.feedbackButtonYes || "Positiv (OK)"}</span>
-                                <span className="font-medium">
-                                  {statsData?.stats?.feedback?.ok || 0}
-                                  <span className="text-muted-foreground ml-1">
-                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100) : 0}%)
-                                  </span>
-                                </span>
-                              </div>
-                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.ok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
-                            </div>
+                            {(() => {
+                                const ok = statsData?.stats?.feedback?.ok || 0;
+                                const nok = statsData?.stats?.feedback?.nok || 0;
+                                const missing = statsData?.stats?.feedback?.missing || 0;
+                                const total = statsData?.stats?.total || 0;
 
-                            {/* NOK */}
-                            <div
-                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                handleStatsViewChange('browser');
-                                setStatsFeedbackFilter('NOK');
-                              }}
-                            >
-                              <div className="flex justify-between text-sm">
-                                <span>{generalSettings.feedbackButtonNo || "Negativ (NOK)"}</span>
-                                <span className="font-medium">
-                                  {statsData?.stats?.feedback?.nok || 0}
-                                  <span className="text-muted-foreground ml-1">
-                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100) : 0}%)
-                                  </span>
-                                </span>
-                              </div>
-                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.nok || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
-                            </div>
+                                // Base for percentage calculation depends on setting
+                                const base = generalSettings.satisfactionTrendFeedbackOnly ? (ok + nok) : total;
 
-                            {/* Missing */}
-                            <div
-                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                handleStatsViewChange('browser');
-                                setStatsFeedbackFilter('empty');
-                              }}
-                            >
-                              <div className="flex justify-between text-sm">
-                                <span>Kein Feedback</span>
-                                <span className="font-medium">
-                                  {statsData?.stats?.feedback?.missing || 0}
-                                  <span className="text-muted-foreground ml-1">
-                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100) : 0}%)
-                                  </span>
-                                </span>
-                              </div>
-                              <Progress value={statsData?.stats?.total ? ((statsData.stats.feedback?.missing || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-gray-100 dark:bg-gray-800 [&>div]:bg-gray-400" />
-                            </div>
+                                return (
+                                <>
+                                    {/* OK */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange('browser');
+                                        setStatsFeedbackFilter('OK');
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <span>{generalSettings.feedbackButtonYes || "Positiv (OK)"}</span>
+                                        <span className="font-medium">
+                                        {ok}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((ok / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (ok / base) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                                    </div>
+
+                                    {/* NOK */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange('browser');
+                                        setStatsFeedbackFilter('NOK');
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <span>{generalSettings.feedbackButtonNo || "Negativ (NOK)"}</span>
+                                        <span className="font-medium">
+                                        {nok}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((nok / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (nok / base) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                                    </div>
+
+                                    {/* Missing (Only show if not in FeedbackOnly mode) */}
+                                    {!generalSettings.satisfactionTrendFeedbackOnly && (
+                                        <div
+                                        className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={() => {
+                                            handleStatsViewChange('browser');
+                                            setStatsFeedbackFilter('empty');
+                                        }}
+                                        >
+                                        <div className="flex justify-between text-sm">
+                                            <span>Kein Feedback</span>
+                                            <span className="font-medium">
+                                            {missing}
+                                            <span className="text-muted-foreground ml-1">
+                                                ({base > 0 ? Math.round((missing / base) * 100) : 0}%)
+                                            </span>
+                                            </span>
+                                        </div>
+                                        <Progress value={base > 0 ? (missing / base) * 100 : 0} className="h-2 bg-gray-100 dark:bg-gray-800 [&>div]:bg-gray-400" />
+                                        </div>
+                                    )}
+                                </>
+                                );
+                            })()}
                           </div>
                         )}
                       </CardContent>

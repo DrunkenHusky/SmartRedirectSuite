@@ -181,16 +181,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Feedback Endpoint
   app.post("/api/feedback", apiRateLimiter, async (req, res) => {
     try {
-      const { ruleId, feedback, url, trackingId } = z.object({
+      const { ruleId, feedback, url, trackingId, userProposedUrl } = z.object({
         ruleId: z.string().optional(),
         feedback: z.enum(['OK', 'NOK']),
         url: z.string().optional(),
-        trackingId: z.string().optional()
+        trackingId: z.string().optional(),
+        userProposedUrl: z.string()
+          .refine((val) => !val || val.startsWith('http://') || val.startsWith('https://'), {
+            message: "Proposed URL must be a valid HTTP/HTTPS URL",
+          })
+          .optional()
       }).parse(req.body);
 
       if (trackingId) {
         // Update existing tracking entry
-        const success = await storage.updateUrlTracking(trackingId, { feedback });
+        const success = await storage.updateUrlTracking(trackingId, { feedback, userProposedUrl });
         if (success) {
            res.json({ success: true, id: trackingId });
            return;
@@ -212,7 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matchQuality: 100, // Explicit manual match
         timestamp: new Date().toISOString(),
         userAgent: "Manual Verification",
-        feedback: feedback
+        feedback: feedback,
+        userProposedUrl: userProposedUrl
       };
 
       const tracking = await storage.trackUrlAccess(trackingEntry);
@@ -701,7 +707,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/stats/trend", requireAuth, async (req, res) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
-      const trend = await storage.getSatisfactionTrend(days);
+      const aggregation = (req.query.aggregation as 'day' | 'week' | 'month') || 'day';
+      const trend = await storage.getSatisfactionTrend(days, aggregation);
       res.json(trend);
     } catch (error) {
       console.error("Trend stats error:", error);
@@ -819,19 +826,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const includeReferrer = settings.enableReferrerTracking;
           // CSV-Export
           const csvHeader = includeReferrer
-            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität\n'
-            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität\n';
+            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n'
+            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n';
 
           const csvData = trackingData.map(track => {
             // Prepare new fields
             const ruleId = track.ruleId || (track.ruleIds && track.ruleIds.length > 0 ? track.ruleIds.join(';') : '') || '';
             const feedback = track.feedback || '';
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
+            const userProposedUrl = track.userProposedUrl || '';
 
             if (includeReferrer) {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}"`;
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             } else {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}"`;
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             }
           }).join('\n');
           

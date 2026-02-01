@@ -51,6 +51,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.9.3",
     "vite": "^7.2.7",
     "wouter": "^3.8.1",
     "zod": "^4.1.13"
@@ -69,7 +70,6 @@
     "semantic-release": "^25.0.2",
     "supertest": "^7.1.4",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
     "uvu": "^0.5.6"
   }
 }
