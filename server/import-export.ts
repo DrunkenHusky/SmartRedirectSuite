@@ -14,6 +14,7 @@ const COLUMN_MAPPING = {
   keptQueryParams: ['Kept Query Params', 'keptQueryParams', 'Parameter Ausnahmen'],
   staticQueryParams: ['Static Query Params', 'staticQueryParams', 'Statische Parameter'],
   forwardQueryParams: ['Keep Query Params', 'forwardQueryParams', 'Parameter behalten'],
+  searchAndReplace: ['Search Replace', 'searchAndReplace', 'Suchen Ersetzen'],
   id: ['ID', 'id']
 };
 
@@ -102,6 +103,7 @@ export class ImportExportService {
       rule.keptQueryParams = getValue(COLUMN_MAPPING.keptQueryParams);
       rule.staticQueryParams = getValue(COLUMN_MAPPING.staticQueryParams);
       rule.forwardQueryParams = getValue(COLUMN_MAPPING.forwardQueryParams);
+      rule.searchAndReplace = getValue(COLUMN_MAPPING.searchAndReplace);
       rule.id = getValue(COLUMN_MAPPING.id);
       // Handle empty string IDs as undefined (common in Excel/CSV imports)
       if (rule.id === '' || (typeof rule.id === 'string' && rule.id.trim() === '')) {
@@ -192,6 +194,33 @@ export class ImportExportService {
         rule.forwardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(fqp);
       } else {
         rule.forwardQueryParams = false;
+      }
+
+      // Normalize searchAndReplace (parse JSON string if needed)
+      if (rule.searchAndReplace !== undefined && rule.searchAndReplace !== null && rule.searchAndReplace !== '') {
+        try {
+          if (typeof rule.searchAndReplace === 'string') {
+            // Try to parse JSON
+            rule.searchAndReplace = JSON.parse(rule.searchAndReplace);
+          }
+
+          // Validate structure
+          if (!Array.isArray(rule.searchAndReplace)) {
+             rule.searchAndReplace = [];
+             // Only add error if it wasn't empty string
+             errors.push('Search Replace must be a valid JSON array');
+          } else {
+             // Filter invalid items
+             rule.searchAndReplace = rule.searchAndReplace.filter((item: any) =>
+                item && typeof item === 'object' && typeof item.search === 'string'
+             );
+          }
+        } catch (e) {
+          errors.push('Invalid JSON format for Search Replace');
+          rule.searchAndReplace = [];
+        }
+      } else {
+        rule.searchAndReplace = [];
       }
 
       // Cross-validation for query params settings
@@ -299,7 +328,8 @@ export class ImportExportService {
       'Discard Query Params': rule.discardQueryParams ? 'true' : 'false',
       'Kept Query Params': (rule.keptQueryParams && rule.keptQueryParams.length > 0) ? JSON.stringify(rule.keptQueryParams) : '',
       'Static Query Params': (rule.staticQueryParams && rule.staticQueryParams.length > 0) ? JSON.stringify(rule.staticQueryParams) : '',
-      'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false'
+      'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false',
+      'Search Replace': (rule.searchAndReplace && rule.searchAndReplace.length > 0) ? JSON.stringify(rule.searchAndReplace) : ''
     }));
 
     return stringify(data, { header: true });
@@ -319,7 +349,8 @@ export class ImportExportService {
       'Discard Query Params': rule.discardQueryParams,
       'Kept Query Params': (rule.keptQueryParams && rule.keptQueryParams.length > 0) ? JSON.stringify(rule.keptQueryParams) : '',
       'Static Query Params': (rule.staticQueryParams && rule.staticQueryParams.length > 0) ? JSON.stringify(rule.staticQueryParams) : '',
-      'Keep Query Params': rule.forwardQueryParams
+      'Keep Query Params': rule.forwardQueryParams,
+      'Search Replace': (rule.searchAndReplace && rule.searchAndReplace.length > 0) ? JSON.stringify(rule.searchAndReplace) : ''
     }));
 
     const workbook = utils.book_new();

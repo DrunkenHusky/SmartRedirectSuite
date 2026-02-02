@@ -15,6 +15,24 @@
     "infoText": "Section/Folder Redirect",
     "autoRedirect": true,
     "discardQueryParams": true,
-    "forwardQueryParams": false
+    "forwardQueryParams": false,
+    "keptQueryParams": [
+      { "keyPattern": "id" }
+    ],
+    "staticQueryParams": [
+      { "key": "source", "value": "migration" }
+    ]
+  },
+  {
+    "matcher": "/products",
+    "targetUrl": "/shop/products",
+    "redirectType": "partial",
+    "infoText": "Product Redirect with Search and Replace",
+    "autoRedirect": false,
+    "discardQueryParams": false,
+    "forwardQueryParams": false,
+    "searchAndReplace": [
+      { "search": "old-category", "replace": "new-category", "caseSensitive": false }
+    ]
   }
 ]
