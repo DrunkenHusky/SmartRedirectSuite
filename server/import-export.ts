@@ -268,4 +268,17 @@ export class ImportExportService {
     const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
     return buffer as unknown as Buffer;
   }
+
+  /**
+   * Generate Blocked IPs Excel buffer
+   */
+  static generateBlockedIpsExcel(data: any[]): Buffer {
+    const workbook = utils.book_new();
+    const worksheet = utils.json_to_sheet(data);
+    utils.book_append_sheet(workbook, worksheet, 'Blocked IPs');
+
+    // Explicitly using type 'buffer' which returns a Buffer in Node.js
+    const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return buffer as unknown as Buffer;
+  }
 }

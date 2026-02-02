@@ -16,15 +16,12 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts, resetAllLoginAttempts, getBlockedIps, blockIp } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { findMatchingRule, findAllMatchingRules } from "@shared/ruleMatching";
+import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
 import multer from 'multer';
 import fs from 'fs';
-import { utils, write } from '@e965/xlsx';
-
-
 
 // Extend Express Session interface
 declare module 'express-session' {
@@ -33,6 +30,24 @@ declare module 'express-session' {
     adminLoginTime?: number;
   }
 }
+
+// Helper to handle Zod errors
+const handleZodError = (res: any, error: unknown, defaultMessage: string) => {
+  if (error instanceof z.ZodError) {
+    const validationErrors = error.errors.map(err => ({
+      field: err.path.join('.'),
+      message: err.message
+    }));
+
+    res.status(400).json({
+      error: defaultMessage,
+      validationErrors: validationErrors,
+      details: validationErrors // providing both for compatibility
+    });
+  } else {
+    res.status(400).json({ error: defaultMessage });
+  }
+};
 
 // Admin-Passwort aus Umgebungsvariable oder Standard
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Password1";
@@ -161,20 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tracking);
     } catch (error) {
       console.error("Tracking error:", error);
-
-      if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }));
-
-        res.status(400).json({
-          error: "Invalid tracking data",
-          details: validationErrors
-        });
-      } else {
-        res.status(400).json({ error: "Invalid tracking data" });
-      }
+      handleZodError(res, error, "Invalid tracking data");
     }
   });
 
@@ -588,11 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: `IP ${ip} wurde blockiert.` });
     } catch (error) {
       console.error("Block IP error:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Ungültige IP-Adresse" });
-      } else {
-        res.status(500).json({ error: "Fehler beim Blockieren der IP-Adresse" });
-      }
+      handleZodError(res, error, "Ungültige IP-Adresse");
     }
   });
 
@@ -626,11 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         BlockedUntil: entry.blockedUntil ? new Date(entry.blockedUntil).toISOString() : ''
       }));
 
-      const workbook = utils.book_new();
-      const worksheet = utils.json_to_sheet(data);
-      utils.book_append_sheet(workbook, worksheet, 'Blocked IPs');
-
-      const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      const buffer = ImportExportService.generateBlockedIpsExcel(data);
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename="blocked_ips.xlsx"');
@@ -904,41 +898,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import rules (Old route kept for compatibility but it clears all rules)
-  app.post("/api/admin/import", requireAuth, async (req, res) => {
-    try {
-      const { rules } = req.body;
-      if (!Array.isArray(rules)) {
-        res.status(400).json({ error: "Invalid rules format" });
-        return;
-      }
-
-      // Prepare rules for import (without validation)
-      const rulesForImport = rules.map(rule => ({
-        matcher: rule.matcher,
-        targetUrl: rule.targetUrl || "",
-        infoText: rule.infoText || "",
-        redirectType: rule.redirectType || "partial",
-        autoRedirect: rule.autoRedirect ?? false,
-      }));
-
-      // Clear existing rules and import new ones
-      await storage.clearAllRules();
-      for (const rule of rulesForImport) {
-        await storage.createUrlRule(rule);
-      }
-
-      res.json({ success: true, imported: rulesForImport.length });
-    } catch (error) {
-      console.error("Import error:", error);
-      if (error instanceof Error) {
-        res.status(400).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Import fehlgeschlagen" });
-      }
-    }
-  });
-
   // Export settings
   app.post("/api/admin/export-settings", requireAuth, async (_req, res) => {
     try {
@@ -983,22 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       console.error("Update settings error:", error);
-      
-      // If it's a Zod validation error, return the specific validation messages
-      if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }));
-        
-        res.status(400).json({ 
-          error: "Validierungsfehler",
-          validationErrors: validationErrors,
-          details: validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Einstellungsdaten" });
-      }
+      handleZodError(res, error, "Ungültige Einstellungsdaten");
     }
   });
 

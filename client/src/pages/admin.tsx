@@ -35,7 +35,6 @@ import {
   Shield, 
   X, 
   Plus, 
-  Edit, 
   Trash2, 
   Download, 
   Upload,
