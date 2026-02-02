@@ -17,9 +17,6 @@ name: Fly Deploy
 
 on:
   workflow_dispatch:
-# push:
-#   branches:
-#      - NextRelease
   pull_request:
     branches:
       - NextRelease
@@ -28,6 +25,7 @@ jobs:
   deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
