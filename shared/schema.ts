@@ -61,6 +61,11 @@ export const urlRuleSchema = z.object({
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
   createdAt: z.string().datetime("Invalid datetime format"),
 }).strict(); // Prevent extra properties
 
@@ -167,6 +172,11 @@ export const importUrlRuleSchema = z.object({
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
 }).strict();
 
 export const importRulesRequestSchema = z.object({

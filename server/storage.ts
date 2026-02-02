@@ -17,8 +17,8 @@ import { RULE_MATCHING_CONFIG } from "@shared/constants";
 // Helper to ensure only relevant flags are stored
 function sanitizeRuleFlags(rule: any): any {
   if (rule.redirectType === "wildcard") {
-    // Wildcard rules only use forwardQueryParams
-    delete rule.discardQueryParams;
+    // Wildcard rules can now use both forwardQueryParams (legacy/simple) and discardQueryParams (advanced)
+    // No deletion of parameter flags for wildcard
   } else if (rule.redirectType === "partial" || rule.redirectType === "domain") {
     // Partial and domain rules only use discardQueryParams
     delete rule.forwardQueryParams;

@@ -170,9 +170,17 @@ Wenn die Option "Intelligente Such-Weiterleitung" als Fallback aktiviert ist, ve
 *   **Regex-Regeln:** Sie können spezifische Regeln definieren (z.B. `[?&]file=([^&]+)`), um IDs oder Dokumentennamen aus Parametern zu extrahieren.
 *   **Reihenfolge:** Die Regeln werden von oben nach unten geprüft.
 
-### Parameter-Handling (Partial Rules)
+### Suchen & Ersetzen
 
-Bei "Teilweise" (Partial) Redirects können Sie steuern, wie mit URL-Parametern verfahren wird.
+Sie können definieren, dass bestimmte Teile der Ziel-URL (inkl. Pfad und Parameter) ersetzt werden sollen. Dies geschieht **nach** der Generierung der Basis-URL, aber **vor** dem Anhängen von statischen Parametern.
+
+*   **Suchen:** Der zu ersetzende Text (String).
+*   **Ersetzen:** Der neue Text. Wenn leer, wird der Suchtext gelöscht.
+*   **Case Sensitivity:** Legt fest, ob Groß-/Kleinschreibung beachtet werden soll.
+
+### Parameter-Handling
+
+Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie steuern, wie mit URL-Parametern verfahren wird.
 
 1.  **Parameter verwerfen (Discard):** Aktivieren Sie "Alle Link-Parameter entfernen", um standardmäßig alle Query-Parameter der alten URL zu löschen.
 2.  **Ausnahmen definieren (Keep):** Definieren Sie spezifische Parameter, die trotzdem beibehalten werden sollen (z.B. `id`, `lang`).

@@ -411,6 +411,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     keptQueryParams: [] as { keyPattern: string; valuePattern?: string; targetKey?: string }[],
     staticQueryParams: [] as { key: string; value: string }[],
     forwardQueryParams: false,
+    searchAndReplace: [] as { search: string; replace: string; caseSensitive: boolean }[],
   });
   const targetUrlPlaceholder =
     ruleForm.redirectType === "wildcard"
@@ -1503,6 +1504,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       keptQueryParams: rule.keptQueryParams || [],
       staticQueryParams: rule.staticQueryParams || [],
       forwardQueryParams: rule.forwardQueryParams || false,
+      searchAndReplace: rule.searchAndReplace || [],
     });
     setIsRuleDialogOpen(true);
   }, []);
@@ -4893,8 +4895,136 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               />
             </div>
 
+            {/* Search and Replace */}
+            <div className="border-t pt-4">
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  Suchen & Ersetzen
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Ersetzen Sie Teile der URL (Pfad oder Parameter) vor der Weiterleitung.
+                </p>
+                <div className="space-y-3">
+                  {ruleForm.searchAndReplace.map((item, index) => (
+                    <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Suchen</label>
+                            <Input
+                              value={item.search}
+                              onChange={(e) => {
+                                const newItems = [...ruleForm.searchAndReplace];
+                                newItems[index] = { ...item, search: e.target.value };
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                              }}
+                              placeholder="/alte-seite"
+                              className="h-8 text-sm"
+                            />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Ersetzen</label>
+                            <Input
+                              value={item.replace || ''}
+                              onChange={(e) => {
+                                const newItems = [...ruleForm.searchAndReplace];
+                                newItems[index] = { ...item, replace: e.target.value };
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                              }}
+                              placeholder="/neue-seite (leer = löschen)"
+                              className="h-8 text-sm"
+                            />
+                        </div>
+                        <div className="flex items-center h-8 pb-1">
+                             <div className="flex items-center space-x-2" title="Groß-/Kleinschreibung beachten">
+                                <Switch
+                                    checked={item.caseSensitive}
+                                    onCheckedChange={(checked) => {
+                                        const newItems = [...ruleForm.searchAndReplace];
+                                        newItems[index] = { ...item, caseSensitive: checked };
+                                        setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                    }}
+                                    className="scale-75"
+                                />
+                                <span className="text-xs">Aa</span>
+                             </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                        if (index > 0) {
+                                            const newItems = [...ruleForm.searchAndReplace];
+                                            const temp = newItems[index];
+                                            newItems[index] = newItems[index - 1];
+                                            newItems[index - 1] = temp;
+                                            setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                        }
+                                    }}
+                                    disabled={index === 0}
+                                >
+                                    <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                        if (index < ruleForm.searchAndReplace.length - 1) {
+                                            const newItems = [...ruleForm.searchAndReplace];
+                                            const temp = newItems[index];
+                                            newItems[index] = newItems[index + 1];
+                                            newItems[index + 1] = temp;
+                                            setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                        }
+                                    }}
+                                    disabled={index === ruleForm.searchAndReplace.length - 1}
+                                >
+                                    <ArrowDown className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                                const newItems = ruleForm.searchAndReplace.filter((_, i) => i !== index);
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                            }}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            setRuleForm(prev => ({
+                                ...prev,
+                                searchAndReplace: [...prev.searchAndReplace, { search: "", replace: "", caseSensitive: false }]
+                            }));
+                        }}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus className="h-3 w-3" />
+                        Ersetzung hinzufügen
+                    </Button>
+                  </div>
+                </div>
+            </div>
+
             {/* Parameter Handling Options */}
-            {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain') && (
+            {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain' || ruleForm.redirectType === 'wildcard') && (
               <div className="border-t pt-4 space-y-4">
                 {/* Static Query Params */}
                 <div>
