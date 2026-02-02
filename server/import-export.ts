@@ -4,6 +4,8 @@ import { stringify } from 'csv-stringify/sync';
 import { UrlRule, importUrlRuleSchema } from '@shared/schema';
 
 // Defined column mapping
+// These keys define which CSV/Excel columns map to which internal rule properties.
+// Multiple variations are supported to handle different languages and formats.
 const COLUMN_MAPPING = {
   matcher: ['Matcher', 'matcher', 'Quelle', 'Source'],
   targetUrl: ['Target URL', 'targetUrl', 'Ziel', 'Target'],
