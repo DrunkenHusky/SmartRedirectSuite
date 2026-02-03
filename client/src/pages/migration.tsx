@@ -459,6 +459,19 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const handleFeedback = async (feedback: 'OK' | 'NOK') => {
     // If user clicks NOK, fallback is enabled, and not already in fallback mode
     if (feedback === 'NOK' && settings?.enableFeedbackSmartSearchFallback && !showSearchFallback) {
+       // Silent update for the original tracking entry to record the NOK feedback
+       if (trackingId) {
+          fetch("/api/feedback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              trackingId: trackingId,
+              feedback: 'NOK',
+              url: currentUrl
+            }),
+          }).catch(console.error);
+       }
+
        // Generate fallback search URL
        try {
           const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding: ruleSkipEncoding } = extractSearchTerm(currentUrl, settings.smartSearchRules, settings.smartSearchRegex);
