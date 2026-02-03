@@ -1,38 +1,39 @@
 [
   {
-    "matcher": "/old-page",
-    "targetUrl": "https://example.com/new-page",
-    "redirectType": "wildcard",
-    "infoText": "Exact Page Redirect (Wildcard)",
-    "autoRedirect": false,
-    "discardQueryParams": false,
-    "forwardQueryParams": true
-  },
-  {
-    "matcher": "/legacy-section",
-    "targetUrl": "/modern-section",
+    "matcher": "/sites/hr",
+    "targetUrl": "https://contoso.sharepoint.com/sites/hr",
     "redirectType": "partial",
-    "infoText": "Section Redirect: Keeps 'id' parameter and adds static 'source=migration'",
-    "autoRedirect": true,
-    "discardQueryParams": true,
-    "forwardQueryParams": false,
-    "keptQueryParams": [
-      { "keyPattern": "id" }
-    ],
-    "staticQueryParams": [
-      { "key": "source", "value": "migration" }
-    ]
-  },
-  {
-    "matcher": "/products",
-    "targetUrl": "/shop/products",
-    "redirectType": "partial",
-    "infoText": "Product Redirect: Replaces 'old-cat' with 'new-cat' in the final URL",
+    "infoText": "SharePoint Migration: HR Site (Partial). Converts '/Seiten' to '/SitePages' and removes 'AllItems.aspx'.",
     "autoRedirect": false,
     "discardQueryParams": false,
     "forwardQueryParams": false,
     "searchAndReplace": [
-      { "search": "old-cat", "replace": "new-cat", "caseSensitive": false }
+      { "search": "/Seiten/", "replace": "/SitePages/", "caseSensitive": false },
+      { "search": "AllItems.aspx", "replace": "", "caseSensitive": false }
+    ]
+  },
+  {
+    "matcher": "/sites/legacy-portal",
+    "targetUrl": "https://contoso.sharepoint.com/sites/intranet",
+    "redirectType": "wildcard",
+    "infoText": "Portal Redirect: Full redirect to new Intranet Home. Forwards all query parameters.",
+    "autoRedirect": true,
+    "discardQueryParams": false,
+    "forwardQueryParams": true
+  },
+  {
+    "matcher": "/documents",
+    "targetUrl": "/shared/docs",
+    "redirectType": "partial",
+    "infoText": "Document Library: Renames 'id' param to 'docId' and adds static source tag.",
+    "autoRedirect": false,
+    "discardQueryParams": true,
+    "forwardQueryParams": false,
+    "keptQueryParams": [
+      { "keyPattern": "id", "targetKey": "docId" }
+    ],
+    "staticQueryParams": [
+      { "key": "migrated", "value": "true" }
     ]
   }
 ]
