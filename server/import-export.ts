@@ -233,8 +233,14 @@ export class ImportExportService {
       // Type-specific query params validation
       // Validate that the correct flags are used for the rule type to avoid ambiguity
       if (rule.redirectType === 'wildcard') {
-        if (rule.discardQueryParams) {
-          errors.push('Wildcard rules discard parameters by default. Use "Keep Query Params" to preserve them.');
+        // For wildcard:
+        // if forwardQueryParams is TRUE, discard must be FALSE (implicit)
+        // if forwardQueryParams is FALSE, discard must be TRUE (implicit) to allow keptQueryParams
+        // During import, we fix this logic to match the new UI behavior
+        if (rule.forwardQueryParams) {
+            rule.discardQueryParams = false;
+        } else {
+            rule.discardQueryParams = true;
         }
       } else if (rule.redirectType === 'partial' || rule.redirectType === 'domain') {
         if (rule.forwardQueryParams) {

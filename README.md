@@ -193,11 +193,18 @@ Wenn Auto-Redirect (global oder per Regel) aktiviert ist, wird die Feedback-Umfr
 
 Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie steuern, wie mit URL-Parametern verfahren wird.
 
-1.  **Parameter verwerfen (Discard):** Aktivieren Sie "Alle Link-Parameter entfernen", um standardmäßig alle Query-Parameter der alten URL zu löschen.
-2.  **Ausnahmen definieren (Keep):** Definieren Sie spezifische Parameter, die trotzdem beibehalten werden sollen (z.B. `id`, `lang`).
-    *   **Regex:** Key und Value können per Regex definiert werden.
-    *   **Umbenennen:** Sie können einen "Ziel-Key" angeben. Beispiel: Aus `?file=dokument.pdf` wird `?f=dokument.pdf`. Bleibt das Feld leer, wird der ursprüngliche Name beibehalten.
-3.  **Statische Parameter:** Sie können Parameter definieren, die **immer** angehängt werden (z.B. `?source=migration`).
+**Für Partial & Domain Regeln:**
+1.  **Parameter verwerfen (Discard):** Aktivieren Sie "Alle Link-Parameter entfernen", um standardmäßig alle Query-Parameter der alten URL zu löschen. Wenn deaktiviert, werden alle Parameter übernommen.
+2.  **Ausnahmen definieren (Keep):** Wenn Discard aktiviert ist, können Sie spezifische Parameter definieren, die trotzdem beibehalten werden sollen.
+
+**Für Wildcard Regeln:**
+1.  **Parameter behalten (Forward):** Aktivieren Sie "Alle Link-Parameter beibehalten", um alle Parameter 1:1 an die Ziel-URL anzuhängen.
+2.  **Spezifische Parameter:** Wenn Forward deaktiviert ist, werden standardmäßig alle Parameter entfernt. Sie können dann unter "Parameter beibehalten / umbenennen" spezifische Ausnahmen definieren.
+
+**Allgemein:**
+*   **Regex:** Key und Value können per Regex definiert werden.
+*   **Umbenennen:** Sie können einen "Ziel-Key" angeben. Beispiel: Aus `?file=dokument.pdf` wird `?f=dokument.pdf`.
+*   **Statische Parameter:** Sie können Parameter definieren, die **immer** angehängt werden (z.B. `?source=migration`).
 
 **Reihenfolge der Parameter in der Ziel-URL:**
 1.  Statische Parameter (in der definierten Reihenfolge)

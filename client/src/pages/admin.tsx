@@ -1370,7 +1370,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
-    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, keptQueryParams: [], staticQueryParams: [], forwardQueryParams: false });
+    setRuleForm({
+      matcher: "",
+      targetUrl: "",
+      infoText: "",
+      redirectType: "partial",
+      autoRedirect: false,
+      discardQueryParams: false,
+      keptQueryParams: [],
+      staticQueryParams: [],
+      forwardQueryParams: false,
+      searchAndReplace: []
+    });
     setEditingRule(null);
     setValidationError(null);
     setShowValidationDialog(false);
@@ -5205,6 +5216,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </div>
                 </div>
 
+                {ruleForm.redirectType !== 'wildcard' && (
                 <div className="flex items-start space-x-3 pt-4 border-t">
                   <Switch
                     checked={ruleForm.discardQueryParams}
@@ -5219,11 +5231,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </p>
                   </div>
                 </div>
+                )}
 
-                {ruleForm.discardQueryParams && (
+                {/* Show Kept Params config if Discard is ON (Partial/Domain) OR Forward is OFF (Wildcard) */}
+                {((ruleForm.redirectType !== 'wildcard' && ruleForm.discardQueryParams) || (ruleForm.redirectType === 'wildcard' && !ruleForm.forwardQueryParams)) && (
                   <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 ml-4">
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      Parameter beibehalten (Regex)
+                      Parameter beibehalten / umbenennen (Regex)
                     </label>
                     <p className="text-xs text-muted-foreground mb-3">
                       Definieren Sie Ausnahmen für Parameter, die trotz Aktivierung erhalten bleiben sollen. Die Reihenfolge bestimmt die Position im neuen Query-String.
@@ -5372,14 +5386,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <div className="flex items-start space-x-3">
                   <Switch
                     checked={ruleForm.forwardQueryParams}
-                    onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, forwardQueryParams: checked }))}
+                    onCheckedChange={(checked) => setRuleForm(prev => ({
+                        ...prev,
+                        forwardQueryParams: checked,
+                        // If Forward is ON, Discard must be OFF (to avoid confusion in backend)
+                        // If Forward is OFF, Discard must be ON (to trigger keptQueryParams logic)
+                        discardQueryParams: !checked
+                    }))}
                   />
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Link-Parameter beibehalten
+                      Alle Link-Parameter beibehalten
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Wenn aktiviert, werden die ursprünglichen Query-Parameter an die Ziel-URL angehängt. Standard ist deaktiviert (Parameter werden verworfen).
+                      Wenn aktiviert, werden die ursprünglichen Query-Parameter 1:1 an die Ziel-URL angehängt.
+                      Deaktivieren Sie dies, um spezifische Parameter auszuwählen oder umzubenennen.
                     </p>
                   </div>
                 </div>

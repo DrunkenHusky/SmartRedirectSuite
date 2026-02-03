@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { generateUrlWithRule } from '../client/src/lib/url-utils.js';
+import { generateUrlWithRule } from '../../client/src/lib/url-utils.js';
 
 test('Task 1: Wildcard Rule with Static Query Params', (t) => {
   const oldUrl = 'https://old.com/foo';
@@ -9,6 +9,7 @@ test('Task 1: Wildcard Rule with Static Query Params', (t) => {
     targetUrl: 'https://new.com/bar',
     redirectType: 'wildcard' as const,
     staticQueryParams: [{ key: 'source', value: 'migration' }],
+    // UI logic: If forward is false, discard is implicitly true
     discardQueryParams: true,
     forwardQueryParams: false,
   };
@@ -23,6 +24,7 @@ test('Task 1: Wildcard Rule with Kept Query Params (Renaming)', (t) => {
     matcher: '/foo',
     targetUrl: 'https://new.com/bar',
     redirectType: 'wildcard' as const,
+    // UI logic: If forward is false, discard is implicitly true
     discardQueryParams: true,
     forwardQueryParams: false,
     keptQueryParams: [{ keyPattern: 'file', targetKey: 'id' }],
@@ -108,7 +110,8 @@ test('Wildcard: Forward vs Discard priority', (t) => {
         targetUrl: 'https://new.com/bar',
         redirectType: 'wildcard' as const,
         forwardQueryParams: true,
-        discardQueryParams: true,
+        // UI Logic: If forward is true, discard is implicitly false
+        discardQueryParams: false,
         keptQueryParams: []
     };
     const result = generateUrlWithRule(oldUrl, rule);
