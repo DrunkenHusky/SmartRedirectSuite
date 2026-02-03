@@ -77,6 +77,31 @@ test('Feedback Statistics Integration Test', async (t) => {
     assert.strictEqual(stats.total, 4, 'Total count correct');
   });
 
+  await t.test('Updates existing tracking entry with feedback correctly', async () => {
+    // 1. Create entry without feedback
+    const entry = await storage.trackUrlAccess({
+      oldUrl: 'http://old.com/update-test',
+      newUrl: 'http://new.com/update-test',
+      path: '/update-test',
+      timestamp: new Date().toISOString(),
+      feedback: null
+    });
+
+    const trackingId = entry.id;
+    assert.ok(trackingId, 'Tracking ID created');
+
+    // 2. Update feedback using storage method (simulate API call)
+    const success = await storage.updateUrlTracking(trackingId, { feedback: 'OK' });
+    assert.ok(success, 'Update should return true');
+
+    // 3. Verify update
+    const entries = await storage.getAllTrackingEntries();
+    const updatedEntry = entries.find(e => e.id === trackingId);
+
+    assert.ok(updatedEntry, 'Entry should exist');
+    assert.strictEqual(updatedEntry?.feedback, 'OK', 'Feedback should be updated to OK');
+  });
+
   // Cleanup
   await clearTracking();
 });
