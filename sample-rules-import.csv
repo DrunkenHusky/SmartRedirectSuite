@@ -1,4 +1,4 @@
 ID,Matcher,Target URL,Type,Info,Auto Redirect,Discard Query Params,Keep Query Params,Kept Query Params,Static Query Params,Search Replace
-,/sites/hr,https://contoso.sharepoint.com/sites/hr,partial,"SharePoint Migration: HR Site (Partial). Converts '/Seiten' to '/SitePages' and removes 'AllItems.aspx'.",,,,,,"[{""search"":""/Seiten/"",""replace"":""/SitePages/"",""caseSensitive"":false},{""search"":""AllItems.aspx"",""replace"":"""",""caseSensitive"":false}]"
+,/sites/hr,/sites/hr,partial,"SharePoint Migration: HR Site (Partial). Converts '/Seiten' to '/SitePages' and removes 'AllItems.aspx'.",,,,,,"[{""search"":""/Seiten/"",""replace"":""/SitePages/"",""caseSensitive"":false},{""search"":""AllItems.aspx"",""replace"":"""",""caseSensitive"":false}]"
 ,/sites/legacy-portal,https://contoso.sharepoint.com/sites/intranet,wildcard,"Portal Redirect: Full redirect to new Intranet Home. Forwards all query parameters.",1,,1,,,
 ,/documents,/shared/docs,partial,"Document Library: Renames 'id' param to 'docId' and adds static source tag.",,1,,"[{""keyPattern"":""id"",""targetKey"":""docId""}]","[{""key"":""migrated"",""value"":""true""}]",

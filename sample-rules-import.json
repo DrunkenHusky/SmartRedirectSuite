@@ -1,7 +1,7 @@
 [
   {
     "matcher": "/sites/hr",
-    "targetUrl": "https://contoso.sharepoint.com/sites/hr",
+    "targetUrl": "/sites/hr",
     "redirectType": "partial",
     "infoText": "SharePoint Migration: HR Site (Partial). Converts '/Seiten' to '/SitePages' and removes 'AllItems.aspx'.",
     "autoRedirect": false,
