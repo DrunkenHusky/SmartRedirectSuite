@@ -93,6 +93,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [searchFallbackUrl, setSearchFallbackUrl] = useState("");
   const [hasAskedFeedback, setHasAskedFeedback] = useState(false);
   const [isSearchFallbackCopied, setIsSearchFallbackCopied] = useState(false);
+  const [hasInteractedWithSearchFallback, setHasInteractedWithSearchFallback] = useState(false);
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const fallbackAppName = __APP_NAME__ || "URL Migration Service";
@@ -515,12 +516,14 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       try {
           await copyToClipboard(searchFallbackUrl);
           setIsSearchFallbackCopied(true);
+          setHasInteractedWithSearchFallback(true);
           setTimeout(() => setIsSearchFallbackCopied(false), 2000);
       } catch (e) { /* ignore */ }
   };
 
   const handleOpenSearchFallback = () => {
       window.open(searchFallbackUrl, '_blank');
+      setHasInteractedWithSearchFallback(true);
   };
 
   const handleAdminSuccess = () => {
@@ -935,9 +938,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     </Button>
                 </div>
 
-                <div className="border-t pt-4">
+                {hasInteractedWithSearchFallback && (
+                <div className="border-t pt-4 animate-fade-in">
                     <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
-                        {settings?.feedbackSurveyQuestion || "Hat dieser Link funktioniert?"}
+                        {settings?.feedbackSmartSearchFallbackQuestion || "Hat dieser Link funktioniert?"}
                     </p>
                     <div className="flex justify-center gap-4">
                         <Button
@@ -964,6 +968,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                         </Button>
                     </div>
                 </div>
+                )}
              </div>
           ) : (
             <>

@@ -586,6 +586,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     enableFeedbackSmartSearchFallback: false,
     feedbackSmartSearchFallbackTitle: "Vorschlag: Suche verwenden",
     feedbackSmartSearchFallbackDescription: "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
+    feedbackSmartSearchFallbackQuestion: "Hat dieser Link funktioniert?",
     showSatisfactionTrend: true,
     satisfactionTrendFeedbackOnly: false,
     satisfactionTrendDays: 30,
@@ -933,6 +934,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         enableFeedbackSmartSearchFallback: settingsData.enableFeedbackSmartSearchFallback ?? false,
         feedbackSmartSearchFallbackTitle: settingsData.feedbackSmartSearchFallbackTitle || "Vorschlag: Suche verwenden",
         feedbackSmartSearchFallbackDescription: settingsData.feedbackSmartSearchFallbackDescription || "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
+        feedbackSmartSearchFallbackQuestion: settingsData.feedbackSmartSearchFallbackQuestion || "Hat dieser Link funktioniert?",
     showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
     satisfactionTrendFeedbackOnly: settingsData.satisfactionTrendFeedbackOnly ?? false,
     satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
@@ -3538,6 +3540,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             value={generalSettings.feedbackSmartSearchFallbackDescription}
                                             onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackDescription: val as string })}
                                             className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackDescription ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Frage</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackQuestion"
+                                            value={generalSettings.feedbackSmartSearchFallbackQuestion}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackQuestion: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackQuestion ? 'border-red-500' : ''}`}
                                         />
                                     </div>
                                 </>

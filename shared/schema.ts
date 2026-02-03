@@ -425,6 +425,9 @@ export const generalSettingsSchema = z.object({
   feedbackSmartSearchFallbackDescription: z.string()
     .max(500, "Beschreibung für Such-Vorschlag ist zu lang")
     .default("Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche."),
+  feedbackSmartSearchFallbackQuestion: z.string()
+    .max(200, "Frage für Such-Vorschlag ist zu lang")
+    .default("Hat dieser Link funktioniert?"),
 
   // Satisfaction Trend Chart
   showSatisfactionTrend: z.boolean()
