@@ -66,8 +66,8 @@ export function generateUrlWithRule(
     redirectType?: 'wildcard' | 'partial' | 'domain';
     discardQueryParams?: boolean;
     forwardQueryParams?: boolean;
-    keptQueryParams?: { keyPattern: string; valuePattern?: string; targetKey?: string }[];
-    staticQueryParams?: { key: string; value: string }[];
+    keptQueryParams?: { keyPattern: string; valuePattern?: string; targetKey?: string; skipEncoding?: boolean }[];
+    staticQueryParams?: { key: string; value: string; skipEncoding?: boolean }[];
     searchAndReplace?: { search: string; replace: string; caseSensitive: boolean }[];
   },
   newDomain?: string
@@ -311,26 +311,32 @@ function extractLastPathSegment(url: string): string | null {
   }
 }
 
-function getStaticQueryString(staticParams: { key: string; value: string }[]): string {
+function getStaticQueryString(staticParams: { key: string; value: string; skipEncoding?: boolean }[]): string {
   try {
-    const params = new URLSearchParams();
+    // We build the query string manually to support skipEncoding
+    const parts: string[] = [];
     staticParams.forEach(p => {
       if (p.key) {
-        params.append(p.key, p.value || '');
+        const key = encodeURIComponent(p.key);
+        // If skipEncoding is true, assume p.value is already safe/encoded as desired.
+        // Otherwise, use standard encoding.
+        const value = p.skipEncoding ? (p.value || '') : encodeURIComponent(p.value || '');
+        parts.push(`${key}=${value}`);
       }
     });
-    const str = params.toString();
-    return str ? '?' + str : '';
+    return parts.length > 0 ? '?' + parts.join('&') : '';
   } catch (e) {
+    console.error('Error building static query string:', e);
     return '';
   }
 }
 
-function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string }[]): string {
+function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string; skipEncoding?: boolean }[]): string {
   try {
     const urlObj = new URL(oldUrl, 'http://dummy.com'); // Base needed for relative URLs
     const entries = Array.from(urlObj.searchParams.entries());
-    const newParams = new URLSearchParams();
+    // We construct parts manually to support skipEncoding
+    const parts: string[] = [];
     const addedIndices = new Set<number>();
 
     for (const rule of keptRules) {
@@ -345,7 +351,34 @@ function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; val
               if (!valRegex || valRegex.test(value)) {
                 // Use targetKey if present and not empty, otherwise use original key
                 const finalKey = (rule.targetKey && rule.targetKey.trim() !== '') ? rule.targetKey : key;
-                newParams.append(finalKey, value);
+
+                const encodedKey = encodeURIComponent(finalKey);
+                // Check if this rule wants to skip encoding for the value
+                // NOTE: 'value' from searchParams is ALREADY decoded.
+                // If we want to keep "new%20file.pdf" as-is from source "new%20file.pdf",
+                // searchParams decodes it to "new file.pdf".
+                // If we skip encoding, we put "new file.pdf" -> invalid URL often.
+                // But user wants "new%20file.pdf" specifically to avoid "+".
+                // If skipEncoding is true, we should try to use `encodeURI` (space to %20) instead of `encodeURIComponent`?
+                // Or maybe the user implies they want `encodeURI` behavior (strict percent encoding) vs `URLSearchParams` (application/x-www-form-urlencoded).
+                // Let's interpret `skipEncoding` here as "Use strict percent encoding (%20) instead of +" for kept params?
+                // OR: Maybe they want raw access?
+                // Issue description: "Original Link: .../?file=new%20file.pdf". "Calculated Link: ...?file=new+file.pdf". "Expected: ...?file=new%20file.pdf".
+                // Browser `URLSearchParams` encodes space as `+`. `encodeURIComponent` encodes space as `%20`.
+                // So if we use manual construction with `encodeURIComponent`, we get `%20`.
+                // If `skipEncoding` is FALSE (default), we should probably match standard behavior (or just use encodeURIComponent which is safer for URLs anyway?).
+                // Let's see: `URLSearchParams` is standard for query strings.
+                // If I use `parts.push(k=v)`, I must encode.
+                // If I use `encodeURIComponent(value)`, " " -> "%20".
+                // If I use `URLSearchParams`, " " -> "+".
+                // User wants "%20". So actually, switching to manual `encodeURIComponent` WITHOUT `skipEncoding` might solve it?
+                // But wait, user explicitly asked for "Nicht kodieren" option.
+                // If "Nicht kodieren" is checked, we assume value is raw and put it in directly.
+                // If NOT checked, we use `encodeURIComponent` (which gives %20).
+
+                const encodedValue = rule.skipEncoding ? value : encodeURIComponent(value);
+                parts.push(`${encodedKey}=${encodedValue}`);
+
                 addedIndices.add(index);
               }
             }
@@ -356,8 +389,7 @@ function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; val
       }
     }
 
-    const str = newParams.toString();
-    return str ? '?' + str : '';
+    return parts.length > 0 ? '?' + parts.join('&') : '';
   } catch (e) {
     return '';
   }

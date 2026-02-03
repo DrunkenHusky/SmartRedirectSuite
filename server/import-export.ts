@@ -153,7 +153,10 @@ export class ImportExportService {
              // Filter invalid items
              rule.keptQueryParams = rule.keptQueryParams.filter((item: any) =>
                 item && typeof item === 'object' && typeof item.keyPattern === 'string'
-             );
+             ).map((item: any) => ({
+                ...item,
+                skipEncoding: !!item.skipEncoding // Ensure boolean
+             }));
           }
         } catch (e) {
           errors.push('Invalid JSON format for Kept Query Params');
@@ -180,7 +183,10 @@ export class ImportExportService {
              // Filter invalid items
              rule.staticQueryParams = rule.staticQueryParams.filter((item: any) =>
                 item && typeof item === 'object' && typeof item.key === 'string' && typeof item.value === 'string'
-             );
+             ).map((item: any) => ({
+                ...item,
+                skipEncoding: !!item.skipEncoding // Ensure boolean
+             }));
           }
         } catch (e) {
           errors.push('Invalid JSON format for Static Query Params');

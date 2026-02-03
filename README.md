@@ -205,6 +205,7 @@ Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie st
 **Allgemein:**
 *   **Regex:** Key und Value können per Regex definiert werden.
 *   **Umbenennen:** Sie können einen "Ziel-Key" angeben. Beispiel: Aus `?file=dokument.pdf` wird `?f=dokument.pdf`.
+*   **Nicht kodieren (Raw):** Für statische und beibehaltene Parameter kann die Option "Nicht kodieren" aktiviert werden. Dies verhindert die standardmäßige URL-Kodierung der Werte (nützlich, wenn `%20` statt `+` benötigt wird oder der Wert bereits kodiert vorliegt).
 *   **Statische Parameter:** Sie können Parameter definieren, die **immer** angehängt werden (z.B. `?source=migration`).
 
 **Reihenfolge der Parameter in der Ziel-URL:**

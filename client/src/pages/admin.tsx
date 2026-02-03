@@ -105,7 +105,7 @@ interface ImportPreviewData {
   };
 }
 
-// Simple Line Chart Component
+// Simple Line Chart Component with Tooltip
 function SatisfactionChart({
   data,
   feedbackOnly,
@@ -123,6 +123,9 @@ function SatisfactionChart({
   feedbackOnly?: boolean,
   aggregation?: 'day' | 'week' | 'month'
 }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">Nicht genügend Daten für Trendanzeige</div>;
 
   // Process data based on feedbackOnly mode
@@ -162,7 +165,7 @@ function SatisfactionChart({
     return `${x},${y}`;
   }).join(' ');
 
-  // 2. Satisfaction Score Line (Green if FeedbackOnly, else Primary)
+  // 2. Satisfaction Score Line (Orange)
   let satisfactionPathD = "";
   let isDrawing = false;
 
@@ -196,23 +199,65 @@ function SatisfactionChart({
     return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const index = Math.round((x / width) * (chartData.length - 1));
+    if (index >= 0 && index < chartData.length) {
+      setActiveIndex(index);
+    }
+  };
+
   return (
-    <div className="w-full h-[200px] flex flex-col relative">
+    <div
+      className="w-full h-[200px] flex flex-col relative"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setActiveIndex(null)}
+    >
         {/* Legends */}
         <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-3 text-[10px] z-10 bg-background/80 p-1 rounded backdrop-blur-sm border">
             <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                <span>System Match Quality</span>
+                <span>Match Quality</span>
             </div>
             <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: feedbackOnly ? "#16a34a" : "#f97316" }}></div>
-                <span>{feedbackOnly ? "User Satisfaction (OK/Total)" : "User Satisfaction (Mixed)"}</span>
+                <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <span>{feedbackOnly ? "Zufriedenheit (Nur Feedback)" : "Gesamt-Zufriedenheit (Score)"}</span>
             </div>
             <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <span>Feedback Count (Max: {maxCount})</span>
+                <span>Feedback Anzahl (Max: {maxCount})</span>
             </div>
         </div>
+
+        {/* Tooltip Overlay */}
+        {activeIndex !== null && chartData[activeIndex] && (
+          <div
+            className="absolute top-8 left-0 z-20 bg-popover text-popover-foreground p-2 rounded shadow-md text-xs border pointer-events-none"
+            style={{
+              left: `${(activeIndex / (chartData.length - 1)) * 100}%`,
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <div className="font-semibold mb-1">{formatDate(chartData[activeIndex].date)}</div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <span>Match: {chartData[activeIndex].matchQualityScore}%</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+              <span>Score: {chartData[activeIndex].satisfactionScore !== null ? `${chartData[activeIndex].satisfactionScore}%` : '-'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+              <span>Feedback: {chartData[activeIndex].feedbackCount}</span>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 relative w-full h-full min-h-[150px]">
             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -252,11 +297,11 @@ function SatisfactionChart({
                     vectorEffect="non-scaling-stroke"
                 />
 
-                {/* Line for Satisfaction Score (Orange/Green) - Using Path for gaps */}
+                {/* Line for Satisfaction Score (Orange) - Using Path for gaps */}
                 <path
                     d={satisfactionPathD}
                     fill="none"
-                    stroke={feedbackOnly ? "#16a34a" : "#f97316"}
+                    stroke="#f97316"
                     strokeWidth="2.5"
                     vectorEffect="non-scaling-stroke"
                 />
@@ -272,11 +317,24 @@ function SatisfactionChart({
                             cx={x}
                             cy={y}
                             r="1.5"
-                            fill={feedbackOnly ? "#16a34a" : "#f97316"}
+                            fill="#f97316"
                             vectorEffect="non-scaling-stroke"
                         />
                     );
                 })}
+
+                {/* Active Indicator Line */}
+                {activeIndex !== null && (
+                  <line
+                    x1={(activeIndex / (chartData.length - 1)) * 100}
+                    y1="0"
+                    x2={(activeIndex / (chartData.length - 1)) * 100}
+                    y2="100"
+                    stroke="currentColor"
+                    strokeOpacity="0.5"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
             </svg>
 
             {/* Axis Labels (Overlay) */}
@@ -5164,7 +5222,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="h-8 text-sm"
                                 />
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1 items-center justify-end pb-1">
+                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                    <Switch
+                                        checked={item.skipEncoding}
+                                        onCheckedChange={(checked) => {
+                                            const newParams = [...ruleForm.staticQueryParams];
+                                            newParams[index] = { ...item, skipEncoding: checked };
+                                            setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                        }}
+                                        className="scale-75"
+                                    />
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                </div>
                                 <div className="flex gap-1">
                                     <Button
                                         type="button"
@@ -5312,7 +5382,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="h-8 text-sm"
                                 />
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1 items-center justify-end pb-1">
+                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                    <Switch
+                                        checked={item.skipEncoding}
+                                        onCheckedChange={(checked) => {
+                                            const newParams = [...ruleForm.keptQueryParams];
+                                            newParams[index] = { ...item, skipEncoding: checked };
+                                            setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                        }}
+                                        className="scale-75"
+                                    />
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                </div>
                                 <div className="flex gap-1">
                                     <Button
                                         type="button"

@@ -60,10 +60,12 @@ export const urlRuleSchemaWithValidation = z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
     targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   staticQueryParams: z.array(z.object({
     key: z.string().min(1, "Key required"),
     value: z.string(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
   searchAndReplace: z.array(z.object({
@@ -127,10 +129,12 @@ export const updateUrlRuleSchemaWithValidation = z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
     targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
   })).optional(),
   staticQueryParams: z.array(z.object({
     key: z.string().min(1, "Key required"),
     value: z.string(),
+    skipEncoding: z.boolean().default(false),
   })).optional(),
   forwardQueryParams: z.boolean().optional(),
   searchAndReplace: z.array(z.object({
@@ -192,10 +196,12 @@ export const importUrlRuleSchemaWithValidation = z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
     targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   staticQueryParams: z.array(z.object({
     key: z.string().min(1, "Key required"),
     value: z.string(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
   searchAndReplace: z.array(z.object({

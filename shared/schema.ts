@@ -54,10 +54,12 @@ export const urlRuleSchema = z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
     targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   staticQueryParams: z.array(z.object({
     key: z.string().min(1, "Key required"),
     value: z.string(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
@@ -165,10 +167,12 @@ export const importUrlRuleSchema = z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
     targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   staticQueryParams: z.array(z.object({
     key: z.string().min(1, "Key required"),
     value: z.string(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
