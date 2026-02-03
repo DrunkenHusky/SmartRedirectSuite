@@ -178,6 +178,17 @@ Sie können definieren, dass bestimmte Teile der Ziel-URL (inkl. Pfad und Parame
 *   **Ersetzen:** Der neue Text. Wenn leer, wird der Suchtext gelöscht.
 *   **Case Sensitivity:** Legt fest, ob Groß-/Kleinschreibung beachtet werden soll.
 
+### Feedback Survey & Fallback
+
+Die Feedback-Umfrage kann optional mit einer **Smart Search Fallback** Funktion erweitert werden. Wenn ein Nutzer "NOK" (Daumen runter) klickt und die intelligente Such-Weiterleitung aktiv ist, wird ihm ein alternativer Such-Link angeboten.
+
+*   Dies erzeugt einen separaten Statistik-Eintrag.
+*   Der Nutzer kann auch für diesen Vorschlag Feedback geben.
+*   Klickt der Nutzer erneut "NOK", kann er (falls aktiviert) die korrekte URL vorschlagen.
+
+**Hinweis zu Auto-Redirect:**
+Wenn Auto-Redirect (global oder per Regel) aktiviert ist, wird die Feedback-Umfrage übersprungen. Das System loggt diese Interaktion automatisch als `auto-redirect` in der Feedback-Statistik.
+
 ### Parameter-Handling
 
 Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie steuern, wie mit URL-Parametern verfahren wird.

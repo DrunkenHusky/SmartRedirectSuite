@@ -582,6 +582,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
     feedbackCommentPlaceholder: "https://...",
     feedbackCommentButton: "Absenden",
+    enableFeedbackSmartSearchFallback: false,
+    feedbackSmartSearchFallbackTitle: "Vorschlag: Suche verwenden",
+    feedbackSmartSearchFallbackDescription: "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
     showSatisfactionTrend: true,
     satisfactionTrendFeedbackOnly: false,
     satisfactionTrendDays: 30,
@@ -925,6 +928,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         feedbackCommentDescription: settingsData.feedbackCommentDescription || "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
         feedbackCommentPlaceholder: settingsData.feedbackCommentPlaceholder || "https://...",
         feedbackCommentButton: settingsData.feedbackCommentButton || "Absenden",
+        enableFeedbackSmartSearchFallback: settingsData.enableFeedbackSmartSearchFallback ?? false,
+        feedbackSmartSearchFallbackTitle: settingsData.feedbackSmartSearchFallbackTitle || "Vorschlag: Suche verwenden",
+        feedbackSmartSearchFallbackDescription: settingsData.feedbackSmartSearchFallbackDescription || "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
     showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
     satisfactionTrendFeedbackOnly: settingsData.satisfactionTrendFeedbackOnly ?? false,
     satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
@@ -3298,6 +3304,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
                                   Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
                                 </p>
+                                  {generalSettings.autoRedirect && generalSettings.enableFeedbackSurvey && (
+                                    <div className="flex items-center gap-2 mt-2 text-xs text-yellow-600 font-medium">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>Hinweis: Feedback-Umfrage wird deaktiviert, da keine Interaktion stattfindet (Auto-Redirect wird als Feedback geloggt).</span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <Switch
@@ -3516,6 +3528,56 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentButton ? 'border-red-500' : ''}`}
                                         />
                                         {validationFieldErrors.feedbackCommentButton && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentButton}</p>}
+                                    </div>
+                                </>
+                              )}
+
+                              <div className="md:col-span-2 pt-4 border-t">
+                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <Search className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Such-Vorschlag bei "Nein" aktivieren</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">
+                                                Zeigt dem Nutzer einen Link zur intelligenten Suche an, wenn die Bewertung negativ ausfällt. (Erfordert aktive "Intelligente Such-Weiterleitung")
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={generalSettings.enableFeedbackSmartSearchFallback}
+                                        onCheckedChange={(checked) =>
+                                            setGeneralSettings({ ...generalSettings, enableFeedbackSmartSearchFallback: checked })
+                                        }
+                                        className="data-[state=checked]:bg-pink-600"
+                                        disabled={generalSettings.defaultRedirectMode !== 'search'}
+                                    />
+                                </div>
+                                {generalSettings.defaultRedirectMode !== 'search' && (
+                                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                                        * Nur verfügbar wenn "Intelligente Such-Weiterleitung" als Fallback-Strategie gewählt ist.
+                                    </p>
+                                )}
+                              </div>
+
+                              {generalSettings.enableFeedbackSmartSearchFallback && (
+                                <>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Titel</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackTitle"
+                                            value={generalSettings.feedbackSmartSearchFallbackTitle}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackTitle: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackTitle ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Beschreibung</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackDescription"
+                                            value={generalSettings.feedbackSmartSearchFallbackDescription}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackDescription: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackDescription ? 'border-red-500' : ''}`}
+                                        />
                                     </div>
                                 </>
                               )}
@@ -5337,6 +5399,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.
                   </p>
+                  {ruleForm.autoRedirect && generalSettings.enableFeedbackSurvey && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <span className="text-xs text-yellow-700">
+                            Warnung: Da die Feedback-Umfrage global aktiviert ist, erhält der Nutzer bei diesem Auto-Redirect keine Möglichkeit Feedback zu geben.
+                        </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

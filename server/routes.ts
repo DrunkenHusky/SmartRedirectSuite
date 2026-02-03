@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { ruleId, feedback, url, trackingId, userProposedUrl } = z.object({
         ruleId: z.string().optional(),
-        feedback: z.enum(['OK', 'NOK']),
+        feedback: z.enum(['OK', 'NOK', 'auto-redirect']),
         url: z.string().optional(),
         trackingId: z.string().optional(),
         userProposedUrl: z.string()
@@ -776,9 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Feedback filter
-      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all';
-      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'empty'].includes(req.query.feedbackFilter as string)) {
-        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'empty';
+      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty' = 'all';
+      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'auto-redirect', 'empty'].includes(req.query.feedbackFilter as string)) {
+        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty';
       }
 
       const result = await storage.getTrackingEntriesPaginated(

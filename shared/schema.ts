@@ -106,7 +106,7 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
-  feedback: z.enum(['OK', 'NOK'])
+  feedback: z.enum(['OK', 'NOK', 'auto-redirect'])
     .optional()
     .nullable(),
   userProposedUrl: z.string()
@@ -412,6 +412,16 @@ export const generalSettingsSchema = z.object({
   feedbackCommentButton: z.string()
     .max(50, "Button-Text für Feedback-Kommentar ist zu lang")
     .default("Absenden"),
+
+  // Feedback Smart Search Fallback
+  enableFeedbackSmartSearchFallback: z.boolean()
+    .default(false),
+  feedbackSmartSearchFallbackTitle: z.string()
+    .max(100, "Titel für Such-Vorschlag ist zu lang")
+    .default("Vorschlag: Suche verwenden"),
+  feedbackSmartSearchFallbackDescription: z.string()
+    .max(500, "Beschreibung für Such-Vorschlag ist zu lang")
+    .default("Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche."),
 
   // Satisfaction Trend Chart
   showSatisfactionTrend: z.boolean()
