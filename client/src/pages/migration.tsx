@@ -245,12 +245,14 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
                     // Extract last segment or use Regex
                     try {
-                        const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding } = extractSearchTerm(url, settings.smartSearchRules, settings.smartSearchRegex);
+                        const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding: ruleSkipEncoding } = extractSearchTerm(url, settings.smartSearchRules, settings.smartSearchRegex);
 
                         const targetSearchUrl = ruleSearchUrl || settings.defaultSearchUrl;
 
                         if (searchTerm && targetSearchUrl) {
-                            const finalSearchTerm = skipEncoding ? searchTerm : encodeURIComponent(searchTerm);
+                            // Use rule-specific setting if available, otherwise global default
+                            const shouldUseSkipEncoding = ruleSkipEncoding !== undefined ? ruleSkipEncoding : settings.defaultSearchSkipEncoding;
+                            const finalSearchTerm = shouldUseSkipEncoding ? searchTerm : encodeURIComponent(searchTerm);
                             generatedNewUrl = targetSearchUrl + finalSearchTerm;
                             redirectUrl = generatedNewUrl;
 
@@ -458,11 +460,13 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     if (feedback === 'NOK' && settings?.enableFeedbackSmartSearchFallback && !showSearchFallback) {
        // Generate fallback search URL
        try {
-          const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding } = extractSearchTerm(currentUrl, settings.smartSearchRules, settings.smartSearchRegex);
+          const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding: ruleSkipEncoding } = extractSearchTerm(currentUrl, settings.smartSearchRules, settings.smartSearchRegex);
           const targetSearchUrl = ruleSearchUrl || settings.defaultSearchUrl;
 
           if (searchTerm && targetSearchUrl) {
-             const finalSearchTerm = skipEncoding ? searchTerm : encodeURIComponent(searchTerm);
+             // Use rule-specific setting if available, otherwise global default
+             const shouldUseSkipEncoding = ruleSkipEncoding !== undefined ? ruleSkipEncoding : settings.defaultSearchSkipEncoding;
+             const finalSearchTerm = shouldUseSkipEncoding ? searchTerm : encodeURIComponent(searchTerm);
              const fallbackUrl = targetSearchUrl + finalSearchTerm;
              setSearchFallbackUrl(fallbackUrl);
              setShowSearchFallback(true);

@@ -265,6 +265,9 @@ export const generalSettingsSchema = z.object({
     .max(500, "Text für Such-Weiterleitung ist zu lang")
     .default("Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet."),
 
+  defaultSearchSkipEncoding: z.boolean()
+    .default(false),
+
   smartSearchRegex: z.string()
     .max(500, "Regex ist zu lang")
     .optional()

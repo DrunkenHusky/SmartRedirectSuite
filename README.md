@@ -169,6 +169,7 @@ Wenn die Option "Intelligente Such-Weiterleitung" als Fallback aktiviert ist, ve
 *   **Standard:** Das letzte Segment des Pfades wird als Suchbegriff verwendet.
 *   **Regex-Regeln:** Sie können spezifische Regeln definieren (z.B. `[?&]file=([^&]+)`), um IDs oder Dokumentennamen aus Parametern zu extrahieren.
 *   **Reihenfolge:** Die Regeln werden von oben nach unten geprüft.
+*   **URL Encoding:** Sie können global oder pro Regel festlegen, ob der extrahierte Suchbegriff URL-kodiert (z.B. `%20` statt Leerzeichen) werden soll.
 
 ### Suchen & Ersetzen
 

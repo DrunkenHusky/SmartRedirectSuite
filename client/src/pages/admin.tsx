@@ -568,6 +568,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     enableReferrerTracking: true,
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
+    defaultSearchSkipEncoding: false,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
     smartSearchRegex: "" as string | undefined | null,
     smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string; skipEncoding?: boolean }[],
@@ -914,6 +915,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         enableReferrerTracking: settingsData.enableReferrerTracking ?? true,
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
+        defaultSearchSkipEncoding: settingsData.defaultSearchSkipEncoding || false,
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
         smartSearchRegex: settingsData.smartSearchRegex || "",
         smartSearchRules: settingsData.smartSearchRules || [],
@@ -2665,17 +2667,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                     Such-Basis-URL <span className="text-red-500">*</span>
                                   </label>
-                                  <DebouncedInput
-                                    id="defaultSearchUrl"
-                                    value={generalSettings.defaultSearchUrl || ''}
-                                    onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
-                                    placeholder="https://newapp.com/?q="
-                                    className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl || validationFieldErrors.defaultSearchUrl ? 'border-red-500' : ''}`}
-                                  />
-                                  {validationFieldErrors.defaultSearchUrl && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchUrl}</p>}
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Beispiel: https://newapp.com/?q=
-                                  </p>
+                                  <div className="flex gap-4 items-start">
+                                      <div className="flex-1">
+                                          <DebouncedInput
+                                            id="defaultSearchUrl"
+                                            value={generalSettings.defaultSearchUrl || ''}
+                                            onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
+                                            placeholder="https://newapp.com/?q="
+                                            className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl || validationFieldErrors.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                          />
+                                          {validationFieldErrors.defaultSearchUrl && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchUrl}</p>}
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            Beispiel: https://newapp.com/?q=
+                                          </p>
+                                      </div>
+                                      <div className="flex flex-col items-center gap-2 pt-2">
+                                          <Switch
+                                              id="defaultSearchSkipEncoding"
+                                              checked={generalSettings.defaultSearchSkipEncoding}
+                                              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, defaultSearchSkipEncoding: checked })}
+                                          />
+                                          <label htmlFor="defaultSearchSkipEncoding" className="text-[10px] text-gray-500 max-w-[80px] text-center leading-tight">
+                                              Nicht kodieren
+                                          </label>
+                                      </div>
+                                  </div>
                                 </div>
 
                                 <div>
@@ -3480,11 +3496,61 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <div className="md:col-span-2 pt-4 border-t">
                                 <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
                                     <div className="flex items-center gap-3">
+                                        <Search className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Such-Vorschlag bei "Nein" aktivieren</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">
+                                                Zeigt dem Nutzer einen Link zur intelligenten Suche an, wenn die Bewertung negativ ausfällt. (Erfordert aktive "Intelligente Such-Weiterleitung")
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={generalSettings.enableFeedbackSmartSearchFallback}
+                                        onCheckedChange={(checked) =>
+                                            setGeneralSettings({ ...generalSettings, enableFeedbackSmartSearchFallback: checked })
+                                        }
+                                        className="data-[state=checked]:bg-pink-600"
+                                        disabled={generalSettings.defaultRedirectMode !== 'search'}
+                                    />
+                                </div>
+                                {generalSettings.defaultRedirectMode !== 'search' && (
+                                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                                        * Nur verfügbar wenn "Intelligente Such-Weiterleitung" als Fallback-Strategie gewählt ist.
+                                    </p>
+                                )}
+                              </div>
+
+                              {generalSettings.enableFeedbackSmartSearchFallback && (
+                                <>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Titel</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackTitle"
+                                            value={generalSettings.feedbackSmartSearchFallbackTitle}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackTitle: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackTitle ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Beschreibung</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackDescription"
+                                            value={generalSettings.feedbackSmartSearchFallbackDescription}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackDescription: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackDescription ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                </>
+                              )}
+
+                              <div className="md:col-span-2 pt-4 border-t">
+                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
                                         <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                                         <div>
                                             <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Kommentar-Funktion bei "Nein" aktivieren</p>
                                             <p className="text-xs text-pink-700 dark:text-pink-300">
-                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt.
+                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt (oder nachdem die Suche erfolglos war).
                                             </p>
                                         </div>
                                     </div>
@@ -3539,56 +3605,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentButton ? 'border-red-500' : ''}`}
                                         />
                                         {validationFieldErrors.feedbackCommentButton && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentButton}</p>}
-                                    </div>
-                                </>
-                              )}
-
-                              <div className="md:col-span-2 pt-4 border-t">
-                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <Search className="h-5 w-5 text-pink-600 dark:text-pink-400" />
-                                        <div>
-                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Such-Vorschlag bei "Nein" aktivieren</p>
-                                            <p className="text-xs text-pink-700 dark:text-pink-300">
-                                                Zeigt dem Nutzer einen Link zur intelligenten Suche an, wenn die Bewertung negativ ausfällt. (Erfordert aktive "Intelligente Such-Weiterleitung")
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <Switch
-                                        checked={generalSettings.enableFeedbackSmartSearchFallback}
-                                        onCheckedChange={(checked) =>
-                                            setGeneralSettings({ ...generalSettings, enableFeedbackSmartSearchFallback: checked })
-                                        }
-                                        className="data-[state=checked]:bg-pink-600"
-                                        disabled={generalSettings.defaultRedirectMode !== 'search'}
-                                    />
-                                </div>
-                                {generalSettings.defaultRedirectMode !== 'search' && (
-                                    <p className="text-xs text-muted-foreground mt-1 mb-4">
-                                        * Nur verfügbar wenn "Intelligente Such-Weiterleitung" als Fallback-Strategie gewählt ist.
-                                    </p>
-                                )}
-                              </div>
-
-                              {generalSettings.enableFeedbackSmartSearchFallback && (
-                                <>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium mb-2">Vorschlag Titel</label>
-                                        <DebouncedInput
-                                            id="feedbackSmartSearchFallbackTitle"
-                                            value={generalSettings.feedbackSmartSearchFallbackTitle}
-                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackTitle: val as string })}
-                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackTitle ? 'border-red-500' : ''}`}
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium mb-2">Vorschlag Beschreibung</label>
-                                        <DebouncedInput
-                                            id="feedbackSmartSearchFallbackDescription"
-                                            value={generalSettings.feedbackSmartSearchFallbackDescription}
-                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackDescription: val as string })}
-                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackDescription ? 'border-red-500' : ''}`}
-                                        />
                                     </div>
                                 </>
                               )}
