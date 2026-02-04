@@ -3,7 +3,8 @@ import { useState, useRef } from "react";
 export function SatisfactionChart({
   data,
   feedbackOnly,
-  aggregation = 'day'
+  aggregation = 'day',
+  showQualityLine = true
 }: {
   data: Array<{
     date: string;
@@ -16,7 +17,8 @@ export function SatisfactionChart({
     mixedScore: number;
   }>,
   feedbackOnly?: boolean,
-  aggregation?: 'day' | 'week' | 'month'
+  aggregation?: 'day' | 'week' | 'month',
+  showQualityLine?: boolean
 }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -116,10 +118,12 @@ export function SatisfactionChart({
     >
         {/* Legends */}
         <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-3 text-[10px] z-10 bg-background/80 p-1 rounded backdrop-blur-sm border">
-            <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                <span>Match Quality</span>
-            </div>
+            {showQualityLine && (
+              <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span>Match Quality</span>
+              </div>
+            )}
             <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                 <span>{feedbackOnly ? "Zufriedenheit (Feedback)" : "Gesamt-Zufriedenheit"}</span>
@@ -141,10 +145,12 @@ export function SatisfactionChart({
             }}
           >
             <div className="font-semibold mb-1">{formatDate(chartData[activeIndex].date)}</div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              <span>Match: {chartData[activeIndex].matchQualityScore}%</span>
-            </div>
+            {showQualityLine && (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span>Match: {chartData[activeIndex].matchQualityScore}%</span>
+              </div>
+            )}
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-orange-500"></div>
               <span>Score: {chartData[activeIndex].satisfactionScore !== null ? `${chartData[activeIndex].satisfactionScore}%` : '-'}</span>
@@ -178,14 +184,16 @@ export function SatisfactionChart({
                 ))}
 
                 {/* Line for Match Quality (Blue) */}
-                <polyline
-                    points={qualityPoints}
-                    fill="none"
-                    stroke="#3b82f6"
-                    strokeWidth="2"
-                    strokeOpacity="0.6"
-                    vectorEffect="non-scaling-stroke"
-                />
+                {showQualityLine && (
+                  <polyline
+                      points={qualityPoints}
+                      fill="none"
+                      stroke="#3b82f6"
+                      strokeWidth="2"
+                      strokeOpacity="0.6"
+                      vectorEffect="non-scaling-stroke"
+                  />
+                )}
 
                 {/* Line for Feedback Count (Purple Dotted) */}
                 <polyline
