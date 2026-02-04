@@ -17,8 +17,8 @@ import { RULE_MATCHING_CONFIG } from "@shared/constants";
 // Helper to ensure only relevant flags are stored
 function sanitizeRuleFlags(rule: any): any {
   if (rule.redirectType === "wildcard") {
-    // Wildcard rules only use forwardQueryParams
-    delete rule.discardQueryParams;
+    // Wildcard rules can now use both forwardQueryParams (legacy/simple) and discardQueryParams (advanced)
+    // No deletion of parameter flags for wildcard
   } else if (rule.redirectType === "partial" || rule.redirectType === "domain") {
     // Partial and domain rules only use discardQueryParams
     delete rule.forwardQueryParams;
@@ -73,7 +73,34 @@ export interface IStorage {
     limit?: number,
     timeRange?: "24h" | "7d" | "all",
   ): Promise<Array<{ domain: string; count: number }>>;
-  getTrackingStats(): Promise<{ total: number; today: number; week: number }>;
+  getTrackingStats(): Promise<{
+    total: number;
+    today: number;
+    week: number;
+    quality: {
+      match100: number;
+      match75: number;
+      match50: number;
+      match0: number;
+    };
+    feedback: {
+      ok: number;
+      nok: number;
+      autoRedirect: number;
+      missing: number;
+    };
+  }>;
+
+  getSatisfactionTrend(days?: number, aggregation?: 'day' | 'week' | 'month'): Promise<Array<{
+    date: string;
+    score: number;
+    count: number;
+    okCount: number;
+    autoCount: number;
+    nokCount: number;
+    avgMatchQuality: number;
+    mixedScore: number;
+  }>>;
 
   // Import functionality
   importUrlRules(
@@ -786,6 +813,17 @@ export class FileStorage implements IStorage {
     total: number;
     today: number;
     week: number;
+    quality: {
+      match100: number;
+      match75: number;
+      match50: number;
+      match0: number;
+    };
+    feedback: {
+      ok: number;
+      nok: number;
+      missing: number;
+    };
   }> {
     const trackingData = await this.ensureTrackingLoaded();
     const now = new Date();
@@ -802,6 +840,20 @@ export class FileStorage implements IStorage {
     let today = 0;
     let week = 0;
 
+    const quality = {
+      match100: 0,
+      match75: 0,
+      match50: 0,
+      match0: 0,
+    };
+
+    const feedback = {
+      ok: 0,
+      nok: 0,
+      autoRedirect: 0,
+      missing: 0,
+    };
+
     for (const track of trackingData) {
       if (track.path === "/") continue;
 
@@ -810,9 +862,191 @@ export class FileStorage implements IStorage {
       // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
       if (track.timestamp >= todayIso) today++;
       if (track.timestamp >= weekIso) week++;
+
+      // Quality stats
+      const q = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+      if (q >= 100) quality.match100++;
+      else if (q >= 75) quality.match75++;
+      else if (q >= 50) quality.match50++;
+      else quality.match0++;
+
+      // Feedback stats
+      if (track.feedback === 'OK') feedback.ok++;
+      else if (track.feedback === 'NOK') feedback.nok++;
+      else if (track.feedback === 'auto-redirect') feedback.autoRedirect++;
+      else feedback.missing++;
     }
 
-    return { total, today, week };
+    return { total, today, week, quality, feedback };
+  }
+
+  async getSatisfactionTrend(days: number = 30, aggregation: 'day' | 'week' | 'month' = 'day'): Promise<Array<{
+    date: string;
+    score: number;
+    count: number;
+    okCount: number;
+    autoCount: number;
+    nokCount: number;
+    avgMatchQuality: number;
+    mixedScore: number;
+  }>> {
+    const trackingData = await this.ensureTrackingLoaded();
+    const now = new Date();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(now.getDate() - days);
+    // Reset time part to ensure full day coverage
+    cutoffDate.setHours(0, 0, 0, 0);
+    const cutoffIso = cutoffDate.toISOString();
+
+    // Filter data by time range
+    const filteredData = trackingData.filter(t => t.timestamp >= cutoffIso && t.path !== "/");
+
+    // Group by aggregation key
+    const statsMap = new Map<string, {
+      totalScore: number;
+      count: number;
+      okCount: number;
+    autoCount: number;
+      nokCount: number;
+      totalMatchQuality: number;
+      totalMixedScore: number;
+    }>();
+
+    const getAggregationKey = (date: Date): string => {
+      if (aggregation === 'month') {
+        return date.toISOString().substring(0, 7); // YYYY-MM
+      } else if (aggregation === 'week') {
+        // ISO Week
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+        const yearStart = new Date(d.getFullYear(), 0, 1);
+        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        return `${d.getFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+      } else {
+        return date.toISOString().substring(0, 10); // YYYY-MM-DD
+      }
+    };
+
+    for (const track of filteredData) {
+      const trackDate = new Date(track.timestamp);
+      const key = getAggregationKey(trackDate);
+
+      const matchQuality = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
+      let mixedEntryScore = matchQuality;
+      let ok = 0;
+      let auto = 0;
+      let nok = 0;
+
+      // Feedback overrides quality if present for mixed score
+      if (track.feedback === 'OK') {
+        mixedEntryScore = 100;
+        ok = 1;
+      } else if (track.feedback === 'auto-redirect') {
+        mixedEntryScore = 100;
+        auto = 1;
+      } else if (track.feedback === 'NOK') {
+        mixedEntryScore = 0;
+        nok = 1;
+      }
+
+      const current = statsMap.get(key) || {
+        totalScore: 0,
+        count: 0,
+        okCount: 0,
+      autoCount: 0,
+        nokCount: 0,
+        totalMatchQuality: 0,
+        totalMixedScore: 0
+      };
+
+      statsMap.set(key, {
+        totalScore: current.totalScore + mixedEntryScore, // Legacy score (same as mixed)
+        count: current.count + 1,
+        okCount: current.okCount + ok,
+        autoCount: (current.autoCount || 0) + auto,
+        nokCount: current.nokCount + nok,
+        totalMatchQuality: current.totalMatchQuality + matchQuality,
+        totalMixedScore: current.totalMixedScore + mixedEntryScore
+      });
+    }
+
+    // Convert map to sorted array
+    // Note: For aggregation other than 'day', filling gaps is complex and might not be desired.
+    // For 'day', we usually want to fill gaps. For 'week'/'month', we can just sort existing keys.
+    // To simplify and ensure consistent chart X-axis, we'll sort existing keys.
+
+    const sortedKeys = Array.from(statsMap.keys()).sort();
+
+    // If 'day', we can try to fill gaps if desired, but for flexible aggregation, usually providing existing data points is safer to avoid huge gaps if date range is large.
+    // However, the chart expects continuous data for lines.
+    // Let's stick to returning available buckets for now, frontend chart libraries handle gaps or we accept them.
+    // Re-implementing gap filling for weeks/months is complex logic (determining next week/month).
+    // Given the previous code filled gaps for days, let's keep it simple: if 'day', fill gaps. If others, just sort.
+
+    const result: Array<{
+      date: string;
+      score: number;
+      count: number;
+      okCount: number;
+    autoCount: number;
+      nokCount: number;
+      avgMatchQuality: number;
+      mixedScore: number;
+    }> = [];
+
+    if (aggregation === 'day') {
+       // Fill gaps for days
+       for (let i = 0; i <= days; i++) {
+          const d = new Date(cutoffDate);
+          d.setDate(d.getDate() + i);
+          const dateStr = d.toISOString().substring(0, 10);
+
+          if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
+
+          const stats = statsMap.get(dateStr);
+          if (stats) {
+              result.push({
+                  date: dateStr,
+                  score: Math.round(stats.totalMixedScore / stats.count),
+                  count: stats.count,
+                  okCount: stats.okCount,
+                  nokCount: stats.nokCount,
+        autoCount: stats.autoCount || 0,
+                  avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
+                  mixedScore: Math.round(stats.totalMixedScore / stats.count)
+              });
+          } else {
+              result.push({
+                  date: dateStr,
+                  score: 0,
+                  count: 0,
+                  okCount: 0,
+      autoCount: 0,
+                  nokCount: 0,
+                  avgMatchQuality: 0,
+                  mixedScore: 0
+              });
+          }
+       }
+    } else {
+       // Just use sorted keys for week/month
+       for (const key of sortedKeys) {
+          const stats = statsMap.get(key)!;
+          result.push({
+              date: key,
+              score: Math.round(stats.totalMixedScore / stats.count),
+              count: stats.count,
+              okCount: stats.okCount,
+              nokCount: stats.nokCount,
+        autoCount: stats.autoCount || 0,
+              avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
+              mixedScore: Math.round(stats.totalMixedScore / stats.count)
+          });
+       }
+    }
+
+    return result;
   }
 
   // Paginated statistics methods
@@ -825,7 +1059,7 @@ export class FileStorage implements IStorage {
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
     minQuality?: number,
     maxQuality?: number,
-    feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all',
+    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -1063,7 +1297,10 @@ export class FileStorage implements IStorage {
         infoText: rawRule.infoText || "",
         autoRedirect: rawRule.autoRedirect ?? false,
         discardQueryParams: rawRule.discardQueryParams ?? false,
+        keptQueryParams: rawRule.keptQueryParams || [],
         forwardQueryParams: rawRule.forwardQueryParams ?? false,
+        searchAndReplace: rawRule.searchAndReplace || [],
+        staticQueryParams: rawRule.staticQueryParams || [],
       };
 
       if (importRule.id && rulesById.has(importRule.id)) {
@@ -1085,7 +1322,10 @@ export class FileStorage implements IStorage {
           createdAt: existingRule.createdAt,
           autoRedirect: importRule.autoRedirect,
           discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
         };
 
         // Sanitize flags
@@ -1105,7 +1345,10 @@ export class FileStorage implements IStorage {
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
           discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
           createdAt: new Date().toISOString(),
         };
         // Sanitize flags
@@ -1129,7 +1372,10 @@ export class FileStorage implements IStorage {
            createdAt: existingRule.createdAt,
            autoRedirect: importRule.autoRedirect,
            discardQueryParams: importRule.discardQueryParams,
+           keptQueryParams: importRule.keptQueryParams,
            forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
          };
 
          // Sanitize flags
@@ -1148,7 +1394,10 @@ export class FileStorage implements IStorage {
           infoText: importRule.infoText || "",
           autoRedirect: importRule.autoRedirect,
           discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
           createdAt: new Date().toISOString(),
         };
         // Sanitize flags
@@ -1183,6 +1432,16 @@ export class FileStorage implements IStorage {
       }
       if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
         settings.caseSensitiveLinkDetection = false;
+      }
+      // Migration: Convert old smartSearchRegex to new smartSearchRules
+      if (!settings.smartSearchRules && settings.smartSearchRegex) {
+        settings.smartSearchRules = [
+          { pattern: settings.smartSearchRegex, order: 0 }
+        ];
+      }
+      // Ensure smartSearchRules is initialized
+      if (!settings.smartSearchRules) {
+        settings.smartSearchRules = [];
       }
       this.settingsCache = settings;
       return settings;
@@ -1232,6 +1491,13 @@ export class FileStorage implements IStorage {
         feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
         feedbackButtonYes: "Ja, OK",
         feedbackButtonNo: "Nein",
+
+        // Feedback Comment Defaults
+        enableFeedbackComment: false,
+        feedbackCommentTitle: "Kennen Sie die korrekte URL?",
+        feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+        feedbackCommentPlaceholder: "https://...",
+        feedbackCommentButton: "Absenden",
       };
 
       // Save default settings directly to avoid infinite loop

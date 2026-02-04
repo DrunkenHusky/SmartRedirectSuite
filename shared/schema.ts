@@ -50,8 +50,24 @@ export const urlRuleSchema = z.object({
     .default(false),
   discardQueryParams: z.boolean()
     .default(false),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
   createdAt: z.string().datetime("Invalid datetime format"),
 }).strict(); // Prevent extra properties
 
@@ -92,7 +108,14 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
-  feedback: z.enum(['OK', 'NOK'])
+  feedback: z.enum(['OK', 'NOK', 'auto-redirect'])
+    .optional()
+    .nullable(),
+  userProposedUrl: z.string()
+    .max(8000, "Proposed URL too long")
+    .refine((val) => !val || val.startsWith('http://') || val.startsWith('https://'), {
+      message: "Proposed URL must be a valid HTTP/HTTPS URL",
+    })
     .optional()
     .nullable(),
 });
@@ -140,8 +163,24 @@ export const importUrlRuleSchema = z.object({
     .default(false),
   discardQueryParams: z.boolean()
     .default(false),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
 }).strict();
 
 export const importRulesRequestSchema = z.object({
@@ -229,6 +268,22 @@ export const generalSettingsSchema = z.object({
     .min(1, "Text für Such-Weiterleitung darf nicht leer sein")
     .max(500, "Text für Such-Weiterleitung ist zu lang")
     .default("Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet."),
+
+  defaultSearchSkipEncoding: z.boolean()
+    .default(false),
+
+  smartSearchRegex: z.string()
+    .max(500, "Regex ist zu lang")
+    .optional()
+    .nullable(),
+
+  smartSearchRules: z.array(z.object({
+    pattern: z.string().max(500, "Pattern too long").optional(),
+    order: z.number().int().default(0),
+    searchUrl: z.string().max(500, "Search URL too long").optional().nullable(),
+    pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable(),
+    skipEncoding: z.boolean().default(false)
+  })).optional().default([]),
     
   // Button texts with validation
   copyButtonText: z.string()
@@ -349,6 +404,46 @@ export const generalSettingsSchema = z.object({
     .max(50, "Button-Text für Nein ist zu lang")
     .default("Nein"),
 
+  // Feedback Comment (Proposed URL)
+  enableFeedbackComment: z.boolean()
+    .default(false),
+  feedbackCommentTitle: z.string()
+    .max(100, "Titel für Feedback-Kommentar ist zu lang")
+    .default("Kennen Sie die korrekte URL?"),
+  feedbackCommentDescription: z.string()
+    .max(500, "Beschreibung für Feedback-Kommentar ist zu lang")
+    .default("Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können."),
+  feedbackCommentPlaceholder: z.string()
+    .max(100, "Platzhalter für Feedback-Kommentar ist zu lang")
+    .default("https://..."),
+  feedbackCommentButton: z.string()
+    .max(50, "Button-Text für Feedback-Kommentar ist zu lang")
+    .default("Absenden"),
+
+  // Feedback Smart Search Fallback
+  enableFeedbackSmartSearchFallback: z.boolean()
+    .default(false),
+  feedbackSmartSearchFallbackTitle: z.string()
+    .max(100, "Titel für Such-Vorschlag ist zu lang")
+    .default("Vorschlag: Suche verwenden"),
+  feedbackSmartSearchFallbackDescription: z.string()
+    .max(500, "Beschreibung für Such-Vorschlag ist zu lang")
+    .default("Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche."),
+  feedbackSmartSearchFallbackQuestion: z.string()
+    .max(200, "Frage für Such-Vorschlag ist zu lang")
+    .default("Hat dieser Link funktioniert?"),
+
+  // Satisfaction Trend Chart
+  showSatisfactionTrend: z.boolean()
+    .default(true),
+  satisfactionTrendFeedbackOnly: z.boolean()
+    .default(false),
+  satisfactionTrendDays: z.number()
+    .int()
+    .min(7, "Zeitraum muss mindestens 7 Tage sein")
+    .max(365, "Zeitraum darf maximal 365 Tage sein")
+    .default(30),
+
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {
   if (data.defaultRedirectMode === 'search') {
@@ -408,6 +503,14 @@ export const insertGeneralSettingsSchema = generalSettingsSchema.omit({
 // Import-Schema for general settings (must be after insertGeneralSettingsSchema)
 export const importSettingsRequestSchema = z.object({
   settings: insertGeneralSettingsSchema,
+});
+
+export const smartSearchRuleSchema = z.object({
+  pattern: z.string().max(500, "Pattern too long").optional(),
+  order: z.number().int().default(0),
+  searchUrl: z.string().max(500, "Search URL too long").optional().nullable(),
+  pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable(),
+  skipEncoding: z.boolean().default(false)
 });
 
 export type UrlRule = z.infer<typeof urlRuleSchema>;

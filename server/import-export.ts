@@ -4,6 +4,8 @@ import { stringify } from 'csv-stringify/sync';
 import { UrlRule, importUrlRuleSchema } from '@shared/schema';
 
 // Defined column mapping
+// These keys define which CSV/Excel columns map to which internal rule properties.
+// Multiple variations are supported to handle different languages and formats.
 const COLUMN_MAPPING = {
   matcher: ['Matcher', 'matcher', 'Quelle', 'Source'],
   targetUrl: ['Target URL', 'targetUrl', 'Ziel', 'Target'],
@@ -11,7 +13,10 @@ const COLUMN_MAPPING = {
   infoText: ['Info', 'infoText', 'Beschreibung'],
   autoRedirect: ['Auto Redirect', 'autoRedirect', 'Automatisch'],
   discardQueryParams: ['Discard Query Params', 'discardQueryParams', 'Parameter entfernen'],
+  keptQueryParams: ['Kept Query Params', 'keptQueryParams', 'Parameter Ausnahmen'],
+  staticQueryParams: ['Static Query Params', 'staticQueryParams', 'Statische Parameter'],
   forwardQueryParams: ['Keep Query Params', 'forwardQueryParams', 'Parameter behalten'],
+  searchAndReplace: ['Search Replace', 'searchAndReplace', 'Suchen Ersetzen'],
   id: ['ID', 'id']
 };
 
@@ -97,7 +102,10 @@ export class ImportExportService {
       rule.infoText = getValue(COLUMN_MAPPING.infoText);
       rule.autoRedirect = getValue(COLUMN_MAPPING.autoRedirect);
       rule.discardQueryParams = getValue(COLUMN_MAPPING.discardQueryParams);
+      rule.keptQueryParams = getValue(COLUMN_MAPPING.keptQueryParams);
+      rule.staticQueryParams = getValue(COLUMN_MAPPING.staticQueryParams);
       rule.forwardQueryParams = getValue(COLUMN_MAPPING.forwardQueryParams);
+      rule.searchAndReplace = getValue(COLUMN_MAPPING.searchAndReplace);
       rule.id = getValue(COLUMN_MAPPING.id);
       // Handle empty string IDs as undefined (common in Excel/CSV imports)
       if (rule.id === '' || (typeof rule.id === 'string' && rule.id.trim() === '')) {
@@ -128,12 +136,99 @@ export class ImportExportService {
         rule.discardQueryParams = false;
       }
 
+      // Normalize keptQueryParams (parse JSON string if needed)
+      if (rule.keptQueryParams !== undefined && rule.keptQueryParams !== null && rule.keptQueryParams !== '') {
+        try {
+          if (typeof rule.keptQueryParams === 'string') {
+            // Try to parse JSON
+            rule.keptQueryParams = JSON.parse(rule.keptQueryParams);
+          }
+
+          // Validate structure
+          if (!Array.isArray(rule.keptQueryParams)) {
+             rule.keptQueryParams = [];
+             // Only add error if it wasn't empty string (which we filtered out)
+             errors.push('Kept Query Params must be a valid JSON array');
+          } else {
+             // Filter invalid items
+             rule.keptQueryParams = rule.keptQueryParams.filter((item: any) =>
+                item && typeof item === 'object' && typeof item.keyPattern === 'string'
+             ).map((item: any) => ({
+                ...item,
+                skipEncoding: !!item.skipEncoding // Ensure boolean
+             }));
+          }
+        } catch (e) {
+          errors.push('Invalid JSON format for Kept Query Params');
+          rule.keptQueryParams = [];
+        }
+      } else {
+        rule.keptQueryParams = [];
+      }
+
+      // Normalize staticQueryParams (parse JSON string if needed)
+      if (rule.staticQueryParams !== undefined && rule.staticQueryParams !== null && rule.staticQueryParams !== '') {
+        try {
+          if (typeof rule.staticQueryParams === 'string') {
+            // Try to parse JSON
+            rule.staticQueryParams = JSON.parse(rule.staticQueryParams);
+          }
+
+          // Validate structure
+          if (!Array.isArray(rule.staticQueryParams)) {
+             rule.staticQueryParams = [];
+             // Only add error if it wasn't empty string (which we filtered out)
+             errors.push('Static Query Params must be a valid JSON array');
+          } else {
+             // Filter invalid items
+             rule.staticQueryParams = rule.staticQueryParams.filter((item: any) =>
+                item && typeof item === 'object' && typeof item.key === 'string' && typeof item.value === 'string'
+             ).map((item: any) => ({
+                ...item,
+                skipEncoding: !!item.skipEncoding // Ensure boolean
+             }));
+          }
+        } catch (e) {
+          errors.push('Invalid JSON format for Static Query Params');
+          rule.staticQueryParams = [];
+        }
+      } else {
+        rule.staticQueryParams = [];
+      }
+
       // Normalize forwardQueryParams
       if (rule.forwardQueryParams !== undefined) {
         const fqp = String(rule.forwardQueryParams).toLowerCase();
         rule.forwardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(fqp);
       } else {
         rule.forwardQueryParams = false;
+      }
+
+      // Normalize searchAndReplace (parse JSON string if needed)
+      if (rule.searchAndReplace !== undefined && rule.searchAndReplace !== null && rule.searchAndReplace !== '') {
+        try {
+          if (typeof rule.searchAndReplace === 'string') {
+            // Try to parse JSON
+            rule.searchAndReplace = JSON.parse(rule.searchAndReplace);
+          }
+
+          // Validate structure
+          if (!Array.isArray(rule.searchAndReplace)) {
+             rule.searchAndReplace = [];
+             // Only add error if it wasn't empty string
+             errors.push('Search Replace must be a valid JSON array');
+          } else {
+             // Filter invalid items
+             rule.searchAndReplace = rule.searchAndReplace.filter((item: any) =>
+                item && typeof item === 'object' && typeof item.search === 'string'
+             );
+          }
+        } catch (e) {
+          errors.push('Invalid JSON format for Search Replace');
+          rule.searchAndReplace = [];
+        }
+      } else {
+        rule.searchAndReplace = [];
       }
 
       // Cross-validation for query params settings
@@ -144,8 +239,14 @@ export class ImportExportService {
       // Type-specific query params validation
       // Validate that the correct flags are used for the rule type to avoid ambiguity
       if (rule.redirectType === 'wildcard') {
-        if (rule.discardQueryParams) {
-          errors.push('Wildcard rules discard parameters by default. Use "Keep Query Params" to preserve them.');
+        // For wildcard:
+        // if forwardQueryParams is TRUE, discard must be FALSE (implicit)
+        // if forwardQueryParams is FALSE, discard must be TRUE (implicit) to allow keptQueryParams
+        // During import, we fix this logic to match the new UI behavior
+        if (rule.forwardQueryParams) {
+            rule.discardQueryParams = false;
+        } else {
+            rule.discardQueryParams = true;
         }
       } else if (rule.redirectType === 'partial' || rule.redirectType === 'domain') {
         if (rule.forwardQueryParams) {
@@ -239,7 +340,10 @@ export class ImportExportService {
       Info: this.sanitizeForCSV(rule.infoText),
       'Auto Redirect': rule.autoRedirect ? 'true' : 'false',
       'Discard Query Params': rule.discardQueryParams ? 'true' : 'false',
-      'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false'
+      'Kept Query Params': (rule.keptQueryParams && rule.keptQueryParams.length > 0) ? JSON.stringify(rule.keptQueryParams) : '',
+      'Static Query Params': (rule.staticQueryParams && rule.staticQueryParams.length > 0) ? JSON.stringify(rule.staticQueryParams) : '',
+      'Keep Query Params': rule.forwardQueryParams ? 'true' : 'false',
+      'Search Replace': (rule.searchAndReplace && rule.searchAndReplace.length > 0) ? JSON.stringify(rule.searchAndReplace) : ''
     }));
 
     return stringify(data, { header: true });
@@ -257,7 +361,10 @@ export class ImportExportService {
       Info: this.sanitizeForCSV(rule.infoText),
       'Auto Redirect': rule.autoRedirect,
       'Discard Query Params': rule.discardQueryParams,
-      'Keep Query Params': rule.forwardQueryParams
+      'Kept Query Params': (rule.keptQueryParams && rule.keptQueryParams.length > 0) ? JSON.stringify(rule.keptQueryParams) : '',
+      'Static Query Params': (rule.staticQueryParams && rule.staticQueryParams.length > 0) ? JSON.stringify(rule.staticQueryParams) : '',
+      'Keep Query Params': rule.forwardQueryParams,
+      'Search Replace': (rule.searchAndReplace && rule.searchAndReplace.length > 0) ? JSON.stringify(rule.searchAndReplace) : ''
     }));
 
     const workbook = utils.book_new();

@@ -140,17 +140,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve sample import file
+    // Serve sample import file (Dynamic)
+  const SAMPLE_RULES = [{
+    id: "sample-id",
+    matcher: "/alte-seite",
+    targetUrl: "https://neue-seite.de/ziel",
+    redirectType: "partial",
+    infoText: "Beispiel Migration",
+    autoRedirect: false,
+    discardQueryParams: false,
+    keptQueryParams: [],
+    staticQueryParams: [{ key: "source", value: "import" }],
+    forwardQueryParams: true,
+    searchAndReplace: [{ search: "alt", replace: "neu", caseSensitive: false }],
+    createdAt: new Date().toISOString()
+  } as any];
+
   app.get("/sample-rules-import.json", (_req, res) => {
-    res.sendFile("sample-rules-import.json", { root: process.cwd() });
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.json"');
+    res.send(JSON.stringify(SAMPLE_RULES, null, 2));
   });
 
   app.get("/sample-rules-import.csv", (_req, res) => {
-    res.sendFile("sample-rules-import.csv", { root: process.cwd() });
+    const csv = ImportExportService.generateCSV(SAMPLE_RULES);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.csv"');
+    res.send(csv);
   });
 
   app.get("/sample-rules-import.xlsx", (_req, res) => {
-    res.sendFile("sample-rules-import.xlsx", { root: process.cwd() });
+    const buffer = ImportExportService.generateExcel(SAMPLE_RULES);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.xlsx"');
+    res.send(buffer);
   });
   
   // URL-Tracking endpoint
@@ -181,16 +204,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Feedback Endpoint
   app.post("/api/feedback", apiRateLimiter, async (req, res) => {
     try {
-      const { ruleId, feedback, url, trackingId } = z.object({
+      const { ruleId, feedback, url, trackingId, userProposedUrl } = z.object({
         ruleId: z.string().optional(),
-        feedback: z.enum(['OK', 'NOK']),
+        feedback: z.enum(['OK', 'NOK', 'auto-redirect']),
         url: z.string().optional(),
-        trackingId: z.string().optional()
+        trackingId: z.string().optional(),
+        userProposedUrl: z.string()
+          .refine((val) => !val || val.startsWith('http://') || val.startsWith('https://'), {
+            message: "Proposed URL must be a valid HTTP/HTTPS URL",
+          })
+          .optional()
       }).parse(req.body);
 
       if (trackingId) {
         // Update existing tracking entry
-        const success = await storage.updateUrlTracking(trackingId, { feedback });
+        const success = await storage.updateUrlTracking(trackingId, { feedback, userProposedUrl });
         if (success) {
            res.json({ success: true, id: trackingId });
            return;
@@ -212,7 +240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matchQuality: 100, // Explicit manual match
         timestamp: new Date().toISOString(),
         userAgent: "Manual Verification",
-        feedback: feedback
+        feedback: feedback,
+        userProposedUrl: userProposedUrl
       };
 
       const tracking = await storage.trackUrlAccess(trackingEntry);
@@ -697,6 +726,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Satisfaction Trend
+  app.get("/api/admin/stats/trend", requireAuth, async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const aggregation = (req.query.aggregation as 'day' | 'week' | 'month') || 'day';
+      const trend = await storage.getSatisfactionTrend(days, aggregation);
+      res.json(trend);
+    } catch (error) {
+      console.error("Trend stats error:", error);
+      res.status(500).json({ error: "Failed to fetch satisfaction trend" });
+    }
+  });
+
   // Comprehensive tracking entries with search and sort
   app.get("/api/admin/stats/entries", requireAuth, async (req, res) => {
     try {
@@ -757,9 +799,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Feedback filter
-      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all';
-      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'empty'].includes(req.query.feedbackFilter as string)) {
-        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'empty';
+      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty' = 'all';
+      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'auto-redirect', 'empty'].includes(req.query.feedbackFilter as string)) {
+        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty';
       }
 
       const result = await storage.getTrackingEntriesPaginated(
@@ -807,19 +849,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const includeReferrer = settings.enableReferrerTracking;
           // CSV-Export
           const csvHeader = includeReferrer
-            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität\n'
-            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität\n';
+            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n'
+            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n';
 
           const csvData = trackingData.map(track => {
             // Prepare new fields
             const ruleId = track.ruleId || (track.ruleIds && track.ruleIds.length > 0 ? track.ruleIds.join(';') : '') || '';
             const feedback = track.feedback || '';
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
+            const userProposedUrl = track.userProposedUrl || '';
 
             if (includeReferrer) {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}"`;
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             } else {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}"`;
+              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             }
           }).join('\n');
           
@@ -920,6 +963,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         infoText: rule.infoText || "",
         redirectType: rule.redirectType || "partial",
         autoRedirect: rule.autoRedirect ?? false,
+        discardQueryParams: rule.discardQueryParams ?? false,
+        forwardQueryParams: rule.forwardQueryParams ?? false,
+        keptQueryParams: rule.keptQueryParams || [],
+        staticQueryParams: rule.staticQueryParams || [],
+        searchAndReplace: rule.searchAndReplace || [],
       }));
 
       // Clear existing rules and import new ones
@@ -986,15 +1034,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If it's a Zod validation error, return the specific validation messages
       if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
+        const zodValidationErrors = (error.errors || []).map(err => ({
           field: err.path.join('.'),
           message: err.message
         }));
         
         res.status(400).json({ 
           error: "Validierungsfehler",
-          validationErrors: validationErrors,
-          details: validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
+          validationErrors: zodValidationErrors,
+          details: zodValidationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
         });
       } else {
         res.status(400).json({ error: "Ungültige Einstellungsdaten" });

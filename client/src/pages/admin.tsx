@@ -57,9 +57,12 @@ import {
   AlertTriangle,
   Info,
   CheckCircle,
+  XCircle,
   FileSpreadsheet,
   Filter,
-  Share2
+  Share2,
+  TrendingUp,
+  Activity
 } from "lucide-react";
 import {
   Table,
@@ -77,6 +80,7 @@ import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
 import { ImportPreviewTable } from "@/components/admin/ImportPreviewTable";
 import { StatsTable } from "@/components/admin/StatsTable";
+import { SatisfactionChart } from "@/components/admin/SatisfactionChart";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -86,7 +90,7 @@ interface ParsedRuleResult {
   rule: Partial<UrlRule>;
   isValid: boolean;
   errors: string[];
-  status: 'new' | 'update' | 'invalid';
+  status: "new" | "update" | "invalid";
 }
 
 interface ImportPreviewData {
@@ -211,7 +215,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     redirectType: "partial" as "wildcard" | "partial" | "domain",
     autoRedirect: false,
     discardQueryParams: false,
+    keptQueryParams: [] as { keyPattern: string; valuePattern?: string; targetKey?: string }[],
+    staticQueryParams: [] as { key: string; value: string }[],
     forwardQueryParams: false,
+    searchAndReplace: [] as { search: string; replace: string; caseSensitive: boolean }[],
   });
   const targetUrlPlaceholder =
     ruleForm.redirectType === "wildcard"
@@ -252,6 +259,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   // Max stats warning state
   const [showMaxStatsWarningDialog, setShowMaxStatsWarningDialog] = useState(false);
 
+  // Settings validation error state
+  const [settingsValidationErrors, setSettingsValidationErrors] = useState<string[]>([]);
+  const [showSettingsErrorDialog, setShowSettingsErrorDialog] = useState(false);
+  const [validationFieldErrors, setValidationFieldErrors] = useState<Record<string, string>>({});
+
   // Statistics pagination state
   const [statsPage, setStatsPage] = useState(1);
   const [statsPerPage] = useState(50); // Fixed page size for performance
@@ -259,7 +271,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
   const [statsQualityFilter, setStatsQualityFilter] = useState<string>("all");
-  const [statsFeedbackFilter, setStatsFeedbackFilter] = useState<'all' | 'OK' | 'NOK' | 'empty'>('all');
+  const [statsFeedbackFilter, setStatsFeedbackFilter] = useState<'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty'>('all');
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -282,6 +294,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [previewSortBy, setPreviewSortBy] = useState<'status' | 'matcher' | 'targetUrl'>('status');
   const [previewSortOrder, setPreviewSortOrder] = useState<'asc' | 'desc'>('asc');
   const [previewStatusFilter, setPreviewStatusFilter] = useState<'all' | 'new' | 'update' | 'invalid'>('all');
+
+  // Trend Aggregation
+  const [trendAggregation, setTrendAggregation] = useState<'day' | 'week' | 'month'>('day');
 
   const filteredPreviewData = useMemo(() => {
     if (!importPreviewData) return [];
@@ -360,7 +375,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     enableReferrerTracking: true,
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
+    defaultSearchSkipEncoding: false,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+    smartSearchRegex: "" as string | undefined | null,
+    smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string; skipEncoding?: boolean }[],
+    enableFeedbackSurvey: false,
+    feedbackSurveyTitle: "Hat die Weiterleitung funktioniert?",
+    feedbackSurveyQuestion: "Bitte bewerten Sie die Zielseite.",
+    feedbackSuccessMessage: "Danke für Ihr Feedback!",
+    feedbackButtonYes: "Ja, OK",
+    feedbackButtonNo: "Nein",
+    enableFeedbackComment: false,
+    feedbackCommentTitle: "Kennen Sie die korrekte URL?",
+    feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+    feedbackCommentPlaceholder: "https://...",
+    feedbackCommentButton: "Absenden",
+    enableFeedbackSmartSearchFallback: false,
+    feedbackSmartSearchFallbackTitle: "Vorschlag: Suche verwenden",
+    feedbackSmartSearchFallbackDescription: "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
+    feedbackSmartSearchFallbackQuestion: "Hat dieser Link funktioniert?",
+    showSatisfactionTrend: true,
+    satisfactionTrendFeedbackOnly: false,
+    satisfactionTrendDays: 30,
   });
 
   // Statistics filters and state
@@ -448,6 +484,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     };
   }, []); // Remove dependencies to prevent continuous re-checking
 
+  const { data: trendData, isLoading: trendLoading } = useQuery({
+    queryKey: ["/api/admin/stats/trend", generalSettings.satisfactionTrendDays, trendAggregation],
+    enabled: isAuthenticated && statsView === 'top100' && generalSettings.showSatisfactionTrend,
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/stats/trend?days=${generalSettings.satisfactionTrendDays || 30}&aggregation=${trendAggregation}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch trend');
+      return response.json();
+    },
+  });
+
   // Queries - Use paginated API for better performance with large datasets
   const { data: paginatedRulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ["/api/admin/rules/paginated", rulesPage, rulesPerPage, debouncedRulesSearchQuery, rulesSortBy, rulesSortOrder],
@@ -484,7 +532,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const totalPagesFromAPI = paginatedRulesData?.totalPages || 1;
 
   const { data: statsData, isLoading: statsLoading } = useQuery<{
-    stats: { total: number; today: number; week: number };
+    stats: {
+      total: number;
+      today: number;
+      week: number;
+      quality: { match100: number; match75: number; match50: number; match0: number };
+      feedback: { ok: number; nok: number; autoRedirect: number; missing: number };
+    };
     topUrls: Array<{ path: string; count: number }>;
   }>({
     queryKey: ["/api/admin/stats/all", statsFilter],
@@ -669,13 +723,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         enableReferrerTracking: settingsData.enableReferrerTracking ?? true,
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
+        defaultSearchSkipEncoding: settingsData.defaultSearchSkipEncoding || false,
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+        smartSearchRegex: settingsData.smartSearchRegex || "",
+        smartSearchRules: settingsData.smartSearchRules || [],
         enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
         feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
         feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
         feedbackSuccessMessage: settingsData.feedbackSuccessMessage || "Danke für Ihr Feedback!",
         feedbackButtonYes: settingsData.feedbackButtonYes || "Ja, OK",
         feedbackButtonNo: settingsData.feedbackButtonNo || "Nein",
+        enableFeedbackComment: settingsData.enableFeedbackComment ?? false,
+        feedbackCommentTitle: settingsData.feedbackCommentTitle || "Kennen Sie die korrekte URL?",
+        feedbackCommentDescription: settingsData.feedbackCommentDescription || "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
+        feedbackCommentPlaceholder: settingsData.feedbackCommentPlaceholder || "https://...",
+        feedbackCommentButton: settingsData.feedbackCommentButton || "Absenden",
+        enableFeedbackSmartSearchFallback: settingsData.enableFeedbackSmartSearchFallback ?? false,
+        feedbackSmartSearchFallbackTitle: settingsData.feedbackSmartSearchFallbackTitle || "Vorschlag: Suche verwenden",
+        feedbackSmartSearchFallbackDescription: settingsData.feedbackSmartSearchFallbackDescription || "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
+        feedbackSmartSearchFallbackQuestion: settingsData.feedbackSmartSearchFallbackQuestion || "Hat dieser Link funktioniert?",
+    showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
+    satisfactionTrendFeedbackOnly: settingsData.satisfactionTrendFeedbackOnly ?? false,
+    satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
       });
     }
   }, [settingsData]);
@@ -1000,6 +1069,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", "/api/admin/settings", settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      setValidationFieldErrors({}); // Clear errors on success
     },
     onError: (error: any) => {
       console.error("Settings save error:", error);
@@ -1017,29 +1087,64 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       
       let errorMessage = "Die Einstellungen konnten nicht gespeichert werden.";
+      let detailedErrors: string[] = [];
+      let fieldErrors: Record<string, string> = {};
       
+      // Clear previous field errors first
+      setValidationFieldErrors({});
+
       // Check for validation errors in the response
       if (error?.serverError?.validationErrors) {
         const validationErrors = error.serverError.validationErrors;
-        errorMessage = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`).join(', ');
+        detailedErrors = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`);
+        validationErrors.forEach((err: any) => {
+            fieldErrors[err.field] = err.message;
+        });
+        errorMessage = detailedErrors.join(', ');
+      } else if (error?.response?.data?.validationErrors) {
+        const validationErrors = error.response.data.validationErrors;
+        detailedErrors = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`);
+        validationErrors.forEach((err: any) => {
+            fieldErrors[err.field] = err.message;
+        });
+        errorMessage = detailedErrors.join(', ');
       } else if (error?.serverError?.details) {
         errorMessage = error.serverError.details;
       } else if (error?.serverError?.error) {
         errorMessage = error.serverError.error;
-      } else if (error?.response?.data?.validationErrors) {
-        const validationErrors = error.response.data.validationErrors;
-        errorMessage = validationErrors.map((err: any) => `${getUIFieldName(err.field)}: ${err.message}`).join(', ');
       } else if (error?.response?.data?.details) {
         errorMessage = error.response.data.details;
       } else if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
       
-      toast({ 
-        title: "Validierungsfehler", 
-        description: errorMessage,
-        variant: "destructive" 
-      });
+      // Update field errors state
+      setValidationFieldErrors(fieldErrors);
+
+      // If we have detailed errors, show them in the dialog and scroll to first error
+      if (detailedErrors.length > 0) {
+        setSettingsValidationErrors(detailedErrors);
+        setShowSettingsErrorDialog(true);
+
+        // Scroll to the first error field
+        const firstErrorField = Object.keys(fieldErrors)[0];
+        if (firstErrorField) {
+            setTimeout(() => {
+                const element = document.getElementById(firstErrorField);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.focus();
+                }
+            }, 300); // Small delay to allow popup to open/close or UI to update
+        }
+      } else {
+        // Fallback to toast for non-validation errors or if no details found
+        toast({
+          title: "Fehler beim Speichern",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     },
   });
 
@@ -1076,7 +1181,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
-    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, forwardQueryParams: false });
+    setRuleForm({
+      matcher: "",
+      targetUrl: "",
+      infoText: "",
+      redirectType: "partial",
+      autoRedirect: false,
+      discardQueryParams: false,
+      keptQueryParams: [],
+      staticQueryParams: [],
+      forwardQueryParams: false,
+      searchAndReplace: []
+    });
     setEditingRule(null);
     setValidationError(null);
     setShowValidationDialog(false);
@@ -1213,7 +1329,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       redirectType: rule.redirectType || "partial",
       autoRedirect: rule.autoRedirect || false,
       discardQueryParams: rule.discardQueryParams || false,
+      keptQueryParams: rule.keptQueryParams || [],
+      staticQueryParams: rule.staticQueryParams || [],
       forwardQueryParams: rule.forwardQueryParams || false,
+      searchAndReplace: rule.searchAndReplace || [],
     });
     setIsRuleDialogOpen(true);
   }, []);
@@ -1879,11 +1998,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
+                                id="headerTitle"
                                 value={generalSettings.headerTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, headerTitle: val as string })}
                                 placeholder="Smart Redirect Service"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() || validationFieldErrors.headerTitle ? 'border-red-500 focus:border-red-500' : ''}`}
                               />
+                              {validationFieldErrors.headerTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.headerTitle}</p>}
                               <p className="text-xs text-gray-500 mt-1">
                                 Wird als Haupttitel im Header der Anwendung angezeigt
                               </p>
@@ -2169,12 +2290,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
+                                id="mainTitle"
                                 value={generalSettings.mainTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, mainTitle: val as string })}
                                 placeholder="URL veraltet - Aktualisierung erforderlich"
-                                className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() || validationFieldErrors.mainTitle ? 'border-red-500 focus:border-red-500' : ''}`}
                                 disabled={generalSettings.popupMode === 'disabled'}
                               />
+                              {validationFieldErrors.mainTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.mainTitle}</p>}
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -2200,13 +2323,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Beschreibung <span className="text-red-500">*</span>
                             </label>
                             <DebouncedTextarea
+                              id="mainDescription"
                               value={generalSettings.mainDescription}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, mainDescription: val as string })}
                               placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
                               rows={3}
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() || validationFieldErrors.mainDescription ? 'border-red-500 focus:border-red-500' : ''}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
+                            {validationFieldErrors.mainDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.mainDescription}</p>}
                             <p className="text-xs text-gray-500 mt-1">
                               Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
                             </p>
@@ -2216,12 +2341,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               PopUp Button-Text
                             </label>
                             <DebouncedInput
+                              id="popupButtonText"
                               value={generalSettings.popupButtonText}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, popupButtonText: val as string })}
                               placeholder="Zeige mir die neue URL"
-                              className="bg-white dark:bg-gray-700"
+                              className={`bg-white dark:bg-gray-700 ${validationFieldErrors.popupButtonText ? 'border-red-500 focus:border-red-500' : ''}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
+                            {validationFieldErrors.popupButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.popupButtonText}</p>}
                             <p className="text-xs text-gray-500 mt-1">
                               Text für den Button der das PopUp-Fenster öffnet
                             </p>
@@ -2289,11 +2416,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Ziel-Domain (Standard neue Domain) <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
+                              id="defaultNewDomain"
                               value={generalSettings.defaultNewDomain}
                               onChange={(value) => setGeneralSettings({ ...generalSettings, defaultNewDomain: value as string })}
                               placeholder="https://thisisthenewurl.com/"
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain ? 'border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain || validationFieldErrors.defaultNewDomain ? 'border-red-500' : ''}`}
                             />
+                            {validationFieldErrors.defaultNewDomain && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultNewDomain}</p>}
                             <p className="text-xs text-gray-500 mt-1">
                               Verwendet für Partial Matches und spezifische Regeln.
                             </p>
@@ -2342,19 +2471,201 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                           {/* Field 3: Search Base URL (Conditional) */}
                           {generalSettings.defaultRedirectMode === 'search' && (
-                              <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                  Such-Basis-URL <span className="text-red-500">*</span>
-                                </label>
-                                <DebouncedInput
-                                  value={generalSettings.defaultSearchUrl || ''}
-                                  onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
-                                  placeholder="https://newapp.com/?q="
-                                  className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl ? 'border-red-500' : ''}`}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Beispiel: https://newapp.com/?q=
-                                </p>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Such-Basis-URL <span className="text-red-500">*</span>
+                                  </label>
+                                  <div className="flex gap-4 items-start">
+                                      <div className="flex-1">
+                                          <DebouncedInput
+                                            id="defaultSearchUrl"
+                                            value={generalSettings.defaultSearchUrl || ''}
+                                            onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
+                                            placeholder="https://newapp.com/?q="
+                                            className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl || validationFieldErrors.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                          />
+                                          {validationFieldErrors.defaultSearchUrl && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchUrl}</p>}
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            Beispiel: https://newapp.com/?q=
+                                          </p>
+                                      </div>
+                                      <div className="flex flex-col items-center gap-2 pt-2">
+                                          <Switch
+                                              id="defaultSearchSkipEncoding"
+                                              checked={generalSettings.defaultSearchSkipEncoding}
+                                              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, defaultSearchSkipEncoding: checked })}
+                                          />
+                                          <label htmlFor="defaultSearchSkipEncoding" className="text-[10px] text-gray-500 max-w-[80px] text-center leading-tight">
+                                              Nicht kodieren
+                                          </label>
+                                      </div>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                    Extraktions-Regeln (Regex)
+                                  </label>
+                                  <div className="space-y-2">
+                                    {(generalSettings.smartSearchRules || []).map((rule, index) => (
+                                      <div key={index} className="flex flex-col gap-3 p-3 border rounded-lg bg-white dark:bg-gray-700 mb-2">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Regex Pattern (Extraction - optional)</label>
+                                                    <DebouncedInput
+                                                        value={rule.pattern ?? ''}
+                                                        onChange={(value) => {
+                                                            const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                            newRules[index] = { ...newRules[index], pattern: value as string };
+                                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                        }}
+                                                        placeholder="[?&]file=([^&]+)"
+                                                        className="w-full bg-background"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Path Matcher (Prefix)</label>
+                                                    <DebouncedInput
+                                                        value={rule.pathPattern || ''}
+                                                        onChange={(value) => {
+                                                            const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                            newRules[index] = { ...newRules[index], pathPattern: value as string };
+                                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                        }}
+                                                        placeholder="/teams (Regex)"
+                                                        className="w-full bg-background"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Custom Search Base URL (Optional)</label>
+                                                    <DebouncedInput
+                                                        value={rule.searchUrl || ''}
+                                                        onChange={(value) => {
+                                                            const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                            newRules[index] = { ...newRules[index], searchUrl: value as string };
+                                                            setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                        }}
+                                                        placeholder="https://newapp.com/?q="
+                                                        className="w-full bg-background"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2 pt-2">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Switch
+                                                            id={`skip-encoding-${index}`}
+                                                            checked={!!rule.skipEncoding}
+                                                            onCheckedChange={(checked) => {
+                                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                                newRules[index] = { ...newRules[index], skipEncoding: checked };
+                                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                            }}
+                                                        />
+                                                        <label
+                                                            htmlFor={`skip-encoding-${index}`}
+                                                            className="text-xs font-medium text-gray-500"
+                                                        >
+                                                            Suchbegriff nicht kodieren (No URL Encoding)
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-1 ml-2">
+                                                <div className="flex flex-col gap-1">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0"
+                                                        onClick={() => {
+                                                            if (index > 0) {
+                                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                                const temp = newRules[index];
+                                                                newRules[index] = newRules[index - 1];
+                                                                newRules[index - 1] = temp;
+                                                                newRules.forEach((r, i) => r.order = i);
+                                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                            }
+                                                        }}
+                                                        disabled={index === 0}
+                                                    >
+                                                        <ArrowUp className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 w-6 p-0"
+                                                        onClick={() => {
+                                                            if (index < (generalSettings.smartSearchRules || []).length - 1) {
+                                                                const newRules = [...(generalSettings.smartSearchRules || [])];
+                                                                const temp = newRules[index];
+                                                                newRules[index] = newRules[index + 1];
+                                                                newRules[index + 1] = temp;
+                                                                newRules.forEach((r, i) => r.order = i);
+                                                                setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                            }
+                                                        }}
+                                                        disabled={index === (generalSettings.smartSearchRules || []).length - 1}
+                                                    >
+                                                        <ArrowDown className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-auto"
+                                                    onClick={() => {
+                                                        const newRules = (generalSettings.smartSearchRules || [])
+                                                            .filter((_, i) => i !== index)
+                                                            .map((r, i) => ({ ...r, order: i }));
+                                                        setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <div className="flex gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newRules = [...(generalSettings.smartSearchRules || []), { pattern: "", order: (generalSettings.smartSearchRules || []).length }];
+                                          setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        Regel hinzufügen
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newRules = [...(generalSettings.smartSearchRules || []), { pattern: '[?&]file=([^&]+)', order: (generalSettings.smartSearchRules || []).length }];
+                                          setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
+                                        }}
+                                        title="Fügt eine Beispiel-Regex hinzu"
+                                      >
+                                        Beispiel hinzufügen
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Definieren Sie eine Liste von Regeln. Die Regeln werden von oben nach unten geprüft.
+                                    Wenn Sie ein Regex-Pattern definieren, muss es eine Capture Group () enthalten.
+                                    <b>Lassen Sie das Feld "Regex Pattern" leer, um automatisch das letzte Pfadsegment zu verwenden.</b>
+                                    Wenn keine Regel greift, wird als Fallback ebenfalls das letzte Pfadsegment verwendet.
+                                  </p>
+                                </div>
                               </div>
                           )}
 
@@ -2365,7 +2676,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
-                                        <DebouncedInput value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                        <DebouncedInput id="specialHintsTitle" value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.specialHintsTitle ? 'border-red-500' : ''}`}/>
+                                        {validationFieldErrors.specialHintsTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.specialHintsTitle}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
@@ -2395,11 +2707,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Standard Info Text (Beschreibung)
                                         </label>
                                         <DebouncedTextarea
+                                            id="specialHintsDescription"
                                             value={generalSettings.specialHintsDescription}
                                             onChange={(value) => setGeneralSettings({ ...generalSettings, specialHintsDescription: value as string })}
                                             rows={3}
-                                            className="bg-white dark:bg-gray-700"
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.specialHintsDescription ? 'border-red-500' : ''}`}
                                         />
+                                        {validationFieldErrors.specialHintsDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.specialHintsDescription}</p>}
                                         <p className="text-xs text-gray-500 mt-1">
                                             Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
                                         </p>
@@ -2412,11 +2726,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             Smart Search Nachricht
                                         </label>
                                         <DebouncedTextarea
+                                            id="defaultSearchMessage"
                                             value={generalSettings.defaultSearchMessage}
                                             onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchMessage: value as string })}
                                             rows={3}
-                                            className="bg-white dark:bg-gray-700"
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.defaultSearchMessage ? 'border-red-500' : ''}`}
                                         />
+                                        {validationFieldErrors.defaultSearchMessage && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchMessage}</p>}
                                         <p className="text-xs text-gray-500 mt-1">
                                             Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).
                                         </p>
@@ -2432,7 +2748,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Titel</label>
-                                           <DebouncedInput value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput id="urlComparisonTitle" value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.urlComparisonTitle ? 'border-red-500' : ''}`}/>
+                                           {validationFieldErrors.urlComparisonTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.urlComparisonTitle}</p>}
                                        </div>
                                        <div>
                                          <label className="block text-sm font-medium mb-2">Icon</label>
@@ -2467,11 +2784,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für alte URL</label>
-                                           <DebouncedInput value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput id="oldUrlLabel" value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.oldUrlLabel ? 'border-red-500' : ''}`}/>
+                                           {validationFieldErrors.oldUrlLabel && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.oldUrlLabel}</p>}
                                        </div>
                                        <div>
                                            <label className="block text-sm font-medium mb-2">Label für neue URL</label>
-                                           <DebouncedInput value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className="bg-white dark:bg-gray-700"/>
+                                           <DebouncedInput id="newUrlLabel" value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.newUrlLabel ? 'border-red-500' : ''}`}/>
+                                           {validationFieldErrors.newUrlLabel && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.newUrlLabel}</p>}
                                        </div>
                                    </div>
                                </div>
@@ -2498,23 +2817,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchHighExplanation" value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchHighExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchHighExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchHighExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (75%)</label>
-                                       <DebouncedInput value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchMediumExplanation" value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchMediumExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchMediumExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchMediumExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung (50%)</label>
-                                       <DebouncedInput value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchLowExplanation" value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchLowExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchLowExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchLowExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer (100%)</label>
-                                       <DebouncedInput value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchRootExplanation" value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchRootExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchRootExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchRootExplanation}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung (0%)</label>
-                                       <DebouncedInput value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className="bg-white dark:bg-gray-800" />
+                                       <DebouncedInput id="matchNoneExplanation" value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchNoneExplanation ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.matchNoneExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchNoneExplanation}</p>}
                                      </div>
                                    </div>
                                  )}
@@ -2525,11 +2849,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
-                                       <DebouncedInput value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
-                                       <DebouncedInput value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className="bg-white dark:bg-gray-700" />
+                                       <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
+                                       {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
                                      </div>
                                    </div>
                                </div>
@@ -2553,11 +2879,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 Titel der Sektion
                               </label>
                               <DebouncedInput
+                                id="infoTitle"
                                 value={generalSettings.infoTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, infoTitle: val as string })}
                                 placeholder="Zusätzliche Informationen"
-                                className="bg-white dark:bg-gray-700"
+                                className={`bg-white dark:bg-gray-700 ${validationFieldErrors.infoTitle ? 'border-red-500' : ''}`}
                               />
+                              {validationFieldErrors.infoTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.infoTitle}</p>}
                               <p className="text-xs text-gray-500 mt-1">
                                 Überschrift für den Bereich mit zusätzlichen Informationen
                               </p>
@@ -2679,11 +3007,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Copyright-Text <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
+                              id="footerCopyright"
                               value={generalSettings.footerCopyright}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, footerCopyright: val as string })}
                               placeholder="Proudly brewed with Generative AI."
-                              className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() ? 'border-red-500 focus:border-red-500' : ''}`}
+                              className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() || validationFieldErrors.footerCopyright ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
+                            {validationFieldErrors.footerCopyright && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.footerCopyright}</p>}
                           </div>
                           
 
@@ -2810,6 +3140,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
                                   Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
                                 </p>
+                                  {generalSettings.autoRedirect && generalSettings.enableFeedbackSurvey && (
+                                    <div className="flex items-center gap-2 mt-2 text-xs text-yellow-600 font-medium">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>Hinweis: Feedback-Umfrage wird deaktiviert, da keine Interaktion stattfindet (Auto-Redirect wird als Feedback geloggt).</span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <Switch
@@ -2869,53 +3205,227 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                           {generalSettings.enableFeedbackSurvey && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                              {/* New Trend Config */}
+                              <div className="md:col-span-2 p-4 border rounded-lg bg-muted/20 mb-4">
+                                  <div className="flex items-center justify-between mb-4">
+                                      <div className="space-y-0.5">
+                                          <label className="text-base font-medium">Trend-Anzeige</label>
+                                          <p className="text-xs text-muted-foreground">Konfiguration für den "Redirect Satisfaction Trend"</p>
+                                      </div>
+                                      <Switch
+                                          checked={generalSettings.showSatisfactionTrend}
+                                          onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, showSatisfactionTrend: checked })}
+                                      />
+                                  </div>
+                                  {generalSettings.showSatisfactionTrend && generalSettings.enableFeedbackSurvey && (
+                                      <div className="space-y-4">
+                                          <div>
+                                              <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
+                                              <Input
+                                                  type="number"
+                                                  min="7"
+                                                  max="365"
+                                                  value={generalSettings.satisfactionTrendDays}
+                                                  onChange={(e) => setGeneralSettings({ ...generalSettings, satisfactionTrendDays: parseInt(e.target.value) || 30 })}
+                                                  className="max-w-[200px]"
+                                              />
+                                          </div>
+                                          <div className="flex items-center justify-between">
+                                              <div className="space-y-0.5">
+                                                  <label className="text-sm font-medium">Nur Feedback (OK/NOK) anzeigen</label>
+                                                  <p className="text-xs text-muted-foreground">Berechnet den Score ausschließlich basierend auf Benutzer-Feedback, ignoriert automatische Match-Qualität.</p>
+                                              </div>
+                                              <Switch
+                                                  checked={generalSettings.satisfactionTrendFeedbackOnly}
+                                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, satisfactionTrendFeedbackOnly: checked })}
+                                              />
+                                          </div>
+                                      </div>
+                                  )}
+                              </div>
+
                               <div className="md:col-span-2">
                                 <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackSurveyTitle"
                                   value={generalSettings.feedbackSurveyTitle}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSurveyTitle ? 'border-red-500' : ''}`}
                                   placeholder="War die neue URL korrekt?"
                                 />
+                                {validationFieldErrors.feedbackSurveyTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSurveyTitle}</p>}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackSurveyQuestion"
                                   value={generalSettings.feedbackSurveyQuestion}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSurveyQuestion ? 'border-red-500' : ''}`}
                                   placeholder="Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."
                                 />
+                                {validationFieldErrors.feedbackSurveyQuestion && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSurveyQuestion}</p>}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackSuccessMessage"
                                   value={generalSettings.feedbackSuccessMessage}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSuccessMessage ? 'border-red-500' : ''}`}
                                   placeholder="Vielen Dank für deine Rückmeldung."
                                 />
+                                {validationFieldErrors.feedbackSuccessMessage && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSuccessMessage}</p>}
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Button Ja (OK) <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackButtonYes"
                                   value={generalSettings.feedbackButtonYes}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonYes: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackButtonYes ? 'border-red-500' : ''}`}
                                   placeholder="Ja, OK"
                                 />
+                                {validationFieldErrors.feedbackButtonYes && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonYes}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
                               </div>
                               <div>
                                 <label className="block text-sm font-medium mb-2">Button Nein (NOK) <span className="text-red-500">*</span></label>
                                 <DebouncedInput
+                                  id="feedbackButtonNo"
                                   value={generalSettings.feedbackButtonNo}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonNo: val as string })}
-                                  className="bg-white dark:bg-gray-700"
+                                  className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackButtonNo ? 'border-red-500' : ''}`}
                                   placeholder="Nein"
                                 />
+                                {validationFieldErrors.feedbackButtonNo && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonNo}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
                               </div>
+
+                              <div className="md:col-span-2 pt-4 border-t">
+                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <Search className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Such-Vorschlag bei "Nein" aktivieren</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">
+                                                Zeigt dem Nutzer einen Link zur intelligenten Suche an, wenn die Bewertung negativ ausfällt. (Erfordert aktive "Intelligente Such-Weiterleitung")
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={generalSettings.enableFeedbackSmartSearchFallback}
+                                        onCheckedChange={(checked) =>
+                                            setGeneralSettings({ ...generalSettings, enableFeedbackSmartSearchFallback: checked })
+                                        }
+                                        className="data-[state=checked]:bg-pink-600"
+                                        disabled={generalSettings.defaultRedirectMode !== 'search'}
+                                    />
+                                </div>
+                                {generalSettings.defaultRedirectMode !== 'search' && (
+                                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                                        * Nur verfügbar wenn "Intelligente Such-Weiterleitung" als Fallback-Strategie gewählt ist.
+                                    </p>
+                                )}
+                              </div>
+
+                              {generalSettings.enableFeedbackSmartSearchFallback && (
+                                <>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Titel</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackTitle"
+                                            value={generalSettings.feedbackSmartSearchFallbackTitle}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackTitle: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackTitle ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Beschreibung</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackDescription"
+                                            value={generalSettings.feedbackSmartSearchFallbackDescription}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackDescription: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackDescription ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Frage</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackQuestion"
+                                            value={generalSettings.feedbackSmartSearchFallbackQuestion}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackQuestion: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackQuestion ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                </>
+                              )}
+
+                              <div className="md:col-span-2 pt-4 border-t">
+                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Kommentar-Funktion bei "Nein" aktivieren</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">
+                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt (oder nachdem die Suche erfolglos war).
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={generalSettings.enableFeedbackComment}
+                                        onCheckedChange={(checked) =>
+                                            setGeneralSettings({ ...generalSettings, enableFeedbackComment: checked })
+                                        }
+                                        className="data-[state=checked]:bg-pink-600"
+                                    />
+                                </div>
+                              </div>
+
+                              {generalSettings.enableFeedbackComment && (
+                                <>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Kommentar Titel</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentTitle"
+                                            value={generalSettings.feedbackCommentTitle}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentTitle: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentTitle ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentTitle}</p>}
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Kommentar Beschreibung</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentDescription"
+                                            value={generalSettings.feedbackCommentDescription}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentDescription: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentDescription ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentDescription}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Platzhalter</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentPlaceholder"
+                                            value={generalSettings.feedbackCommentPlaceholder}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentPlaceholder: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentPlaceholder ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentPlaceholder && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentPlaceholder}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Button Text</label>
+                                        <DebouncedInput
+                                            id="feedbackCommentButton"
+                                            value={generalSettings.feedbackCommentButton}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackCommentButton: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackCommentButton ? 'border-red-500' : ''}`}
+                                        />
+                                        {validationFieldErrors.feedbackCommentButton && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentButton}</p>}
+                                    </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -3123,7 +3633,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     onClick={() => handleStatsViewChange('top100')}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Top 100
+                    Overall
                   </Button>
                   <Button
                     variant={statsView === 'browser' ? 'default' : 'outline'}
@@ -3205,6 +3715,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <SelectItem value="all">Alle Feedbacks</SelectItem>
                           <SelectItem value="OK">👍 OK</SelectItem>
                           <SelectItem value="NOK">👎 NOK</SelectItem>
+                          <SelectItem value="auto-redirect">⚡ Auto</SelectItem>
                           <SelectItem value="empty">Kein Feedback</SelectItem>
                         </SelectContent>
                       </Select>
@@ -3250,7 +3761,299 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
               {/* Top 100 View */}
               {statsView === 'top100' && (
-                <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
+                <div className="space-y-6">
+                  {/* Summary Cards Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{statsData?.stats?.total?.toLocaleString('de-DE') || 0}</div>
+                            <p className="text-xs text-muted-foreground">Gesamte Weiterleitungen</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{statsData?.stats?.today?.toLocaleString('de-DE') || 0}</div>
+                            <p className="text-xs text-muted-foreground">Heute</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">{statsData?.stats?.week?.toLocaleString('de-DE') || 0}</div>
+                            <p className="text-xs text-muted-foreground">Letzte 7 Tage</p>
+                        </CardContent>
+                    </Card>
+                    {generalSettings.showLinkQualityGauge && (
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="text-2xl font-bold">
+                                {statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100) : 0}%
+                            </div>
+                            <p className="text-xs text-muted-foreground">Exakte Trefferquote</p>
+                        </CardContent>
+                    </Card>
+                    )}
+                  </div>
+
+                  {/* Trend Chart (Configurable) */}
+                  {generalSettings.showSatisfactionTrend && (generalSettings.enableFeedbackSurvey || generalSettings.showLinkQualityGauge) && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5 text-primary" />
+                                        <CardTitle>Redirect Satisfaction Trend</CardTitle>
+                                    </div>
+                                    <CardDescription>
+                                        Entwicklung der Qualität und Nutzerzufriedenheit über die letzten {generalSettings.satisfactionTrendDays} Tage.
+                                    </CardDescription>
+                                </div>
+                                <Select value={trendAggregation} onValueChange={(v) => setTrendAggregation(v as any)}>
+                                    <SelectTrigger className="w-[120px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="day">Täglich</SelectItem>
+                                        <SelectItem value="week">Wöchentlich</SelectItem>
+                                        <SelectItem value="month">Monatlich</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {trendLoading ? (
+                                <div className="h-[200px] flex items-center justify-center text-muted-foreground">Lade Trend...</div>
+                            ) : (
+                                <SatisfactionChart
+                                    data={trendData as any}
+                                    feedbackOnly={generalSettings.satisfactionTrendFeedbackOnly}
+                                    aggregation={trendAggregation}
+                                    showQualityLine={generalSettings.showLinkQualityGauge}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                  )}
+
+                  {/* New Statistics Graphics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Link Quality Card */}
+                    {generalSettings.showLinkQualityGauge && (
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Activity className="h-5 w-5 text-primary" />
+                            <CardTitle>Link Quality</CardTitle>
+                        </div>
+                        <CardDescription>Qualitätsverteilung der Link-Matches</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {statsLoading ? (
+                          <div className="text-center py-8">Lade Statistiken...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* Exact Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('100');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Exakter Treffer (100%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match100 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                            </div>
+
+                            {/* High Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('75');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Hoher Treffer (75%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match75 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match75 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match75 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-blue-100 dark:bg-blue-900/20 [&>div]:bg-blue-600" />
+                            </div>
+
+                            {/* Medium Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('50');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Mittlerer Treffer (50%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match50 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match50 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match50 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-yellow-100 dark:bg-yellow-900/20 [&>div]:bg-yellow-600" />
+                            </div>
+
+                            {/* No Match */}
+                            <div
+                              className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                handleStatsViewChange('browser');
+                                setStatsQualityFilter('0');
+                              }}
+                            >
+                              <div className="flex justify-between text-sm">
+                                <span>Kein Treffer (0%)</span>
+                                <span className="font-medium">
+                                  {statsData?.stats?.quality?.match0 || 0}
+                                  <span className="text-muted-foreground ml-1">
+                                    ({statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match0 || 0) / statsData.stats.total) * 100) : 0}%)
+                                  </span>
+                                </span>
+                              </div>
+                              <Progress value={statsData?.stats?.total ? ((statsData.stats.quality?.match0 || 0) / statsData.stats.total) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    )}
+
+                    {/* User Feedback Card */}
+                    {generalSettings.enableFeedbackSurvey && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Nutzer-Feedback</CardTitle>
+                        <CardDescription>Rückmeldungen zu Weiterleitungen</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {statsLoading ? (
+                          <div className="text-center py-8">Lade Statistiken...</div>
+                        ) : (
+                          <div className="space-y-4">
+                            {(() => {
+                                const ok = statsData?.stats?.feedback?.ok || 0;
+                                const nok = statsData?.stats?.feedback?.nok || 0;
+                                const auto = statsData?.stats?.feedback?.autoRedirect || 0;
+                                const missing = statsData?.stats?.feedback?.missing || 0;
+                                const total = statsData?.stats?.total || 0;
+
+                                // Base for percentage calculation depends on setting
+                                const base = generalSettings.satisfactionTrendFeedbackOnly ? (ok + nok + auto) : total;
+
+                                return (
+                                <>
+                                    {/* OK */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange('browser');
+                                        setStatsFeedbackFilter('OK');
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <span>{generalSettings.feedbackButtonYes || "Positiv (OK)"}</span>
+                                        <span className="font-medium">
+                                        {ok}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((ok / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (ok / base) * 100 : 0} className="h-2 bg-green-100 dark:bg-green-900/20 [&>div]:bg-green-600" />
+                                    </div>
+
+                                    {/* NOK */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange('browser');
+                                        setStatsFeedbackFilter('NOK');
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <span>{generalSettings.feedbackButtonNo || "Negativ (NOK)"}</span>
+                                        <span className="font-medium">
+                                        {nok}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((nok / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (nok / base) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
+                                    </div>
+
+                                    {/* Auto-Redirect */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange("browser");
+                                        setStatsFeedbackFilter("auto-redirect");
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <div className="flex items-center gap-1">
+                                            <span>Auto-Redirect</span>
+                                        </div>
+                                        <span className="font-medium">
+                                        {auto}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((auto / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (auto / base) * 100 : 0} className="h-2 bg-blue-100 dark:bg-blue-900/20 [&>div]:bg-blue-600" />
+                                    </div>
+                                    {/* Missing (Only show if not in FeedbackOnly mode) */}
+                                    {!generalSettings.satisfactionTrendFeedbackOnly && (
+                                        <div
+                                        className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={() => {
+                                            handleStatsViewChange('browser');
+                                            setStatsFeedbackFilter('empty');
+                                        }}
+                                        >
+                                        <div className="flex justify-between text-sm">
+                                            <span>Kein Feedback</span>
+                                            <span className="font-medium">
+                                            {missing}
+                                            <span className="text-muted-foreground ml-1">
+                                                ({base > 0 ? Math.round((missing / base) * 100) : 0}%)
+                                            </span>
+                                            </span>
+                                        </div>
+                                        <Progress value={base > 0 ? (missing / base) * 100 : 0} className="h-2 bg-gray-100 dark:bg-gray-800 [&>div]:bg-gray-400" />
+                                        </div>
+                                    )}
+                                </>
+                                );
+                            })()}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    )}
+                  </div>
+
+                  <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
                   <Card>
                     <CardHeader>
                       <CardTitle>Top URLs</CardTitle>
@@ -3373,6 +4176,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </CardContent>
                   </Card>
                   )}
+                  </div>
                 </div>
               )}
 
@@ -3398,6 +4202,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           onEditRule={handleEditRule}
                           formatTimestamp={formatTimestamp}
                           showReferrer={generalSettings.enableReferrerTracking}
+                          enableLinkQuality={generalSettings.showLinkQualityGauge}
+                          enableUserFeedback={generalSettings.enableFeedbackSurvey}
                         />
                         
                         {/* Pagination Controls for Browser View */}
@@ -3484,6 +4290,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
                                         <li><strong>Discard Query Params</strong> (Optional) - 'true'/'false'</li>
                                         <li><strong>Keep Query Params</strong> (Optional) - 'true'/'false'</li>
+                                        <li><strong>Static Query Params</strong> (Optional) - JSON Array</li>
+                                        <li><strong>Search Replace</strong> (Optional) - JSON Array</li>
                                         <li><strong>ID</strong> (Optional) - Nur für Updates bestehender Regeln</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -4026,10 +4834,268 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               />
             </div>
 
+            {/* Search and Replace */}
+            <div className="border-t pt-4">
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  Suchen & Ersetzen
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Ersetzen Sie Teile der URL (Pfad oder Parameter) vor der Weiterleitung.
+                </p>
+                <div className="space-y-3">
+                  {ruleForm.searchAndReplace.map((item, index) => (
+                    <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Suchen</label>
+                            <Input
+                              value={item.search}
+                              onChange={(e) => {
+                                const newItems = [...ruleForm.searchAndReplace];
+                                newItems[index] = { ...item, search: e.target.value };
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                              }}
+                              placeholder="/alte-seite"
+                              className="h-8 text-sm"
+                            />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Ersetzen</label>
+                            <Input
+                              value={item.replace || ''}
+                              onChange={(e) => {
+                                const newItems = [...ruleForm.searchAndReplace];
+                                newItems[index] = { ...item, replace: e.target.value };
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                              }}
+                              placeholder="/neue-seite (leer = löschen)"
+                              className="h-8 text-sm"
+                            />
+                        </div>
+                        <div className="flex items-center h-8 pb-1">
+                             <div className="flex items-center space-x-2" title="Groß-/Kleinschreibung beachten">
+                                <Switch
+                                    checked={item.caseSensitive}
+                                    onCheckedChange={(checked) => {
+                                        const newItems = [...ruleForm.searchAndReplace];
+                                        newItems[index] = { ...item, caseSensitive: checked };
+                                        setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                    }}
+                                    className="scale-75"
+                                />
+                                <span className="text-xs">Aa</span>
+                             </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                        if (index > 0) {
+                                            const newItems = [...ruleForm.searchAndReplace];
+                                            const temp = newItems[index];
+                                            newItems[index] = newItems[index - 1];
+                                            newItems[index - 1] = temp;
+                                            setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                        }
+                                    }}
+                                    disabled={index === 0}
+                                >
+                                    <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                        if (index < ruleForm.searchAndReplace.length - 1) {
+                                            const newItems = [...ruleForm.searchAndReplace];
+                                            const temp = newItems[index];
+                                            newItems[index] = newItems[index + 1];
+                                            newItems[index + 1] = temp;
+                                            setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                        }
+                                    }}
+                                    disabled={index === ruleForm.searchAndReplace.length - 1}
+                                >
+                                    <ArrowDown className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                                const newItems = ruleForm.searchAndReplace.filter((_, i) => i !== index);
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                            }}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            setRuleForm(prev => ({
+                                ...prev,
+                                searchAndReplace: [...prev.searchAndReplace, { search: "", replace: "", caseSensitive: false }]
+                            }));
+                        }}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus className="h-3 w-3" />
+                        Ersetzung hinzufügen
+                    </Button>
+                  </div>
+                </div>
+            </div>
+
             {/* Parameter Handling Options */}
-            {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain') && (
-              <div className="border-t pt-4">
-                <div className="flex items-start space-x-3">
+            {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain' || ruleForm.redirectType === 'wildcard') && (
+              <div className="border-t pt-4 space-y-4">
+                {/* Static Query Params */}
+                <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      Statische Parameter hinzufügen
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Definieren Sie Parameter, die immer an die Ziel-URL angehängt werden (z.B. ?source=migration).
+                    </p>
+                    <div className="space-y-3">
+                      {ruleForm.staticQueryParams.map((item, index) => (
+                        <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Key</label>
+                                <Input
+                                  value={item.key}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.staticQueryParams];
+                                    newParams[index] = { ...item, key: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                  }}
+                                  placeholder="source"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Value</label>
+                                <Input
+                                  value={item.value || ''}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.staticQueryParams];
+                                    newParams[index] = { ...item, value: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                  }}
+                                  placeholder="migration"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1 items-center justify-end pb-1">
+                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                    <Switch
+                                        checked={item.skipEncoding}
+                                        onCheckedChange={(checked) => {
+                                            const newParams = [...ruleForm.staticQueryParams];
+                                            newParams[index] = { ...item, skipEncoding: checked };
+                                            setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                        }}
+                                        className="scale-75"
+                                    />
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index > 0) {
+                                                const newParams = [...ruleForm.staticQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index - 1];
+                                                newParams[index - 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === 0}
+                                        title="Nach oben"
+                                    >
+                                        <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index < ruleForm.staticQueryParams.length - 1) {
+                                                const newParams = [...ruleForm.staticQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index + 1];
+                                                newParams[index + 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === ruleForm.staticQueryParams.length - 1}
+                                        title="Nach unten"
+                                    >
+                                        <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                    const newParams = ruleForm.staticQueryParams.filter((_, i) => i !== index);
+                                    setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                }}
+                                title="Löschen"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRuleForm(prev => ({
+                                    ...prev,
+                                    staticQueryParams: [...prev.staticQueryParams, { key: "", value: "" }]
+                                }));
+                            }}
+                            className="flex items-center gap-2"
+                        >
+                            <Plus className="h-3 w-3" />
+                            Parameter hinzufügen
+                        </Button>
+                      </div>
+                    </div>
+                </div>
+
+                {ruleForm.redirectType !== 'wildcard' && (
+                <div className="flex items-start space-x-3 pt-4 border-t">
                   <Switch
                     checked={ruleForm.discardQueryParams}
                     onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, discardQueryParams: checked }))}
@@ -4043,6 +5109,165 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </p>
                   </div>
                 </div>
+                )}
+
+                {/* Show Kept Params config if Discard is ON (Partial/Domain) OR Forward is OFF (Wildcard) */}
+                {((ruleForm.redirectType !== 'wildcard' && ruleForm.discardQueryParams) || (ruleForm.redirectType === 'wildcard' && !ruleForm.forwardQueryParams)) && (
+                  <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 ml-4">
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      Parameter beibehalten / umbenennen (Regex)
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Definieren Sie Ausnahmen für Parameter, die trotz Aktivierung erhalten bleiben sollen. Die Reihenfolge bestimmt die Position im neuen Query-String.
+                    </p>
+                    <div className="space-y-3">
+                      {ruleForm.keptQueryParams.map((item, index) => (
+                        <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Parameter Key (Regex)</label>
+                                <Input
+                                  value={item.keyPattern}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.keptQueryParams];
+                                    newParams[index] = { ...item, keyPattern: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                  }}
+                                  placeholder="file"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Value Matcher (Optional Regex)</label>
+                                <Input
+                                  value={item.valuePattern || ''}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.keptQueryParams];
+                                    newParams[index] = { ...item, valuePattern: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                  }}
+                                  placeholder=".*"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                             <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Neuer Name (Optional)</label>
+                                <Input
+                                  value={item.targetKey || ''}
+                                  onChange={(e) => {
+                                    const newParams = [...ruleForm.keptQueryParams];
+                                    newParams[index] = { ...item, targetKey: e.target.value };
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                  }}
+                                  placeholder="f"
+                                  className="h-8 text-sm"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1 items-center justify-end pb-1">
+                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                    <Switch
+                                        checked={item.skipEncoding}
+                                        onCheckedChange={(checked) => {
+                                            const newParams = [...ruleForm.keptQueryParams];
+                                            newParams[index] = { ...item, skipEncoding: checked };
+                                            setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                        }}
+                                        className="scale-75"
+                                    />
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index > 0) {
+                                                const newParams = [...ruleForm.keptQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index - 1];
+                                                newParams[index - 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === 0}
+                                        title="Nach oben"
+                                    >
+                                        <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => {
+                                            if (index < ruleForm.keptQueryParams.length - 1) {
+                                                const newParams = [...ruleForm.keptQueryParams];
+                                                const temp = newParams[index];
+                                                newParams[index] = newParams[index + 1];
+                                                newParams[index + 1] = temp;
+                                                setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                            }
+                                        }}
+                                        disabled={index === ruleForm.keptQueryParams.length - 1}
+                                        title="Nach unten"
+                                    >
+                                        <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                    const newParams = ruleForm.keptQueryParams.filter((_, i) => i !== index);
+                                    setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                }}
+                                title="Löschen"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRuleForm(prev => ({
+                                    ...prev,
+                                    keptQueryParams: [...prev.keptQueryParams, { keyPattern: "" }]
+                                }));
+                            }}
+                            className="flex items-center gap-2"
+                        >
+                            <Plus className="h-3 w-3" />
+                            Parameter hinzufügen
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRuleForm(prev => ({
+                                    ...prev,
+                                    keptQueryParams: [...prev.keptQueryParams, { keyPattern: "file" }]
+                                }));
+                            }}
+                            title="Fügt eine Beispiel-Regex hinzu"
+                        >
+                            Beispiel (File) hinzufügen
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -4051,14 +5276,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <div className="flex items-start space-x-3">
                   <Switch
                     checked={ruleForm.forwardQueryParams}
-                    onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, forwardQueryParams: checked }))}
+                    onCheckedChange={(checked) => setRuleForm(prev => ({
+                        ...prev,
+                        forwardQueryParams: checked,
+                        // If Forward is ON, Discard must be OFF (to avoid confusion in backend)
+                        // If Forward is OFF, Discard must be ON (to trigger keptQueryParams logic)
+                        discardQueryParams: !checked
+                    }))}
                   />
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Link-Parameter beibehalten
+                      Alle Link-Parameter beibehalten
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Wenn aktiviert, werden die ursprünglichen Query-Parameter an die Ziel-URL angehängt. Standard ist deaktiviert (Parameter werden verworfen).
+                      Wenn aktiviert, werden die ursprünglichen Query-Parameter 1:1 an die Ziel-URL angehängt.
+                      Deaktivieren Sie dies, um spezifische Parameter auszuwählen oder umzubenennen.
                     </p>
                   </div>
                 </div>
@@ -4078,6 +5310,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.
                   </p>
+                  {ruleForm.autoRedirect && generalSettings.enableFeedbackSurvey && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <span className="text-xs text-yellow-700">
+                            Warnung: Da die Feedback-Umfrage global aktiviert ist, erhält der Nutzer bei diesem Auto-Redirect keine Möglichkeit Feedback zu geben.
+                        </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -4410,6 +5650,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               disabled={bulkDeleteRulesMutation.isPending}
             >
               {bulkDeleteRulesMutation.isPending ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Settings Validation Error Dialog */}
+      <AlertDialog open={showSettingsErrorDialog} onOpenChange={setShowSettingsErrorDialog}>
+        <AlertDialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <AlertDialogHeader className="flex-shrink-0">
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Validierungsfehler
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground text-sm">
+              Die Einstellungen konnten aufgrund folgender Fehler nicht gespeichert werden:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="flex-1 min-h-0 my-4">
+            <div className="max-h-60 overflow-y-auto border rounded-md p-3 bg-red-50 dark:bg-red-900/10">
+              <ul className="list-disc list-inside space-y-1 text-sm text-foreground">
+                {settingsValidationErrors.map((err, index) => (
+                  <li key={index} className="break-words">{err}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <AlertDialogFooter className="flex-shrink-0">
+            <AlertDialogAction onClick={() => setShowSettingsErrorDialog(false)}>
+              Verstanden
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

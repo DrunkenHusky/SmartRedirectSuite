@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -25,7 +26,7 @@ import {
   ThumbsUp,
   ThumbsDown
 } from "lucide-react";
-import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard } from "@/lib/url-utils";
+import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard, extractSearchTerm } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordModal } from "@/components/ui/password-modal";
 import { QualityGauge } from "@/components/ui/quality-gauge";
@@ -83,9 +84,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  const [showCommentStep, setShowCommentStep] = useState(false);
+  const [showSearchFallback, setShowSearchFallback] = useState(false);
+  const [commentUrl, setCommentUrl] = useState("");
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   const [trackingId, setTrackingId] = useState<string | null>(null);
+  const [searchTrackingId, setSearchTrackingId] = useState<string | null>(null);
+  const [searchFallbackUrl, setSearchFallbackUrl] = useState("");
   const [hasAskedFeedback, setHasAskedFeedback] = useState(false);
+  const [isSearchFallbackCopied, setIsSearchFallbackCopied] = useState(false);
+  const [hasInteractedWithSearchFallback, setHasInteractedWithSearchFallback] = useState(false);
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const fallbackAppName = __APP_NAME__ || "URL Migration Service";
@@ -236,15 +244,17 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     setMatchExplanation(message);
                     setInfoText(message);
 
-                    // Extract last segment
+                    // Extract last segment or use Regex
                     try {
-                        const urlObj = new URL(url);
-                        const pathname = urlObj.pathname;
-                        const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
-                        const lastSegment = segments.length > 0 ? segments[segments.length - 1] : "";
+                        const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding: ruleSkipEncoding } = extractSearchTerm(url, settings.smartSearchRules, settings.smartSearchRegex);
 
-                        if (lastSegment && settings.defaultSearchUrl) {
-                            generatedNewUrl = settings.defaultSearchUrl + encodeURIComponent(lastSegment);
+                        const targetSearchUrl = ruleSearchUrl || settings.defaultSearchUrl;
+
+                        if (searchTerm && targetSearchUrl) {
+                            // Use rule-specific setting if available, otherwise global default
+                            const shouldUseSkipEncoding = ruleSkipEncoding !== undefined ? ruleSkipEncoding : settings.defaultSearchSkipEncoding;
+                            const finalSearchTerm = shouldUseSkipEncoding ? searchTerm : encodeURIComponent(searchTerm);
+                            generatedNewUrl = targetSearchUrl + finalSearchTerm;
                             redirectUrl = generatedNewUrl;
 
                             if (settings.autoRedirect) {
@@ -314,6 +324,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               referrer: settings.enableReferrerTracking ? (document.referrer || '').substring(0, 2000) : undefined,
               ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
               matchQuality: currentMatchQuality,
+              // Log auto-redirect as feedback if survey is active to ensure stats integrity
+              feedback: settings.enableFeedbackSurvey ? 'auto-redirect' : undefined
             }),
           });
           
@@ -414,27 +426,121 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     }
   };
 
-  const handleFeedback = async (feedback: 'OK' | 'NOK') => {
+  const submitFeedback = async (feedback: 'OK' | 'NOK', userProposedUrl?: string) => {
     try {
+      // Use specific tracking ID for search fallback if active
+      const targetTrackingId = showSearchFallback ? searchTrackingId : trackingId;
+
       await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ruleId: matchingRule?.id,
-          trackingId: trackingId || undefined,
+          trackingId: targetTrackingId || undefined,
           feedback,
-          url: currentUrl
+          url: currentUrl, // Always log original URL context
+          userProposedUrl
         }),
       });
       setFeedbackSuccess(true);
       setTimeout(() => {
         setShowFeedbackPopup(false);
+        setShowCommentStep(false);
+        setShowSearchFallback(false); // Close fallback view
+        setCommentUrl("");
         setFeedbackSuccess(false); // Reset for next time
       }, 2000);
     } catch (error) {
       console.error("Feedback error:", error);
       setShowFeedbackPopup(false);
     }
+  };
+
+  const handleFeedback = async (feedback: 'OK' | 'NOK') => {
+    // If user clicks NOK, fallback is enabled, and not already in fallback mode
+    if (feedback === 'NOK' && settings?.enableFeedbackSmartSearchFallback && !showSearchFallback) {
+       // Silent update for the original tracking entry to record the NOK feedback
+       if (trackingId) {
+          fetch("/api/feedback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              trackingId: trackingId,
+              feedback: 'NOK',
+              url: currentUrl
+            }),
+          }).catch(console.error);
+       }
+
+       // Generate fallback search URL
+       try {
+          const { searchTerm, searchUrl: ruleSearchUrl, skipEncoding: ruleSkipEncoding } = extractSearchTerm(currentUrl, settings.smartSearchRules, settings.smartSearchRegex);
+          const targetSearchUrl = ruleSearchUrl || settings.defaultSearchUrl;
+
+          if (searchTerm && targetSearchUrl) {
+             // Use rule-specific setting if available, otherwise global default
+             const shouldUseSkipEncoding = ruleSkipEncoding !== undefined ? ruleSkipEncoding : settings.defaultSearchSkipEncoding;
+             const finalSearchTerm = shouldUseSkipEncoding ? searchTerm : encodeURIComponent(searchTerm);
+             const fallbackUrl = targetSearchUrl + finalSearchTerm;
+
+             // Don't show fallback if it's the same as the current rejection
+             if (fallbackUrl !== newUrl) {
+                 setSearchFallbackUrl(fallbackUrl);
+                 setShowSearchFallback(true);
+
+                 // Create a new tracking entry for this specific fallback interaction
+                 const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
+                 const trackResponse = await fetch("/api/track", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      oldUrl: currentUrl.substring(0, 8000),
+                      newUrl: fallbackUrl.substring(0, 8000),
+                      path: extractPath(currentUrl).substring(0, 8000),
+                      timestamp: new Date().toISOString(),
+                      userAgent: safeUserAgent,
+                      ruleId: undefined, // No rule matched or we are overriding
+                      matchQuality: 0, // Fallback implies low quality/manual
+                      referrer: "Smart Search Fallback"
+                    }),
+                 });
+                 if (trackResponse.ok) {
+                    const trackData = await trackResponse.json();
+                    if (trackData.id) {
+                       setSearchTrackingId(trackData.id);
+                    }
+                 }
+                 return; // Stop normal feedback flow
+             }
+          }
+       } catch (e) {
+          console.error("Fallback generation failed", e);
+       }
+    }
+
+    if (feedback === 'NOK' && settings?.enableFeedbackComment) {
+      setShowCommentStep(true);
+      return;
+    }
+    submitFeedback(feedback);
+  };
+
+  const handleCommentSubmit = () => {
+    submitFeedback('NOK', commentUrl);
+  };
+
+  const handleCopySearchFallback = async () => {
+      try {
+          await copyToClipboard(searchFallbackUrl);
+          setIsSearchFallbackCopied(true);
+          setHasInteractedWithSearchFallback(true);
+          setTimeout(() => setIsSearchFallbackCopied(false), 2000);
+      } catch (e) { /* ignore */ }
+  };
+
+  const handleOpenSearchFallback = () => {
+      window.open(searchFallbackUrl, '_blank');
+      setHasInteractedWithSearchFallback(true);
   };
 
   const handleAdminSuccess = () => {
@@ -767,7 +873,16 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       />
 
       {/* Feedback Survey Dialog */}
-      <Dialog open={showFeedbackPopup} onOpenChange={setShowFeedbackPopup}>
+      <Dialog open={showFeedbackPopup} onOpenChange={(open) => {
+        setShowFeedbackPopup(open);
+        if (!open) {
+          // Small delay to allow animation to finish before resetting state
+          setTimeout(() => {
+            setShowCommentStep(false);
+            setCommentUrl("");
+          }, 300);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           {feedbackSuccess ? (
             <div className="flex flex-col items-center justify-center py-6 space-y-4 text-center animate-fade-in">
@@ -776,6 +891,102 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               </div>
               <DialogTitle className="text-xl">{settings?.feedbackSuccessMessage || "Danke für Ihr Feedback!"}</DialogTitle>
             </div>
+          ) : showCommentStep ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>{settings?.feedbackCommentTitle || "Kennen Sie die korrekte URL?"}</DialogTitle>
+                <DialogDescription>
+                  {settings?.feedbackCommentDescription || "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                 <Input
+                    placeholder={settings?.feedbackCommentPlaceholder || "https://..."}
+                    value={commentUrl}
+                    onChange={(e) => setCommentUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCommentSubmit();
+                      }
+                    }}
+                    autoFocus
+                 />
+                 <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => submitFeedback('NOK')}>
+                      Überspringen
+                    </Button>
+                    <Button onClick={handleCommentSubmit}>
+                      {settings?.feedbackCommentButton || "Absenden"}
+                    </Button>
+                 </div>
+              </div>
+            </>
+          ) : showSearchFallback ? (
+             <div className="space-y-4 animate-fade-in">
+                <DialogHeader>
+                    <DialogTitle>{settings?.feedbackSmartSearchFallbackTitle || "Vorschlag: Suche verwenden"}</DialogTitle>
+                    <DialogDescription>
+                        {settings?.feedbackSmartSearchFallbackDescription || "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche."}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 relative">
+                    <code className="text-sm text-blue-800 break-all block pr-8">
+                        {searchFallbackUrl}
+                    </code>
+                </div>
+
+                <div className="flex gap-2 justify-center pb-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleCopySearchFallback}
+                        className="flex items-center gap-2"
+                    >
+                        {isSearchFallbackCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {settings?.copyButtonText || "Kopieren"}
+                    </Button>
+                    <Button
+                        onClick={handleOpenSearchFallback}
+                        className="flex items-center gap-2"
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                        {settings?.openButtonText || "Öffnen"}
+                    </Button>
+                </div>
+
+                {hasInteractedWithSearchFallback && (
+                <div className="border-t pt-4 animate-fade-in">
+                    <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
+                        {settings?.feedbackSmartSearchFallbackQuestion || "Hat dieser Link funktioniert?"}
+                    </p>
+                    <div className="flex justify-center gap-4">
+                        <Button
+                            variant="outline"
+                            className="flex-1 hover:bg-green-50 hover:text-green-700"
+                            onClick={() => submitFeedback('OK')}
+                        >
+                            <ThumbsUp className="h-4 w-4 mr-2" />
+                            {settings?.feedbackButtonYes || "Ja"}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="flex-1 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => {
+                                if (settings?.enableFeedbackComment) {
+                                    setShowCommentStep(true);
+                                } else {
+                                    submitFeedback('NOK');
+                                }
+                            }}
+                        >
+                            <ThumbsDown className="h-4 w-4 mr-2" />
+                            {settings?.feedbackButtonNo || "Nein"}
+                        </Button>
+                    </div>
+                </div>
+                )}
+             </div>
           ) : (
             <>
               <DialogHeader>

@@ -56,7 +56,23 @@ export const urlRuleSchemaWithValidation = z.object({
   redirectType: z.enum(['wildcard', 'partial', 'domain']).default('partial'),
   autoRedirect: z.boolean().default(false),
   discardQueryParams: z.boolean().default(false),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
   // Validate targetUrl based on redirectType with German error messages
@@ -109,7 +125,23 @@ export const updateUrlRuleSchemaWithValidation = z.object({
   redirectType: z.enum(['wildcard', 'partial', 'domain']).optional(),
   autoRedirect: z.boolean().optional(),
   discardQueryParams: z.boolean().optional(),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
+  })).optional(),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+    skipEncoding: z.boolean().default(false),
+  })).optional(),
   forwardQueryParams: z.boolean().optional(),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional(),
   createdAt: z.string().datetime("Ungültiges Datumsformat").optional(),
 }).transform((data) => {
   // Pre-validation transformation
@@ -160,7 +192,23 @@ export const importUrlRuleSchemaWithValidation = z.object({
     .optional(),
   autoRedirect: z.boolean().default(false),
   discardQueryParams: z.boolean().default(false),
+  keptQueryParams: z.array(z.object({
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
+  staticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
 }).transform((data) => {
   // Validate targetUrl based on redirectType with German error messages
   if (data.redirectType === 'wildcard') {
