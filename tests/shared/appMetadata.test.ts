@@ -21,5 +21,10 @@ import { APPLICATION_METADATA } from "../../shared/appMetadata";
     APPLICATION_METADATA.displayName.includes(" "),
     "Display name should be human-friendly with spaces",
   );
+  assert.equal(
+    APPLICATION_METADATA.repositoryUrl,
+    "https://github.com/DrunkenHusky/SmartRedirectSuite",
+    "Repository URL should be set",
+  );
   console.log("appMetadata tests passed");
 })();
