@@ -105,7 +105,7 @@ interface ImportPreviewData {
   };
 }
 
-// Simple Line Chart Component
+// Simple Line Chart Component with Tooltip
 function SatisfactionChart({
   data,
   feedbackOnly,
@@ -123,6 +123,9 @@ function SatisfactionChart({
   feedbackOnly?: boolean,
   aggregation?: 'day' | 'week' | 'month'
 }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">Nicht genügend Daten für Trendanzeige</div>;
 
   // Process data based on feedbackOnly mode
@@ -162,7 +165,7 @@ function SatisfactionChart({
     return `${x},${y}`;
   }).join(' ');
 
-  // 2. Satisfaction Score Line (Green if FeedbackOnly, else Primary)
+  // 2. Satisfaction Score Line (Orange)
   let satisfactionPathD = "";
   let isDrawing = false;
 
@@ -196,23 +199,65 @@ function SatisfactionChart({
     return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const index = Math.round((x / width) * (chartData.length - 1));
+    if (index >= 0 && index < chartData.length) {
+      setActiveIndex(index);
+    }
+  };
+
   return (
-    <div className="w-full h-[200px] flex flex-col relative">
+    <div
+      className="w-full h-[200px] flex flex-col relative"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setActiveIndex(null)}
+    >
         {/* Legends */}
         <div className="absolute top-2 right-2 flex flex-wrap justify-end gap-3 text-[10px] z-10 bg-background/80 p-1 rounded backdrop-blur-sm border">
             <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                <span>System Match Quality</span>
+                <span>Match Quality</span>
             </div>
             <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: feedbackOnly ? "#16a34a" : "#f97316" }}></div>
-                <span>{feedbackOnly ? "User Satisfaction (OK/Total)" : "User Satisfaction (Mixed)"}</span>
+                <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <span>{feedbackOnly ? "Zufriedenheit (Nur Feedback)" : "Gesamt-Zufriedenheit (Score)"}</span>
             </div>
             <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <span>Feedback Count (Max: {maxCount})</span>
+                <span>Feedback Anzahl (Max: {maxCount})</span>
             </div>
         </div>
+
+        {/* Tooltip Overlay */}
+        {activeIndex !== null && chartData[activeIndex] && (
+          <div
+            className="absolute top-8 left-0 z-20 bg-popover text-popover-foreground p-2 rounded shadow-md text-xs border pointer-events-none"
+            style={{
+              left: `${(activeIndex / (chartData.length - 1)) * 100}%`,
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <div className="font-semibold mb-1">{formatDate(chartData[activeIndex].date)}</div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <span>Match: {chartData[activeIndex].matchQualityScore}%</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+              <span>Score: {chartData[activeIndex].satisfactionScore !== null ? `${chartData[activeIndex].satisfactionScore}%` : '-'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+              <span>Feedback: {chartData[activeIndex].feedbackCount}</span>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 relative w-full h-full min-h-[150px]">
             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -252,11 +297,11 @@ function SatisfactionChart({
                     vectorEffect="non-scaling-stroke"
                 />
 
-                {/* Line for Satisfaction Score (Orange/Green) - Using Path for gaps */}
+                {/* Line for Satisfaction Score (Orange) - Using Path for gaps */}
                 <path
                     d={satisfactionPathD}
                     fill="none"
-                    stroke={feedbackOnly ? "#16a34a" : "#f97316"}
+                    stroke="#f97316"
                     strokeWidth="2.5"
                     vectorEffect="non-scaling-stroke"
                 />
@@ -272,11 +317,24 @@ function SatisfactionChart({
                             cx={x}
                             cy={y}
                             r="1.5"
-                            fill={feedbackOnly ? "#16a34a" : "#f97316"}
+                            fill="#f97316"
                             vectorEffect="non-scaling-stroke"
                         />
                     );
                 })}
+
+                {/* Active Indicator Line */}
+                {activeIndex !== null && (
+                  <line
+                    x1={(activeIndex / (chartData.length - 1)) * 100}
+                    y1="0"
+                    x2={(activeIndex / (chartData.length - 1)) * 100}
+                    y2="100"
+                    stroke="currentColor"
+                    strokeOpacity="0.5"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
             </svg>
 
             {/* Axis Labels (Overlay) */}
@@ -411,6 +469,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     keptQueryParams: [] as { keyPattern: string; valuePattern?: string; targetKey?: string }[],
     staticQueryParams: [] as { key: string; value: string }[],
     forwardQueryParams: false,
+    searchAndReplace: [] as { search: string; replace: string; caseSensitive: boolean }[],
   });
   const targetUrlPlaceholder =
     ruleForm.redirectType === "wildcard"
@@ -567,6 +626,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     enableReferrerTracking: true,
     defaultRedirectMode: "domain" as "domain" | "search",
     defaultSearchUrl: "" as string | undefined | null,
+    defaultSearchSkipEncoding: false,
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
     smartSearchRegex: "" as string | undefined | null,
     smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string; skipEncoding?: boolean }[],
@@ -581,6 +641,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
     feedbackCommentPlaceholder: "https://...",
     feedbackCommentButton: "Absenden",
+    enableFeedbackSmartSearchFallback: false,
+    feedbackSmartSearchFallbackTitle: "Vorschlag: Suche verwenden",
+    feedbackSmartSearchFallbackDescription: "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
+    feedbackSmartSearchFallbackQuestion: "Hat dieser Link funktioniert?",
     showSatisfactionTrend: true,
     satisfactionTrendFeedbackOnly: false,
     satisfactionTrendDays: 30,
@@ -910,6 +974,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         enableReferrerTracking: settingsData.enableReferrerTracking ?? true,
         defaultRedirectMode: settingsData.defaultRedirectMode || "domain",
         defaultSearchUrl: settingsData.defaultSearchUrl || "",
+        defaultSearchSkipEncoding: settingsData.defaultSearchSkipEncoding || false,
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
         smartSearchRegex: settingsData.smartSearchRegex || "",
         smartSearchRules: settingsData.smartSearchRules || [],
@@ -924,6 +989,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         feedbackCommentDescription: settingsData.feedbackCommentDescription || "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
         feedbackCommentPlaceholder: settingsData.feedbackCommentPlaceholder || "https://...",
         feedbackCommentButton: settingsData.feedbackCommentButton || "Absenden",
+        enableFeedbackSmartSearchFallback: settingsData.enableFeedbackSmartSearchFallback ?? false,
+        feedbackSmartSearchFallbackTitle: settingsData.feedbackSmartSearchFallbackTitle || "Vorschlag: Suche verwenden",
+        feedbackSmartSearchFallbackDescription: settingsData.feedbackSmartSearchFallbackDescription || "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
+        feedbackSmartSearchFallbackQuestion: settingsData.feedbackSmartSearchFallbackQuestion || "Hat dieser Link funktioniert?",
     showSatisfactionTrend: settingsData.showSatisfactionTrend ?? true,
     satisfactionTrendFeedbackOnly: settingsData.satisfactionTrendFeedbackOnly ?? false,
     satisfactionTrendDays: settingsData.satisfactionTrendDays || 30,
@@ -1363,7 +1432,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
-    setRuleForm({ matcher: "", targetUrl: "", infoText: "", redirectType: "partial", autoRedirect: false, discardQueryParams: false, keptQueryParams: [], staticQueryParams: [], forwardQueryParams: false });
+    setRuleForm({
+      matcher: "",
+      targetUrl: "",
+      infoText: "",
+      redirectType: "partial",
+      autoRedirect: false,
+      discardQueryParams: false,
+      keptQueryParams: [],
+      staticQueryParams: [],
+      forwardQueryParams: false,
+      searchAndReplace: []
+    });
     setEditingRule(null);
     setValidationError(null);
     setShowValidationDialog(false);
@@ -1503,6 +1583,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       keptQueryParams: rule.keptQueryParams || [],
       staticQueryParams: rule.staticQueryParams || [],
       forwardQueryParams: rule.forwardQueryParams || false,
+      searchAndReplace: rule.searchAndReplace || [],
     });
     setIsRuleDialogOpen(true);
   }, []);
@@ -2646,17 +2727,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                                     Such-Basis-URL <span className="text-red-500">*</span>
                                   </label>
-                                  <DebouncedInput
-                                    id="defaultSearchUrl"
-                                    value={generalSettings.defaultSearchUrl || ''}
-                                    onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
-                                    placeholder="https://newapp.com/?q="
-                                    className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl || validationFieldErrors.defaultSearchUrl ? 'border-red-500' : ''}`}
-                                  />
-                                  {validationFieldErrors.defaultSearchUrl && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchUrl}</p>}
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Beispiel: https://newapp.com/?q=
-                                  </p>
+                                  <div className="flex gap-4 items-start">
+                                      <div className="flex-1">
+                                          <DebouncedInput
+                                            id="defaultSearchUrl"
+                                            value={generalSettings.defaultSearchUrl || ''}
+                                            onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
+                                            placeholder="https://newapp.com/?q="
+                                            className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl || validationFieldErrors.defaultSearchUrl ? 'border-red-500' : ''}`}
+                                          />
+                                          {validationFieldErrors.defaultSearchUrl && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchUrl}</p>}
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            Beispiel: https://newapp.com/?q=
+                                          </p>
+                                      </div>
+                                      <div className="flex flex-col items-center gap-2 pt-2">
+                                          <Switch
+                                              id="defaultSearchSkipEncoding"
+                                              checked={generalSettings.defaultSearchSkipEncoding}
+                                              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, defaultSearchSkipEncoding: checked })}
+                                          />
+                                          <label htmlFor="defaultSearchSkipEncoding" className="text-[10px] text-gray-500 max-w-[80px] text-center leading-tight">
+                                              Nicht kodieren
+                                          </label>
+                                      </div>
+                                  </div>
                                 </div>
 
                                 <div>
@@ -3296,6 +3391,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
                                   Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
                                 </p>
+                                  {generalSettings.autoRedirect && generalSettings.enableFeedbackSurvey && (
+                                    <div className="flex items-center gap-2 mt-2 text-xs text-yellow-600 font-medium">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>Hinweis: Feedback-Umfrage wird deaktiviert, da keine Interaktion stattfindet (Auto-Redirect wird als Feedback geloggt).</span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <Switch
@@ -3455,11 +3556,70 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <div className="md:col-span-2 pt-4 border-t">
                                 <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
                                     <div className="flex items-center gap-3">
+                                        <Search className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                                        <div>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Such-Vorschlag bei "Nein" aktivieren</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">
+                                                Zeigt dem Nutzer einen Link zur intelligenten Suche an, wenn die Bewertung negativ ausfällt. (Erfordert aktive "Intelligente Such-Weiterleitung")
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={generalSettings.enableFeedbackSmartSearchFallback}
+                                        onCheckedChange={(checked) =>
+                                            setGeneralSettings({ ...generalSettings, enableFeedbackSmartSearchFallback: checked })
+                                        }
+                                        className="data-[state=checked]:bg-pink-600"
+                                        disabled={generalSettings.defaultRedirectMode !== 'search'}
+                                    />
+                                </div>
+                                {generalSettings.defaultRedirectMode !== 'search' && (
+                                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                                        * Nur verfügbar wenn "Intelligente Such-Weiterleitung" als Fallback-Strategie gewählt ist.
+                                    </p>
+                                )}
+                              </div>
+
+                              {generalSettings.enableFeedbackSmartSearchFallback && (
+                                <>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Titel</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackTitle"
+                                            value={generalSettings.feedbackSmartSearchFallbackTitle}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackTitle: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackTitle ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Beschreibung</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackDescription"
+                                            value={generalSettings.feedbackSmartSearchFallbackDescription}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackDescription: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackDescription ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Vorschlag Frage</label>
+                                        <DebouncedInput
+                                            id="feedbackSmartSearchFallbackQuestion"
+                                            value={generalSettings.feedbackSmartSearchFallbackQuestion}
+                                            onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSmartSearchFallbackQuestion: val as string })}
+                                            className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSmartSearchFallbackQuestion ? 'border-red-500' : ''}`}
+                                        />
+                                    </div>
+                                </>
+                              )}
+
+                              <div className="md:col-span-2 pt-4 border-t">
+                                <div className="flex items-center justify-between p-4 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg mb-4">
+                                    <div className="flex items-center gap-3">
                                         <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                                         <div>
                                             <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Kommentar-Funktion bei "Nein" aktivieren</p>
                                             <p className="text-xs text-pink-700 dark:text-pink-300">
-                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt.
+                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt (oder nachdem die Suche erfolglos war).
                                             </p>
                                         </div>
                                     </div>
@@ -4893,8 +5053,136 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               />
             </div>
 
+            {/* Search and Replace */}
+            <div className="border-t pt-4">
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  Suchen & Ersetzen
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Ersetzen Sie Teile der URL (Pfad oder Parameter) vor der Weiterleitung.
+                </p>
+                <div className="space-y-3">
+                  {ruleForm.searchAndReplace.map((item, index) => (
+                    <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Suchen</label>
+                            <Input
+                              value={item.search}
+                              onChange={(e) => {
+                                const newItems = [...ruleForm.searchAndReplace];
+                                newItems[index] = { ...item, search: e.target.value };
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                              }}
+                              placeholder="/alte-seite"
+                              className="h-8 text-sm"
+                            />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Ersetzen</label>
+                            <Input
+                              value={item.replace || ''}
+                              onChange={(e) => {
+                                const newItems = [...ruleForm.searchAndReplace];
+                                newItems[index] = { ...item, replace: e.target.value };
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                              }}
+                              placeholder="/neue-seite (leer = löschen)"
+                              className="h-8 text-sm"
+                            />
+                        </div>
+                        <div className="flex items-center h-8 pb-1">
+                             <div className="flex items-center space-x-2" title="Groß-/Kleinschreibung beachten">
+                                <Switch
+                                    checked={item.caseSensitive}
+                                    onCheckedChange={(checked) => {
+                                        const newItems = [...ruleForm.searchAndReplace];
+                                        newItems[index] = { ...item, caseSensitive: checked };
+                                        setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                    }}
+                                    className="scale-75"
+                                />
+                                <span className="text-xs">Aa</span>
+                             </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                        if (index > 0) {
+                                            const newItems = [...ruleForm.searchAndReplace];
+                                            const temp = newItems[index];
+                                            newItems[index] = newItems[index - 1];
+                                            newItems[index - 1] = temp;
+                                            setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                        }
+                                    }}
+                                    disabled={index === 0}
+                                >
+                                    <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                        if (index < ruleForm.searchAndReplace.length - 1) {
+                                            const newItems = [...ruleForm.searchAndReplace];
+                                            const temp = newItems[index];
+                                            newItems[index] = newItems[index + 1];
+                                            newItems[index + 1] = temp;
+                                            setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                                        }
+                                    }}
+                                    disabled={index === ruleForm.searchAndReplace.length - 1}
+                                >
+                                    <ArrowDown className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                                const newItems = ruleForm.searchAndReplace.filter((_, i) => i !== index);
+                                setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
+                            }}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            setRuleForm(prev => ({
+                                ...prev,
+                                searchAndReplace: [...prev.searchAndReplace, { search: "", replace: "", caseSensitive: false }]
+                            }));
+                        }}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus className="h-3 w-3" />
+                        Ersetzung hinzufügen
+                    </Button>
+                  </div>
+                </div>
+            </div>
+
             {/* Parameter Handling Options */}
-            {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain') && (
+            {(ruleForm.redirectType === 'partial' || ruleForm.redirectType === 'domain' || ruleForm.redirectType === 'wildcard') && (
               <div className="border-t pt-4 space-y-4">
                 {/* Static Query Params */}
                 <div>
@@ -4934,7 +5222,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="h-8 text-sm"
                                 />
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1 items-center justify-end pb-1">
+                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                    <Switch
+                                        checked={item.skipEncoding}
+                                        onCheckedChange={(checked) => {
+                                            const newParams = [...ruleForm.staticQueryParams];
+                                            newParams[index] = { ...item, skipEncoding: checked };
+                                            setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
+                                        }}
+                                        className="scale-75"
+                                    />
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                </div>
                                 <div className="flex gap-1">
                                     <Button
                                         type="button"
@@ -5013,6 +5313,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </div>
                 </div>
 
+                {ruleForm.redirectType !== 'wildcard' && (
                 <div className="flex items-start space-x-3 pt-4 border-t">
                   <Switch
                     checked={ruleForm.discardQueryParams}
@@ -5027,11 +5328,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </p>
                   </div>
                 </div>
+                )}
 
-                {ruleForm.discardQueryParams && (
+                {/* Show Kept Params config if Discard is ON (Partial/Domain) OR Forward is OFF (Wildcard) */}
+                {((ruleForm.redirectType !== 'wildcard' && ruleForm.discardQueryParams) || (ruleForm.redirectType === 'wildcard' && !ruleForm.forwardQueryParams)) && (
                   <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 ml-4">
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      Parameter beibehalten (Regex)
+                      Parameter beibehalten / umbenennen (Regex)
                     </label>
                     <p className="text-xs text-muted-foreground mb-3">
                       Definieren Sie Ausnahmen für Parameter, die trotz Aktivierung erhalten bleiben sollen. Die Reihenfolge bestimmt die Position im neuen Query-String.
@@ -5079,7 +5382,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="h-8 text-sm"
                                 />
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1 items-center justify-end pb-1">
+                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                    <Switch
+                                        checked={item.skipEncoding}
+                                        onCheckedChange={(checked) => {
+                                            const newParams = [...ruleForm.keptQueryParams];
+                                            newParams[index] = { ...item, skipEncoding: checked };
+                                            setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
+                                        }}
+                                        className="scale-75"
+                                    />
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                </div>
                                 <div className="flex gap-1">
                                     <Button
                                         type="button"
@@ -5180,14 +5495,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <div className="flex items-start space-x-3">
                   <Switch
                     checked={ruleForm.forwardQueryParams}
-                    onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, forwardQueryParams: checked }))}
+                    onCheckedChange={(checked) => setRuleForm(prev => ({
+                        ...prev,
+                        forwardQueryParams: checked,
+                        // If Forward is ON, Discard must be OFF (to avoid confusion in backend)
+                        // If Forward is OFF, Discard must be ON (to trigger keptQueryParams logic)
+                        discardQueryParams: !checked
+                    }))}
                   />
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Link-Parameter beibehalten
+                      Alle Link-Parameter beibehalten
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Wenn aktiviert, werden die ursprünglichen Query-Parameter an die Ziel-URL angehängt. Standard ist deaktiviert (Parameter werden verworfen).
+                      Wenn aktiviert, werden die ursprünglichen Query-Parameter 1:1 an die Ziel-URL angehängt.
+                      Deaktivieren Sie dies, um spezifische Parameter auszuwählen oder umzubenennen.
                     </p>
                   </div>
                 </div>
@@ -5207,6 +5529,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.
                   </p>
+                  {ruleForm.autoRedirect && generalSettings.enableFeedbackSurvey && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <span className="text-xs text-yellow-700">
+                            Warnung: Da die Feedback-Umfrage global aktiviert ist, erhält der Nutzer bei diesem Auto-Redirect keine Möglichkeit Feedback zu geben.
+                        </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

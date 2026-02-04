@@ -1,20 +1,39 @@
 [
   {
-    "matcher": "/old-page",
-    "targetUrl": "https://example.com/new-page",
-    "redirectType": "wildcard",
-    "infoText": "Exact Page Redirect",
+    "matcher": "/sites/hr",
+    "targetUrl": "/sites/hr",
+    "redirectType": "partial",
+    "infoText": "SharePoint Migration: HR Site (Partial). Converts '/Seiten' to '/SitePages' and removes 'AllItems.aspx'.",
     "autoRedirect": false,
+    "discardQueryParams": false,
+    "forwardQueryParams": false,
+    "searchAndReplace": [
+      { "search": "/Seiten/", "replace": "/SitePages/", "caseSensitive": false },
+      { "search": "AllItems.aspx", "replace": "", "caseSensitive": false }
+    ]
+  },
+  {
+    "matcher": "/sites/legacy-portal",
+    "targetUrl": "https://contoso.sharepoint.com/sites/intranet",
+    "redirectType": "wildcard",
+    "infoText": "Portal Redirect: Full redirect to new Intranet Home. Forwards all query parameters.",
+    "autoRedirect": true,
     "discardQueryParams": false,
     "forwardQueryParams": true
   },
   {
-    "matcher": "/legacy-section",
-    "targetUrl": "/modern-section",
+    "matcher": "/documents",
+    "targetUrl": "/shared/docs",
     "redirectType": "partial",
-    "infoText": "Section/Folder Redirect",
-    "autoRedirect": true,
+    "infoText": "Document Library: Renames 'id' param to 'docId' and adds static source tag.",
+    "autoRedirect": false,
     "discardQueryParams": true,
-    "forwardQueryParams": false
+    "forwardQueryParams": false,
+    "keptQueryParams": [
+      { "keyPattern": "id", "targetKey": "docId" }
+    ],
+    "staticQueryParams": [
+      { "key": "migrated", "value": "true" }
+    ]
   }
 ]

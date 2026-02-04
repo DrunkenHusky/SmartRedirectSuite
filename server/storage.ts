@@ -17,8 +17,8 @@ import { RULE_MATCHING_CONFIG } from "@shared/constants";
 // Helper to ensure only relevant flags are stored
 function sanitizeRuleFlags(rule: any): any {
   if (rule.redirectType === "wildcard") {
-    // Wildcard rules only use forwardQueryParams
-    delete rule.discardQueryParams;
+    // Wildcard rules can now use both forwardQueryParams (legacy/simple) and discardQueryParams (advanced)
+    // No deletion of parameter flags for wildcard
   } else if (rule.redirectType === "partial" || rule.redirectType === "domain") {
     // Partial and domain rules only use discardQueryParams
     delete rule.forwardQueryParams;
@@ -86,6 +86,7 @@ export interface IStorage {
     feedback: {
       ok: number;
       nok: number;
+      autoRedirect: number;
       missing: number;
     };
   }>;
@@ -848,6 +849,7 @@ export class FileStorage implements IStorage {
     const feedback = {
       ok: 0,
       nok: 0,
+      autoRedirect: 0,
       missing: 0,
     };
 
@@ -870,6 +872,7 @@ export class FileStorage implements IStorage {
       // Feedback stats
       if (track.feedback === 'OK') feedback.ok++;
       else if (track.feedback === 'NOK') feedback.nok++;
+      else if (track.feedback === 'auto-redirect') feedback.autoRedirect++;
       else feedback.missing++;
     }
 
@@ -1043,7 +1046,7 @@ export class FileStorage implements IStorage {
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
     minQuality?: number,
     maxQuality?: number,
-    feedbackFilter: 'all' | 'OK' | 'NOK' | 'empty' = 'all',
+    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;

@@ -29,6 +29,35 @@ export function generateNewUrl(oldUrl: string, newDomain?: string): string {
   }
 }
 
+function applySearchAndReplace(url: string, replacements: { search: string; replace: string; caseSensitive: boolean }[]): string {
+  let result = url;
+  if (!replacements || replacements.length === 0) return result;
+
+  for (const item of replacements) {
+    if (!item.search) continue;
+
+    try {
+        const replaceValue = item.replace || ""; // Empty string for deletion
+        if (item.caseSensitive) {
+            // Global replacement, case sensitive
+            // Using RegExp with 'g' flag for global replacement
+            // Escape special characters in search string to treat it as literal
+            const escapedSearch = item.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedSearch, 'g');
+            result = result.replace(regex, replaceValue);
+        } else {
+            // Case insensitive requires Regex with 'gi'
+            const escapedSearch = item.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedSearch, 'gi');
+            result = result.replace(regex, replaceValue);
+        }
+    } catch (e) {
+        console.error("Error in Search and Replace:", e);
+    }
+  }
+  return result;
+}
+
 export function generateUrlWithRule(
   oldUrl: string, 
   rule: {
@@ -37,46 +66,21 @@ export function generateUrlWithRule(
     redirectType?: 'wildcard' | 'partial' | 'domain';
     discardQueryParams?: boolean;
     forwardQueryParams?: boolean;
-    keptQueryParams?: { keyPattern: string; valuePattern?: string; targetKey?: string }[];
-    staticQueryParams?: { key: string; value: string }[];
+    keptQueryParams?: { keyPattern: string; valuePattern?: string; targetKey?: string; skipEncoding?: boolean }[];
+    staticQueryParams?: { key: string; value: string; skipEncoding?: boolean }[];
+    searchAndReplace?: { search: string; replace: string; caseSensitive: boolean }[];
   },
   newDomain?: string
 ): string {
   try {
     const redirectType = rule.redirectType || 'partial';
+    let finalUrl = '';
+
+    // --- 1. Determine Base Target URL ---
     
     if (redirectType === 'wildcard' && rule.targetUrl) {
       // Vollständig: Replace entire URL with target URL
-      let finalUrl = rule.targetUrl;
-
-      // If forwardQueryParams is set, append query params from oldUrl
-      if (rule.forwardQueryParams) {
-        try {
-          const oldUrlObj = new URL(oldUrl);
-          if (oldUrlObj.search) {
-             const targetUrlObj = new URL(finalUrl.startsWith('http') ? finalUrl : 'https://dummy' + finalUrl);
-             // If target already has params, merge? Or just append?
-             // Logic: Append if params exist, or create new.
-             // Simplest approach: Use URL object
-             // But finalUrl might be just a path or invalid URL if relative
-             if (finalUrl.startsWith('http')) {
-                const finalObj = new URL(finalUrl);
-                oldUrlObj.searchParams.forEach((val, key) => {
-                    finalObj.searchParams.append(key, val);
-                });
-                finalUrl = finalObj.toString();
-             } else {
-                 // It's likely a relative URL or opaque string
-                 // Just append ?query or &query
-                 const hasQuery = finalUrl.includes('?');
-                 finalUrl += (hasQuery ? '&' : '?') + oldUrlObj.search.substring(1);
-             }
-          }
-        } catch (e) {
-          // Ignore if oldUrl invalid
-        }
-      }
-      return finalUrl;
+      finalUrl = rule.targetUrl;
     } else if (redirectType === 'domain') {
       // Domain Replacement: Keep the path exactly as is, just swap the domain
 
@@ -99,28 +103,17 @@ export function generateUrlWithRule(
       const cleanDomain = targetDomain.replace(/\/$/, '');
       let path = extractPath(oldUrl);
 
-      // Handle discardQueryParams for domain rules
+      // Handle discardQueryParams for domain rules (strip from base path)
       if (rule.discardQueryParams) {
          try {
-             // extractPath returns path+query+hash. We need to strip query.
-             // We can reconstruct it.
-             // But extractPath is robust.
-             // Let's just use URL parsing if possible, or split by ?
-             const [pathPart, ...rest] = path.split('?');
-             // If hash exists in rest, preserve it? "Remove all link-parameters" usually means query string.
-             // User said "remove all link-parameters". Hash is usually client-side but part of link.
-             // Let's assume we remove query params (everything after ?) but hash?
-             // Usually hash is preserved by browser anyway on redirect if not specified,
-             // but here we are generating the target URL string.
-             // Let's remove query params only.
+             const [pathPart] = path.split('?');
+             // Preserve hash if present? Usually discardQueryParams means discard query string.
              if (path.includes('#')) {
                  const hashIndex = path.indexOf('#');
                  const queryIndex = path.indexOf('?');
                  if (queryIndex !== -1 && queryIndex < hashIndex) {
-                     // Query is before hash
                      path = path.substring(0, queryIndex) + path.substring(hashIndex);
                  } else if (queryIndex !== -1) {
-                     // Query is after hash (unusual but possible in some frameworks)
                      path = path.substring(0, queryIndex);
                  }
              } else {
@@ -131,34 +124,17 @@ export function generateUrlWithRule(
          }
       }
 
-      // Ensure path starts with /
       const cleanPath = path.startsWith('/') ? path : '/' + path;
-
-      let finalUrl = cleanDomain + cleanPath;
-
-      // 1. Append Static Params
-      if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
-        const staticString = getStaticQueryString(rule.staticQueryParams);
-        finalUrl = appendQueryString(finalUrl, staticString);
-      }
-
-      // 2. Append kept query params if discardQueryParams is active
-      if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
-        const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
-        finalUrl = appendQueryString(finalUrl, keptString);
-      }
-
-      return finalUrl;
+      finalUrl = cleanDomain + cleanPath;
 
     } else if (redirectType === 'partial' && rule.targetUrl) {
-      // Teilweise: Replace path segments from matcher onwards, preserve additional segments/params/anchors
+      // Teilweise: Replace path segments from matcher onwards
       const baseDomain = newDomain || 'https://thisisthenewurl.com/';
       const cleanDomain = baseDomain.replace(/\/$/, '');
       
-      // Extract the full path with query params and hash  
       let oldPath = extractPath(oldUrl);
 
-       // Handle discardQueryParams for partial rules
+       // Handle discardQueryParams for partial rules (strip from base path)
       if (rule.discardQueryParams) {
            if (oldPath.includes('?')) {
                const queryIndex = oldPath.indexOf('?');
@@ -171,78 +147,90 @@ export function generateUrlWithRule(
            }
       }
       
-      // Check if matcher is a domain rule
       const isDomainMatcher = !rule.matcher.startsWith('/');
 
       if (isDomainMatcher) {
-         // If matcher is a domain, handle redirect
          let targetBase = cleanDomain;
-         // Ensure targetUrl is treated as a string to prevent null/undefined errors
          const targetUrl = rule.targetUrl || '';
-         let targetPath = targetUrl.replace(/\/$/, ''); // Remove trailing slash if present
+         let targetPath = targetUrl.replace(/\/$/, '');
 
-         // If targetUrl is an absolute URL, use it as the new base
          if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
-             // For domain matcher, we essentially just want to swap the domain but potentially append a path prefix
              targetBase = targetPath;
          } else {
-             // targetUrl is relative path, append to cleanDomain
              targetBase = cleanDomain + (targetPath.startsWith('/') ? targetPath : '/' + targetPath);
          }
 
-         // oldPath includes initial slash usually.
-         // Ensure we don't double slash if targetBase ends with slash (it shouldn't)
-         // or oldPath starts with slash.
-
          const normalizedOldPath = oldPath.startsWith('/') ? oldPath : '/' + oldPath;
-
-         // If targetBase already contains a path, we append oldPath to it
-         return targetBase + normalizedOldPath;
-      }
-
-      // Standard Path Matcher Logic
-      const cleanMatcher = rule.matcher.replace(/\/$/, '');
-      const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, '');
-      
-      let newPath;
-      
-      // Check if the path starts with the matcher
-      if (oldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
-        // Replace the matching part with target, keep everything after it
-        const remainingPath = oldPath.substring(cleanMatcher.length);
-        newPath = '/' + cleanTarget + remainingPath;
+         finalUrl = targetBase + normalizedOldPath;
       } else {
-        // Check if matcher appears anywhere in the path
-        const matcherIndex = oldPath.toLowerCase().indexOf(cleanMatcher.toLowerCase());
-        if (matcherIndex !== -1) {
-          const beforeMatch = oldPath.substring(0, matcherIndex);
-          const afterMatch = oldPath.substring(matcherIndex + cleanMatcher.length);
-          newPath = beforeMatch + '/' + cleanTarget + afterMatch;
+        // Standard Path Matcher Logic
+        const cleanMatcher = rule.matcher.replace(/\/$/, '');
+        const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, '');
+
+        let newPath;
+        if (oldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
+          const remainingPath = oldPath.substring(cleanMatcher.length);
+          newPath = '/' + cleanTarget + remainingPath;
         } else {
-          // Matcher not found, use target as new path
-          newPath = '/' + cleanTarget;
+          const matcherIndex = oldPath.toLowerCase().indexOf(cleanMatcher.toLowerCase());
+          if (matcherIndex !== -1) {
+            const beforeMatch = oldPath.substring(0, matcherIndex);
+            const afterMatch = oldPath.substring(matcherIndex + cleanMatcher.length);
+            newPath = beforeMatch + '/' + cleanTarget + afterMatch;
+          } else {
+            newPath = '/' + cleanTarget;
+          }
         }
+        finalUrl = cleanDomain + newPath;
       }
-      
-      let finalUrl = cleanDomain + newPath;
-
-      // 1. Append Static Params
-      if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
-        const staticString = getStaticQueryString(rule.staticQueryParams);
-        finalUrl = appendQueryString(finalUrl, staticString);
-      }
-
-      // 2. Append kept query params if discardQueryParams is active
-      if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
-        const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
-        finalUrl = appendQueryString(finalUrl, keptString);
-      }
-
-      return finalUrl;
     } else {
-      // No valid rule or no targetUrl - fallback to domain replacement only
       return generateNewUrl(oldUrl, newDomain);
     }
+
+    // --- 2. Apply Search & Replace ---
+    if (rule.searchAndReplace && rule.searchAndReplace.length > 0) {
+        finalUrl = applySearchAndReplace(finalUrl, rule.searchAndReplace);
+    }
+
+    // --- 3. Handle Query Parameters ---
+
+    // Logic:
+    // a) Kept/Forwarded Params (Source)
+    // b) Static Params (Target) - Appended last as per requirement
+
+    if (redirectType === 'wildcard') {
+        if (rule.forwardQueryParams) {
+             // Append all params from oldUrl
+             try {
+                const oldUrlObj = new URL(oldUrl);
+                if (oldUrlObj.search) {
+                    finalUrl = appendQueryString(finalUrl, oldUrlObj.search);
+                }
+             } catch(e) {}
+        } else if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
+             // Append explicitly kept params
+             const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
+             finalUrl = appendQueryString(finalUrl, keptString);
+        }
+    } else {
+        // Partial / Domain
+        // If discardQueryParams was ON, we stripped them from base path above.
+        // So we only need to add back 'kept' ones.
+        // If discardQueryParams was OFF, they are still in 'path' -> 'finalUrl'.
+
+        if (rule.discardQueryParams && rule.keptQueryParams && rule.keptQueryParams.length > 0) {
+            const keptString = getKeptQueryString(oldUrl, rule.keptQueryParams);
+            finalUrl = appendQueryString(finalUrl, keptString);
+        }
+    }
+
+    // Append Static Params (Always, and Last)
+    if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
+      const staticString = getStaticQueryString(rule.staticQueryParams);
+      finalUrl = appendQueryString(finalUrl, staticString);
+    }
+
+    return finalUrl;
   } catch (error) {
     console.error('URL generation with rule error:', error);
     return generateNewUrl(oldUrl, newDomain);
@@ -323,26 +311,32 @@ function extractLastPathSegment(url: string): string | null {
   }
 }
 
-function getStaticQueryString(staticParams: { key: string; value: string }[]): string {
+function getStaticQueryString(staticParams: { key: string; value: string; skipEncoding?: boolean }[]): string {
   try {
-    const params = new URLSearchParams();
+    // We build the query string manually to support skipEncoding
+    const parts: string[] = [];
     staticParams.forEach(p => {
       if (p.key) {
-        params.append(p.key, p.value || '');
+        const key = encodeURIComponent(p.key);
+        // If skipEncoding is true, assume p.value is already safe/encoded as desired.
+        // Otherwise, use standard encoding.
+        const value = p.skipEncoding ? (p.value || '') : encodeURIComponent(p.value || '');
+        parts.push(`${key}=${value}`);
       }
     });
-    const str = params.toString();
-    return str ? '?' + str : '';
+    return parts.length > 0 ? '?' + parts.join('&') : '';
   } catch (e) {
+    console.error('Error building static query string:', e);
     return '';
   }
 }
 
-function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string }[]): string {
+function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string; skipEncoding?: boolean }[]): string {
   try {
     const urlObj = new URL(oldUrl, 'http://dummy.com'); // Base needed for relative URLs
     const entries = Array.from(urlObj.searchParams.entries());
-    const newParams = new URLSearchParams();
+    // We construct parts manually to support skipEncoding
+    const parts: string[] = [];
     const addedIndices = new Set<number>();
 
     for (const rule of keptRules) {
@@ -357,7 +351,34 @@ function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; val
               if (!valRegex || valRegex.test(value)) {
                 // Use targetKey if present and not empty, otherwise use original key
                 const finalKey = (rule.targetKey && rule.targetKey.trim() !== '') ? rule.targetKey : key;
-                newParams.append(finalKey, value);
+
+                const encodedKey = encodeURIComponent(finalKey);
+                // Check if this rule wants to skip encoding for the value
+                // NOTE: 'value' from searchParams is ALREADY decoded.
+                // If we want to keep "new%20file.pdf" as-is from source "new%20file.pdf",
+                // searchParams decodes it to "new file.pdf".
+                // If we skip encoding, we put "new file.pdf" -> invalid URL often.
+                // But user wants "new%20file.pdf" specifically to avoid "+".
+                // If skipEncoding is true, we should try to use `encodeURI` (space to %20) instead of `encodeURIComponent`?
+                // Or maybe the user implies they want `encodeURI` behavior (strict percent encoding) vs `URLSearchParams` (application/x-www-form-urlencoded).
+                // Let's interpret `skipEncoding` here as "Use strict percent encoding (%20) instead of +" for kept params?
+                // OR: Maybe they want raw access?
+                // Issue description: "Original Link: .../?file=new%20file.pdf". "Calculated Link: ...?file=new+file.pdf". "Expected: ...?file=new%20file.pdf".
+                // Browser `URLSearchParams` encodes space as `+`. `encodeURIComponent` encodes space as `%20`.
+                // So if we use manual construction with `encodeURIComponent`, we get `%20`.
+                // If `skipEncoding` is FALSE (default), we should probably match standard behavior (or just use encodeURIComponent which is safer for URLs anyway?).
+                // Let's see: `URLSearchParams` is standard for query strings.
+                // If I use `parts.push(k=v)`, I must encode.
+                // If I use `encodeURIComponent(value)`, " " -> "%20".
+                // If I use `URLSearchParams`, " " -> "+".
+                // User wants "%20". So actually, switching to manual `encodeURIComponent` WITHOUT `skipEncoding` might solve it?
+                // But wait, user explicitly asked for "Nicht kodieren" option.
+                // If "Nicht kodieren" is checked, we assume value is raw and put it in directly.
+                // If NOT checked, we use `encodeURIComponent` (which gives %20).
+
+                const encodedValue = rule.skipEncoding ? value : encodeURIComponent(value);
+                parts.push(`${encodedKey}=${encodedValue}`);
+
                 addedIndices.add(index);
               }
             }
@@ -368,8 +389,7 @@ function getKeptQueryString(oldUrl: string, keptRules: { keyPattern: string; val
       }
     }
 
-    const str = newParams.toString();
-    return str ? '?' + str : '';
+    return parts.length > 0 ? '?' + parts.join('&') : '';
   } catch (e) {
     return '';
   }

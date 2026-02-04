@@ -54,13 +54,20 @@ export const urlRuleSchema = z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
     targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   staticQueryParams: z.array(z.object({
     key: z.string().min(1, "Key required"),
     value: z.string(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
   createdAt: z.string().datetime("Invalid datetime format"),
 }).strict(); // Prevent extra properties
 
@@ -101,7 +108,7 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
-  feedback: z.enum(['OK', 'NOK'])
+  feedback: z.enum(['OK', 'NOK', 'auto-redirect'])
     .optional()
     .nullable(),
   userProposedUrl: z.string()
@@ -160,13 +167,20 @@ export const importUrlRuleSchema = z.object({
     keyPattern: z.string().min(1, "Pattern required"),
     valuePattern: z.string().optional(),
     targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   staticQueryParams: z.array(z.object({
     key: z.string().min(1, "Key required"),
     value: z.string(),
+    skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean()
     .default(false),
+  searchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
 }).strict();
 
 export const importRulesRequestSchema = z.object({
@@ -254,6 +268,9 @@ export const generalSettingsSchema = z.object({
     .min(1, "Text für Such-Weiterleitung darf nicht leer sein")
     .max(500, "Text für Such-Weiterleitung ist zu lang")
     .default("Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet."),
+
+  defaultSearchSkipEncoding: z.boolean()
+    .default(false),
 
   smartSearchRegex: z.string()
     .max(500, "Regex ist zu lang")
@@ -402,6 +419,19 @@ export const generalSettingsSchema = z.object({
   feedbackCommentButton: z.string()
     .max(50, "Button-Text für Feedback-Kommentar ist zu lang")
     .default("Absenden"),
+
+  // Feedback Smart Search Fallback
+  enableFeedbackSmartSearchFallback: z.boolean()
+    .default(false),
+  feedbackSmartSearchFallbackTitle: z.string()
+    .max(100, "Titel für Such-Vorschlag ist zu lang")
+    .default("Vorschlag: Suche verwenden"),
+  feedbackSmartSearchFallbackDescription: z.string()
+    .max(500, "Beschreibung für Such-Vorschlag ist zu lang")
+    .default("Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche."),
+  feedbackSmartSearchFallbackQuestion: z.string()
+    .max(200, "Frage für Such-Vorschlag ist zu lang")
+    .default("Hat dieser Link funktioniert?"),
 
   // Satisfaction Trend Chart
   showSatisfactionTrend: z.boolean()
