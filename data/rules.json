@@ -1,32 +1,33 @@
 [
   {
-    "id": "2ac434d9-9831-4c7b-b93c-9159e93f5096",
-    "matcher": "/test",
-    "targetUrl": "https://newurlofdifferentapp.com/sample-new-path",
-    "redirectType": "wildcard",
-    "infoText": "Wildcard redirect",
-    "autoRedirect": false,
-    "forwardQueryParams": true,
-    "createdAt": "2025-12-05T20:42:27.113Z"
-  },
-  {
-    "id": "0a92d7a0-8ed5-4398-a8ec-2a10f240fd20",
-    "matcher": "/sample-old-path",
-    "targetUrl": "/sample-new-path",
+    "id": "957a66bb-eaf7-484f-92b1-4d412b086e73",
+    "matcher": "/alte-seite/Subpfad/",
+    "targetUrl": "/ziel/",
     "redirectType": "partial",
-    "infoText": "Partial redirect",
+    "infoText": "Beispiel Migration",
     "autoRedirect": false,
-    "discardQueryParams": false,
-    "createdAt": "2025-12-05T20:42:27.113Z"
-  },
-  {
-    "id": "ce499dc5-49f2-4391-b4e9-7514db860b74",
-    "matcher": "/sample-old-url-to-match-different-domain",
-    "targetUrl": "https://newother.app.com",
-    "redirectType": "domain",
-    "infoText": "Domain redirect",
-    "autoRedirect": false,
-    "discardQueryParams": false,
-    "createdAt": "2025-12-05T20:42:27.114Z"
+    "discardQueryParams": true,
+    "keptQueryParams": [
+      {
+        "keyPattern": "file",
+        "valuePattern": ".*",
+        "targetKey": "f",
+        "skipEncoding": false
+      }
+    ],
+    "searchAndReplace": [
+      {
+        "search": "alt",
+        "replace": "neu",
+        "caseSensitive": false
+      }
+    ],
+    "staticQueryParams": [
+      {
+        "key": "source",
+        "value": "import"
+      }
+    ],
+    "createdAt": "2026-02-04T15:43:41.279Z"
   }
 ]
