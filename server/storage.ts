@@ -96,6 +96,7 @@ export interface IStorage {
     score: number;
     count: number;
     okCount: number;
+    autoCount: number;
     nokCount: number;
     avgMatchQuality: number;
     mixedScore: number;
@@ -884,6 +885,7 @@ export class FileStorage implements IStorage {
     score: number;
     count: number;
     okCount: number;
+    autoCount: number;
     nokCount: number;
     avgMatchQuality: number;
     mixedScore: number;
@@ -904,6 +906,7 @@ export class FileStorage implements IStorage {
       totalScore: number;
       count: number;
       okCount: number;
+    autoCount: number;
       nokCount: number;
       totalMatchQuality: number;
       totalMixedScore: number;
@@ -932,12 +935,16 @@ export class FileStorage implements IStorage {
       const matchQuality = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
       let mixedEntryScore = matchQuality;
       let ok = 0;
+      let auto = 0;
       let nok = 0;
 
       // Feedback overrides quality if present for mixed score
       if (track.feedback === 'OK') {
         mixedEntryScore = 100;
         ok = 1;
+      } else if (track.feedback === 'auto-redirect') {
+        mixedEntryScore = 100;
+        auto = 1;
       } else if (track.feedback === 'NOK') {
         mixedEntryScore = 0;
         nok = 1;
@@ -947,6 +954,7 @@ export class FileStorage implements IStorage {
         totalScore: 0,
         count: 0,
         okCount: 0,
+      autoCount: 0,
         nokCount: 0,
         totalMatchQuality: 0,
         totalMixedScore: 0
@@ -956,6 +964,7 @@ export class FileStorage implements IStorage {
         totalScore: current.totalScore + mixedEntryScore, // Legacy score (same as mixed)
         count: current.count + 1,
         okCount: current.okCount + ok,
+        autoCount: (current.autoCount || 0) + auto,
         nokCount: current.nokCount + nok,
         totalMatchQuality: current.totalMatchQuality + matchQuality,
         totalMixedScore: current.totalMixedScore + mixedEntryScore
@@ -980,6 +989,7 @@ export class FileStorage implements IStorage {
       score: number;
       count: number;
       okCount: number;
+    autoCount: number;
       nokCount: number;
       avgMatchQuality: number;
       mixedScore: number;
@@ -1002,6 +1012,7 @@ export class FileStorage implements IStorage {
                   count: stats.count,
                   okCount: stats.okCount,
                   nokCount: stats.nokCount,
+        autoCount: stats.autoCount || 0,
                   avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
                   mixedScore: Math.round(stats.totalMixedScore / stats.count)
               });
@@ -1011,6 +1022,7 @@ export class FileStorage implements IStorage {
                   score: 0,
                   count: 0,
                   okCount: 0,
+      autoCount: 0,
                   nokCount: 0,
                   avgMatchQuality: 0,
                   mixedScore: 0
@@ -1027,6 +1039,7 @@ export class FileStorage implements IStorage {
               count: stats.count,
               okCount: stats.okCount,
               nokCount: stats.nokCount,
+        autoCount: stats.autoCount || 0,
               avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
               mixedScore: Math.round(stats.totalMixedScore / stats.count)
           });
@@ -1286,6 +1299,8 @@ export class FileStorage implements IStorage {
         discardQueryParams: rawRule.discardQueryParams ?? false,
         keptQueryParams: rawRule.keptQueryParams || [],
         forwardQueryParams: rawRule.forwardQueryParams ?? false,
+        searchAndReplace: rawRule.searchAndReplace || [],
+        staticQueryParams: rawRule.staticQueryParams || [],
       };
 
       if (importRule.id && rulesById.has(importRule.id)) {

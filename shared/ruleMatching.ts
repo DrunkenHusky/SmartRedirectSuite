@@ -247,10 +247,6 @@ export function findMatchingRule(
 
         if (seg === reqSeg) {
           staticMatches++;
-        } else if ((rule.redirectType === 'partial' || rule.redirectType === 'domain') && reqSeg && reqSeg.startsWith(seg)) {
-          // Implicit partial match for 'partial' and 'domain' type rules
-          staticMatches++;
-          hasPartialSegmentMatch = true;
         } else {
           pathMismatch = true;
           break;
