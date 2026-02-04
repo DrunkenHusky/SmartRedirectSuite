@@ -291,7 +291,7 @@ const RulesTable = memo(({
                                   <div className="flex items-center gap-2 text-xs py-1 border-b border-muted/50">
                                       <span>Handling Mode:</span>
                                       <span className="font-medium">
-                                          {rule.discardQueryParams ? 'Discard All' : rule.forwardQueryParams ? 'Keep All' : 'Default (Keep)'}
+                                          {rule.discardQueryParams ? 'Discard All' : 'Default (Keep)'}
                                       </span>
                                   </div>
                                   {rule.keptQueryParams && rule.keptQueryParams.length > 0 && (
