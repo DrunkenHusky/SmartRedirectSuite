@@ -288,7 +288,7 @@ const RulesTable = memo(({
                            <div className="space-y-2">
                               <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Parameter Konfiguration</h4>
                               <div className="space-y-1 pl-2 border-l-2 border-muted">
-                                  <div className="flex justify-between text-xs py-1 border-b border-muted/50">
+                                  <div className="flex items-center gap-2 text-xs py-1 border-b border-muted/50">
                                       <span>Handling Mode:</span>
                                       <span className="font-medium">
                                           {rule.discardQueryParams ? 'Discard All' : rule.forwardQueryParams ? 'Keep All' : 'Default (Keep)'}
