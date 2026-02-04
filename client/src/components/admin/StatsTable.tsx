@@ -1,4 +1,3 @@
-
 import React, { memo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +7,8 @@ import {
   Edit,
   AlertCircle,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Zap
 } from "lucide-react";
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
@@ -269,6 +269,11 @@ const StatsTable = memo(({
               <td className="p-2 sm:p-3">
                 {entry.feedback === 'OK' ? (
                   <ThumbsUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : entry.feedback === 'auto-redirect' ? (
+                  <div className="flex items-center gap-1" title="Automatische Weiterleitung">
+                     <Zap className="h-4 w-4 text-blue-500" />
+                     <span className="text-[10px] text-muted-foreground hidden lg:inline">Auto</span>
+                  </div>
                 ) : entry.feedback === 'NOK' ? (
                   <div className="flex flex-col gap-1">
                     <ThumbsDown className="h-4 w-4 text-red-600 dark:text-red-400" />

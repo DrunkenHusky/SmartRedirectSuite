@@ -1286,6 +1286,8 @@ export class FileStorage implements IStorage {
         discardQueryParams: rawRule.discardQueryParams ?? false,
         keptQueryParams: rawRule.keptQueryParams || [],
         forwardQueryParams: rawRule.forwardQueryParams ?? false,
+        searchAndReplace: rawRule.searchAndReplace || [],
+        staticQueryParams: rawRule.staticQueryParams || [],
       };
 
       if (importRule.id && rulesById.has(importRule.id)) {

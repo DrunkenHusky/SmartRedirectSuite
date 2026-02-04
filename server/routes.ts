@@ -940,6 +940,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         infoText: rule.infoText || "",
         redirectType: rule.redirectType || "partial",
         autoRedirect: rule.autoRedirect ?? false,
+        discardQueryParams: rule.discardQueryParams ?? false,
+        forwardQueryParams: rule.forwardQueryParams ?? false,
+        keptQueryParams: rule.keptQueryParams || [],
+        staticQueryParams: rule.staticQueryParams || [],
+        searchAndReplace: rule.searchAndReplace || [],
       }));
 
       // Clear existing rules and import new ones

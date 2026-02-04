@@ -294,7 +294,7 @@ export interface SmartSearchRule {
 
 function extractLastPathSegment(url: string): string | null {
   try {
-      const urlObj = new URL(url);
+      const urlObj = new URL(url, 'http://dummy.com');
       const pathname = urlObj.pathname;
       const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
       return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
@@ -428,9 +428,17 @@ export function extractSearchTerm(
         if (!rule.pathPattern) return true;
         try {
             const path = extractPath(url);
-            // Standard prefix matching (case-insensitive)
-            // Behaves like 'partial' match in generateUrlWithRule
-            return path.toLowerCase().startsWith(rule.pathPattern.toLowerCase());
+            // Standard prefix matching (case-insensitive) with boundary check
+            const pattern = rule.pathPattern.toLowerCase();
+            const lowerPath = path.toLowerCase();
+            if (!lowerPath.startsWith(pattern)) return false;
+
+            // Boundary check: Ensure we don't match "/foo-bar" with "/foo"
+            // The next char must be '/', '?', '#', or end of string
+            if (lowerPath.length === pattern.length) return true;
+            const nextChar = lowerPath[pattern.length];
+            return ['/', '?', '#'].includes(nextChar);
+
         } catch (e) {
             console.error("Error matching path pattern:", rule.pathPattern, e);
             return false;
