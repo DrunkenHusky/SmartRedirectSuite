@@ -3795,7 +3795,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   </div>
 
                   {/* Trend Chart (Configurable) */}
-                  {generalSettings.showSatisfactionTrend && (
+                  {generalSettings.showSatisfactionTrend && (generalSettings.enableFeedbackSurvey || generalSettings.showLinkQualityGauge) && (
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">

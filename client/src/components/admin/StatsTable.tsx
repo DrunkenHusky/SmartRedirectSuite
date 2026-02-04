@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +22,8 @@ import {
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
 import { ResizeHandle } from "@/components/ui/resize-handle";
+
+const STORAGE_KEY = 'stats-table-visible-columns';
 
 interface StatsTableProps {
   entries: any[];
@@ -48,16 +50,35 @@ const StatsTable = memo(({
   enableUserFeedback = false
 }: StatsTableProps) => {
 
-  const [visibleColumns, setVisibleColumns] = useState({
-    timestamp: true,
-    oldUrl: true,
-    newUrl: true,
-    path: true,
-    referrer: showReferrer,
-    rule: true,
-    matchQuality: enableLinkQuality,
-    feedback: enableUserFeedback
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    const defaults = {
+      timestamp: true,
+      oldUrl: true,
+      newUrl: true,
+      path: true,
+      referrer: showReferrer,
+      rule: true,
+      matchQuality: enableLinkQuality,
+      feedback: enableUserFeedback
+    };
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return { ...defaults, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.error('Failed to load column visibility settings:', e);
+    }
+    return defaults;
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns));
+    } catch (e) {
+      console.error('Failed to save column visibility settings:', e);
+    }
+  }, [visibleColumns]);
 
   const { columnWidths, handleResizeStart } = useResizableColumns({
     initialWidths: {
