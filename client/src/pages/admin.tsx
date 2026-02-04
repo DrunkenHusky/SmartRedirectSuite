@@ -63,7 +63,6 @@ import {
   Share2,
   TrendingUp,
   Activity
-} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -71,7 +70,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
@@ -80,6 +78,8 @@ import { RulesTable } from "@/components/admin/RulesTable";
 import { RulesCardList } from "@/components/admin/RulesCardList";
 import { ImportPreviewTable } from "@/components/admin/ImportPreviewTable";
 import { StatsTable } from "@/components/admin/StatsTable";
+import { SatisfactionChart } from "@/components/admin/SatisfactionChart";
+import { SatisfactionChart } from "@/components/admin/SatisfactionChart";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -90,7 +90,6 @@ interface ParsedRuleResult {
   isValid: boolean;
   errors: string[];
   status: 'new' | 'update' | 'invalid';
-}
 
 interface ImportPreviewData {
   total: number;
@@ -103,14 +102,7 @@ interface ImportPreviewData {
     update: number;
     invalid: number;
   };
-}
 
-// Simple Line Chart Component with Tooltip
-function SatisfactionChart({
-  data,
-  feedbackOnly,
-  aggregation = 'day'
-}: {
   data: Array<{
     date: string;
     score: number;
@@ -122,7 +114,6 @@ function SatisfactionChart({
   }>,
   feedbackOnly?: boolean,
   aggregation?: 'day' | 'week' | 'month'
-}) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -355,16 +346,13 @@ function SatisfactionChart({
         </div>
     </div>
   );
-}
 
 interface AdminPageProps {
   onClose: () => void;
-}
 
 interface AdminAuthFormProps {
   onAuthenticated: () => void;
   onClose: () => void;
-}
 
 function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
   const [password, setPassword] = useState("");
@@ -452,7 +440,6 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
       </Card>
     </div>
   );
-}
 
 export default function AdminPage({ onClose }: AdminPageProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Default to false until verified
@@ -522,7 +509,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
   const [statsQualityFilter, setStatsQualityFilter] = useState<string>("all");
-  const [statsFeedbackFilter, setStatsFeedbackFilter] = useState<'all' | 'OK' | 'NOK' | 'empty'>('all');
+  const [statsFeedbackFilter, setStatsFeedbackFilter] = useState<'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty'>('all');
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -788,7 +775,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       today: number;
       week: number;
       quality: { match100: number; match75: number; match50: number; match0: number };
-      feedback: { ok: number; nok: number; missing: number };
+      feedback: { ok: number; nok: number; autoRedirect: number; missing: number };
     };
     topUrls: Array<{ path: string; count: number }>;
   }>({
@@ -3966,6 +3953,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <SelectItem value="all">Alle Feedbacks</SelectItem>
                           <SelectItem value="OK">👍 OK</SelectItem>
                           <SelectItem value="NOK">👎 NOK</SelectItem>
+                          <SelectItem value="auto-redirect">⚡ Auto</SelectItem>
                           <SelectItem value="empty">Kein Feedback</SelectItem>
                         </SelectContent>
                       </Select>
@@ -4197,11 +4185,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             {(() => {
                                 const ok = statsData?.stats?.feedback?.ok || 0;
                                 const nok = statsData?.stats?.feedback?.nok || 0;
+                                const auto = statsData?.stats?.feedback?.autoRedirect || 0;
                                 const missing = statsData?.stats?.feedback?.missing || 0;
                                 const total = statsData?.stats?.total || 0;
 
                                 // Base for percentage calculation depends on setting
-                                const base = generalSettings.satisfactionTrendFeedbackOnly ? (ok + nok) : total;
+                                const base = generalSettings.satisfactionTrendFeedbackOnly ? (ok + nok + auto) : total;
 
                                 return (
                                 <>
@@ -4245,6 +4234,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <Progress value={base > 0 ? (nok / base) * 100 : 0} className="h-2 bg-red-100 dark:bg-red-900/20 [&>div]:bg-red-600" />
                                     </div>
 
+                                    {/* Auto-Redirect */}
+                                    <div
+                                    className="space-y-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                        handleStatsViewChange("browser");
+                                        setStatsFeedbackFilter("auto-redirect");
+                                    }}
+                                    >
+                                    <div className="flex justify-between text-sm">
+                                        <div className="flex items-center gap-1">
+                                            <span>Auto-Redirect</span>
+                                        </div>
+                                        <span className="font-medium">
+                                        {auto}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({base > 0 ? Math.round((auto / base) * 100) : 0}%)
+                                        </span>
+                                        </span>
+                                    </div>
+                                    <Progress value={base > 0 ? (auto / base) * 100 : 0} className="h-2 bg-blue-100 dark:bg-blue-900/20 [&>div]:bg-blue-600" />
+                                    </div>
                                     {/* Missing (Only show if not in FeedbackOnly mode) */}
                                     {!generalSettings.satisfactionTrendFeedbackOnly && (
                                         <div
@@ -5995,4 +6005,3 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       <Toaster />
     </div>
   );
-}
