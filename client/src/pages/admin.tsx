@@ -3217,7 +3217,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                           onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, showSatisfactionTrend: checked })}
                                       />
                                   </div>
-                                  {generalSettings.showSatisfactionTrend && (
+                                  {generalSettings.showSatisfactionTrend && generalSettings.enableFeedbackSurvey && (
                                       <div className="space-y-4">
                                           <div>
                                               <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
@@ -3782,6 +3782,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <p className="text-xs text-muted-foreground">Letzte 7 Tage</p>
                         </CardContent>
                     </Card>
+                    {generalSettings.showLinkQualityGauge && (
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-2xl font-bold">
@@ -3790,6 +3791,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <p className="text-xs text-muted-foreground">Exakte Trefferquote</p>
                         </CardContent>
                     </Card>
+                    )}
                   </div>
 
                   {/* Trend Chart (Configurable) */}
@@ -3826,6 +3828,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     data={trendData as any}
                                     feedbackOnly={generalSettings.satisfactionTrendFeedbackOnly}
                                     aggregation={trendAggregation}
+                                    showQualityLine={generalSettings.showLinkQualityGauge}
                                 />
                             )}
                         </CardContent>
@@ -3835,6 +3838,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   {/* New Statistics Graphics */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Link Quality Card */}
+                    {generalSettings.showLinkQualityGauge && (
                     <Card>
                       <CardHeader>
                         <div className="flex items-center gap-2">
@@ -3931,6 +3935,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         )}
                       </CardContent>
                     </Card>
+                    )}
 
                     {/* User Feedback Card */}
                     {generalSettings.enableFeedbackSurvey && (
@@ -4197,6 +4202,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           onEditRule={handleEditRule}
                           formatTimestamp={formatTimestamp}
                           showReferrer={generalSettings.enableReferrerTracking}
+                          enableLinkQuality={generalSettings.showLinkQualityGauge}
+                          enableUserFeedback={generalSettings.enableFeedbackSurvey}
                         />
                         
                         {/* Pagination Controls for Browser View */}

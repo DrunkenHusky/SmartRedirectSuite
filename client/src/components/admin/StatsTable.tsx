@@ -1,6 +1,14 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   ArrowUp,
   ArrowDown,
@@ -8,7 +16,8 @@ import {
   AlertCircle,
   ThumbsUp,
   ThumbsDown,
-  Zap
+  Zap,
+  Settings
 } from "lucide-react";
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
@@ -24,6 +33,8 @@ interface StatsTableProps {
   onEditRule: (rule: UrlRule) => void;
   formatTimestamp: (timestamp: string) => string;
   showReferrer?: boolean;
+  enableLinkQuality?: boolean;
+  enableUserFeedback?: boolean;
 }
 
 const StatsTable = memo(({
@@ -32,8 +43,21 @@ const StatsTable = memo(({
   onSort,
   onEditRule,
   formatTimestamp,
-  showReferrer = true
+  showReferrer = true,
+  enableLinkQuality = true,
+  enableUserFeedback = false
 }: StatsTableProps) => {
+
+  const [visibleColumns, setVisibleColumns] = useState({
+    timestamp: true,
+    oldUrl: true,
+    newUrl: true,
+    path: true,
+    referrer: showReferrer,
+    rule: true,
+    matchQuality: enableLinkQuality,
+    feedback: enableUserFeedback
+  });
 
   const { columnWidths, handleResizeStart } = useResizableColumns({
     initialWidths: {
@@ -41,7 +65,7 @@ const StatsTable = memo(({
       oldUrl: 250,
       newUrl: 250,
       path: 200,
-      referrer: showReferrer ? 200 : 0,
+      referrer: 200,
       rule: 150,
       matchQuality: 100,
       feedback: 100,
@@ -50,15 +74,72 @@ const StatsTable = memo(({
 
 
   const getSortIcon = (column: string) => {
-    if (sortConfig.by !== column) return <ArrowUp className="h-3 w-3 opacity-0" />; // Invisible placeholder for spacing
+    if (sortConfig.by !== column) return <ArrowUp className="h-3 w-3 opacity-0" />;
     return sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />;
   };
 
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
+  };
+
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="space-y-4">
+      {/* Column Visibility Toggle */}
+      <div className="flex justify-end">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="ml-auto">
+              <Settings className="h-4 w-4 mr-2" />
+              Spalten anpassen
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Spalten auswählen</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-timestamp" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Zeitstempel</label>
+                <Switch id="col-timestamp" checked={visibleColumns.timestamp} onCheckedChange={() => toggleColumn('timestamp')} />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-oldUrl" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Alte URL</label>
+                <Switch id="col-oldUrl" checked={visibleColumns.oldUrl} onCheckedChange={() => toggleColumn('oldUrl')} />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-newUrl" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Neue URL</label>
+                <Switch id="col-newUrl" checked={visibleColumns.newUrl} onCheckedChange={() => toggleColumn('newUrl')} />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-path" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Pfad</label>
+                <Switch id="col-path" checked={visibleColumns.path} onCheckedChange={() => toggleColumn('path')} />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-referrer" className={`text-sm font-medium leading-none ${!showReferrer ? 'opacity-50' : ''}`}>Referrer {!showReferrer && '(Deaktiviert)'}</label>
+                <Switch id="col-referrer" checked={visibleColumns.referrer && showReferrer} onCheckedChange={() => toggleColumn('referrer')} disabled={!showReferrer} />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-rule" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Regel</label>
+                <Switch id="col-rule" checked={visibleColumns.rule} onCheckedChange={() => toggleColumn('rule')} />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-matchQuality" className={`text-sm font-medium leading-none ${!enableLinkQuality ? 'opacity-50' : ''}`}>Qualität {!enableLinkQuality && '(Deaktiviert)'}</label>
+                <Switch id="col-matchQuality" checked={visibleColumns.matchQuality && enableLinkQuality} onCheckedChange={() => toggleColumn('matchQuality')} disabled={!enableLinkQuality} />
+              </div>
+              <div className="flex items-center justify-between space-x-2">
+                <label htmlFor="col-feedback" className={`text-sm font-medium leading-none ${!enableUserFeedback ? 'opacity-50' : ''}`}>Feedback {!enableUserFeedback && '(Deaktiviert)'}</label>
+                <Switch id="col-feedback" checked={visibleColumns.feedback && enableUserFeedback} onCheckedChange={() => toggleColumn('feedback')} disabled={!enableUserFeedback} />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="w-full overflow-x-auto">
       <table className="w-full table-fixed border-collapse">
         <thead className="bg-muted/50 border-b">
           <tr>
+            {visibleColumns.timestamp && (
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.timestamp }}>
               <Button
                 variant="ghost"
@@ -73,6 +154,8 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('timestamp', e)} />
             </th>
+            )}
+            {visibleColumns.oldUrl && (
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.oldUrl }}>
               <Button
                 variant="ghost"
@@ -87,6 +170,8 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('oldUrl', e)} />
             </th>
+            )}
+            {visibleColumns.newUrl && (
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.newUrl }}>
               <Button
                 variant="ghost"
@@ -101,6 +186,8 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('newUrl', e)} />
             </th>
+            )}
+            {visibleColumns.path && (
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.path }}>
               <Button
                 variant="ghost"
@@ -115,7 +202,8 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('path', e)} />
             </th>
-            {showReferrer && (
+            )}
+            {visibleColumns.referrer && showReferrer && (
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.referrer }}>
               <Button
                 variant="ghost"
@@ -131,10 +219,13 @@ const StatsTable = memo(({
               <ResizeHandle onMouseDown={(e) => handleResizeStart('referrer', e)} />
             </th>
             )}
+            {visibleColumns.rule && (
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.rule }}>
               Regel
               <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
             </th>
+            )}
+            {visibleColumns.matchQuality && enableLinkQuality && (
             <th className="text-left p-2 sm:p-3 relative" style={{ width: columnWidths.matchQuality }}>
               <Button
                 variant="ghost"
@@ -149,18 +240,24 @@ const StatsTable = memo(({
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('matchQuality', e)} />
             </th>
+            )}
+            {visibleColumns.feedback && enableUserFeedback && (
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.feedback }}>
               Feedback
               <ResizeHandle onMouseDown={(e) => handleResizeStart('feedback', e)} />
             </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {entries.map((entry: any) => (
             <tr key={entry.id} className="border-b hover:bg-muted/50">
+              {visibleColumns.timestamp && (
               <td className="p-2 sm:p-3 text-xs sm:text-sm truncate">
                 {formatTimestamp(entry.timestamp)}
               </td>
+              )}
+              {visibleColumns.oldUrl && (
               <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.oldUrl}>
                    <a
@@ -173,6 +270,8 @@ const StatsTable = memo(({
                    </a>
                 </div>
               </td>
+              )}
+              {visibleColumns.newUrl && (
               <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.newUrl || 'N/A'}>
                   {entry.newUrl ? (
@@ -191,6 +290,8 @@ const StatsTable = memo(({
                   )}
                 </div>
               </td>
+              )}
+              {visibleColumns.path && (
               <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.path}>
                     <code className="text-xs sm:text-sm text-foreground inline-block max-w-full truncate align-middle">
@@ -198,7 +299,8 @@ const StatsTable = memo(({
                     </code>
                 </div>
               </td>
-              {showReferrer && (
+              )}
+              {visibleColumns.referrer && showReferrer && (
               <td className="p-2 sm:p-3">
                 <div className="w-full" title={entry.referrer || 'Direct'}>
                   {entry.referrer ? (
@@ -216,6 +318,7 @@ const StatsTable = memo(({
                 </div>
               </td>
               )}
+              {visibleColumns.rule && (
               <td className="p-2 sm:p-3">
                 {entry.rules && entry.rules.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
@@ -257,6 +360,8 @@ const StatsTable = memo(({
                   <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
                 )}
               </td>
+              )}
+              {visibleColumns.matchQuality && enableLinkQuality && (
               <td className="p-2 sm:p-3">
                 <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full ${
                   (entry.matchQuality || 0) >= 90 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
@@ -266,6 +371,8 @@ const StatsTable = memo(({
                   {entry.matchQuality || 0}%
                 </span>
               </td>
+              )}
+              {visibleColumns.feedback && enableUserFeedback && (
               <td className="p-2 sm:p-3">
                 {entry.feedback === 'OK' ? (
                   <ThumbsUp className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -295,10 +402,12 @@ const StatsTable = memo(({
                   <span className="text-muted-foreground">-</span>
                 )}
               </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 });
