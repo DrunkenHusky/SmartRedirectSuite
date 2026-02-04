@@ -95,10 +95,10 @@ const PreviewRow = ({ item }: { item: any }) => {
                  <div className="space-y-2">
                     <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Query Parameters</h4>
                     <div className="space-y-1 pl-2 border-l-2 border-muted">
-                        <div className="flex justify-between text-xs py-1 border-b border-muted/50">
+                        <div className="flex gap-2 text-xs py-1 border-b border-muted/50">
                             <span>Mode:</span>
                             <span className="font-medium">
-                                {rule.discardQueryParams ? 'Discard All' : rule.forwardQueryParams ? 'Keep All' : 'Custom'}
+                                {rule.discardQueryParams ? 'Discard All' : rule.forwardQueryParams ? 'Keep All' : 'Default (Keep)'}
                             </span>
                         </div>
                         {rule.keptQueryParams && rule.keptQueryParams.length > 0 && (
@@ -139,7 +139,7 @@ const PreviewRow = ({ item }: { item: any }) => {
                                         <div className="flex items-center gap-1">
                                             <span className="text-red-500 font-mono">"{sr.search}"</span>
                                             <span>&rarr;</span>
-                                            <span className="text-green-600 font-mono">"{sr.replace || 'DELETE'}"</span>
+                                            <span className="text-green-600 font-mono">"{sr.replace || '"" (REMOVE)'}"</span>
                                         </div>
                                         {sr.caseSensitive && <Badge variant="outline" className="w-fit text-[10px] h-4 mt-1">Case Sensitive</Badge>}
                                     </li>

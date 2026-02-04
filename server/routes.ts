@@ -140,17 +140,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve sample import file
+    // Serve sample import file (Dynamic)
+  const SAMPLE_RULES = [{
+    id: "sample-id",
+    matcher: "/alte-seite",
+    targetUrl: "https://neue-seite.de/ziel",
+    redirectType: "partial",
+    infoText: "Beispiel Migration",
+    autoRedirect: false,
+    discardQueryParams: false,
+    keptQueryParams: [],
+    staticQueryParams: [{ key: "source", value: "import" }],
+    forwardQueryParams: true,
+    searchAndReplace: [{ search: "alt", replace: "neu", caseSensitive: false }],
+    createdAt: new Date().toISOString()
+  } as any];
+
   app.get("/sample-rules-import.json", (_req, res) => {
-    res.sendFile("sample-rules-import.json", { root: process.cwd() });
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.json"');
+    res.send(JSON.stringify(SAMPLE_RULES, null, 2));
   });
 
   app.get("/sample-rules-import.csv", (_req, res) => {
-    res.sendFile("sample-rules-import.csv", { root: process.cwd() });
+    const csv = ImportExportService.generateCSV(SAMPLE_RULES);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.csv"');
+    res.send(csv);
   });
 
   app.get("/sample-rules-import.xlsx", (_req, res) => {
-    res.sendFile("sample-rules-import.xlsx", { root: process.cwd() });
+    const buffer = ImportExportService.generateExcel(SAMPLE_RULES);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.xlsx"');
+    res.send(buffer);
   });
   
   // URL-Tracking endpoint
