@@ -284,11 +284,12 @@ const RulesTable = memo(({
                   {isExpanded && (
                     <tr className="bg-muted/10 border-b border-border">
                       <td colSpan={8} className="p-0">
-                         break-words">
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm break-words">
                            <div className="space-y-2">
                               <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Parameter Konfiguration</h4>
                               <div className="space-y-1 pl-2 border-l-2 border-muted">
-                                  gap-2
+                                  <div className="flex gap-2 text-xs py-1 border-b border-muted/50">
+                                      <span>Handling Mode:</span>
                                       <span className="font-medium">
                                           {rule.discardQueryParams ? 'Discard All' : rule.forwardQueryParams ? 'Keep All' : 'Default (Keep)'}
                                       </span>
