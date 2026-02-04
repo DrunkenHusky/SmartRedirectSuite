@@ -4283,6 +4283,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
                                         <li><strong>Discard Query Params</strong> (Optional) - 'true'/'false'</li>
                                         <li><strong>Keep Query Params</strong> (Optional) - 'true'/'false'</li>
+                                        <li><strong>Static Query Params</strong> (Optional) - JSON Array</li>
+                                        <li><strong>Search Replace</strong> (Optional) - JSON Array</li>
                                         <li><strong>ID</strong> (Optional) - Nur für Updates bestehender Regeln</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">

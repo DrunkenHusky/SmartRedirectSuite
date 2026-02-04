@@ -284,12 +284,11 @@ const RulesTable = memo(({
                   {isExpanded && (
                     <tr className="bg-muted/10 border-b border-border">
                       <td colSpan={8} className="p-0">
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                         break-words">
                            <div className="space-y-2">
                               <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Parameter Konfiguration</h4>
                               <div className="space-y-1 pl-2 border-l-2 border-muted">
-                                  <div className="flex justify-between text-xs py-1 border-b border-muted/50">
-                                      <span>Handling Mode:</span>
+                                  gap-2
                                       <span className="font-medium">
                                           {rule.discardQueryParams ? 'Discard All' : rule.forwardQueryParams ? 'Keep All' : 'Default (Keep)'}
                                       </span>
@@ -300,7 +299,7 @@ const RulesTable = memo(({
                                           <ul className="list-disc list-inside text-xs space-y-0.5 text-muted-foreground">
                                               {rule.keptQueryParams.map((p: any, i: number) => (
                                                   <li key={i}>
-                                                      <code className="bg-muted px-1 rounded">{p.keyPattern}</code>
+                                                      <code className="bg-muted px-1 rounded break-all">{p.keyPattern}</code>
                                                       {p.targetKey && <span> &rarr; {p.targetKey}</span>}
                                                   </li>
                                               ))}
@@ -313,7 +312,7 @@ const RulesTable = memo(({
                                           <ul className="list-disc list-inside text-xs space-y-0.5 text-muted-foreground">
                                               {rule.staticQueryParams.map((p: any, i: number) => (
                                                   <li key={i}>
-                                                      <code className="bg-muted px-1 rounded">{p.key}</code> = <code className="bg-muted px-1 rounded">{p.value}</code>
+                                                      <code className="bg-muted px-1 rounded break-all">{p.key}</code> = <code className="bg-muted px-1 rounded break-all">{p.value}</code>
                                                   </li>
                                               ))}
                                           </ul>
@@ -332,7 +331,7 @@ const RulesTable = memo(({
                                                   <div className="flex items-center gap-1">
                                                       <span className="text-red-500 font-mono">"{sr.search}"</span>
                                                       <span>&rarr;</span>
-                                                      <span className="text-green-600 font-mono">"{sr.replace || 'DELETE'}"</span>
+                                                      <span className="text-green-600 font-mono">"{sr.replace || '"" (REMOVE)'}"</span>
                                                   </div>
                                                   {sr.caseSensitive && <Badge variant="outline" className="w-fit text-[10px] h-4 mt-1">Case Sensitive</Badge>}
                                               </li>

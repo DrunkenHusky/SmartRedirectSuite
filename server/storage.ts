@@ -1324,6 +1324,8 @@ export class FileStorage implements IStorage {
           discardQueryParams: importRule.discardQueryParams,
           keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
         };
 
         // Sanitize flags
@@ -1345,6 +1347,8 @@ export class FileStorage implements IStorage {
           discardQueryParams: importRule.discardQueryParams,
           keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
           createdAt: new Date().toISOString(),
         };
         // Sanitize flags
@@ -1370,6 +1374,8 @@ export class FileStorage implements IStorage {
            discardQueryParams: importRule.discardQueryParams,
            keptQueryParams: importRule.keptQueryParams,
            forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
          };
 
          // Sanitize flags
@@ -1390,6 +1396,8 @@ export class FileStorage implements IStorage {
           discardQueryParams: importRule.discardQueryParams,
           keptQueryParams: importRule.keptQueryParams,
           forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
           createdAt: new Date().toISOString(),
         };
         // Sanitize flags
