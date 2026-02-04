@@ -1,3 +1,50 @@
+# [2.16.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.15.0...v2.16.0) (2026-02-04)
+
+
+### Bug Fixes
+
+* **admin:** left-align Handling Mode in Rules Table ([37f2c9c](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/37f2c9cdf6b209788a5385270913bbc3e2571fb0))
+* change smart search path matcher to simple prefix match ([3ae427a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3ae427a4038336f0490a65cfddf5913d194011eb))
+* correct JSX syntax in RulesTable.tsx caused by malformed sed replacement ([4211706](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/4211706d676cdd58ed3a26bc92ef6d4077edc659))
+* decode extracted search terms before re-encoding or skipping ([7a4821b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/7a4821b7d1d27e423ce26f18ef727eca69371a77))
+* enable search and replace saving and verify stats update ([a90fb1a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/a90fb1a836336afeed13a7821c45be0e80b88a5f))
+* ensure first statistics entry records NOK feedback on fallback ([8883852](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/8883852c3bfe8c4d5b5b2d62bddf22f018872029))
+* Include keptQueryParams in import/export logic ([5e4b827](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5e4b827cfb0beb83589accd364991e524bfeed23))
+* optimize import logic for CSV/XLSX and JSON, add missing fields to sample files, and improve UI ([da297c2](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/da297c2a577ba8da52ebb6a29386674f5e23d2ba))
+* prevent duplicate smart search suggestion on feedback ([2cef3b7](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/2cef3b7a74645ca473fbc9d79b05bc731f130509))
+* prioritize specific regex rules in smart search precedence ([821b02c](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/821b02cebce1b236746e36bd1e5c1fe39d9214c3))
+* resolve admin UI crash and simplify wildcard parameter logic ([8b9952e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/8b9952efc0132c5b4d189fe9a48d961367bca944))
+
+
+### Features
+
+* add feedback comment feature and improve stats chart ([bd1023a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/bd1023a57362adfba81e1552e99c5c9f0769aa89))
+* add interactive stats, trend chart, and rename Top 100 to Overall ([28c2212](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/28c22125bdfd1743395bcdca5cda182f3a9b30e1))
+* Add kept parameters option for partial rules ([875f122](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/875f1225c66133e094f3d5c6d4dc64a8342d3de2))
+* Add link quality and feedback graphics to Overall stats, rename Top 100 to Overall ([40309d7](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/40309d7b350a941aeabcd7a9644ce19056f7e04c))
+* add partial rules for keeping query params ([ed98951](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ed98951cbd76d62b64d922857c0de278951ccd46))
+* add Search & Replace and enhance Wildcard rule parameter handling ([f5d4024](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f5d4024dcc45153bdd79cc3304d51f1f9798631e))
+* add static params and renaming to partial rules ([7c6d473](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/7c6d47381ff17d38fc137e90e151cd1ea6234c72))
+* **admin:** enhance statistics charts with interactivity and dynamic labels ([eadfd45](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/eadfd457f2f63377d0cb83c066077aa137314b9a))
+* dynamic fallback survey and customizable question ([da96d20](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/da96d2073c8750985d8140c8b3cb586b135cdfc4))
+* enhance admin settings validation with inline errors and auto-scroll ([edcf2cc](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/edcf2cc533a171f6734bf1ba0cfa7c0837d1f5c5))
+* enhance admin settings validation with inline errors and auto-scroll ([3e59c68](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3e59c68d05abc9b2a0c92714850120ea35766473))
+* enhance feedback flow with auto-redirect handling and smart search fallback ([50d53fb](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/50d53fb5a2a255a892eae48cf2089a1bb036a23c))
+* global smart search encoding option and ui polish ([26c7876](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/26c78765be7faf0e442c038257f1a041adf5ce98))
+* implement multiple regex support for smart search ([782dd8f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/782dd8f0a7a0caff2eab7ac1aa6979a2bef2b8d7))
+* make regex pattern optional in smart search ([c21cc04](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/c21cc0478307ceb59a3b7dfa19bc8178c2770cf5))
+* make smart search encoding configurable per rule ([e305f18](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e305f181d8da57455ee416845b3093629d8baa0d))
+* param skip encoding and chart improvement ([1c51090](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1c510905113c881613f8155281142be16ca82a40))
+* refine feedback stats and chart ([055d919](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/055d91903c8b6860e72afc20532a3eb733b0e1ff))
+* refine sample files for new features ([15a2a59](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/15a2a595b6762aae0b0abe9d8f37ec889a0dba24))
+* show Zod validation errors in admin settings popup ([4b29e24](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/4b29e24d60c377abeb6966917fb72ee8920a23f5))
+* update import/export for Search & Replace and params ([19c906e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/19c906e50f2ab969105b7f033c81a78a5ce9c764))
+
+
+### Reverts
+
+* ci-cd changes and fix sample data ([ee752ce](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ee752cee366d71516f13e75410389e604100f350))
+
 # [2.15.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.14.0...v2.15.0) (2026-01-13)
 
 
