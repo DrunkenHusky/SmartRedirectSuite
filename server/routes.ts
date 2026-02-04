@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Response } from "express";
 import { createServer, type Server } from "http";
 import { createHash, timingSafeEqual } from "crypto";
 import { storage } from "./storage";
@@ -16,15 +16,13 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts, resetAllLoginAttempts, getBlockedIps, blockIp } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { findMatchingRule, findAllMatchingRules } from "@shared/ruleMatching";
+import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
 import multer from 'multer';
 import fs from 'fs';
 import { utils, write } from '@e965/xlsx';
-
-
 
 // Extend Express Session interface
 declare module 'express-session' {
@@ -48,6 +46,40 @@ const requireAuth = (req: any, res: any, next: any) => {
   next();
 };
 
+/**
+ * Standardized error handling helper
+ */
+function handleZodError(res: Response, error: unknown, defaultMessage: string = "Ungültige Daten") {
+  if (error instanceof z.ZodError) {
+    const validationErrors = error.errors.map(err => ({
+      field: err.path.join('.'),
+      message: err.message
+    }));
+
+    res.status(400).json({
+      error: "Validierungsfehler",
+      validationErrors: validationErrors,
+      details: validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
+    });
+  } else if (error instanceof Error) {
+    // Attempt to parse JSON error message (legacy behavior support)
+    let cleanMessage = error.message;
+    if (error.message.includes('[') && error.message.includes('"message"')) {
+      try {
+        const zodErrors = JSON.parse(error.message);
+        if (Array.isArray(zodErrors) && zodErrors.length > 0) {
+          cleanMessage = zodErrors[0].message || defaultMessage;
+        }
+      } catch (parseError) {
+        cleanMessage = defaultMessage;
+      }
+    }
+    res.status(400).json({ error: cleanMessage });
+  } else {
+    res.status(400).json({ error: defaultMessage });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use((_, res, next) => {
@@ -62,25 +94,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
       const uptime = process.uptime();
       const memoryUsage = process.memoryUsage();
-      
+
       // Check filesystem by verifying data directory exists
       const fs = await import('fs/promises');
       const path = await import('path');
       const dataDir = path.join(process.cwd(), 'data');
-      
+
       let filesystemCheck = { status: "error", responseTime: 0, error: "" };
       const fsStart = Date.now();
       try {
         await fs.access(dataDir);
         filesystemCheck = { status: "ok" as const, responseTime: Date.now() - fsStart, error: "" };
       } catch (error) {
-        filesystemCheck = { 
-          status: "error" as const, 
-          responseTime: Date.now() - fsStart, 
-          error: error instanceof Error ? error.message : "Unknown error" 
+        filesystemCheck = {
+          status: "error" as const,
+          responseTime: Date.now() - fsStart,
+          error: error instanceof Error ? error.message : "Unknown error"
         };
       }
-      
+
       // Check sessions by verifying session directory
       let sessionsCheck = { status: "error", responseTime: 0, error: "" };
       const sessionsStart = Date.now();
@@ -89,13 +121,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await fs.access(sessionsDir);
         sessionsCheck = { status: "ok" as const, responseTime: Date.now() - sessionsStart, error: "" };
       } catch (error) {
-        sessionsCheck = { 
-          status: "error" as const, 
-          responseTime: Date.now() - sessionsStart, 
-          error: error instanceof Error ? error.message : "Sessions directory not accessible" 
+        sessionsCheck = {
+          status: "error" as const,
+          responseTime: Date.now() - sessionsStart,
+          error: error instanceof Error ? error.message : "Sessions directory not accessible"
         };
       }
-      
+
       // Check storage by attempting to read settings
       let storageCheck = { status: "error", responseTime: 0, error: "" };
       const storageStart = Date.now();
@@ -103,17 +135,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.getGeneralSettings();
         storageCheck = { status: "ok" as const, responseTime: Date.now() - storageStart, error: "" };
       } catch (error) {
-        storageCheck = { 
-          status: "error" as const, 
-          responseTime: Date.now() - storageStart, 
-          error: error instanceof Error ? error.message : "Storage error" 
+        storageCheck = {
+          status: "error" as const,
+          responseTime: Date.now() - storageStart,
+          error: error instanceof Error ? error.message : "Storage error"
         };
       }
-      
-      const overallStatus = (filesystemCheck.status === "ok" && 
-                            sessionsCheck.status === "ok" && 
-                            storageCheck.status === "ok") ? "healthy" : "unhealthy";
-      
+
+      const overallStatus = (filesystemCheck.status === "ok" &&
+        sessionsCheck.status === "ok" &&
+        storageCheck.status === "ok") ? "healthy" : "unhealthy";
+
       const healthResponse = {
         status: overallStatus,
         timestamp: new Date().toISOString(),
@@ -126,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         responseTime: Date.now() - startTime
       };
-      
+
       // Return 200 for healthy, 503 for unhealthy
       const statusCode = overallStatus === "healthy" ? 200 : 503;
       res.status(statusCode).json(healthResponse);
@@ -139,8 +171,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
-    // Serve sample import file (Dynamic)
+
+  // Serve sample import file (Dynamic)
   const SAMPLE_RULES = [{
     id: "sample-id",
     matcher: "/alte-seite",
@@ -163,10 +195,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/sample-rules-import.csv", (_req, res) => {
-    const csv = ImportExportService.generateCSV(SAMPLE_RULES);
+    const csvContent = ImportExportService.generateCSV(SAMPLE_RULES);
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.csv"');
-    res.send(csv);
+    res.send(csvContent);
   });
 
   app.get("/sample-rules-import.xlsx", (_req, res) => {
@@ -175,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.setHeader('Content-Disposition', 'attachment; filename="sample-rules-import.xlsx"');
     res.send(buffer);
   });
-  
+
   // URL-Tracking endpoint
   app.post("/api/track", trackingRateLimiter, async (req, res) => {
     try {
@@ -184,20 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tracking);
     } catch (error) {
       console.error("Tracking error:", error);
-
-      if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }));
-
-        res.status(400).json({
-          error: "Invalid tracking data",
-          details: validationErrors
-        });
-      } else {
-        res.status(400).json({ error: "Invalid tracking data" });
-      }
+      handleZodError(res, error, "Invalid tracking data");
     }
   });
 
@@ -220,8 +239,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update existing tracking entry
         const success = await storage.updateUrlTracking(trackingId, { feedback, userProposedUrl });
         if (success) {
-           res.json({ success: true, id: trackingId });
-           return;
+          res.json({ success: true, id: trackingId });
+          return;
         }
         // If update failed (e.g. ID not found), fall back to creating new entry or error?
         // Let's fall back to creating a new entry to ensure feedback isn't lost,
@@ -354,9 +373,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Check admin authentication status
   app.get("/api/admin/status", (req, res) => {
-    res.json({ 
+    res.json({
       isAuthenticated: !!req.session?.isAdminAuthenticated,
-      loginTime: req.session?.adminLoginTime 
+      loginTime: req.session?.adminLoginTime
     });
   });
 
@@ -405,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const sortBy = req.query.sortBy as string || 'createdAt';
       const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
-      
+
       // If search is provided but empty or whitespace only, treat it as undefined
       const cleanSearch = (search && typeof search === 'string' && search.trim().length > 0) ? search.trim() : undefined;
 
@@ -438,29 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Create rule error:", error instanceof Error ? error.message : String(error));
-      if (error instanceof Error) {
-        // Extract clean error message from Zod validation errors
-        let cleanMessage = error.message;
-        
-        // Handle Zod validation errors specifically
-        if (error.message.includes('[') && error.message.includes('"message"')) {
-          try {
-            const zodErrors = JSON.parse(error.message);
-            if (Array.isArray(zodErrors) && zodErrors.length > 0) {
-              cleanMessage = zodErrors[0].message || "Ungültige Eingabedaten";
-            }
-          } catch (parseError) {
-            // If parsing fails, use a generic message
-            cleanMessage = "Ungültige Eingabedaten. Bitte überprüfen Sie Ihre Eingaben.";
-          }
-        }
-        
-        res.status(400).json({ 
-          error: cleanMessage
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Regel-Daten" });
-      }
+      handleZodError(res, error, "Ungültige Regel-Daten");
     }
   });
 
@@ -468,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { forceUpdate, ...updateData } = req.body as Partial<InsertUrlRule>;
-      
+
       // If forceUpdate is true, skip validation and update directly
       if (forceUpdate) {
         const rule = await storage.updateUrlRule(id, updateData, true); // Pass force flag
@@ -493,29 +490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(rule);
     } catch (error) {
       console.error("Update rule error:", error instanceof Error ? error.message : String(error));
-      if (error instanceof Error) {
-        // Extract clean error message from Zod validation errors
-        let cleanMessage = error.message;
-        
-        // Handle Zod validation errors specifically
-        if (error.message.includes('[') && error.message.includes('"message"')) {
-          try {
-            const zodErrors = JSON.parse(error.message);
-            if (Array.isArray(zodErrors) && zodErrors.length > 0) {
-              cleanMessage = zodErrors[0].message || "Ungültige Eingabedaten";
-            }
-          } catch (parseError) {
-            // If parsing fails, use a generic message
-            cleanMessage = "Ungültige Eingabedaten. Bitte überprüfen Sie Ihre Eingaben.";
-          }
-        }
-        
-        res.status(400).json({ 
-          error: cleanMessage
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Regel-Daten" });
-      }
+      handleZodError(res, error, "Ungültige Regel-Daten");
     }
   });
 
@@ -632,8 +607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ipSchema = z.string().regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/);
       // Basic IP validation
       if (!ipSchema.safeParse(ip).success) {
-         res.status(400).json({ error: "Ungültige IP-Adresse" });
-         return;
+        res.status(400).json({ error: "Ungültige IP-Adresse" });
+        return;
       }
 
       await resetLoginAttempts(ip);
@@ -690,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
       const stats = await storage.getTrackingStats();
       const topUrls = await storage.getTopUrls(10, timeRange);
-      
+
       res.json({
         stats,
         topUrls,
@@ -706,7 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const timeRange = req.query.timeRange as '24h' | '7d' | 'all' | undefined;
       const topUrls = await storage.getTopUrls(100, timeRange);
-      
+
       res.json(topUrls);
     } catch (error) {
       console.error("Top 100 stats error:", error);
@@ -749,10 +724,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const entries = await storage.searchTrackingEntries(
         cleanQuery,
-        sortBy as string, 
+        sortBy as string,
         sortOrder as 'asc' | 'desc'
       );
-      
+
       res.json(entries);
     } catch (error) {
       console.error("Tracking entries error:", error);
@@ -773,7 +748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const sortBy = req.query.sortBy as string || 'timestamp';
       const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'desc';
-      
+
       // Backward compatibility handling:
       // If ruleFilter is provided, use it.
       // If not, check excludeNoRule: true -> 'with_rule', false -> 'all'
@@ -841,10 +816,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const exportRequest = exportRequestSchema.parse(req.body);
       const settings = await storage.getGeneralSettings();
-      
+
       if (exportRequest.type === 'statistics') {
         const trackingData = await storage.getTrackingData(exportRequest.timeRange);
-        
+
         if (exportRequest.format === 'csv') {
           const includeReferrer = settings.enableReferrerTracking;
           // CSV-Export
@@ -852,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n'
             : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n';
 
-          const csvData = trackingData.map(track => {
+          const csvContent = trackingData.map(track => {
             // Prepare new fields
             const ruleId = track.ruleId || (track.ruleIds && track.ruleIds.length > 0 ? track.ruleIds.join(';') : '') || '';
             const feedback = track.feedback || '';
@@ -865,10 +840,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             }
           }).join('\n');
-          
+
           res.setHeader('Content-Type', 'text/csv');
           res.setHeader('Content-Disposition', 'attachment; filename="statistics.csv"');
-          res.send(csvHeader + csvData);
+          res.send(csvHeader + csvContent);
         } else {
           // JSON-Export
           res.setHeader('Content-Type', 'application/json');
@@ -879,10 +854,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Use getCleanUrlRules to ensure internal cache properties are stripped
         const rules = await storage.getCleanUrlRules();
         if (exportRequest.format === 'csv') {
-          const csv = ImportExportService.generateCSV(rules);
+          const csvContent = ImportExportService.generateCSV(rules);
           res.setHeader('Content-Type', 'text/csv');
           res.setHeader('Content-Disposition', 'attachment; filename="rules.csv"');
-          res.send(csv);
+          res.send(csvContent);
         } else if (exportRequest.format === 'xlsx') {
           const buffer = ImportExportService.generateExcel(rules);
           res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -936,7 +911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const importRequest = importSettingsRequestSchema.parse(req.body);
       const updatedSettings = await storage.updateGeneralSettings(importRequest.settings);
-      
+
       res.json({
         success: true,
         settings: updatedSettings
@@ -944,46 +919,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Settings import error:", error);
       res.status(400).json({ error: "Invalid settings import request" });
-    }
-  });
-
-  // Import rules (Old route kept for compatibility but it clears all rules)
-  app.post("/api/admin/import", requireAuth, async (req, res) => {
-    try {
-      const { rules } = req.body;
-      if (!Array.isArray(rules)) {
-        res.status(400).json({ error: "Invalid rules format" });
-        return;
-      }
-
-      // Prepare rules for import (without validation)
-      const rulesForImport = rules.map(rule => ({
-        matcher: rule.matcher,
-        targetUrl: rule.targetUrl || "",
-        infoText: rule.infoText || "",
-        redirectType: rule.redirectType || "partial",
-        autoRedirect: rule.autoRedirect ?? false,
-        discardQueryParams: rule.discardQueryParams ?? false,
-        forwardQueryParams: rule.forwardQueryParams ?? false,
-        keptQueryParams: rule.keptQueryParams || [],
-        staticQueryParams: rule.staticQueryParams || [],
-        searchAndReplace: rule.searchAndReplace || [],
-      }));
-
-      // Clear existing rules and import new ones
-      await storage.clearAllRules();
-      for (const rule of rulesForImport) {
-        await storage.createUrlRule(rule);
-      }
-
-      res.json({ success: true, imported: rulesForImport.length });
-    } catch (error) {
-      console.error("Import error:", error);
-      if (error instanceof Error) {
-        res.status(400).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Import fehlgeschlagen" });
-      }
     }
   });
 
@@ -995,7 +930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Disposition', 'attachment; filename="settings.json"');
       res.send(JSON.stringify(settings, null, 2));
     } catch (error) {
-      console.error("Settings export error:", error);  
+      console.error("Settings export error:", error);
       res.status(500).json({ error: "Settings Export fehlgeschlagen" });
     }
   });
@@ -1031,29 +966,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       console.error("Update settings error:", error);
-      
-      // If it's a Zod validation error, return the specific validation messages
-      if (error instanceof z.ZodError) {
-        const zodValidationErrors = (error.errors || []).map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }));
-        
-        res.status(400).json({ 
-          error: "Validierungsfehler",
-          validationErrors: zodValidationErrors,
-          details: zodValidationErrors.map(e => `${e.field}: ${e.message}`).join(', ')
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Einstellungsdaten" });
-      }
+      handleZodError(res, error, "Ungültige Einstellungsdaten");
     }
   });
 
   // Local File Upload Route for Logo
   const localUploadService = new LocalFileUploadService();
   const upload = localUploadService.getMulterConfig();
-  
+
   // Custom upload config for imports (JSON, CSV, Excel)
   const uploadDir = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
 
@@ -1177,7 +1097,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (logoUrl.startsWith('/uploads/')) {
         const filename = logoUrl.replace('/uploads/', '');
         console.log(`Attempting to delete logo file: ${filename} from URL: ${logoUrl}`);
-        
+
         // Try to delete the file - success or failure doesn't matter for the API response
         // as the important thing is removing the logo URL from settings
         const fileDeleted = localUploadService.deleteFile(filename);
@@ -1190,7 +1110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedSettings = await storage.updateGeneralSettings({
         headerLogoUrl: null
       } as any);
-      
+
       console.log("Logo deletion - settings updated, headerLogoUrl removed:", !updatedSettings.headerLogoUrl);
 
       res.json({
@@ -1208,7 +1128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const filename = req.params.filename;
     const uploadPath = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
     const filePath = path.join(uploadPath, filename);
-    
+
     if (localUploadService.fileExists(filename)) {
       res.sendFile(path.resolve(filePath));
     } else {
@@ -1274,10 +1194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rules = await storage.getCleanUrlRules();
 
       if (format === 'csv') {
-        const csv = ImportExportService.generateCSV(rules);
+        const csvContent = ImportExportService.generateCSV(rules);
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename="rules.csv"');
-        res.send(csv);
+        res.send(csvContent);
       } else if (format === 'xlsx' || format === 'excel') {
         const buffer = ImportExportService.generateExcel(rules);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

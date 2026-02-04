@@ -277,11 +277,11 @@ export class FileStorage implements IStorage {
     // Determine config: use provided or fetch settings to build default
     let effectiveConfig = config;
     if (!effectiveConfig) {
-       const settings = await this.getGeneralSettings();
-       effectiveConfig = {
-         ...RULE_MATCHING_CONFIG,
-         CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
-       };
+      const settings = await this.getGeneralSettings();
+      effectiveConfig = {
+        ...RULE_MATCHING_CONFIG,
+        CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
+      };
     }
 
     const BATCH_SIZE = 1000;
@@ -334,10 +334,6 @@ export class FileStorage implements IStorage {
       const {
         normalizedPath,
         normalizedQuery,
-        queryMap,
-        normalizedTarget,
-        isRegex,
-        regex,
         isDomainMatcher,
         ...cleanRule
       } = rule as any;
@@ -643,11 +639,6 @@ export class FileStorage implements IStorage {
       trackingData.splice(0, removeCount);
     }
 
-    // If cache is disabled, we need to ensure we don't keep the reference if we obtained it from ensureTrackingLoaded
-    // But ensureTrackingLoaded handles clearing this.trackingCache if disabled.
-    // However, if we just pushed to 'trackingData', and it WAS the cache, we are good.
-    // If it WAS NOT the cache (fresh load), we are also good for the write.
-
     await this.writeJsonFile(TRACKING_FILE, trackingData);
     return tracking;
   }
@@ -777,30 +768,30 @@ export class FileStorage implements IStorage {
       switch (sortBy) {
         case "timestamp":
         default:
-           // Optimized: Use string comparison for ISO dates
-           const tA = a.timestamp || "";
-           const tB = b.timestamp || "";
-           if (tA < tB) comparison = -1;
-           else if (tA > tB) comparison = 1;
-           break;
+          // Optimized: Use string comparison for ISO dates
+          const tA = a.timestamp || "";
+          const tB = b.timestamp || "";
+          if (tA < tB) comparison = -1;
+          else if (tA > tB) comparison = 1;
+          break;
         case "oldUrl":
-           comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
-           break;
+          comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
+          break;
         case "newUrl":
-           comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
-           break;
+          comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
+          break;
         case "path":
-           comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
-           break;
+          comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+          break;
         case "userAgent":
-           comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
-           break;
+          comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
+          break;
         case "referrer":
-           comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
-           break;
+          comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
+          break;
         case "matchQuality":
-           comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
-           break;
+          comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
+          break;
       }
 
       return sortOrder === "asc" ? comparison : -comparison;
@@ -906,7 +897,7 @@ export class FileStorage implements IStorage {
       totalScore: number;
       count: number;
       okCount: number;
-    autoCount: number;
+      autoCount: number;
       nokCount: number;
       totalMatchQuality: number;
       totalMixedScore: number;
@@ -954,7 +945,7 @@ export class FileStorage implements IStorage {
         totalScore: 0,
         count: 0,
         okCount: 0,
-      autoCount: 0,
+        autoCount: 0,
         nokCount: 0,
         totalMatchQuality: 0,
         totalMixedScore: 0
@@ -971,79 +962,68 @@ export class FileStorage implements IStorage {
       });
     }
 
-    // Convert map to sorted array
-    // Note: For aggregation other than 'day', filling gaps is complex and might not be desired.
-    // For 'day', we usually want to fill gaps. For 'week'/'month', we can just sort existing keys.
-    // To simplify and ensure consistent chart X-axis, we'll sort existing keys.
-
     const sortedKeys = Array.from(statsMap.keys()).sort();
-
-    // If 'day', we can try to fill gaps if desired, but for flexible aggregation, usually providing existing data points is safer to avoid huge gaps if date range is large.
-    // However, the chart expects continuous data for lines.
-    // Let's stick to returning available buckets for now, frontend chart libraries handle gaps or we accept them.
-    // Re-implementing gap filling for weeks/months is complex logic (determining next week/month).
-    // Given the previous code filled gaps for days, let's keep it simple: if 'day', fill gaps. If others, just sort.
 
     const result: Array<{
       date: string;
       score: number;
       count: number;
       okCount: number;
-    autoCount: number;
+      autoCount: number;
       nokCount: number;
       avgMatchQuality: number;
       mixedScore: number;
     }> = [];
 
     if (aggregation === 'day') {
-       // Fill gaps for days
-       for (let i = 0; i <= days; i++) {
-          const d = new Date(cutoffDate);
-          d.setDate(d.getDate() + i);
-          const dateStr = d.toISOString().substring(0, 10);
+      // Fill gaps for days
+      for (let i = 0; i <= days; i++) {
+        const d = new Date(cutoffDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().substring(0, 10);
 
-          if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
+        if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
 
-          const stats = statsMap.get(dateStr);
-          if (stats) {
-              result.push({
-                  date: dateStr,
-                  score: Math.round(stats.totalMixedScore / stats.count),
-                  count: stats.count,
-                  okCount: stats.okCount,
-                  nokCount: stats.nokCount,
-        autoCount: stats.autoCount || 0,
-                  avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
-                  mixedScore: Math.round(stats.totalMixedScore / stats.count)
-              });
-          } else {
-              result.push({
-                  date: dateStr,
-                  score: 0,
-                  count: 0,
-                  okCount: 0,
-      autoCount: 0,
-                  nokCount: 0,
-                  avgMatchQuality: 0,
-                  mixedScore: 0
-              });
-          }
-       }
-    } else {
-       // Just use sorted keys for week/month
-       for (const key of sortedKeys) {
-          const stats = statsMap.get(key)!;
+        const stats = statsMap.get(dateStr);
+        if (stats) {
           result.push({
-              date: key,
-              score: Math.round(stats.totalMixedScore / stats.count),
-              count: stats.count,
-              okCount: stats.okCount,
-              nokCount: stats.nokCount,
-        autoCount: stats.autoCount || 0,
-              avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
-              mixedScore: Math.round(stats.totalMixedScore / stats.count)
+            date: dateStr,
+            score: Math.round(stats.totalMixedScore / stats.count),
+            count: stats.count,
+            okCount: stats.okCount,
+            nokCount: stats.nokCount,
+            autoCount: stats.autoCount || 0,
+            avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
+            mixedScore: Math.round(stats.totalMixedScore / stats.count)
           });
-       }
+        } else {
+          result.push({
+            date: dateStr,
+            score: 0,
+            count: 0,
+            okCount: 0,
+            autoCount: 0,
+            nokCount: 0,
+            avgMatchQuality: 0,
+            mixedScore: 0
+          });
+        }
+      }
+    } else {
+      // Just use sorted keys for week/month
+      for (const key of sortedKeys) {
+        const stats = statsMap.get(key)!;
+        result.push({
+          date: key,
+          score: Math.round(stats.totalMixedScore / stats.count),
+          count: stats.count,
+          okCount: stats.okCount,
+          nokCount: stats.nokCount,
+          autoCount: stats.autoCount || 0,
+          avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
+          mixedScore: Math.round(stats.totalMixedScore / stats.count)
+        });
+      }
     }
 
     return result;
@@ -1336,8 +1316,8 @@ export class FileStorage implements IStorage {
         rulesByMatcher.set(importRule.matcher, index);
         updated++;
       } else if (importRule.id) {
-         // ID provided but not found - create new
-         const newRule: UrlRule = {
+        // ID provided but not found - create new
+        const newRule: UrlRule = {
           id: importRule.id,
           matcher: importRule.matcher,
           targetUrl: importRule.targetUrl,
@@ -1359,31 +1339,31 @@ export class FileStorage implements IStorage {
         rulesByMatcher.set(newRule.matcher, newIndex);
         imported++;
       } else if (rulesByMatcher.has(importRule.matcher)) {
-         // No ID, but matcher exists - update
-         const index = rulesByMatcher.get(importRule.matcher)!;
-         const existingRule = newRules[index];
+        // No ID, but matcher exists - update
+        const index = rulesByMatcher.get(importRule.matcher)!;
+        const existingRule = newRules[index];
 
-         const updatedRule: UrlRule = {
-           id: existingRule.id,
-           matcher: importRule.matcher,
-           targetUrl: importRule.targetUrl,
-           redirectType: importRule.redirectType,
-           infoText: importRule.infoText || "",
-           createdAt: existingRule.createdAt,
-           autoRedirect: importRule.autoRedirect,
-           discardQueryParams: importRule.discardQueryParams,
-           keptQueryParams: importRule.keptQueryParams,
-           forwardQueryParams: importRule.forwardQueryParams,
+        const updatedRule: UrlRule = {
+          id: existingRule.id,
+          matcher: importRule.matcher,
+          targetUrl: importRule.targetUrl,
+          redirectType: importRule.redirectType,
+          infoText: importRule.infoText || "",
+          createdAt: existingRule.createdAt,
+          autoRedirect: importRule.autoRedirect,
+          discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
+          forwardQueryParams: importRule.forwardQueryParams,
           searchAndReplace: importRule.searchAndReplace,
           staticQueryParams: importRule.staticQueryParams,
-         };
+        };
 
-         // Sanitize flags
-         sanitizeRuleFlags(updatedRule);
+        // Sanitize flags
+        sanitizeRuleFlags(updatedRule);
 
-         newRules[index] = preprocessRule(updatedRule, config);
-         // Matcher index is already correct
-         updated++;
+        newRules[index] = preprocessRule(updatedRule, config);
+        // Matcher index is already correct
+        updated++;
       } else {
         // Create new rule with generated ID
         const newRule: UrlRule = {
@@ -1419,7 +1399,6 @@ export class FileStorage implements IStorage {
     return { imported, updated, errors: [] };
   }
 
-  // Helper method to check if two URL matchers are overlapping
   // General Settings implementierung
   async getGeneralSettings(): Promise<GeneralSettings> {
     if (this.settingsCache) return this.settingsCache;
