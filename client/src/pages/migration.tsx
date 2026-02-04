@@ -482,32 +482,36 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
              const shouldUseSkipEncoding = ruleSkipEncoding !== undefined ? ruleSkipEncoding : settings.defaultSearchSkipEncoding;
              const finalSearchTerm = shouldUseSkipEncoding ? searchTerm : encodeURIComponent(searchTerm);
              const fallbackUrl = targetSearchUrl + finalSearchTerm;
-             setSearchFallbackUrl(fallbackUrl);
-             setShowSearchFallback(true);
 
-             // Create a new tracking entry for this specific fallback interaction
-             const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
-             const trackResponse = await fetch("/api/track", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  oldUrl: currentUrl.substring(0, 8000),
-                  newUrl: fallbackUrl.substring(0, 8000),
-                  path: extractPath(currentUrl).substring(0, 8000),
-                  timestamp: new Date().toISOString(),
-                  userAgent: safeUserAgent,
-                  ruleId: undefined, // No rule matched or we are overriding
-                  matchQuality: 0, // Fallback implies low quality/manual
-                  referrer: "Smart Search Fallback"
-                }),
-             });
-             if (trackResponse.ok) {
-                const trackData = await trackResponse.json();
-                if (trackData.id) {
-                   setSearchTrackingId(trackData.id);
-                }
+             // Don't show fallback if it's the same as the current rejection
+             if (fallbackUrl !== newUrl) {
+                 setSearchFallbackUrl(fallbackUrl);
+                 setShowSearchFallback(true);
+
+                 // Create a new tracking entry for this specific fallback interaction
+                 const safeUserAgent = (navigator.userAgent || '').substring(0, 2000);
+                 const trackResponse = await fetch("/api/track", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      oldUrl: currentUrl.substring(0, 8000),
+                      newUrl: fallbackUrl.substring(0, 8000),
+                      path: extractPath(currentUrl).substring(0, 8000),
+                      timestamp: new Date().toISOString(),
+                      userAgent: safeUserAgent,
+                      ruleId: undefined, // No rule matched or we are overriding
+                      matchQuality: 0, // Fallback implies low quality/manual
+                      referrer: "Smart Search Fallback"
+                    }),
+                 });
+                 if (trackResponse.ok) {
+                    const trackData = await trackResponse.json();
+                    if (trackData.id) {
+                       setSearchTrackingId(trackData.id);
+                    }
+                 }
+                 return; // Stop normal feedback flow
              }
-             return; // Stop normal feedback flow
           }
        } catch (e) {
           console.error("Fallback generation failed", e);
