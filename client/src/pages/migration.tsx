@@ -796,7 +796,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             {settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
-            <a href={__APP_REPOSITORY_URL__} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs opacity-50 hover:underline cursor-pointer">v{__APP_VERSION__}</a>
+            <a href={__APP_REPOSITORY_URL__} target="_blank" rel="noopener noreferrer" className="ml-2 text-sm font-medium hover:underline cursor-pointer hover:text-primary">v{__APP_VERSION__}</a>
           </div>
           <div className="flex items-center space-x-2">
 
