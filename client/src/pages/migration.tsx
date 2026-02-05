@@ -214,7 +214,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
             // Check rule-specific auto-redirect first, then fall back to global setting
             shouldAutoRedirect = rule.autoRedirect || settings.autoRedirect || false;
-            redirectUrl = generateUrlWithRule(url, rule, settings.defaultNewDomain);
+            redirectUrl = generateUrlWithRule(url, rule, settings.defaultNewDomain, settings);
             generatedNewUrl = redirectUrl;
           } else {
             // No match
@@ -387,7 +387,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   useEffect(() => {
     if (settings && currentUrl && !isLoading) {
       if (matchingRule) {
-        setNewUrl(generateUrlWithRule(currentUrl, matchingRule, settings.defaultNewDomain));
+        setNewUrl(generateUrlWithRule(currentUrl, matchingRule, settings.defaultNewDomain, settings));
       } else {
         setNewUrl(generateNewUrl(currentUrl, settings.defaultNewDomain));
       }

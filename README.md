@@ -171,6 +171,18 @@ Wenn die Option "Intelligente Such-Weiterleitung" als Fallback aktiviert ist, ve
 *   **Reihenfolge:** Die Regeln werden von oben nach unten geprüft.
 *   **URL Encoding:** Sie können global oder pro Regel festlegen, ob der extrahierte Suchbegriff URL-kodiert (z.B. `%20` statt Leerzeichen) werden soll.
 
+### Globale Transformationen
+
+Zusätzlich zu den spezifischen Regeln können Sie in den "Generellen Einstellungen" globale Transformationen definieren, die auf alle Umleitungen angewendet werden.
+
+1.  **Globale Suchen & Ersetzen:**
+    *   Wird auf alle generierten URLs angewendet.
+    *   **Priorität:** Wenn eine spezifische Regel denselben Suchbegriff ("Suchen") definiert wie die globale Einstellung, gewinnt die Definition in der Regel.
+
+2.  **Globale Statische Parameter:**
+    *   Werden an alle URLs angehängt.
+    *   **Priorität:** Wenn eine spezifische Regel denselben Parameter-Key ("Key") definiert wie die globale Einstellung, gewinnt der Wert aus der Regel.
+
 ### Suchen & Ersetzen
 
 Sie können definieren, dass bestimmte Teile der Ziel-URL (inkl. Pfad und Parameter) ersetzt werden sollen. Dies geschieht **nach** der Generierung der Basis-URL, aber **vor** dem Anhängen von statischen Parametern.

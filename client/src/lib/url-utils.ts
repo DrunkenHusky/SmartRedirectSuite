@@ -58,6 +58,34 @@ function applySearchAndReplace(url: string, replacements: { search: string; repl
   return result;
 }
 
+function mergeConfigurations<T extends { search?: string; key?: string }>(
+  globalConfig: T[] = [],
+  localConfig: T[] = [],
+  identifierKey: keyof T
+): T[] {
+  const map = new Map<string, T>();
+
+  if (globalConfig) {
+      globalConfig.forEach(item => {
+        if (item && item[identifierKey]) {
+            const id = String(item[identifierKey]);
+            map.set(id, item);
+        }
+      });
+  }
+
+  if (localConfig) {
+      localConfig.forEach(item => {
+        if (item && item[identifierKey]) {
+            const id = String(item[identifierKey]);
+            map.set(id, item);
+        }
+      });
+  }
+
+  return Array.from(map.values());
+}
+
 export function generateUrlWithRule(
   oldUrl: string, 
   rule: {
@@ -70,11 +98,27 @@ export function generateUrlWithRule(
     staticQueryParams?: { key: string; value: string; skipEncoding?: boolean }[];
     searchAndReplace?: { search: string; replace: string; caseSensitive: boolean }[];
   },
-  newDomain?: string
+  newDomain?: string,
+  globalSettings?: {
+    globalSearchAndReplace?: { search: string; replace: string; caseSensitive: boolean }[];
+    globalStaticQueryParams?: { key: string; value: string; skipEncoding?: boolean }[];
+  }
 ): string {
   try {
     const redirectType = rule.redirectType || 'partial';
     let finalUrl = '';
+
+    const mergedSearchAndReplace = mergeConfigurations(
+        globalSettings?.globalSearchAndReplace,
+        rule.searchAndReplace,
+        'search'
+    ) as { search: string; replace: string; caseSensitive: boolean }[];
+
+    const mergedStaticQueryParams = mergeConfigurations(
+        globalSettings?.globalStaticQueryParams,
+        rule.staticQueryParams,
+        'key'
+    ) as { key: string; value: string; skipEncoding?: boolean }[];
 
     // --- 1. Determine Base Target URL ---
     
@@ -188,8 +232,8 @@ export function generateUrlWithRule(
     }
 
     // --- 2. Apply Search & Replace ---
-    if (rule.searchAndReplace && rule.searchAndReplace.length > 0) {
-        finalUrl = applySearchAndReplace(finalUrl, rule.searchAndReplace);
+    if (mergedSearchAndReplace && mergedSearchAndReplace.length > 0) {
+        finalUrl = applySearchAndReplace(finalUrl, mergedSearchAndReplace);
     }
 
     // --- 3. Handle Query Parameters ---
@@ -225,8 +269,8 @@ export function generateUrlWithRule(
     }
 
     // Append Static Params (Always, and Last)
-    if (rule.staticQueryParams && rule.staticQueryParams.length > 0) {
-      const staticString = getStaticQueryString(rule.staticQueryParams);
+    if (mergedStaticQueryParams && mergedStaticQueryParams.length > 0) {
+      const staticString = getStaticQueryString(mergedStaticQueryParams);
       finalUrl = appendQueryString(finalUrl, staticString);
     }
 

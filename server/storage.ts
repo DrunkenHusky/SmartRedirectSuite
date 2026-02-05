@@ -1440,8 +1440,15 @@ export class FileStorage implements IStorage {
         ];
       }
       // Ensure smartSearchRules is initialized
+      // Ensure smartSearchRules is initialized
       if (!settings.smartSearchRules) {
         settings.smartSearchRules = [];
+      }
+      if (!settings.globalSearchAndReplace) {
+        settings.globalSearchAndReplace = [];
+      }
+      if (!settings.globalStaticQueryParams) {
+        settings.globalStaticQueryParams = [];
       }
       this.settingsCache = settings;
       return settings;

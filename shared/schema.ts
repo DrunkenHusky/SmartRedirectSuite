@@ -444,6 +444,19 @@ export const generalSettingsSchema = z.object({
     .max(365, "Zeitraum darf maximal 365 Tage sein")
     .default(30),
 
+  // Global Transformation Rules
+  globalSearchAndReplace: z.array(z.object({
+    search: z.string().min(1, "Search term required"),
+    replace: z.string().optional().default(""),
+    caseSensitive: z.boolean().default(false)
+  })).optional().default([]),
+
+  globalStaticQueryParams: z.array(z.object({
+    key: z.string().min(1, "Key required"),
+    value: z.string(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
+
   updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {
   if (data.defaultRedirectMode === 'search') {
