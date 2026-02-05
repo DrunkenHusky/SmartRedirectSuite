@@ -38,3 +38,13 @@ INFO: Alle existierenden Sitzungen wurden bereinigt.
 8:52:33 PM [vite] (client) hmr update /src/index.css
 8:52:37 PM [express] GET /api/admin/rules 200 in 54ms :: {"0":{"id":"957a66bb-eaf7-484f-92b1-4d412b086e73","matcher":"/alte-seite/Subpfad/","targetUrl":"/ziel/","redirect…
 8:52:37 PM [vite] (client) hmr update /src/index.css
+9:01:39 PM [vite] (client) hmr update /src/pages/admin.tsx, /src/index.css
+9:01:39 PM [vite] (client) hmr update /src/index.css
+9:03:59 PM [vite] (client) hmr update /src/index.css
+9:03:59 PM [vite] (client) hmr update /src/index.css
+9:03:59 PM [vite] (client) hmr update /src/index.css
+9:03:59 PM [vite] (client) hmr update /src/index.css
+9:03:59 PM [vite] (client) hmr update /src/index.css
+9:04:00 PM [vite] (client) hmr update /src/pages/admin.tsx, /src/index.css
+9:04:00 PM [vite] (client) hmr update /src/index.css
+9:04:00 PM [vite] (client) hmr update /src/index.css

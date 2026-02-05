@@ -375,4 +375,56 @@ export class ImportExportService {
     const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
     return buffer as unknown as Buffer;
   }
+  /**
+   * Extract URLs from uploaded file (First column)
+   */
+  static extractUrls(buffer: Buffer, filename: string, limit: number = 1000): { urls: string[], truncated: boolean, total: number } {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    let rows: any[] = [];
+
+    try {
+      if (ext === 'csv') {
+        const content = buffer.toString('utf-8');
+        rows = parse(content, {
+          skip_empty_lines: true,
+          trim: true,
+          relax_column_count: true
+        });
+      } else if (['xlsx', 'xls'].includes(ext || '')) {
+        const workbook = read(buffer, { type: 'buffer' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        rows = utils.sheet_to_json(worksheet, { header: 1 });
+      } else {
+        throw new Error(`Unsupported file format: ${ext}`);
+      }
+
+      const urls: string[] = [];
+      for (const row of rows) {
+        let val: any;
+        if (Array.isArray(row)) {
+          val = row[0];
+        } else if (typeof row === 'object' && row !== null) {
+          val = Object.values(row)[0];
+        } else {
+          val = row;
+        }
+
+        if (val && typeof val === 'string' && val.trim().length > 0) {
+          urls.push(val.trim());
+        }
+      }
+
+      const total = urls.length;
+      const truncated = total > limit;
+      return {
+        urls: urls.slice(0, limit),
+        truncated,
+        total
+      };
+    } catch (error) {
+       console.error("Error extracting URLs:", error);
+       throw error;
+    }
+  }
 }

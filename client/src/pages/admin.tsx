@@ -1205,6 +1205,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
+      if (showValidationModal) setShowValidationReloadDialog(true);
+      if (showValidationModal) setShowValidationReloadDialog(true);
     setRuleForm({
       matcher: "",
       targetUrl: "",
@@ -5766,6 +5768,39 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             >
               Verstanden & Speichern
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+      <ValidationModal
+        open={showValidationModal}
+        onOpenChange={setShowValidationModal}
+        onEditRule={(ruleId) => {
+            const rule = (allRules || rules).find((r: any) => r.id === ruleId);
+            if (rule) {
+                handleEditRule(rule);
+            }
+        }}
+        rules={allRules || []}
+        settings={settingsData}
+        reloadTrigger={validationReloadTrigger}
+      />
+
+      <AlertDialog open={showValidationReloadDialog} onOpenChange={setShowValidationReloadDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Validierung neu laden?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sie haben eine Regel geändert. Möchten Sie die Konfigurationsvalidierung mit den neuen Einstellungen neu laden?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowValidationReloadDialog(false)}>Nein</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+                setShowValidationReloadDialog(false);
+                setValidationReloadTrigger(prev => prev + 1);
+            }}>Ja, neu laden</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

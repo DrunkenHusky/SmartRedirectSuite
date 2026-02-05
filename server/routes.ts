@@ -1262,6 +1262,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
+
+  // Extract URLs tool endpoint
+  app.post("/api/admin/tools/extract-urls", requireAuth, importUpload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+
+      const buffer = await import('fs/promises').then(fs => fs.readFile(req.file!.path));
+
+      const result = ImportExportService.extractUrls(buffer, req.file.originalname, 1000);
+
+      await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
+
+      res.json(result);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Extract URLs error:", errorMessage);
+      res.status(400).json({ error: errorMessage });
+    }
+  });
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Import preview error:", errorMessage);
       res.status(400).json({ error: errorMessage });

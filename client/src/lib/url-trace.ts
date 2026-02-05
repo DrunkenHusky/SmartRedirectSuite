@@ -22,7 +22,6 @@ export interface UrlTraceResult {
     appliedGlobalRules: AppliedGlobalRule[];
 }
 
-// Helper functions
 function extractPath(url: string): string {
   try {
     const urlObj = new URL(url, 'http://dummy.com');
@@ -173,7 +172,6 @@ export function traceUrlGeneration(
   const trace: UrlTraceStep[] = [];
   const appliedGlobalRules: AppliedGlobalRule[] = [];
 
-  // Initial Step
   trace.push({
       description: "Initial URL",
       urlBefore: oldUrl,
@@ -186,8 +184,6 @@ export function traceUrlGeneration(
     const redirectType = rule.redirectType || 'partial';
     let currentUrl = oldUrl;
     let nextUrl = '';
-
-    // --- 1. Determine Base Target URL (Rule Application) ---
 
     if (redirectType === 'wildcard' && rule.targetUrl) {
       nextUrl = rule.targetUrl;
@@ -213,7 +209,6 @@ export function traceUrlGeneration(
       if (rule.discardQueryParams) {
          try {
              const [pathPart] = path.split('?');
-             // Naive check if params existed
              if (path.includes('?')) paramsDiscarded = true;
 
              if (path.includes('#')) {
@@ -308,7 +303,6 @@ export function traceUrlGeneration(
       currentUrl = nextUrl;
 
     } else {
-        // Fallback
         const fallback = generateNewUrl(oldUrl, newDomain);
         trace.push({
             description: "Fallback Generation",
@@ -320,28 +314,22 @@ export function traceUrlGeneration(
         return { originalUrl: oldUrl, finalUrl: fallback, steps: trace, appliedGlobalRules: [] };
     }
 
-    // --- 2. Apply Search & Replace ---
-
-    // Prepare effective search & replace list
     let effectiveSearchReplace: any[] = [];
 
-    // Add global rules first
     if (generalSettings?.globalSearchAndReplace) {
         effectiveSearchReplace = generalSettings.globalSearchAndReplace.filter(g => {
             return !(rule.searchAndReplace || []).some(r => r.search === g.search);
         });
     }
 
-    // Add rule rules
     if (rule.searchAndReplace) {
         effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace];
     }
 
-    // Apply sequentially
     for (const item of effectiveSearchReplace) {
         const result = applySearchAndReplaceSingle(currentUrl, item);
         if (result !== currentUrl) {
-            const isGlobal = !!item.id; // Assuming global items have IDs from settings
+            const isGlobal = !!item.id;
 
             trace.push({
                 description: `Search & Replace: "${item.search}" -> "${item.replace || ''}"`,
@@ -362,8 +350,6 @@ export function traceUrlGeneration(
         }
     }
 
-    // --- 3. Handle Query Parameters ---
-
     if (redirectType === 'wildcard') {
         if (rule.forwardQueryParams) {
              try {
@@ -383,7 +369,6 @@ export function traceUrlGeneration(
                 }
              } catch(e) {}
         } else if (rule.discardQueryParams) {
-             // Handle Kept Params
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
 
              if (generalSettings?.globalKeptQueryParams) {
@@ -402,13 +387,12 @@ export function traceUrlGeneration(
                         urlBefore: beforeAppend,
                         urlAfter: currentUrl,
                         changed: true,
-                        type: 'rule' // Mixed, but mostly rule logic driven
+                        type: 'rule'
                      });
                  }
              }
         }
     } else {
-        // Partial / Domain
         if (rule.discardQueryParams) {
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
              if (generalSettings?.globalKeptQueryParams) {
@@ -434,17 +418,14 @@ export function traceUrlGeneration(
         }
     }
 
-    // Append Static Params (Always, and Last)
     let effectiveStaticParams: any[] = [];
 
-    // Add global rules first
     if (generalSettings?.globalStaticQueryParams) {
         effectiveStaticParams = generalSettings.globalStaticQueryParams.filter(g => {
             return !(rule.staticQueryParams || []).some(r => r.key === g.key);
         });
     }
 
-    // Add rule rules
     if (rule.staticQueryParams) {
         effectiveStaticParams = [...effectiveStaticParams, ...rule.staticQueryParams];
     }
@@ -461,7 +442,7 @@ export function traceUrlGeneration(
             urlBefore: beforeAppend,
             urlAfter: currentUrl,
             changed: true,
-            type: 'global' // Often global
+            type: 'global'
          });
       }
     }
