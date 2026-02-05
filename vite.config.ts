@@ -28,7 +28,8 @@ export function resolvePackageJsonPath(baseDirectory = viteConfigDirectory) {
 export default defineConfig({
   define: {
     '__APP_VERSION__': JSON.stringify(APPLICATION_METADATA.version),
-    '__APP_NAME__': JSON.stringify(APPLICATION_METADATA.displayName)
+    '__APP_NAME__': JSON.stringify(APPLICATION_METADATA.displayName),
+    '__APP_REPOSITORY_URL__': JSON.stringify(APPLICATION_METADATA.repositoryUrl),
   },
   plugins: [react()],
   resolve: {
