@@ -8,9 +8,11 @@ import type { GeneralSettings, GlobalSearchAndReplace, GlobalStaticQueryParam, G
 interface GlobalRulesSettingsProps {
   settings: GeneralSettings;
   onUpdate: (settings: Partial<GeneralSettings>) => void;
+  onSave: () => void;
+  isSaving: boolean;
 }
 
-export function GlobalRulesSettings({ settings, onUpdate }: GlobalRulesSettingsProps) {
+export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving }: GlobalRulesSettingsProps) {
   // Helper to generate UUID
   const uuid = () => crypto.randomUUID();
 
@@ -335,6 +337,25 @@ export function GlobalRulesSettings({ settings, onUpdate }: GlobalRulesSettingsP
                             </Button>
                         </div>
                     </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="border-t pt-6 mt-8">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Speichern Sie Ihre Änderungen um sie auf der Website anzuwenden.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={onSave}
+                      size="lg"
+                      className="min-w-48 px-6"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Speichere..." : "Einstellungen speichern"}
+                    </Button>
+                  </div>
                 </div>
             </CardContent>
         </Card>

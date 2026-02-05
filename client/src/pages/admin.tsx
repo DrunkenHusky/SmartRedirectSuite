@@ -3639,6 +3639,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               <GlobalRulesSettings
                 settings={generalSettings as any}
                 onUpdate={(updates) => setGeneralSettings({ ...generalSettings, ...updates })}
+                onSave={() => updateSettingsMutation.mutate(generalSettings)}
+                isSaving={updateSettingsMutation.isPending}
               />
             </TabsContent>
             <TabsContent value="stats" className="space-y-6">
