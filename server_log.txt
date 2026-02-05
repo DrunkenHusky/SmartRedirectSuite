@@ -1,0 +1,40 @@
+WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.
+WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.
+Created upload directory: /app/data/uploads
+INFO: Alle existierenden Sitzungen wurden bereinigt.
+8:50:17 PM [express] serving on port 5000
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+8:51:04 PM [express] GET /api/settings 200 in 4ms :: {"id":"fd19faba-b08a-4c83-b6eb-e101fba86607","headerTitle":"SmartRedirect Suite","headerIcon":"Info","headerBackgroun…
+8:51:04 PM [vite] (client) hmr update /src/index.css
+8:51:05 PM [express] GET /api/admin/status 200 in 3ms :: {"isAuthenticated":false}
+8:51:05 PM [vite] (client) hmr update /src/index.css
+8:51:05 PM [express] POST /api/admin/login 200 in 628ms :: {"success":true,"sessionId":"***"}
+8:51:05 PM [vite] (client) hmr update /src/index.css
+8:51:06 PM [express] GET /api/admin/status 200 in 56ms :: {"isAuthenticated":true,"loginTime":1770324665378}
+8:51:06 PM [vite] (client) hmr update /src/index.css
+8:51:07 PM [express] GET /api/admin/stats/all 200 in 67ms :: {"stats":{"total":0,"today":0,"week":0,"quality":{"match100":0,"match75":0,"match50":0,"match0":0},"feedback"…
+8:51:07 PM [express] GET /api/admin/stats/top100 200 in 67ms :: {}
+8:51:07 PM [express] GET /api/admin/stats/trend 200 in 69ms :: {"0":{"date":"2026-01-06","score":0,"count":0,"okCount":0,"autoCount":0,"nokCount":0,"avgMatchQuality":0,"m…
+8:51:07 PM [express] GET /api/admin/stats/top-referrers 200 in 68ms :: {}
+8:51:07 PM [express] GET /api/admin/rules/paginated 200 in 70ms :: {"rules":[{"id":"957a66bb-eaf7-484f-92b1-4d412b086e73","matcher":"/alte-seite/Subpfad/","targetUrl":"/z…
+8:51:07 PM [vite] (client) hmr update /src/index.css
+8:52:02 PM [vite] (client) hmr update /src/pages/admin.tsx, /src/index.css
+8:52:02 PM [vite] (client) hmr update /src/index.css
+8:52:03 PM [vite] (client) hmr update /src/pages/admin.tsx, /src/index.css
+8:52:03 PM [vite] (client) hmr update /src/index.css
+8:52:32 PM [express] GET /api/settings 200 in 1ms :: {"id":"fd19faba-b08a-4c83-b6eb-e101fba86607","headerTitle":"SmartRedirect Suite","headerIcon":"Info","headerBackgroun…
+8:52:32 PM [vite] (client) hmr update /src/index.css
+8:52:32 PM [express] GET /api/admin/status 200 in 1ms :: {"isAuthenticated":false}
+8:52:32 PM [vite] (client) hmr update /src/index.css
+8:52:33 PM [express] POST /api/admin/login 200 in 565ms :: {"success":true,"sessionId":"***"}
+8:52:33 PM [vite] (client) hmr update /src/index.css
+8:52:33 PM [express] GET /api/admin/status 200 in 54ms :: {"isAuthenticated":true,"loginTime":1770324752456}
+8:52:33 PM [vite] (client) hmr update /src/index.css
+8:52:33 PM [express] GET /api/admin/rules/paginated 200 in 61ms :: {"rules":[{"id":"957a66bb-eaf7-484f-92b1-4d412b086e73","matcher":"/alte-seite/Subpfad/","targetUrl":"/z…
+8:52:33 PM [express] GET /api/admin/stats/all 200 in 60ms :: {"stats":{"total":0,"today":0,"week":0,"quality":{"match100":0,"match75":0,"match50":0,"match0":0},"feedback"…
+8:52:33 PM [express] GET /api/admin/stats/top100 200 in 57ms :: {}
+8:52:33 PM [express] GET /api/admin/stats/trend 200 in 64ms :: {"0":{"date":"2026-01-06","score":0,"count":0,"okCount":0,"autoCount":0,"nokCount":0,"avgMatchQuality":0,"m…
+8:52:33 PM [express] GET /api/admin/stats/top-referrers 200 in 58ms :: {}
+8:52:33 PM [vite] (client) hmr update /src/index.css
+8:52:37 PM [express] GET /api/admin/rules 200 in 54ms :: {"0":{"id":"957a66bb-eaf7-484f-92b1-4d412b086e73","matcher":"/alte-seite/Subpfad/","targetUrl":"/ziel/","redirect…
+8:52:37 PM [vite] (client) hmr update /src/index.css

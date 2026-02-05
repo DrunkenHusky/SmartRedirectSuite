@@ -1,3 +1,4 @@
+import { ValidationModal } from "@/components/admin/ValidationModal";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,7 @@ import {
   FileJson,
   List,
   LogOut,
+  RefreshCw,
   Trash,
   Search,
   ArrowUpDown,
@@ -206,6 +208,9 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
 }
 
 export default function AdminPage({ onClose }: AdminPageProps) {
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showValidationReloadDialog, setShowValidationReloadDialog] = useState(false);
+  const [validationReloadTrigger, setValidationReloadTrigger] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Default to false until verified
   const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Start with checking auth on mount
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
@@ -502,6 +507,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   // Queries - Use paginated API for better performance with large datasets
+  const { data: allRules } = useQuery({
+    queryKey: ["/api/admin/rules"],
+    enabled: showValidationModal && isAuthenticated,
+    queryFn: async () => {
+      const response = await fetch("/api/admin/rules", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed");
+      return response.json();
+    },
+  });
   const { data: paginatedRulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ["/api/admin/rules/paginated", rulesPage, rulesPerPage, debouncedRulesSearchQuery, rulesSortBy, rulesSortOrder],
     enabled: isAuthenticated,
@@ -768,6 +782,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel erstellt", description: "Die URL-Regel wurde erfolgreich erstellt." });
     },
     onError: (error: any) => {
@@ -830,6 +845,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde erfolgreich aktualisiert." });
     },
     onError: (error: any) => {
@@ -1216,6 +1232,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel erstellt", description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
     },
     onError: (error: any) => {
@@ -1236,6 +1253,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
     },
     onError: (error: any) => {
@@ -3492,10 +3510,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </Button>
                       )}
                       
-                      {/* Create New Rule Button */}
+                                            {/* Validation Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-initial sm:w-auto"
+                        onClick={() => setShowValidationModal(true)}
+                      >
+                         <RefreshCw className="h-4 w-4 mr-2" />
+                         Konfigurationsvalidierung
+                      </Button>
+
+{/* Create New Rule Button */}
                       <Button
                         onClick={() => {
                           resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
                           setIsRuleDialogOpen(true);
                         }}
                         size="sm"
