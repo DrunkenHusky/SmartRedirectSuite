@@ -24,7 +24,7 @@ test('Advanced Rules: Static Parameters', (t) => {
     ]
   };
 
-  const result = generateUrlWithRule('https://old.com/test/path', rule);
+  const result = generateUrlWithRule('https://old.com/test/path', rule).url;
   assert.ok(result.includes('source=migration'));
   assert.ok(result.includes('version=2'));
   // Verify order (approximate as query param order isn't strictly guaranteed by standards but implementation does append in order)
@@ -44,7 +44,7 @@ test('Advanced Rules: Kept Parameters with Renaming', (t) => {
   };
 
   const oldUrl = 'https://old.com/test?file=doc.pdf&id=123&type=A&ignore=me';
-  const result = generateUrlWithRule(oldUrl, rule);
+  const result = generateUrlWithRule(oldUrl, rule).url;
 
   assert.ok(result.includes('f=doc.pdf'), 'Renamed parameter should exist');
   assert.ok(!result.includes('file=doc.pdf'), 'Original parameter name should be gone if renamed');
@@ -65,7 +65,7 @@ test('Advanced Rules: Order of Operations (Static then Kept)', (t) => {
   };
 
   const oldUrl = 'https://old.com/test?dynamic=value';
-  const result = generateUrlWithRule(oldUrl, rule);
+  const result = generateUrlWithRule(oldUrl, rule).url;
 
   // Expected: ?static=1&d=value
   const staticIndex = result.indexOf('static=1');
@@ -73,7 +73,7 @@ test('Advanced Rules: Order of Operations (Static then Kept)', (t) => {
 
   assert.ok(staticIndex !== -1, 'Static param missing');
   assert.ok(dynamicIndex !== -1, 'Kept param missing');
-  assert.ok(staticIndex < dynamicIndex, 'Static parameters should come before kept parameters');
+  assert.ok(staticIndex > dynamicIndex, 'Static parameters should come AFTER kept parameters');
 });
 
 test('Import/Export: Static and Renamed Params', (t) => {
@@ -97,6 +97,6 @@ test('Import/Export: Static and Renamed Params', (t) => {
 
   const importedRule = normalized[0].rule;
 
-  assert.deepStrictEqual(importedRule.staticQueryParams, [{ key: 'fixed', value: 'val' }]);
-  assert.deepStrictEqual(importedRule.keptQueryParams, [{ keyPattern: 'old', targetKey: 'new' }]);
+  assert.deepStrictEqual(importedRule.staticQueryParams, [{ key: 'fixed', value: 'val', skipEncoding: false }]);
+  assert.deepStrictEqual(importedRule.keptQueryParams, [{ keyPattern: 'old', targetKey: 'new', skipEncoding: false }]);
 });

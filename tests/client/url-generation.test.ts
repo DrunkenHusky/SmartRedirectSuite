@@ -14,7 +14,7 @@ test('Task 1: Wildcard Rule with Static Query Params', (t) => {
     forwardQueryParams: false,
   };
 
-  const result = generateUrlWithRule(oldUrl, rule);
+  const  = generateUrlWithRule().url;
   assert.strictEqual(result, 'https://new.com/bar?source=migration');
 });
 
@@ -30,7 +30,7 @@ test('Task 1: Wildcard Rule with Kept Query Params (Renaming)', (t) => {
     keptQueryParams: [{ keyPattern: 'file', targetKey: 'id' }],
   };
 
-  const result = generateUrlWithRule(oldUrl, rule);
+  const  = generateUrlWithRule().url;
   assert.strictEqual(result, 'https://new.com/bar?id=123');
 });
 
@@ -46,7 +46,7 @@ test('Task 2: Search and Replace (Simple)', (t) => {
   };
   const newDomain = 'https://new.com';
 
-  const result = generateUrlWithRule(oldUrl, rule, newDomain);
+  const  = generateUrlWithRule().url;
   assert.strictEqual(result, 'https://new.com/teams/my-site');
 });
 
@@ -63,7 +63,7 @@ test('Task 2: Search and Replace (Case Sensitive)', (t) => {
   };
   const newDomain = 'https://new.com';
 
-  const result = generateUrlWithRule(oldUrl, rule, newDomain);
+  const  = generateUrlWithRule().url;
   assert.strictEqual(result, 'https://new.com/Team/Page');
 });
 
@@ -79,7 +79,7 @@ test('Task 2: Search and Replace (Deletion)', (t) => {
   };
   const newDomain = 'https://new.com';
 
-  const result = generateUrlWithRule(oldUrl, rule, newDomain);
+  const  = generateUrlWithRule().url;
   assert.strictEqual(result, 'https://new.com/bar');
 });
 
@@ -98,7 +98,7 @@ test('Order of Operations: Match -> Search/Replace -> Params', (t) => {
   };
   const newDomain = 'https://new.com';
 
-  const result = generateUrlWithRule(oldUrl, rule, newDomain);
+  const  = generateUrlWithRule().url;
   assert.strictEqual(result, 'https://new.com/replaced?p2=1&static=2');
 });
 
@@ -114,7 +114,7 @@ test('Wildcard: Forward vs Discard priority', (t) => {
         discardQueryParams: false,
         keptQueryParams: []
     };
-    const result = generateUrlWithRule(oldUrl, rule);
+    const  = generateUrlWithRule().url;
     assert.strictEqual(result, 'https://new.com/bar?a=1');
 });
 
@@ -130,7 +130,7 @@ test('Skip Encoding for Static and Kept Parameters', (t) => {
     staticQueryParams: [{ key: 'source', value: 'mig%20ration', skipEncoding: true }],
   };
 
-  const result = generateUrlWithRule(oldUrl, rule);
+  const  = generateUrlWithRule().url;
   // kept param: "new file.pdf" -> encoded by URLSearchParams default is "new+file.pdf"
   // BUT we want "new%20file.pdf".
   // With skipEncoding=true in our logic, we pass the decoded value "new file.pdf" directly if we used that logic.
@@ -158,7 +158,7 @@ test('Skip Encoding for Static and Kept Parameters', (t) => {
   // Maybe they have a param like `id=123/456` and they want `id=123/456` not `id=123%2F456`?
   // Let's test THAT scenario for `skipEncoding`.
 
-  const resultStatic = generateUrlWithRule(oldUrl, rule);
+  const  = generateUrlWithRule().url;
   // Static: "mig%20ration" -> (skip=true) -> "mig%20ration". Correct.
   // Kept: "new file.pdf" -> (skip=true) -> "new file.pdf".
   // If we assume "new file.pdf" in a string template becomes a literal space, that is technically invalid URL but some browsers handle it.
@@ -173,7 +173,7 @@ test('Skip Encoding for Static and Kept Parameters', (t) => {
       forwardQueryParams: false,
       keptQueryParams: [{ keyPattern: 'path', skipEncoding: true }]
   };
-  const resultSlash = generateUrlWithRule(oldUrlSlash, ruleSlash);
+  const  = generateUrlWithRule().url;
   assert.strictEqual(resultSlash, 'https://new.com/bar?path=folder/file'); // No %2F
 
   // Test Static skip encoding
