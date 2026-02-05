@@ -40,7 +40,7 @@ console.log("Running Domain Rules Tests...");
   assert(!!match, 'Should match domain');
   assertEqual(match?.rule.matcher, 'www.google.ch', 'Matcher should be correct');
 
-  const newUrl = generateUrlWithRule('http://www.google.ch/some/path', match!.rule);
+  const  = generateUrlWithRule().url;
   assertEqual(newUrl, 'https://new-google.ch/some/path', 'Redirect URL should preserve path');
 }
 
@@ -96,7 +96,7 @@ console.log("Running Domain Rules Tests...");
   assert(!!match, 'Should match path');
 
   // Note: generateUrlWithRule logic for 'domain' type should extract path from oldUrl and append to target domain
-  const newUrl = generateUrlWithRule('http://mysite.com/blog/post-1', match!.rule);
+  const  = generateUrlWithRule().url;
   assertEqual(newUrl, 'https://new-blog.com/blog/post-1', 'Should replace domain and keep path');
 }
 
@@ -115,7 +115,7 @@ console.log("Running Domain Rules Tests...");
 
   // If redirectType is 'partial' but matcher is domain, it should replace domain with targetUrl/path
   const oldUrl = 'http://legacy.com/docs/v1/page.html';
-  const newUrl = generateUrlWithRule(oldUrl, rule);
+  const  = generateUrlWithRule().url;
 
   // Expected: https://modern.com/archive/docs/v1/page.html
   // Because logic is: targetBase (= targetUrl) + normalizedOldPath

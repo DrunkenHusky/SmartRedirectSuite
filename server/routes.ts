@@ -849,8 +849,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const includeReferrer = settings.enableReferrerTracking;
           // CSV-Export
           const csvHeader = includeReferrer
-            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n'
-            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n';
+            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag,Strategie,Globale Regeln\n'
+            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag,Strategie,Globale Regeln\n';
 
           const csvData = trackingData.map(track => {
             // Prepare new fields
@@ -858,6 +858,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const feedback = track.feedback || '';
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
             const userProposedUrl = track.userProposedUrl || '';
+            const strategy = track.redirectStrategy || '';
+            const globalRules = (track.appliedGlobalRules || []).map(r => r.description).join('; ');
 
             if (includeReferrer) {
               return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;

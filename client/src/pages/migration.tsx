@@ -193,6 +193,9 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         let foundRules: UrlRule[] = [];
         let generatedNewUrl = "";
         let currentMatchQuality = 0;
+        let redirectStrategy = undefined;
+        let appliedGlobalRules = [];
+
         
         if (ruleResponse.ok) {
           const { rule, hasMatch, matchQuality: quality, matchLevel: level, matchingRules } = await ruleResponse.json();
@@ -214,7 +217,12 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
             // Check rule-specific auto-redirect first, then fall back to global setting
             shouldAutoRedirect = rule.autoRedirect || settings.autoRedirect || false;
-            redirectUrl = generateUrlWithRule(url, rule, settings.defaultNewDomain);
+
+            const generationResult = generateUrlWithRule(url, rule, settings.defaultNewDomain, settings);
+            redirectUrl = generationResult.url;
+            appliedGlobalRules = generationResult.appliedGlobalRules;
+            redirectStrategy = 'rule';
+
             generatedNewUrl = redirectUrl;
           } else {
             // No match
@@ -238,6 +246,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     // Smart Search Logic
                     currentMatchQuality = 0;
                     setMatchQuality(currentMatchQuality);
+                    redirectStrategy = 'smart-search';
                     setMatchLevel('yellow'); // Indicates fallback is active but not exact match
 
                     const message = settings.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.";
@@ -262,6 +271,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             }
                         } else {
                             // Fallback if extraction fails or no search URL
+                             redirectStrategy = 'domain-fallback';
                              setMatchLevel('red');
                              setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
                              generatedNewUrl = generateNewUrl(url, settings.defaultNewDomain);
@@ -279,6 +289,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                     // Standard Domain Replacement
                     currentMatchQuality = 0;
                     setMatchQuality(currentMatchQuality);
+                    redirectStrategy = 'domain-fallback';
                     setMatchLevel('red');
                     setMatchExplanation(settings.matchNoneExplanation || "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.");
 
@@ -325,8 +336,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
               matchQuality: currentMatchQuality,
               // Log auto-redirect as feedback if survey is active to ensure stats integrity
-              feedback: settings.enableFeedbackSurvey ? 'auto-redirect' : undefined
-            }),
+              feedback: settings.enableFeedbackSurvey ? 'auto-redirect' : undefined, redirectStrategy, appliedGlobalRules }),
           });
           
           // Perform auto-redirect
@@ -387,7 +397,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   useEffect(() => {
     if (settings && currentUrl && !isLoading) {
       if (matchingRule) {
-        setNewUrl(generateUrlWithRule(currentUrl, matchingRule, settings.defaultNewDomain));
+        setNewUrl(generateUrlWithRule(currentUrl, matchingRule, settings.defaultNewDomain, settings).url);
       } else {
         setNewUrl(generateNewUrl(currentUrl, settings.defaultNewDomain));
       }
