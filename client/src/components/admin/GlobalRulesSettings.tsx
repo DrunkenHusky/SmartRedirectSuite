@@ -132,7 +132,7 @@ export function GlobalRulesSettings({ settings, onUpdate }: GlobalRulesSettingsP
                     <p className="text-sm text-muted-foreground">
                         Ersetzen Sie Text in der Ziel-URL. Wird vor Query-Parametern angewendet.
                         <br/>
-                        <span className="text-xs">Reihenfolge: Global (hier) -> Regel-spezifisch. Wenn eine Regel denselben Suchbegriff definiert, gewinnt die Regel.</span>
+                        <span className="text-xs">Reihenfolge: Global (hier) &rarr; Regel-spezifisch. Wenn eine Regel denselben Suchbegriff definiert, gewinnt die Regel.</span>
                     </p>
 
                     <div className="space-y-3">

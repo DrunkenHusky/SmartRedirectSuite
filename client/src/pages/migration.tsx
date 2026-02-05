@@ -336,12 +336,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               ruleId: (foundRule?.id && typeof foundRule.id === 'string' && foundRule.id.length > 0) ? foundRule.id : undefined,
               matchQuality: currentMatchQuality,
               // Log auto-redirect as feedback if survey is active to ensure stats integrity
-              feedback: settings.enableFeedbackSurvey ? 'auto-redirect' : undefined
-            ,
-              redirectStrategy,
-              appliedGlobalRules,
-            redirectStrategy,
-            appliedGlobalRules}),
+              feedback: settings.enableFeedbackSurvey ? 'auto-redirect' : undefined, redirectStrategy, appliedGlobalRules }),
           });
           
           // Perform auto-redirect
