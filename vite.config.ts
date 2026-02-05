@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import fs from "fs";
 import { APPLICATION_METADATA } from "./shared/appMetadata";
@@ -31,7 +32,7 @@ export default defineConfig({
     '__APP_NAME__': JSON.stringify(APPLICATION_METADATA.displayName),
     '__APP_REPOSITORY_URL__': JSON.stringify(APPLICATION_METADATA.repositoryUrl),
   },
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
