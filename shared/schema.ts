@@ -446,12 +446,21 @@ export const generalSettingsSchema = z.object({
 
   // Global Transformation Rules
   globalSearchAndReplace: z.array(z.object({
+    id: z.string().uuid().optional(),
     search: z.string().min(1, "Search term required"),
     replace: z.string().optional().default(""),
     caseSensitive: z.boolean().default(false)
   })).optional().default([]),
 
+  globalKeptQueryParams: z.array(z.object({
+    id: z.string().uuid().optional(),
+    keyPattern: z.string().min(1, "Pattern required"),
+    valuePattern: z.string().optional(),
+    targetKey: z.string().optional(),
+    skipEncoding: z.boolean().default(false),
+  })).optional().default([]),
   globalStaticQueryParams: z.array(z.object({
+    id: z.string().uuid().optional(),
     key: z.string().min(1, "Key required"),
     value: z.string(),
     skipEncoding: z.boolean().default(false),

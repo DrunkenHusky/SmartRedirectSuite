@@ -1,162 +1,156 @@
-import { read, utils, write } from '@e965/xlsx';
-import { parse } from 'csv-parse/sync';
-import { stringify } from 'csv-stringify/sync';
-import { UrlRule, importUrlRuleSchema } from '@shared/schema';
-
-// Defined column mapping
-// These keys define which CSV/Excel columns map to which internal rule properties.
-// Multiple variations are supported to handle different languages and formats.
-const COLUMN_MAPPING = {
-  matcher: ['Matcher', 'matcher', 'Quelle', 'Source'],
-  targetUrl: ['Target URL', 'targetUrl', 'Ziel', 'Target'],
-  redirectType: ['Type', 'redirectType', 'Typ'],
-  infoText: ['Info', 'infoText', 'Beschreibung'],
-  autoRedirect: ['Auto Redirect', 'autoRedirect', 'Automatisch'],
-  discardQueryParams: ['Discard Query Params', 'discardQueryParams', 'Parameter entfernen'],
-  keptQueryParams: ['Kept Query Params', 'keptQueryParams', 'Parameter Ausnahmen'],
-  staticQueryParams: ['Static Query Params', 'staticQueryParams', 'Statische Parameter'],
-  forwardQueryParams: ['Keep Query Params', 'forwardQueryParams', 'Parameter behalten'],
-  searchAndReplace: ['Search Replace', 'searchAndReplace', 'Suchen Ersetzen'],
-  id: ['ID', 'id']
-};
-
-export interface ParsedRuleResult {
-  rule: Partial<UrlRule>;
-  isValid: boolean;
-  errors: string[];
-  status: 'new' | 'update' | 'invalid';
-}
+import { stringify } from "csv-stringify/sync";
+import { parse } from "csv-parse/sync";
+import { utils, write } from "@e965/xlsx";
+import type { UrlRule, UrlTracking, ImportUrlRule } from "@shared/schema";
+import { importUrlRuleSchema } from "@shared/schema";
 
 export class ImportExportService {
   /**
-   * Parse uploaded file buffer (Excel or CSV) into rules
+   * Generates CSV string for statistics
    */
-  static parseFile(buffer: Buffer, filename: string): any[] {
-    const ext = filename.split('.').pop()?.toLowerCase();
+  static generateTrackingCsv(data: any[]): string {
+    const csvData = data.map(entry => ({
+      Timestamp: entry.timestamp,
+      'Old URL': this.sanitizeForCSV(entry.oldUrl),
+      'New URL': this.sanitizeForCSV(entry.newUrl),
+      Path: this.sanitizeForCSV(entry.path),
+      Referrer: this.sanitizeForCSV(entry.referrer || ''),
+      'Match Quality': entry.matchQuality || 0,
+      Feedback: entry.feedback || '',
+      'Fallback Type': entry.fallbackType || '',
+      'User Proposed URL': this.sanitizeForCSV(entry.userProposedUrl || ''),
+      'Applied Global Transformations': entry.appliedGlobalTransformations
+        ? entry.appliedGlobalTransformations.map((t: any) => `${t.type}: ${t.description}`).join('; ')
+        : ''
+    }));
 
-    if (ext === 'csv') {
-      return this.parseCSV(buffer);
-    } else if (['xlsx', 'xls'].includes(ext || '')) {
-      return this.parseExcel(buffer);
-    } else {
-      throw new Error(`Unsupported file format: ${ext}`);
-    }
-  }
-
-  private static parseCSV(buffer: Buffer): any[] {
-    const content = buffer.toString('utf-8');
-    return parse(content, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true
-    });
-  }
-
-  private static parseExcel(buffer: Buffer): any[] {
-    const workbook = read(buffer, { type: 'buffer' });
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    return utils.sheet_to_json(worksheet);
+    return stringify(csvData, { header: true });
   }
 
   /**
-   * Normalize parsed data to internal Rule structure
+   * Generates CSV string for blocked IPs
    */
-  static normalizeRules(
-    rawRules: any[],
-    options: { encodeImportedUrls?: boolean } = { encodeImportedUrls: true },
-    existingRules: UrlRule[] = []
-  ): ParsedRuleResult[] {
-    // Create lookup map for faster matching by matcher
-    const existingRulesByMatcher = new Map(existingRules.map(r => [r.matcher, r]));
-    const existingRulesById = new Map(existingRules.map(r => [r.id, r]));
+  static generateBlockedIpsCsv(data: any[]): string {
+    const csvData = data.map(entry => ({
+      IP: this.sanitizeForCSV(entry.ip),
+      'Failed Attempts': entry.attempts,
+      'Blocked Until': entry.blockedUntil ? new Date(entry.blockedUntil).toISOString() : ''
+    }));
 
-    return rawRules.map(row => {
-      const rule: any = {};
+    return stringify(csvData, { header: true });
+  }
+
+  /**
+   * Generates Excel buffer for blocked IPs
+   */
+  static generateBlockedIpsExcel(data: any[]): Buffer {
+    const excelData = data.map(entry => ({
+      IP: this.sanitizeForCSV(entry.ip),
+      'Failed Attempts': entry.attempts,
+      'Blocked Until': entry.blockedUntil ? new Date(entry.blockedUntil).toISOString() : ''
+    }));
+
+    const workbook = utils.book_new();
+    const worksheet = utils.json_to_sheet(excelData);
+    utils.book_append_sheet(workbook, worksheet, 'Blocked IPs');
+
+    const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return buffer as unknown as Buffer;
+  }
+
+  /**
+   * Parse import file (CSV or JSON)
+   * @returns Array of validation results
+   */
+  static async parseImportFile(
+    content: string,
+    fileType: 'json' | 'csv',
+    existingRulesById: Set<string>,
+    existingRulesByMatcher: Set<string>
+  ): Promise<any[]> {
+    let rules: any[] = [];
+
+    if (fileType === 'json') {
+      try {
+        const parsed = JSON.parse(content);
+        rules = Array.isArray(parsed) ? parsed : (parsed.rules || []);
+      } catch (e) {
+        throw new Error('Invalid JSON format');
+      }
+    } else {
+      try {
+        rules = parse(content, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true
+        });
+      } catch (e) {
+        throw new Error('Invalid CSV format');
+      }
+    }
+
+    // Map CSV headers to internal fields if needed
+    // Normalize and Validate
+    return rules.map((rawRule: any, index: number) => {
       const errors: string[] = [];
+      const rule: any = {};
 
-      // Map columns
-      const getValue = (keys: string[]) => {
-        for (const key of keys) {
-          // Case insensitive check for key
-          const foundKey = Object.keys(row).find(k => k.toLowerCase() === key.toLowerCase());
-          if (foundKey) return row[foundKey];
-        }
-        return undefined;
-      };
+      // Map fields (handling CSV headers vs JSON keys)
+      rule.id = rawRule.id || rawRule.ID; // Optional
+      rule.matcher = rawRule.matcher || rawRule.Matcher || rawRule['Quell-Pfad'] || rawRule['Source Path'];
+      rule.targetUrl = rawRule.targetUrl || rawRule.target || rawRule['Target URL'] || rawRule['Ziel-URL'];
 
-      rule.matcher = getValue(COLUMN_MAPPING.matcher);
-      rule.targetUrl = getValue(COLUMN_MAPPING.targetUrl);
-
-      // Encode matcher and targetUrl to handle special characters and spaces if enabled
-      if (options.encodeImportedUrls) {
-        if (typeof rule.matcher === 'string') {
-          rule.matcher = encodeURI(rule.matcher);
+      // Map Type
+      const rawType = rawRule.redirectType || rawRule.type || rawRule.Type || rawRule.Typ;
+      if (rawType) {
+        const normalizedType = String(rawType).toLowerCase().trim();
+        if (['wildcard', 'vollständig', 'complete'].includes(normalizedType)) {
+          rule.redirectType = 'wildcard';
+        } else if (['domain'].includes(normalizedType)) {
+          rule.redirectType = 'domain';
+        } else {
+          rule.redirectType = 'partial';
         }
-        if (typeof rule.targetUrl === 'string') {
-          rule.targetUrl = encodeURI(rule.targetUrl);
-        }
+      } else {
+        rule.redirectType = 'partial'; // Default
       }
 
-      rule.redirectType = getValue(COLUMN_MAPPING.redirectType);
-      rule.infoText = getValue(COLUMN_MAPPING.infoText);
-      rule.autoRedirect = getValue(COLUMN_MAPPING.autoRedirect);
-      rule.discardQueryParams = getValue(COLUMN_MAPPING.discardQueryParams);
-      rule.keptQueryParams = getValue(COLUMN_MAPPING.keptQueryParams);
-      rule.staticQueryParams = getValue(COLUMN_MAPPING.staticQueryParams);
-      rule.forwardQueryParams = getValue(COLUMN_MAPPING.forwardQueryParams);
-      rule.searchAndReplace = getValue(COLUMN_MAPPING.searchAndReplace);
-      rule.id = getValue(COLUMN_MAPPING.id);
-      // Handle empty string IDs as undefined (common in Excel/CSV imports)
-      if (rule.id === '' || (typeof rule.id === 'string' && rule.id.trim() === '')) {
-        rule.id = undefined;
-      }
+      rule.infoText = rawRule.infoText || rawRule.Info || rawRule.description;
 
-      // Normalize Types
-      if (rule.redirectType) {
-        const type = String(rule.redirectType).toLowerCase();
-        if (type.includes('wild') || type === 'complete') rule.redirectType = 'wildcard';
-        else if (type.includes('part') || type === 'partial') rule.redirectType = 'partial';
-        else if (type.includes('domain')) rule.redirectType = 'domain';
-      }
-
-      // Normalize AutoRedirect
-      if (rule.autoRedirect !== undefined) {
-        const ar = String(rule.autoRedirect).toLowerCase();
-        rule.autoRedirect = ['true', '1', 'yes', 'ja', 'on'].includes(ar);
+      // Boolean fields
+      if (rawRule.autoRedirect !== undefined || rawRule['Auto Redirect'] !== undefined) {
+        const val = String(rawRule.autoRedirect || rawRule['Auto Redirect']).toLowerCase();
+        rule.autoRedirect = ['true', '1', 'yes', 'ja', 'on'].includes(val);
       } else {
         rule.autoRedirect = false;
       }
 
-      // Normalize discardQueryParams
-      if (rule.discardQueryParams !== undefined) {
-        const dqp = String(rule.discardQueryParams).toLowerCase();
-        rule.discardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(dqp);
+      // Handle query params settings (map from CSV or JSON)
+      const dqp = rawRule.discardQueryParams ?? rawRule['Discard Query Params'];
+      if (dqp !== undefined) {
+        const val = String(dqp).toLowerCase();
+        rule.discardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(val);
       } else {
         rule.discardQueryParams = false;
       }
 
       // Normalize keptQueryParams (parse JSON string if needed)
-      if (rule.keptQueryParams !== undefined && rule.keptQueryParams !== null && rule.keptQueryParams !== '') {
+      let kqp = rawRule.keptQueryParams ?? rawRule['Kept Query Params'];
+      if (kqp !== undefined && kqp !== null && kqp !== '') {
         try {
-          if (typeof rule.keptQueryParams === 'string') {
-            // Try to parse JSON
-            rule.keptQueryParams = JSON.parse(rule.keptQueryParams);
+          if (typeof kqp === 'string') {
+            kqp = JSON.parse(kqp);
           }
-
-          // Validate structure
-          if (!Array.isArray(rule.keptQueryParams)) {
-             rule.keptQueryParams = [];
-             // Only add error if it wasn't empty string (which we filtered out)
-             errors.push('Kept Query Params must be a valid JSON array');
-          } else {
-             // Filter invalid items
-             rule.keptQueryParams = rule.keptQueryParams.filter((item: any) =>
+          if (Array.isArray(kqp)) {
+             rule.keptQueryParams = kqp.filter((item: any) =>
                 item && typeof item === 'object' && typeof item.keyPattern === 'string'
              ).map((item: any) => ({
                 ...item,
-                skipEncoding: !!item.skipEncoding // Ensure boolean
+                skipEncoding: !!item.skipEncoding
              }));
+          } else {
+             rule.keptQueryParams = [];
+             errors.push('Kept Query Params must be a valid JSON array');
           }
         } catch (e) {
           errors.push('Invalid JSON format for Kept Query Params');
@@ -166,27 +160,23 @@ export class ImportExportService {
         rule.keptQueryParams = [];
       }
 
-      // Normalize staticQueryParams (parse JSON string if needed)
-      if (rule.staticQueryParams !== undefined && rule.staticQueryParams !== null && rule.staticQueryParams !== '') {
+      // Normalize staticQueryParams
+      let sqp = rawRule.staticQueryParams ?? rawRule['Static Query Params'];
+      if (sqp !== undefined && sqp !== null && sqp !== '') {
         try {
-          if (typeof rule.staticQueryParams === 'string') {
-            // Try to parse JSON
-            rule.staticQueryParams = JSON.parse(rule.staticQueryParams);
+          if (typeof sqp === 'string') {
+            sqp = JSON.parse(sqp);
           }
-
-          // Validate structure
-          if (!Array.isArray(rule.staticQueryParams)) {
-             rule.staticQueryParams = [];
-             // Only add error if it wasn't empty string (which we filtered out)
-             errors.push('Static Query Params must be a valid JSON array');
-          } else {
-             // Filter invalid items
-             rule.staticQueryParams = rule.staticQueryParams.filter((item: any) =>
+          if (Array.isArray(sqp)) {
+             rule.staticQueryParams = sqp.filter((item: any) =>
                 item && typeof item === 'object' && typeof item.key === 'string' && typeof item.value === 'string'
              ).map((item: any) => ({
                 ...item,
-                skipEncoding: !!item.skipEncoding // Ensure boolean
+                skipEncoding: !!item.skipEncoding
              }));
+          } else {
+             rule.staticQueryParams = [];
+             errors.push('Static Query Params must be a valid JSON array');
           }
         } catch (e) {
           errors.push('Invalid JSON format for Static Query Params');
@@ -197,31 +187,28 @@ export class ImportExportService {
       }
 
       // Normalize forwardQueryParams
-      if (rule.forwardQueryParams !== undefined) {
-        const fqp = String(rule.forwardQueryParams).toLowerCase();
-        rule.forwardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(fqp);
+      const fqp = rawRule.forwardQueryParams ?? rawRule['Keep Query Params'];
+      if (fqp !== undefined) {
+        const val = String(fqp).toLowerCase();
+        rule.forwardQueryParams = ['true', '1', 'yes', 'ja', 'on'].includes(val);
       } else {
         rule.forwardQueryParams = false;
       }
 
-      // Normalize searchAndReplace (parse JSON string if needed)
-      if (rule.searchAndReplace !== undefined && rule.searchAndReplace !== null && rule.searchAndReplace !== '') {
+      // Normalize searchAndReplace
+      let sar = rawRule.searchAndReplace ?? rawRule['Search Replace'];
+      if (sar !== undefined && sar !== null && sar !== '') {
         try {
-          if (typeof rule.searchAndReplace === 'string') {
-            // Try to parse JSON
-            rule.searchAndReplace = JSON.parse(rule.searchAndReplace);
+          if (typeof sar === 'string') {
+            sar = JSON.parse(sar);
           }
-
-          // Validate structure
-          if (!Array.isArray(rule.searchAndReplace)) {
-             rule.searchAndReplace = [];
-             // Only add error if it wasn't empty string
-             errors.push('Search Replace must be a valid JSON array');
-          } else {
-             // Filter invalid items
-             rule.searchAndReplace = rule.searchAndReplace.filter((item: any) =>
+          if (Array.isArray(sar)) {
+             rule.searchAndReplace = sar.filter((item: any) =>
                 item && typeof item === 'object' && typeof item.search === 'string'
              );
+          } else {
+             rule.searchAndReplace = [];
+             errors.push('Search Replace must be a valid JSON array');
           }
         } catch (e) {
           errors.push('Invalid JSON format for Search Replace');
@@ -237,12 +224,7 @@ export class ImportExportService {
       }
 
       // Type-specific query params validation
-      // Validate that the correct flags are used for the rule type to avoid ambiguity
       if (rule.redirectType === 'wildcard') {
-        // For wildcard:
-        // if forwardQueryParams is TRUE, discard must be FALSE (implicit)
-        // if forwardQueryParams is FALSE, discard must be TRUE (implicit) to allow keptQueryParams
-        // During import, we fix this logic to match the new UI behavior
         if (rule.forwardQueryParams) {
             rule.discardQueryParams = false;
         } else {
@@ -256,19 +238,15 @@ export class ImportExportService {
       }
 
       // Validation using Zod schema (partially)
-      // We manually check required fields because the Zod schema might be too strict for initial parsing
       if (!rule.matcher) errors.push('Matcher (Quelle) is required');
       if (!rule.targetUrl) errors.push('Target URL (Ziel) is required');
       if (!rule.redirectType) errors.push('Type (Typ) is required');
 
-      // Attempt to validate with Zod if basic checks pass
       let isValid = errors.length === 0;
       if (isValid) {
         const result = importUrlRuleSchema.safeParse(rule);
         if (!result.success) {
-           // We extract friendly error messages
            result.error.issues.forEach(err => {
-             // Skip ID errors as we handle them separately (optional vs uuid)
              if (err.path.includes('id') && !rule.id) return;
              if (err.path.includes('id') && rule.id && err.code === 'invalid_string') {
                errors.push('Invalid ID format');
@@ -278,12 +256,10 @@ export class ImportExportService {
            });
            if (errors.length > 0) isValid = false;
         } else {
-          // Use the transformed values
           Object.assign(rule, result.data);
         }
       }
 
-      // Determine status based on ID or Matcher existence
       let status: 'new' | 'update' | 'invalid' = 'new';
 
       if (!isValid) {
@@ -293,11 +269,6 @@ export class ImportExportService {
           status = 'update';
         } else if (existingRulesByMatcher.has(rule.matcher)) {
           status = 'update';
-        } else if (rule.id && !existingRulesById.has(rule.id)) {
-           // ID provided but not found -> treat as new (with specific ID)
-           // But waiting, storage.importUrlRules says:
-           // "ID provided but not found - create new"
-           status = 'new';
         } else {
            status = 'new';
         }
@@ -314,13 +285,9 @@ export class ImportExportService {
 
   /**
    * Sanitize value for CSV/Excel injection protection
-   * @param value The value to sanitize
-   * @returns Sanitized value
    */
   private static sanitizeForCSV(value: any): any {
     if (typeof value === 'string') {
-      // Prevent formula injection (CSV Injection)
-      // If string starts with =, +, -, or @, prepend a single quote
       if (/^[=+\-@]/.test(value)) {
         return `'${value}`;
       }
@@ -371,7 +338,6 @@ export class ImportExportService {
     const worksheet = utils.json_to_sheet(data);
     utils.book_append_sheet(workbook, worksheet, 'Rules');
 
-    // Explicitly using type 'buffer' which returns a Buffer in Node.js
     const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
     return buffer as unknown as Buffer;
   }
