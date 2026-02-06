@@ -507,7 +507,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   // Queries - Use paginated API for better performance with large datasets
-  const { data: allRules } = useQuery({
+  const { data: allRules, isLoading: isLoadingAllRules } = useQuery({
     queryKey: ["/api/admin/rules"],
     enabled: showValidationModal && isAuthenticated,
     queryFn: async () => {
@@ -5789,6 +5789,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         rules={Array.isArray(allRules) ? allRules : []}
         settings={settingsData}
         reloadTrigger={validationReloadTrigger}
+        isLoadingRules={isLoadingAllRules}
       />
 
       <AlertDialog open={showValidationReloadDialog} onOpenChange={setShowValidationReloadDialog}>
