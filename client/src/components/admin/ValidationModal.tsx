@@ -24,6 +24,13 @@ interface ValidationModalProps {
 function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: number) => void }) {
     const [expanded, setExpanded] = useState(false);
 
+    // Quality indicator color
+    const getQualityColor = (quality: number) => {
+        if (quality >= 100) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        if (quality >= 75) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+    };
+
     return (
         <>
             <tr className="border-b hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => setExpanded(!expanded)}>
@@ -38,9 +45,16 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                 </td>
                 <td className="p-3 text-sm">
                     {result.rule ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                           {result.rule.redirectType}
-                        </span>
+                        <div className="flex gap-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                               {result.rule.redirectType}
+                            </span>
+                            {result.matchDetails && (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getQualityColor(result.matchDetails.quality)}`}>
+                                    {result.matchDetails.quality}%
+                                </span>
+                            )}
+                        </div>
                     ) : (
                         <span className="text-muted-foreground">-</span>
                     )}
@@ -71,10 +85,23 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                                         <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Name:</dt> <dd className="font-medium truncate" title={result.rule.matcher}>{result.rule.matcher}</dd></div>
                                         <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Type:</dt> <dd>{result.rule.redirectType}</dd></div>
                                         <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Target:</dt> <dd className="font-mono truncate" title={result.rule.targetUrl}>{result.rule.targetUrl || '-'}</dd></div>
-                                        <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Discard:</dt> <dd>{result.rule.discardQueryParams ? 'Yes' : 'No'}</dd></div>
+                                        <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Match:</dt>
+                                            <dd>
+                                                {result.matchDetails?.quality}%
+                                                <span className="text-xs text-muted-foreground ml-2">({result.matchDetails?.level})</span>
+                                            </dd>
+                                        </div>
                                     </dl>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground py-2">Keine Regel gefunden.</p>
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-muted-foreground py-2">Keine Regel gefunden.</p>
+                                        {result.traceResult.searchFallback && (
+                                            <div className="bg-blue-50 p-2 rounded text-sm border border-blue-100">
+                                                <span className="font-medium text-blue-800">Smart Search Fallback:</span>
+                                                <div className="mt-1 font-mono text-xs break-all text-blue-600">{result.traceResult.searchFallback}</div>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -201,6 +228,16 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                      if (rule) {
                          traceResult = traceUrlGeneration(url, rule, settings?.defaultNewDomain, settings);
                      } else {
+                         // Check for Smart Search Fallback in trace
+                         // We need to simulate what happens if no rule is found.
+                         // traceUrlGeneration doesn't do search fallback logic itself unless we tell it.
+                         // But we can check if it would fallback.
+                         // Actually, let's update traceUrlGeneration to optionally check search fallback?
+                         // Or just handle it here in the result construction.
+
+                         // Note: We don't have easy access to search logic here without duplicating it.
+                         // But we can create a "dummy" trace for no match.
+
                          traceResult = {
                              originalUrl: url,
                              finalUrl: url,
@@ -309,7 +346,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
     const handleExport = () => {
         if (!results) return;
 
-        const headers = ["Original URL", "New URL", "Changed", "Applied Rule", "Applied Global Rules", "Trace"];
+        const headers = ["Original URL", "New URL", "Changed", "Applied Rule", "Rule Match Quality", "Applied Global Rules", "Trace"];
         const rows = results.map(r => {
             const globalRules = r.traceResult.appliedGlobalRules.map((g: any) => g.description).join("; ");
             const trace = r.traceResult.steps.map((s: any) => `[${s.type}] ${s.description}`).join("; ");
@@ -319,6 +356,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                 JSON.stringify(r.traceResult.finalUrl),
                 JSON.stringify(r.url !== r.traceResult.finalUrl),
                 JSON.stringify(r.rule ? r.rule.matcher : "No Match"),
+                JSON.stringify(r.matchDetails ? r.matchDetails.quality + '%' : "0%"),
                 JSON.stringify(globalRules),
                 JSON.stringify(trace)
             ].join(",");
