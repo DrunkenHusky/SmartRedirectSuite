@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowUp, ArrowDown, Plus, Trash2, Globe } from "lucide-react";
+import { ArrowUp, ArrowDown, Plus, Trash2, Globe, RefreshCw } from "lucide-react";
 import type { GeneralSettings, GlobalSearchAndReplace, GlobalStaticQueryParam, GlobalKeptQueryParam } from "@shared/schema";
 
 interface GlobalRulesSettingsProps {
@@ -10,9 +10,10 @@ interface GlobalRulesSettingsProps {
   onUpdate: (settings: Partial<GeneralSettings>) => void;
   onSave: () => void;
   isSaving: boolean;
+  onOpenValidation?: () => void;
 }
 
-export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving }: GlobalRulesSettingsProps) {
+export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOpenValidation }: GlobalRulesSettingsProps) {
   // Helper to generate UUID
   const uuid = () => crypto.randomUUID();
 
