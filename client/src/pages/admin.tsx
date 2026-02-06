@@ -5780,12 +5780,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         open={showValidationModal}
         onOpenChange={setShowValidationModal}
         onEditRule={(ruleId) => {
-            const rule = (allRules || rules).find((r: any) => r.id === ruleId);
+            const sourceRules = Array.isArray(allRules) ? allRules : rules;
+            const rule = sourceRules.find((r: any) => r.id === ruleId);
             if (rule) {
                 handleEditRule(rule);
             }
         }}
-        rules={allRules || []}
+        rules={Array.isArray(allRules) ? allRules : []}
         settings={settingsData}
         reloadTrigger={validationReloadTrigger}
       />
