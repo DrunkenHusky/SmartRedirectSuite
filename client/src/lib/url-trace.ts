@@ -358,7 +358,7 @@ export function traceUrlGeneration(
     }
 
     if (rule.searchAndReplace) {
-        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace];
+        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace || []];
     }
 
     for (const item of effectiveSearchReplace) {
@@ -407,7 +407,7 @@ export function traceUrlGeneration(
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
 
              if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams];
+                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
              }
 
              if (effectiveKeptParams.length > 0) {
@@ -431,7 +431,7 @@ export function traceUrlGeneration(
         if (rule.discardQueryParams) {
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
              if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams];
+                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
              }
 
              if (effectiveKeptParams.length > 0) {
@@ -462,7 +462,7 @@ export function traceUrlGeneration(
     }
 
     if (rule.staticQueryParams) {
-        effectiveStaticParams = [...effectiveStaticParams, ...rule.staticQueryParams];
+        effectiveStaticParams = [...effectiveStaticParams, ...rule.staticQueryParams || []];
     }
 
     if (effectiveStaticParams.length > 0) {
