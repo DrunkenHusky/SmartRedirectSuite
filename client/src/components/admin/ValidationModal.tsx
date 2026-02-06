@@ -45,16 +45,9 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                 </td>
                 <td className="p-3 text-sm">
                     {result.rule ? (
-                        <div className="flex gap-2">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                               {result.rule.redirectType}
-                            </span>
-                            {result.matchDetails && (
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getQualityColor(result.matchDetails.quality)}`}>
-                                    {result.matchDetails.quality}%
-                                </span>
-                            )}
-                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getQualityColor(result.matchDetails.quality)}`}>
+                            {result.matchDetails.quality}%
+                        </span>
                     ) : (
                         <span className="text-muted-foreground">-</span>
                     )}
@@ -402,7 +395,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+            <DialogContent className="max-w-[1200px] w-[95vw] max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <RefreshCw className="h-5 w-5" />
@@ -515,14 +508,14 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                             </div>
 
                             <div className="border rounded-md overflow-hidden">
-                                <div className="overflow-auto max-h-[500px]">
+                                <div className="overflow-auto max-h-[600px]">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-muted sticky top-0 z-10">
                                             <tr>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground w-10"></th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">Original URL</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">New URL</th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground">Type</th>
+                                                <th className="p-3 text-xs font-medium text-muted-foreground">Match Quality</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground text-right">Status</th>
                                             </tr>
                                         </thead>
