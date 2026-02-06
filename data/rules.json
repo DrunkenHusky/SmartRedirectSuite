@@ -29,5 +29,18 @@
       }
     ],
     "createdAt": "2026-02-04T15:43:41.279Z"
+  },
+  {
+    "matcher": "/alte-seite",
+    "targetUrl": "https://example.com/neue-seite",
+    "infoText": "Test Rule for Validation",
+    "redirectType": "partial",
+    "autoRedirect": false,
+    "discardQueryParams": false,
+    "keptQueryParams": [],
+    "staticQueryParams": [],
+    "searchAndReplace": [],
+    "id": "bd6c09e0-8ebb-4548-8b44-131a8434a501",
+    "createdAt": "2026-02-06T18:23:32.484Z"
   }
 ]

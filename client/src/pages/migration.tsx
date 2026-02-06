@@ -148,7 +148,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   });
 
   useEffect(() => {
-    if (settings) {
+    if (settings && new URLSearchParams(window.location.search).get('admin') !== 'true') {
       setShowMainDialog(settings.popupMode === 'active');
     }
   }, [settings]);
