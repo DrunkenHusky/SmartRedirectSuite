@@ -231,28 +231,16 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                      if (rule) {
                          traceResult = traceUrlGeneration(url, rule, settings?.defaultNewDomain, settings);
                      } else {
-                         // Check for Smart Search Fallback in trace
-                         // We need to simulate what happens if no rule is found.
-                         // traceUrlGeneration doesn't do search fallback logic itself unless we tell it.
-                         // But we can check if it would fallback.
-                         // Actually, let's update traceUrlGeneration to optionally check search fallback?
-                         // Or just handle it here in the result construction.
-
-                         // Note: We don't have easy access to search logic here without duplicating it.
-                         // But we can create a "dummy" trace for no match.
-
-                         traceResult = {
-                             originalUrl: url,
-                             finalUrl: url,
-                             steps: [{
-                                 description: "Keine passende Regel gefunden",
-                                 urlBefore: url,
-                                 urlAfter: url,
-                                 changed: false,
-                                 type: 'rule'
-                             }],
-                             appliedGlobalRules: []
-                         };
+                         // Use traceUrlGeneration with a dummy rule to trigger fallback logic (Smart Search / Domain Fallback)
+                         traceResult = traceUrlGeneration(url, {
+                             id: '',
+                             matcher: '',
+                             targetUrl: '',
+                             redirectType: 'partial', // Default to partial to allow fallback logic to run
+                             order: 0,
+                             autoRedirect: false,
+                             createdAt: new Date().toISOString()
+                         }, settings?.defaultNewDomain, settings);
                      }
                      processedResults.push({ url, rule, traceResult, matchDetails });
                  } catch (e) {
