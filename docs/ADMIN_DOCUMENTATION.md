@@ -63,4 +63,4 @@ Ein Werkzeug zum Testen von Weiterleitungsregeln, ohne sie live auszuführen.
 - **CSV-Export**: Exportieren Sie die Ergebnisse inklusive aller Trace-Details für die Dokumentation oder Analyse.
 - **Workflow**: Direkter Link zum Bearbeiten von Regeln aus der Ergebnisliste heraus. Nach dem Speichern von Änderungen kann die Validierung mit einem Klick aktualisiert werden.
 
-Zu finden im Tab "Regeln" über den Button "Konfigurationsvalidierung".
+Zu finden im Tab "Regeln" über den Button "Konfigurationsvalidierung" (Nur für authentifizierte Administratoren verfügbar).

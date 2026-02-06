@@ -48,3 +48,5 @@ INFO: Alle existierenden Sitzungen wurden bereinigt.
 9:04:00 PM [vite] (client) hmr update /src/pages/admin.tsx, /src/index.css
 9:04:00 PM [vite] (client) hmr update /src/index.css
 9:04:00 PM [vite] (client) hmr update /src/index.css
+6:43:14 AM [vite] (client) hmr update /src/index.css
+6:43:14 AM [vite] (client) hmr update /src/index.css
