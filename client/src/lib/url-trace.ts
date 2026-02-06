@@ -379,7 +379,7 @@ export function traceUrlGeneration(
                  const { queryString, matchedRules } = getKeptQueryStringWithLog(oldUrl, effectiveKeptParams);
                  const beforeAppend = currentUrl;
                  currentUrl = appendQueryString(currentUrl, queryString);
-                 appliedGlobalRules.push(...matchedRules);
+                 if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
 
                  if (currentUrl !== beforeAppend) {
                      trace.push({
@@ -403,7 +403,7 @@ export function traceUrlGeneration(
                  const { queryString, matchedRules } = getKeptQueryStringWithLog(oldUrl, effectiveKeptParams);
                  const beforeAppend = currentUrl;
                  currentUrl = appendQueryString(currentUrl, queryString);
-                 appliedGlobalRules.push(...matchedRules);
+                 if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
 
                  if (currentUrl !== beforeAppend) {
                      trace.push({
@@ -434,7 +434,7 @@ export function traceUrlGeneration(
       const { queryString, matchedRules } = getStaticQueryStringWithLog(effectiveStaticParams);
       const beforeAppend = currentUrl;
       currentUrl = appendQueryString(currentUrl, queryString);
-      appliedGlobalRules.push(...matchedRules);
+      if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
 
       if (currentUrl !== beforeAppend) {
          trace.push({
