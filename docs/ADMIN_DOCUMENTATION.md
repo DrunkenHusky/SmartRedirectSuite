@@ -52,3 +52,15 @@ Der Typ "Domain-Ersatz" (`domain`) ermöglicht flexible Weiterleitungen:
 3. **Domain-Matcher**: Wenn der Matcher eine Domain ist (z.B. `old-site.com`), werden alle Anfragen an diese Domain auf die `Target URL` umgeleitet, wobei der Pfad erhalten bleibt.
 
 Dies ermöglicht komplexe Migrationsszenarien, bei denen ganze Domains oder Subdomains umgezogen werden, ohne für jeden Pfad eine eigene Regel erstellen zu müssen.
+
+## Konfigurationsvalidierung
+Ein Werkzeug zum Testen von Weiterleitungsregeln, ohne sie live auszuführen.
+
+### Funktionen
+- **Bulk-Validierung**: Testen Sie bis zu 1000 URLs auf einmal durch Einfügen (Copy & Paste) oder Datei-Import (CSV, Excel).
+- **Trace-View**: Detaillierte Nachverfolgung jedes Verarbeitungsschritts (Regel-Anwendung, Globale Suchen & Ersetzen, Query-Parameter-Logik).
+- **Änderungsverfolgung**: Visualisierung von Änderungen mit Farbcodierung (Regeln vs. Globale Einstellungen) und Durchstreichung alter Werte.
+- **CSV-Export**: Exportieren Sie die Ergebnisse inklusive aller Trace-Details für die Dokumentation oder Analyse.
+- **Workflow**: Direkter Link zum Bearbeiten von Regeln aus der Ergebnisliste heraus. Nach dem Speichern von Änderungen kann die Validierung mit einem Klick aktualisiert werden.
+
+Zu finden im Tab "Regeln" über den Button "Konfigurationsvalidierung" (Nur für authentifizierte Administratoren verfügbar).
