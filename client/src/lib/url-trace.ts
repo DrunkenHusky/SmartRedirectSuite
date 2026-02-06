@@ -1,3 +1,4 @@
+import { extractPath, generateNewUrl, extractSearchTerm } from "./url-utils";
 import { GeneralSettings } from "@shared/schema";
 
 export interface UrlTraceStep {
@@ -20,6 +21,7 @@ export interface UrlTraceResult {
     finalUrl: string;
     steps: UrlTraceStep[];
     appliedGlobalRules: AppliedGlobalRule[];
+  searchFallback?: string;
 }
 
 function extractPath(url: string): string {
@@ -303,15 +305,48 @@ export function traceUrlGeneration(
       currentUrl = nextUrl;
 
     } else {
+        let fallbackUrl = currentUrl;
+
+        if (generalSettings?.defaultRedirectMode === "search") {
+             // Smart Search Logic
+             try {
+                 const { searchTerm, searchUrl, skipEncoding } = extractSearchTerm(oldUrl, generalSettings.smartSearchRules);
+                 const targetSearchUrl = searchUrl || generalSettings.defaultSearchUrl;
+
+                 if (searchTerm && targetSearchUrl) {
+                     const shouldUseSkipEncoding = skipEncoding !== undefined ? skipEncoding : generalSettings.defaultSearchSkipEncoding;
+                     const finalSearchTerm = shouldUseSkipEncoding ? searchTerm : encodeURIComponent(searchTerm);
+                     fallbackUrl = targetSearchUrl + finalSearchTerm;
+
+                     trace.push({
+                        description: `Smart Search Fallback: "${searchTerm}"`,
+                        urlBefore: currentUrl,
+                        urlAfter: fallbackUrl,
+                        changed: true,
+                        type: 'rule'
+                     });
+
+                     // We don't apply global rules to search results usually, but logic allows it.
+                     // Returning here to match logic in MigrationPage which stops at search result
+                     return { originalUrl: oldUrl, finalUrl: fallbackUrl, steps: trace, appliedGlobalRules: [], searchFallback: fallbackUrl };
+                 }
+             } catch (e) {
+                 trace.push({ description: "Smart Search Error", urlBefore: currentUrl, urlAfter: currentUrl, changed: false, type: 'rule' });
+             }
+        }
+
+        // Domain Fallback
         const fallback = generateNewUrl(oldUrl, newDomain);
         trace.push({
-            description: "Fallback Generation",
+            description: "Fallback Generation (Default Redirect)",
             urlBefore: currentUrl,
             urlAfter: fallback,
             changed: currentUrl !== fallback,
             type: 'rule'
         });
-        return { originalUrl: oldUrl, finalUrl: fallback, steps: trace, appliedGlobalRules: [] };
+
+        // Update currentUrl for global rules application
+        currentUrl = fallback;
     }
 
     let effectiveSearchReplace: any[] = [];
@@ -323,7 +358,7 @@ export function traceUrlGeneration(
     }
 
     if (rule.searchAndReplace) {
-        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace];
+        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace || []];
     }
 
     for (const item of effectiveSearchReplace) {
@@ -372,7 +407,7 @@ export function traceUrlGeneration(
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
 
              if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams];
+                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
              }
 
              if (effectiveKeptParams.length > 0) {
@@ -396,7 +431,7 @@ export function traceUrlGeneration(
         if (rule.discardQueryParams) {
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
              if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams];
+                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
              }
 
              if (effectiveKeptParams.length > 0) {
@@ -427,7 +462,7 @@ export function traceUrlGeneration(
     }
 
     if (rule.staticQueryParams) {
-        effectiveStaticParams = [...effectiveStaticParams, ...rule.staticQueryParams];
+        effectiveStaticParams = [...effectiveStaticParams, ...rule.staticQueryParams || []];
     }
 
     if (effectiveStaticParams.length > 0) {

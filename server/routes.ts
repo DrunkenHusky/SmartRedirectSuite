@@ -1262,6 +1262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Import preview error:", errorMessage);
+      res.status(400).json({ error: errorMessage });
+    }
+  });
+
 
   // Extract URLs tool endpoint
   app.post("/api/admin/tools/extract-urls", requireAuth, importUpload.single('file'), async (req, res) => {
@@ -1281,11 +1287,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Extract URLs error:", errorMessage);
-      res.status(400).json({ error: errorMessage });
-    }
-  });
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Import preview error:", errorMessage);
       res.status(400).json({ error: errorMessage });
     }
   });

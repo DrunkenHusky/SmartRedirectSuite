@@ -3671,8 +3671,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               <GlobalRulesSettings
                 settings={generalSettings as any}
                 onUpdate={(updates) => setGeneralSettings({ ...generalSettings, ...updates })}
-                onSave={() => updateSettingsMutation.mutate(generalSettings)}
+                onSave={() => updateSettingsMutation.mutate(generalSettings, { onSuccess: () => { toast({ title: "Einstellungen gespeichert", description: "Die globalen Regeln wurden erfolgreich aktualisiert.", }); } })}
                 isSaving={updateSettingsMutation.isPending}
+                onOpenValidation={() => setShowValidationModal(true)}
               />
             </TabsContent>
             <TabsContent value="stats" className="space-y-6">
@@ -5779,12 +5780,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         open={showValidationModal}
         onOpenChange={setShowValidationModal}
         onEditRule={(ruleId) => {
-            const rule = (allRules || rules).find((r: any) => r.id === ruleId);
+            const sourceRules = Array.isArray(allRules) ? allRules : rules;
+            const rule = sourceRules.find((r: any) => r.id === ruleId);
             if (rule) {
                 handleEditRule(rule);
             }
         }}
-        rules={allRules || []}
+        rules={Array.isArray(allRules) ? allRules : []}
         settings={settingsData}
         reloadTrigger={validationReloadTrigger}
       />

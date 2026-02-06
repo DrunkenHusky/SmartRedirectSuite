@@ -53,10 +53,20 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                     )}
                 </td>
                 <td className="p-3 text-sm text-right">
-                     {result.url !== result.traceResult.finalUrl ?
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Changed</span> :
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">Unchanged</span>
-                     }
+                     {result.rule ? (
+                         <div
+                             className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 cursor-pointer hover:bg-blue-200"
+                             onClick={(e) => {
+                                 e.stopPropagation();
+                                 onEditRule(result.rule.id);
+                             }}
+                             title="Regel bearbeiten"
+                         >
+                             {result.rule.infoText || result.rule.matcher || `Rule #${result.rule.id}`}
+                         </div>
+                     ) : (
+                         <span className="text-muted-foreground">-</span>
+                     )}
                 </td>
             </tr>
             {expanded && (
@@ -191,6 +201,12 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
     }, [open]);
 
     const processUrls = async (urls: string[]) => {
+        if (!Array.isArray(rules)) {
+            console.error("ValidationModal: rules prop is not an array", rules);
+            setProcessing(false);
+            setError("Interner Fehler: Regeln konnten nicht geladen werden.");
+            return;
+        }
         setProcessing(true);
         setProgress(0);
         const batchSize = 20;
@@ -221,28 +237,16 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                      if (rule) {
                          traceResult = traceUrlGeneration(url, rule, settings?.defaultNewDomain, settings);
                      } else {
-                         // Check for Smart Search Fallback in trace
-                         // We need to simulate what happens if no rule is found.
-                         // traceUrlGeneration doesn't do search fallback logic itself unless we tell it.
-                         // But we can check if it would fallback.
-                         // Actually, let's update traceUrlGeneration to optionally check search fallback?
-                         // Or just handle it here in the result construction.
-
-                         // Note: We don't have easy access to search logic here without duplicating it.
-                         // But we can create a "dummy" trace for no match.
-
-                         traceResult = {
-                             originalUrl: url,
-                             finalUrl: url,
-                             steps: [{
-                                 description: "Keine passende Regel gefunden",
-                                 urlBefore: url,
-                                 urlAfter: url,
-                                 changed: false,
-                                 type: 'rule'
-                             }],
-                             appliedGlobalRules: []
-                         };
+                         // Use traceUrlGeneration with a dummy rule to trigger fallback logic (Smart Search / Domain Fallback)
+                         traceResult = traceUrlGeneration(url, {
+                             id: '',
+                             matcher: '',
+                             targetUrl: '',
+                             redirectType: 'partial', // Default to partial to allow fallback logic to run
+                             order: 0,
+                             autoRedirect: false,
+                             createdAt: new Date().toISOString()
+                         }, settings?.defaultNewDomain, settings);
                      }
                      processedResults.push({ url, rule, traceResult, matchDetails });
                  } catch (e) {
@@ -516,7 +520,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">Original URL</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">New URL</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">Match Quality</th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground text-right">Status</th>
+                                                <th className="p-3 text-xs font-medium text-muted-foreground text-right">Rule Tag</th>
                                             </tr>
                                         </thead>
                                         <tbody>
