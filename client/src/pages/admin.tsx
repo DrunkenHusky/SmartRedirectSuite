@@ -3673,6 +3673,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 onUpdate={(updates) => setGeneralSettings({ ...generalSettings, ...updates })}
                 onSave={() => updateSettingsMutation.mutate(generalSettings)}
                 isSaving={updateSettingsMutation.isPending}
+                onOpenValidation={() => setShowValidationModal(true)}
               />
             </TabsContent>
             <TabsContent value="stats" className="space-y-6">

@@ -53,10 +53,20 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                     )}
                 </td>
                 <td className="p-3 text-sm text-right">
-                     {result.url !== result.traceResult.finalUrl ?
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Changed</span> :
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">Unchanged</span>
-                     }
+                     {result.rule ? (
+                         <div
+                             className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 cursor-pointer hover:bg-blue-200"
+                             onClick={(e) => {
+                                 e.stopPropagation();
+                                 onEditRule(result.rule.id);
+                             }}
+                             title="Regel bearbeiten"
+                         >
+                             {result.rule.infoText || result.rule.matcher || `Rule #${result.rule.id}`}
+                         </div>
+                     ) : (
+                         <span className="text-muted-foreground">-</span>
+                     )}
                 </td>
             </tr>
             {expanded && (
@@ -516,7 +526,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">Original URL</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">New URL</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">Match Quality</th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground text-right">Status</th>
+                                                <th className="p-3 text-xs font-medium text-muted-foreground text-right">Rule Tag</th>
                                             </tr>
                                         </thead>
                                         <tbody>

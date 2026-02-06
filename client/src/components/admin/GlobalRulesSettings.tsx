@@ -116,9 +116,17 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving }: Gl
     <div className="space-y-6">
         <Card>
             <CardHeader>
+                <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Globe className="h-5 w-5 text-blue-600" />
                     <CardTitle>Globale Regeln</CardTitle>
+                    </div>
+                    {onOpenValidation && (
+                        <Button variant="outline" size="sm" onClick={onOpenValidation} className="gap-2">
+                            <RefreshCw className="h-4 w-4" />
+                            Konfigurationsvalidierung öffnen
+                        </Button>
+                    )}
                 </div>
                 <CardDescription>
                     Diese Regeln werden auf alle Weiterleitungen angewendet (Partial, Domain).
