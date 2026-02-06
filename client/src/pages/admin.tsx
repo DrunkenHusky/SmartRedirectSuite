@@ -3671,7 +3671,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               <GlobalRulesSettings
                 settings={generalSettings as any}
                 onUpdate={(updates) => setGeneralSettings({ ...generalSettings, ...updates })}
-                onSave={() => updateSettingsMutation.mutate(generalSettings)}
+                onSave={() => updateSettingsMutation.mutate(generalSettings, { onSuccess: () => { toast({ title: "Einstellungen gespeichert", description: "Die globalen Regeln wurden erfolgreich aktualisiert.", }); } })}
                 isSaving={updateSettingsMutation.isPending}
                 onOpenValidation={() => setShowValidationModal(true)}
               />
