@@ -11,6 +11,7 @@ import { Upload, FileText, AlertTriangle, Play, RefreshCw, Download, ChevronDown
 import { useToast } from '@/hooks/use-toast';
 import { findMatchingRule } from "@shared/ruleMatching";
 import { traceUrlGeneration, UrlTraceResult } from "@/lib/url-trace";
+import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 interface ValidationModalProps {
     open: boolean;
@@ -29,6 +30,7 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
     const getQualityColor = (quality: number) => {
         if (quality >= 100) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
         if (quality >= 75) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        if (quality >= 50) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
     };
 
@@ -210,11 +212,13 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
         const processedResults: any[] = [];
 
         const config = {
+             ...RULE_MATCHING_CONFIG, // Merge default config
+             CASE_SENSITIVITY_PATH: settings?.caseSensitiveLinkDetection ?? false,
+             // Ensure weights are preserved if not in constants (although they are)
              WEIGHT_PATH_SEGMENT: 100,
              WEIGHT_QUERY_PAIR: 50,
              PENALTY_WILDCARD: -10,
              BONUS_EXACT_MATCH: 200,
-             CASE_SENSITIVITY_PATH: settings?.caseSensitiveLinkDetection ?? false,
              DEBUG: false
         };
 
@@ -226,7 +230,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
              for (const url of batch) {
                  try {
                      // 1. Find Match
-                     const matchDetails = findMatchingRule(url, rules, config);
+                     const matchDetails = findMatchingRule(url, rules, config as any);
                      const rule = matchDetails?.rule;
 
                      // 2. Trace Generation
