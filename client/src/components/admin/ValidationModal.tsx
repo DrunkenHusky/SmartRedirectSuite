@@ -201,6 +201,12 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
     }, [open]);
 
     const processUrls = async (urls: string[]) => {
+        if (!Array.isArray(rules)) {
+            console.error("ValidationModal: rules prop is not an array", rules);
+            setProcessing(false);
+            setError("Interner Fehler: Regeln konnten nicht geladen werden.");
+            return;
+        }
         setProcessing(true);
         setProgress(0);
         const batchSize = 20;
