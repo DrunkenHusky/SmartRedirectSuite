@@ -336,14 +336,20 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                 });
 
                 if (!response.ok) {
-                    throw new Error(await response.text());
+                    const errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(errorJson.error || errorText);
+                    } catch (e) {
+                         throw new Error(errorText);
+                    }
                 }
 
                 const data = await response.json();
 
                 if (data.urls && data.urls.length > 0) {
-                    if (data.totalFound > data.urls.length) {
-                        setWarning(`Es wurden ${data.totalFound} URLs gefunden, aber nur die ersten ${data.urls.length} werden verarbeitet.`);
+                    if (data.total > data.urls.length) {
+                        setWarning(`Es wurden ${data.total} URLs gefunden, aber nur die ersten ${data.urls.length} werden verarbeitet.`);
                     }
                     setUrlsToProcess(data.urls);
                     processUrls(data.urls);
