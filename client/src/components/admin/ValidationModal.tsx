@@ -9,9 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, AlertTriangle, Play, RefreshCw, Download, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { findMatchingRule } from "@shared/ruleMatching";
-import { traceUrlGeneration, UrlTraceResult } from "@/lib/url-trace";
-import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 interface ValidationModalProps {
     open: boolean;
@@ -200,85 +197,38 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
     }, [open]);
 
     const processUrls = async (urls: string[]) => {
-        if (!Array.isArray(rules)) {
-            console.error("ValidationModal: rules prop is not an array", rules);
-            setProcessing(false);
-            setError("Interner Fehler: Regeln konnten nicht geladen werden.");
-            return;
-        }
         setProcessing(true);
+        setError(null);
         setProgress(0);
-        const batchSize = 20;
-        const processedResults: any[] = [];
 
-        const config = {
-             ...RULE_MATCHING_CONFIG, // Merge default config
-             CASE_SENSITIVITY_PATH: settings?.caseSensitiveLinkDetection ?? false,
-             // Ensure weights are preserved if not in constants (although they are)
-             WEIGHT_PATH_SEGMENT: 100,
-             WEIGHT_QUERY_PAIR: 50,
-             PENALTY_WILDCARD: -10,
-             BONUS_EXACT_MATCH: 200,
-             DEBUG: false
-        };
+        try {
+            const batchSize = 50;
+            const results: any[] = [];
 
-        let currentIndex = 0;
+            for (let i = 0; i < urls.length; i += batchSize) {
+                const batch = urls.slice(i, i + batchSize);
 
-        const processBatch = () => {
-             const batch = urls.slice(currentIndex, Math.min(currentIndex + batchSize, urls.length));
+                const res = await fetch("/api/admin/validate-urls", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ urls: batch })
+                });
 
-             for (const url of batch) {
-                 try {
-                     // 1. Find Match
-                     const matchDetails = findMatchingRule(url, rules, config as any);
-                     const rule = matchDetails?.rule;
+                if (!res.ok) throw new Error("Validation failed");
 
-                     // 2. Trace Generation
-                     let traceResult: UrlTraceResult;
-                     if (rule) {
-                         traceResult = traceUrlGeneration(url, rule, settings?.defaultNewDomain, settings);
-                     } else {
-                         // Use traceUrlGeneration with a dummy rule to trigger fallback logic (Smart Search / Domain Fallback)
-                         traceResult = traceUrlGeneration(url, {
-                             id: '',
-                             matcher: '',
-                             targetUrl: '',
-                             redirectType: 'partial', // Default to partial to allow fallback logic to run
-                             order: 0,
-                             autoRedirect: false,
-                             createdAt: new Date().toISOString()
-                         }, settings?.defaultNewDomain, settings);
-                     }
-                     processedResults.push({ url, rule, traceResult, matchDetails });
-                 } catch (e) {
-                     console.error("Error processing URL:", url, e);
-                     processedResults.push({
-                        url,
-                        error: true,
-                        traceResult: {
-                            originalUrl: url,
-                            finalUrl: url,
-                            steps: [{ description: "Fehler bei der Verarbeitung", urlBefore: url, urlAfter: url, changed: false, type: 'rule' }],
-                            appliedGlobalRules: []
-                        }
-                     });
-                 }
-             }
+                const batchResults = await res.json();
+                results.push(...batchResults);
+                setProgress(Math.round(((i + batch.length) / urls.length) * 100));
+            }
 
-             currentIndex += batch.length;
-             setProgress(Math.round((currentIndex / urls.length) * 100));
-
-             if (currentIndex < urls.length) {
-                 setTimeout(processBatch, 10);
-             } else {
-                 setResults(processedResults);
-                 setProcessing(false);
-                 setUrlsToProcess([]);
-             }
-        };
-
-        setTimeout(processBatch, 10);
+            setResults(results);
+        } catch (e) {
+            setError("Fehler bei der Validierung: " + (e instanceof Error ? e.message : String(e)));
+        } finally {
+            setProcessing(false);
+        }
     };
+
 
     const handleStart = async () => {
         setExtracting(true);
