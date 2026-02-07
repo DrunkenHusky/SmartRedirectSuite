@@ -380,24 +380,22 @@ export class ImportExportService {
    */
   static extractUrls(buffer: Buffer, filename: string, limit: number = 1000): { urls: string[], truncated: boolean, total: number } {
     const ext = filename.split('.').pop()?.toLowerCase();
-    let rows: any[] = [];
+
+    // Check supported extensions
+    if (!['csv', 'xlsx', 'xls'].includes(ext || '')) {
+        throw new Error(`Unsupported file format: ${ext}`);
+    }
 
     try {
-      if (ext === 'csv') {
-        const content = buffer.toString('utf-8');
-        rows = parse(content, {
-          skip_empty_lines: true,
-          trim: true,
-          relax_column_count: true
-        });
-      } else if (['xlsx', 'xls'].includes(ext || '')) {
-        const workbook = read(buffer, { type: 'buffer' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        rows = utils.sheet_to_json(worksheet, { header: 1 });
-      } else {
-        throw new Error(`Unsupported file format: ${ext}`);
+      // Use xlsx library for all formats (handles CSV BOM, encoding, etc.)
+      const workbook = read(buffer, { type: 'buffer' });
+      const firstSheetName = workbook.SheetNames[0];
+      if (!firstSheetName) {
+        throw new Error("Empty workbook or no sheets found");
       }
+      const worksheet = workbook.Sheets[firstSheetName];
+      // header: 1 returns array of arrays [["url1"], ["url2"]]
+      const rows: any[] = utils.sheet_to_json(worksheet, { header: 1 });
 
       const urls: string[] = [];
       for (const row of rows) {
@@ -424,7 +422,7 @@ export class ImportExportService {
       };
     } catch (error) {
        console.error("Error extracting URLs:", error);
-       throw error;
+       throw new Error(`Failed to parse file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }
