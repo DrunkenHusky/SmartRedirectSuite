@@ -9,9 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, AlertTriangle, Play, RefreshCw, Download, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { findMatchingRule } from "@shared/ruleMatching";
-import { traceUrlGeneration, UrlTraceResult } from "@/lib/url-trace";
-import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 interface ValidationModalProps {
     open: boolean;
@@ -25,6 +22,9 @@ interface ValidationModalProps {
 
 function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: number) => void }) {
     const [expanded, setExpanded] = useState(false);
+
+    // Helper to get rule from matchDetails
+    const rule = result.matchDetails?.rule;
 
     // Quality indicator color
     const getQualityColor = (quality: number) => {
@@ -52,16 +52,16 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                     </span>
                 </td>
                 <td className="p-3 text-sm text-right">
-                     {result.rule ? (
+                     {rule ? (
                          <div
                              className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 cursor-pointer hover:bg-blue-200"
                              onClick={(e) => {
                                  e.stopPropagation();
-                                 onEditRule(result.rule.id);
+                                 onEditRule(rule.id);
                              }}
                              title="Regel bearbeiten"
                          >
-                             {result.rule.infoText || result.rule.matcher || `Rule #${result.rule.id}`}
+                             {rule.infoText ? rule.infoText : (rule.matcher || `Rule #${rule.id}`)}
                          </div>
                      ) : (
                          <span className="text-muted-foreground">-</span>
@@ -76,100 +76,111 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                             <div className="border rounded-md p-4 bg-background shadow-sm">
                                 <h4 className="font-semibold text-sm mb-3 flex justify-between items-center border-b pb-2">
                                     Angewandte Regel
-                                    {result.rule && (
-                                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onEditRule(result.rule.id); }}>
+                                    {rule && (
+                                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onEditRule(rule.id); }}>
                                             <ExternalLink className="h-3 w-3 mr-1" /> Bearbeiten
                                         </Button>
                                     )}
                                 </h4>
-                                {result.rule ? (
-                                    <dl className="text-sm space-y-2">
-                                        <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Name:</dt> <dd className="font-medium truncate" title={result.rule.matcher}>{result.rule.matcher}</dd></div>
-                                        <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Type:</dt> <dd>{result.rule.redirectType}</dd></div>
-                                        <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Target:</dt> <dd className="font-mono truncate" title={result.rule.targetUrl}>{result.rule.targetUrl || '-'}</dd></div>
-                                        <div className="grid grid-cols-[80px_1fr]"><dt className="text-muted-foreground">Match:</dt>
-                                            <dd>
-                                                {result.matchDetails?.quality}%
-                                                <span className="text-xs text-muted-foreground ml-2">({result.matchDetails?.level})</span>
-                                            </dd>
+                                {rule ? (
+                                    <div className="space-y-2 text-sm">
+                                        <div className="grid grid-cols-3 gap-1">
+                                            <span className="text-muted-foreground">ID:</span>
+                                            <span className="col-span-2 font-mono">{rule.id}</span>
                                         </div>
-                                    </dl>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <p className="text-sm text-muted-foreground py-2">Keine Regel gefunden.</p>
-                                        {result.traceResult.searchFallback && (
-                                            <div className="bg-blue-50 p-2 rounded text-sm border border-blue-100">
-                                                <span className="font-medium text-blue-800">Smart Search Fallback:</span>
-                                                <div className="mt-1 font-mono text-xs break-all text-blue-600">{result.traceResult.searchFallback}</div>
-                                            </div>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            <span className="text-muted-foreground">Matcher:</span>
+                                            <span className="col-span-2 font-mono break-all bg-muted/50 p-1 rounded">{rule.matcher}</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            <span className="text-muted-foreground">Ziel:</span>
+                                            <span className="col-span-2 font-mono break-all bg-muted/50 p-1 rounded">{rule.targetUrl || '-'}</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            <span className="text-muted-foreground">Typ:</span>
+                                            <span className="col-span-2">{rule.redirectType}</span>
+                                        </div>
+                                        {rule.discardQueryParams && (
+                                             <div className="grid grid-cols-3 gap-1 text-orange-600">
+                                                 <span className="col-span-3 text-xs italic">Parameter werden verworfen</span>
+                                             </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Global Config */}
-                            <div className="border rounded-md p-4 bg-background shadow-sm">
-                                <h4 className="font-semibold text-sm mb-3 border-b pb-2">Globale Einstellungen</h4>
-                                {result.traceResult.appliedGlobalRules.length > 0 ? (
-                                    <ul className="text-sm space-y-2 max-h-[120px] overflow-y-auto">
-                                        {result.traceResult.appliedGlobalRules.map((g: any, i: number) => (
-                                            <li key={i} className="flex gap-2 items-start">
-                                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded mt-0.5 ${
-                                                    g.type === 'search' ? 'bg-orange-100 text-orange-800' :
-                                                    g.type === 'static' ? 'bg-purple-100 text-purple-800' :
-                                                    'bg-green-100 text-green-800'
-                                                }`}>{g.type}</span>
-                                                <span className="break-words text-xs">{g.description}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground py-2">Keine globalen Regeln angewendet.</p>
+                                    <p className="text-sm text-muted-foreground italic">Keine spezifische Regel gefunden (Fallback).</p>
                                 )}
+                            </div>
+
+                            {/* Result Analysis */}
+                            <div className="border rounded-md p-4 bg-background shadow-sm">
+                                <h4 className="font-semibold text-sm mb-3 border-b pb-2">Ergebnis-Analyse</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="grid grid-cols-3 gap-1">
+                                        <span className="text-muted-foreground">Original:</span>
+                                        <a href={result.url} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-blue-600 hover:underline flex items-center gap-1">
+                                            {result.url} <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1">
+                                        <span className="text-muted-foreground">Neu:</span>
+                                        <a href={result.traceResult.finalUrl} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-green-600 hover:underline flex items-center gap-1">
+                                            {result.traceResult.finalUrl} <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                    </div>
+
+                                    {result.traceResult.searchFallback && (
+                                        <div className="mt-2 p-2 bg-blue-50 text-blue-800 rounded text-xs">
+                                            <strong>Smart Search Fallback:</strong> Weiterleitung zur Suche, da keine Regel passte.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Trace View */}
-                        <div className="border rounded-md p-4 bg-background shadow-sm">
-                             <h4 className="font-semibold text-sm mb-3 border-b pb-2">Änderungsverfolgung</h4>
-                             <div className="space-y-2">
-                                 {result.traceResult.steps.map((step: any, i: number) => (
-                                     <div key={i} className={`text-sm p-3 rounded border-l-4 ${
-                                         step.type === 'rule' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' :
-                                         step.type === 'global' ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10' :
-                                         'border-gray-300 bg-gray-50/50 dark:bg-gray-800/10'
-                                     }`}>
-                                         <div className="font-medium flex justify-between items-center mb-1">
-                                             <span>{step.description}</span>
-                                             <span className="text-[10px] uppercase text-muted-foreground tracking-wider">{step.type}</span>
-                                         </div>
-                                         <div className="grid grid-cols-[1fr,auto,1fr] gap-3 items-center mt-2 text-xs font-mono bg-white/50 dark:bg-black/20 p-2 rounded">
-                                             <div className="truncate text-red-600/70 line-through decoration-red-400/50" title={step.urlBefore}>{step.urlBefore}</div>
-                                             <div className="text-muted-foreground">→</div>
-                                             <div className="truncate text-green-600 font-medium" title={step.urlAfter}>{step.urlAfter}</div>
-                                         </div>
-                                     </div>
-                                 ))}
-                             </div>
+                        {/* Trace Steps */}
+                        {result.traceResult.steps && result.traceResult.steps.length > 0 && (
+                            <div className="border rounded-md overflow-hidden">
+                                <div className="bg-muted px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Verarbeitungsschritte
+                                </div>
+                                <div className="divide-y">
+                                    {result.traceResult.steps.map((step: any, idx: number) => (
+                                        <div key={idx} className="p-3 text-sm grid grid-cols-[auto_1fr] gap-4 items-start bg-background">
+                                            <div className="flex flex-col items-center pt-1">
+                                                <div className={`w-2 h-2 rounded-full ${step.changed ? 'bg-orange-500' : 'bg-gray-300'}`} />
+                                                {idx < result.traceResult.steps.length - 1 && <div className="w-px h-full bg-border my-1" />}
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="font-medium">{step.description}</div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono text-muted-foreground">
+                                                    <div className="break-all bg-muted/30 p-1 rounded">{step.urlBefore}</div>
+                                                    <div className="break-all bg-muted/30 p-1 rounded flex items-center">
+                                                        <span className="mr-2">➔</span> {step.urlAfter}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                             <div className="mt-4 flex gap-4 text-xs text-muted-foreground">
-                                 <div className="flex items-center gap-1">
-                                     <div className="w-3 h-3 bg-blue-500 rounded-sm"></div> Regel
-                                 </div>
-                                 <div className="flex items-center gap-1">
-                                     <div className="w-3 h-3 bg-orange-500 rounded-sm"></div> Global
-                                 </div>
+                        {/* Global Rules */}
+                        {result.traceResult.appliedGlobalRules && result.traceResult.appliedGlobalRules.length > 0 && (
+                             <div className="border rounded-md overflow-hidden border-blue-200">
+                                <div className="bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-blue-800">
+                                    Angewandte Globale Regeln
+                                </div>
+                                <div className="p-3 bg-white space-y-1">
+                                    {result.traceResult.appliedGlobalRules.map((rule: any, idx: number) => (
+                                        <div key={idx} className="flex items-center gap-2 text-sm text-blue-700">
+                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                            {rule.description}
+                                        </div>
+                                    ))}
+                                </div>
                              </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2">
-                             <Button variant="outline" size="sm" asChild>
-                                 <a href={result.traceResult.finalUrl} target="_blank" rel="noopener noreferrer">
-                                     <ExternalLink className="h-3 w-3 mr-2" />
-                                     Öffnen
-                                 </a>
-                             </Button>
-                        </div>
+                        )}
                     </td>
                 </tr>
             )}
@@ -178,197 +189,143 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
 }
 
 export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], settings, reloadTrigger, isLoadingRules = false }: ValidationModalProps) {
-    const { toast } = useToast();
-    const [activeTab, setActiveTab] = useState('paste');
-    const [pastedText, setPastedText] = useState('');
+    const [pastedText, setPastedText] = useState("");
+    const [activeTab, setActiveTab] = useState("paste");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [results, setResults] = useState<any[] | null>(null);
     const [processing, setProcessing] = useState(false);
-    const [extracting, setExtracting] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [warning, setWarning] = useState<string | null>(null);
+    const [progress, setProgress] = useState(0);
+    const [extracting, setExtracting] = useState(false);
 
-    const [urlsToProcess, setUrlsToProcess] = useState<string[]>([]);
-    const [results, setResults] = useState<any[] | null>(null);
-
+    // Logic for reload handling
     const [lastProcessedUrls, setLastProcessedUrls] = useState<string[]>([]);
+    const [urlsToProcess, setUrlsToProcess] = useState<string[]>([]);
+    const { toast } = useToast();
 
-    useEffect(() => {
-        if (!open) {
-            // Optional cleanup
-        }
-    }, [open]);
+    const handleExport = () => {
+        if (!results) return;
+
+        const headers = ["Original URL", "Final URL", "Changed", "Rule Matcher", "Match Quality"];
+        const csvContent = [
+            headers.join(","),
+            ...results.map(r => {
+                const row = [
+                    `"${r.url}"`,
+                    `"${r.traceResult.finalUrl}"`,
+                    r.traceResult.originalUrl !== r.traceResult.finalUrl,
+                    `"${r.matchDetails?.rule?.matcher || ''}"`,
+                    r.matchDetails?.quality || 0
+                ];
+                return row.join(",");
+            })
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "validation_results.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const processUrls = async (urls: string[]) => {
-        if (!Array.isArray(rules)) {
-            console.error("ValidationModal: rules prop is not an array", rules);
-            setProcessing(false);
-            setError("Interner Fehler: Regeln konnten nicht geladen werden.");
-            return;
-        }
         setProcessing(true);
+        setError(null);
         setProgress(0);
-        const batchSize = 20;
-        const processedResults: any[] = [];
 
-        const config = {
-             ...RULE_MATCHING_CONFIG, // Merge default config
-             CASE_SENSITIVITY_PATH: settings?.caseSensitiveLinkDetection ?? false,
-             // Ensure weights are preserved if not in constants (although they are)
-             WEIGHT_PATH_SEGMENT: 100,
-             WEIGHT_QUERY_PAIR: 50,
-             PENALTY_WILDCARD: -10,
-             BONUS_EXACT_MATCH: 200,
-             DEBUG: false
-        };
+        try {
+            const batchSize = 50;
+            const results: any[] = [];
 
-        let currentIndex = 0;
+            for (let i = 0; i < urls.length; i += batchSize) {
+                const batch = urls.slice(i, i + batchSize);
 
-        const processBatch = () => {
-             const batch = urls.slice(currentIndex, Math.min(currentIndex + batchSize, urls.length));
+                const res = await fetch("/api/admin/validate-urls", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ urls: batch })
+                });
 
-             for (const url of batch) {
-                 try {
-                     // 1. Find Match
-                     const matchDetails = findMatchingRule(url, rules, config as any);
-                     const rule = matchDetails?.rule;
+                if (!res.ok) throw new Error("Validation failed");
 
-                     // 2. Trace Generation
-                     let traceResult: UrlTraceResult;
-                     if (rule) {
-                         traceResult = traceUrlGeneration(url, rule, settings?.defaultNewDomain, settings);
-                     } else {
-                         // Use traceUrlGeneration with a dummy rule to trigger fallback logic (Smart Search / Domain Fallback)
-                         traceResult = traceUrlGeneration(url, {
-                             id: '',
-                             matcher: '',
-                             targetUrl: '',
-                             redirectType: 'partial', // Default to partial to allow fallback logic to run
-                             order: 0,
-                             autoRedirect: false,
-                             createdAt: new Date().toISOString()
-                         }, settings?.defaultNewDomain, settings);
-                     }
-                     processedResults.push({ url, rule, traceResult, matchDetails });
-                 } catch (e) {
-                     console.error("Error processing URL:", url, e);
-                     processedResults.push({
-                        url,
-                        error: true,
-                        traceResult: {
-                            originalUrl: url,
-                            finalUrl: url,
-                            steps: [{ description: "Fehler bei der Verarbeitung", urlBefore: url, urlAfter: url, changed: false, type: 'rule' }],
-                            appliedGlobalRules: []
-                        }
-                     });
-                 }
-             }
+                const batchResults = await res.json();
+                results.push(...batchResults);
+                setProgress(Math.round(((i + batch.length) / urls.length) * 100));
+            }
 
-             currentIndex += batch.length;
-             setProgress(Math.round((currentIndex / urls.length) * 100));
-
-             if (currentIndex < urls.length) {
-                 setTimeout(processBatch, 10);
-             } else {
-                 setResults(processedResults);
-                 setProcessing(false);
-                 setUrlsToProcess([]);
-             }
-        };
-
-        setTimeout(processBatch, 10);
+            setResults(results);
+        } catch (e) {
+            setError("Fehler bei der Validierung: " + (e instanceof Error ? e.message : String(e)));
+        } finally {
+            setProcessing(false);
+        }
     };
 
     const handleStart = async () => {
-        setExtracting(true);
         setError(null);
         setWarning(null);
         setResults(null);
-        let urls: string[] = [];
+        setUrlsToProcess([]);
 
-        try {
-            if (activeTab === 'paste') {
-                if (!pastedText.trim()) {
-                    throw new Error("Bitte geben Sie URLs ein.");
-                }
-                urls = pastedText
-                    .split(/[\n,;]+/)
-                    .map(u => u.trim())
-                    .filter(u => u.length > 0);
-            } else {
-                if (!selectedFile) {
-                    throw new Error("Bitte wählen Sie eine Datei aus.");
-                }
-                const formData = new FormData();
-                formData.append('file', selectedFile);
+        if (activeTab === 'paste') {
+            if (!pastedText.trim()) {
+                setError("Bitte geben Sie mindestens eine URL ein.");
+                return;
+            }
 
+            const urls = pastedText.split(/[\n,;]+/)
+                .map(u => u.trim())
+                .filter(u => u.length > 0);
+
+            if (urls.length === 0) {
+                setError("Keine gültigen URLs gefunden.");
+                return;
+            }
+
+            setUrlsToProcess(urls);
+            processUrls(urls);
+        } else {
+            if (!selectedFile) {
+                setError("Bitte wählen Sie eine Datei aus.");
+                return;
+            }
+
+            setExtracting(true);
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
                 const response = await fetch('/api/admin/tools/extract-urls', {
                     method: 'POST',
                     body: formData
                 });
 
                 if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || "Fehler beim Upload");
+                    throw new Error(await response.text());
                 }
 
-                const result = await response.json();
-                urls = result.urls;
+                const data = await response.json();
 
-                if (result.truncated) {
-                   setWarning(`Hinweis: Die Datei enthielt mehr als 1000 URLs. Nur die ersten ${result.urls.length} wurden importiert.`);
+                if (data.urls && data.urls.length > 0) {
+                    if (data.totalFound > data.urls.length) {
+                        setWarning(`Es wurden ${data.totalFound} URLs gefunden, aber nur die ersten ${data.urls.length} werden verarbeitet.`);
+                    }
+                    setUrlsToProcess(data.urls);
+                    processUrls(data.urls);
+                } else {
+                    setError("Keine URLs in der Datei gefunden.");
                 }
+            } catch (err) {
+                setError("Fehler beim Verarbeiten der Datei: " + (err instanceof Error ? err.message : String(err)));
+            } finally {
+                setExtracting(false);
             }
-
-            if (urls.length === 0) {
-                throw new Error("Keine gültigen URLs gefunden.");
-            }
-
-            if (urls.length > 1000) {
-                 urls = urls.slice(0, 1000);
-                 setWarning("Limit: Nur die ersten 1000 URLs werden verarbeitet.");
-            }
-
-            console.log("URLs extracted:", urls.length);
-            setUrlsToProcess(urls);
-            processUrls(urls);
-
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setExtracting(false);
         }
-    };
-
-    const handleExport = () => {
-        if (!results) return;
-
-        const headers = ["Original URL", "New URL", "Changed", "Applied Rule", "Rule Match Quality", "Applied Global Rules", "Trace"];
-        const rows = results.map(r => {
-            const globalRules = r.traceResult.appliedGlobalRules.map((g: any) => g.description).join("; ");
-            const trace = r.traceResult.steps.map((s: any) => `[${s.type}] ${s.description}`).join("; ");
-
-            return [
-                JSON.stringify(r.url),
-                JSON.stringify(r.traceResult.finalUrl),
-                JSON.stringify(r.url !== r.traceResult.finalUrl),
-                JSON.stringify(r.rule ? r.rule.matcher : "No Match"),
-                JSON.stringify(r.matchDetails ? r.matchDetails.quality + '%' : "0%"),
-                JSON.stringify(globalRules),
-                JSON.stringify(trace)
-            ].join(",");
-        });
-
-        const csvContent = headers.join(",") + "\n" + rows.join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", "validation_results.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     };
 
     const handleReload = () => {
