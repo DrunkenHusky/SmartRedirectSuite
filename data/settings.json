@@ -58,7 +58,7 @@
     {
       "pattern": "[?&]file=([^&]+)",
       "order": 0,
-      "pathPattern": "/documents",
+      "pathPattern": "",
       "skipEncoding": true
     }
   ],
@@ -79,7 +79,7 @@
   "globalSearchAndReplace": [
     {
       "id": "e0e85d18-4b98-4524-be85-79545721c4f8",
-      "search": "/Seoten/",
+      "search": "/Seiten/",
       "replace": "/SitePages/",
       "caseSensitive": false,
       "order": 0
