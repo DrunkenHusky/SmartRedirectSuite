@@ -61,7 +61,7 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                              }}
                              title="Regel bearbeiten"
                          >
-                             {rule.infoText ? `${rule.infoText} (#${rule.id})` : (rule.matcher || `Rule #${rule.id}`)}
+                             {rule.infoText ? rule.infoText : (rule.matcher || `Rule #${rule.id}`)}
                          </div>
                      ) : (
                          <span className="text-muted-foreground">-</span>
