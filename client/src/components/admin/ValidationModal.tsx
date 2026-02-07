@@ -80,11 +80,11 @@ function ResultRow({ result, index, isExpanded, onToggle, onEditRule }: { result
                     <div className="flex flex-col gap-1">
                          <div className="font-mono text-xs text-muted-foreground truncate flex items-center gap-2" title={result.url}>
                             <span className="select-none opacity-50 w-6">Old:</span>
-                            <span className="truncate">{result.url}</span>
+                            <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="truncate text-blue-600 hover:underline">{result.url}</a>
                          </div>
                          <div className="font-mono text-sm truncate flex items-center gap-2" title={result.traceResult.finalUrl}>
                              <span className="select-none opacity-50 w-6">New:</span>
-                             <span className="truncate">{result.traceResult.finalUrl}</span>
+                             <a href={result.traceResult.finalUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="truncate text-green-600 hover:underline">{result.traceResult.finalUrl}</a>
                          </div>
                     </div>
                 </td>
