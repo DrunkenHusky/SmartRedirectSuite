@@ -79,22 +79,8 @@
   "globalSearchAndReplace": [
     {
       "id": "e0e85d18-4b98-4524-be85-79545721c4f8",
-      "search": "Suchen",
-      "replace": "Gefunden",
-      "caseSensitive": false,
-      "order": 0
-    },
-    {
-      "id": "fa609931-dcb1-4235-88c4-cdca33b6a7ad",
-      "search": "Suchen",
-      "replace": "Gefunden",
-      "caseSensitive": false,
-      "order": 0
-    },
-    {
-      "id": "e1cbf4f6-738a-41ec-859a-e1f6ca5ac47a",
-      "search": "Suchen",
-      "replace": "Gefunden",
+      "search": "/Seoten/",
+      "replace": "/SitePages/",
       "caseSensitive": false,
       "order": 0
     }
