@@ -21,6 +21,44 @@ interface ValidationModalProps {
 }
 
 function ResultRow({ result, index, isExpanded, onToggle, onEditRule }: { result: any, index: number, isExpanded: boolean, onToggle: () => void, onEditRule: (id: number) => void }) {
+    // Helper to get step styles
+    const getStepStyle = (step: any) => {
+        if (!step.changed) {
+            return {
+                dot: 'bg-gray-300',
+                line: 'bg-border',
+                container: 'bg-background'
+            };
+        }
+
+        switch (step.type) {
+            case 'global':
+                return {
+                    dot: 'bg-blue-500',
+                    line: 'bg-blue-200',
+                    container: 'bg-blue-50/50'
+                };
+            case 'rule':
+                return {
+                    dot: 'bg-orange-500',
+                    line: 'bg-orange-200',
+                    container: 'bg-orange-50/20'
+                };
+             case 'cleanup':
+                return {
+                    dot: 'bg-purple-500',
+                    line: 'bg-purple-200',
+                    container: 'bg-purple-50/30'
+                };
+            default:
+                return {
+                    dot: 'bg-orange-500',
+                    line: 'bg-border',
+                    container: 'bg-background'
+                };
+        }
+    };
+
     // Helper to get rule from matchDetails
     const rule = result.matchDetails?.rule;
 
@@ -169,11 +207,13 @@ function ResultRow({ result, index, isExpanded, onToggle, onEditRule }: { result
                                     Verarbeitungsschritte
                                 </div>
                                 <div className="divide-y">
-                                    {result.traceResult.steps.map((step: any, idx: number) => (
-                                        <div key={idx} className="p-3 text-sm grid grid-cols-[auto_1fr] gap-4 items-start bg-background">
+                                    {result.traceResult.steps.map((step: any, idx: number) => {
+                                        const style = getStepStyle(step);
+                                        return (
+                                        <div key={idx} className={`p-3 text-sm grid grid-cols-[auto_1fr] gap-4 items-start ${style.container}`}>
                                             <div className="flex flex-col items-center pt-1">
-                                                <div className={`w-2 h-2 rounded-full ${step.changed ? 'bg-orange-500' : 'bg-gray-300'}`} />
-                                                {idx < result.traceResult.steps.length - 1 && <div className="w-px h-full bg-border my-1" />}
+                                                <div className={`w-2 h-2 rounded-full ${style.dot}`} />
+                                                {idx < result.traceResult.steps.length - 1 && <div className={`w-px h-full my-1 ${style.line}`} />}
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="font-medium">{step.description}</div>
@@ -185,7 +225,8 @@ function ResultRow({ result, index, isExpanded, onToggle, onEditRule }: { result
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
