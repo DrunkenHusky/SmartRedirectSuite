@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, AlertTriangle, Play, RefreshCw, Download, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { Upload, FileText, AlertTriangle, Play, RefreshCw, Download, ChevronDown, ChevronRight, ExternalLink, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ValidationModalProps {
@@ -20,9 +20,7 @@ interface ValidationModalProps {
     isLoadingRules?: boolean;
 }
 
-function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: number) => void }) {
-    const [expanded, setExpanded] = useState(false);
-
+function ResultRow({ result, index, isExpanded, onToggle, onEditRule }: { result: any, index: number, isExpanded: boolean, onToggle: () => void, onEditRule: (id: number) => void }) {
     // Helper to get rule from matchDetails
     const rule = result.matchDetails?.rule;
 
@@ -36,15 +34,21 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
 
     return (
         <>
-            <tr className="border-b hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => setExpanded(!expanded)}>
+            <tr className="border-b hover:bg-muted/50 cursor-pointer transition-colors" onClick={onToggle}>
                 <td className="p-3 w-10 text-center">
-                    {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                    {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                 </td>
-                <td className="p-3 font-mono text-sm max-w-[250px] truncate" title={result.url}>
-                    {result.url}
-                </td>
-                <td className="p-3 font-mono text-sm max-w-[250px] truncate" title={result.traceResult.finalUrl}>
-                    {result.traceResult.finalUrl}
+                <td className="p-3 text-sm max-w-[400px]">
+                    <div className="flex flex-col gap-1">
+                         <div className="font-mono text-xs text-muted-foreground truncate flex items-center gap-2" title={result.url}>
+                            <span className="select-none opacity-50 w-6">Old:</span>
+                            <span className="truncate">{result.url}</span>
+                         </div>
+                         <div className="font-mono text-sm truncate flex items-center gap-2" title={result.traceResult.finalUrl}>
+                             <span className="select-none opacity-50 w-6">New:</span>
+                             <span className="truncate">{result.traceResult.finalUrl}</span>
+                         </div>
+                    </div>
                 </td>
                 <td className="p-3 text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getQualityColor(result.matchDetails?.quality || 0)}`}>
@@ -68,9 +72,34 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                      )}
                 </td>
             </tr>
-            {expanded && (
+            {isExpanded && (
                 <tr className="bg-muted/30 dark:bg-muted/10">
-                    <td colSpan={5} className="p-4 space-y-4">
+                    <td colSpan={4} className="p-4 space-y-4">
+                        {/* Result Analysis - Full Width */}
+                        <div className="border rounded-md p-4 bg-background shadow-sm">
+                            <h4 className="font-semibold text-sm mb-3 border-b pb-2">Ergebnis-Analyse</h4>
+                            <div className="space-y-2 text-sm">
+                                <div className="grid grid-cols-3 gap-1">
+                                    <span className="text-muted-foreground">Original:</span>
+                                    <a href={result.url} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-blue-600 hover:underline flex items-center gap-1">
+                                        {result.url} <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                    <span className="text-muted-foreground">Neu:</span>
+                                    <a href={result.traceResult.finalUrl} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-green-600 hover:underline flex items-center gap-1">
+                                        {result.traceResult.finalUrl} <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                </div>
+
+                                {result.traceResult.searchFallback && (
+                                    <div className="mt-2 p-2 bg-blue-50 text-blue-800 rounded text-xs">
+                                        <strong>Smart Search Fallback:</strong> Weiterleitung zur Suche, da keine Regel passte.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Rule Config */}
                             <div className="border rounded-md p-4 bg-background shadow-sm">
@@ -111,29 +140,25 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                                 )}
                             </div>
 
-                            {/* Result Analysis */}
-                            <div className="border rounded-md p-4 bg-background shadow-sm">
-                                <h4 className="font-semibold text-sm mb-3 border-b pb-2">Ergebnis-Analyse</h4>
-                                <div className="space-y-2 text-sm">
-                                    <div className="grid grid-cols-3 gap-1">
-                                        <span className="text-muted-foreground">Original:</span>
-                                        <a href={result.url} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-blue-600 hover:underline flex items-center gap-1">
-                                            {result.url} <ExternalLink className="h-3 w-3" />
-                                        </a>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-1">
-                                        <span className="text-muted-foreground">Neu:</span>
-                                        <a href={result.traceResult.finalUrl} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-green-600 hover:underline flex items-center gap-1">
-                                            {result.traceResult.finalUrl} <ExternalLink className="h-3 w-3" />
-                                        </a>
-                                    </div>
-
-                                    {result.traceResult.searchFallback && (
-                                        <div className="mt-2 p-2 bg-blue-50 text-blue-800 rounded text-xs">
-                                            <strong>Smart Search Fallback:</strong> Weiterleitung zur Suche, da keine Regel passte.
+                            {/* Global Rules */}
+                            <div className="border rounded-md p-4 bg-background shadow-sm flex flex-col">
+                                <h4 className="font-semibold text-sm mb-3 border-b pb-2">Angewandte Globale Regeln</h4>
+                                {result.traceResult.appliedGlobalRules && result.traceResult.appliedGlobalRules.length > 0 ? (
+                                    <div className="bg-blue-50/50 rounded-md p-2 flex-1">
+                                        <div className="space-y-2">
+                                            {result.traceResult.appliedGlobalRules.map((rule: any, idx: number) => (
+                                                <div key={idx} className="flex items-start gap-2 text-sm text-blue-700">
+                                                    <span className="mt-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
+                                                    <span>{rule.description}</span>
+                                                </div>
+                                            ))}
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm italic">
+                                        Keine globalen Regeln angewendet
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -164,23 +189,6 @@ function ResultRow({ result, onEditRule }: { result: any, onEditRule: (id: numbe
                                 </div>
                             </div>
                         )}
-
-                        {/* Global Rules */}
-                        {result.traceResult.appliedGlobalRules && result.traceResult.appliedGlobalRules.length > 0 && (
-                             <div className="border rounded-md overflow-hidden border-blue-200">
-                                <div className="bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-blue-800">
-                                    Angewandte Globale Regeln
-                                </div>
-                                <div className="p-3 bg-white space-y-1">
-                                    {result.traceResult.appliedGlobalRules.map((rule: any, idx: number) => (
-                                        <div key={idx} className="flex items-center gap-2 text-sm text-blue-700">
-                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                                            {rule.description}
-                                        </div>
-                                    ))}
-                                </div>
-                             </div>
-                        )}
                     </td>
                 </tr>
             )}
@@ -198,11 +206,32 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
     const [warning, setWarning] = useState<string | null>(null);
     const [progress, setProgress] = useState(0);
     const [extracting, setExtracting] = useState(false);
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
     // Logic for reload handling
     const [lastProcessedUrls, setLastProcessedUrls] = useState<string[]>([]);
     const [urlsToProcess, setUrlsToProcess] = useState<string[]>([]);
     const { toast } = useToast();
+
+    const toggleRow = (index: number) => {
+        const newSet = new Set(expandedRows);
+        if (newSet.has(index)) {
+            newSet.delete(index);
+        } else {
+            newSet.add(index);
+        }
+        setExpandedRows(newSet);
+    };
+
+    const expandAll = () => {
+        if (results) {
+            setExpandedRows(new Set(results.map((_, i) => i)));
+        }
+    };
+
+    const collapseAll = () => {
+        setExpandedRows(new Set());
+    };
 
     const handleExport = () => {
         if (!results) return;
@@ -237,6 +266,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
         setProcessing(true);
         setError(null);
         setProgress(0);
+        setExpandedRows(new Set());
 
         try {
             const batchSize = 50;
@@ -457,6 +487,13 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                                     {results.length} Ergebnisse
                                 </div>
                                 <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" onClick={expandAll} disabled={processing} title="Alle ausklappen">
+                                        <ChevronsDown className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={collapseAll} disabled={processing} title="Alle einklappen">
+                                        <ChevronsUp className="h-4 w-4" />
+                                    </Button>
+                                    <div className="w-px h-6 bg-border mx-1" />
                                     <Button variant="outline" size="sm" onClick={handleReload} disabled={processing}>
                                         <RefreshCw className="h-3 w-3 mr-2" /> Neu berechnen
                                     </Button>
@@ -475,15 +512,21 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                                         <thead className="bg-muted sticky top-0 z-10">
                                             <tr>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground w-10"></th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground">Original URL</th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground">New URL</th>
+                                                <th className="p-3 text-xs font-medium text-muted-foreground">URL Transformation</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground">Match Quality</th>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground text-right">Rule Tag</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {results.map((result, i) => (
-                                                <ResultRow key={i} result={result} onEditRule={onEditRule} />
+                                                <ResultRow
+                                                    key={i}
+                                                    result={result}
+                                                    index={i}
+                                                    isExpanded={expandedRows.has(i)}
+                                                    onToggle={() => toggleRow(i)}
+                                                    onEditRule={onEditRule}
+                                                />
                                             ))}
                                         </tbody>
                                     </table>
