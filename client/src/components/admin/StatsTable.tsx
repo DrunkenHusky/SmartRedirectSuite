@@ -279,41 +279,7 @@ const StatsTable = memo(({
               <ResizeHandle onMouseDown={(e) => handleResizeStart('globalRules', e)} />
             </th>
             )}
-            {visibleColumns.globalRules && (
-              <td className="p-2 sm:p-3">
-                {entry.appliedGlobalRules && entry.appliedGlobalRules.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {entry.appliedGlobalRules.map((rule: any, idx: number) => {
-                        // Check if rule still exists in settings
-                        let exists = false;
-                        if (settings) {
-                            if (rule.type === 'search') exists = (settings.globalSearchAndReplace || []).some((r: any) => r.id === rule.id);
-                            else if (rule.type === 'static') exists = (settings.globalStaticQueryParams || []).some((r: any) => r.id === rule.id);
-                            else if (rule.type === 'kept') exists = (settings.globalKeptQueryParams || []).some((r: any) => r.id === rule.id);
-                        } else {
-                            exists = true; // optimistic
-                        }
-
-                        return (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className={`text-[9px] px-1 py-0 h-auto cursor-pointer hover:bg-muted ${!exists ? 'opacity-50 line-through' : ''}`}
-                            onClick={() => onNavigateToTab?.('global-rules')}
-                            title={`${rule.description} ${!exists ? '(Gelöscht)' : ''}`}
-                          >
-                            <Globe className="h-2 w-2 mr-1 inline" />
-                            {rule.description}
-                          </Badge>
-                        );
-                    })}
-                  </div>
-                ) : (
-                  <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
-                )}
-              </td>
-              )}
-              {visibleColumns.feedback && enableUserFeedback && (
+{visibleColumns.feedback && enableUserFeedback && (
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.feedback }}>
               Feedback
               <ResizeHandle onMouseDown={(e) => handleResizeStart('feedback', e)} />
@@ -466,6 +432,40 @@ const StatsTable = memo(({
                 }`}>
                   {entry.matchQuality || 0}%
                 </span>
+              </td>
+              )}
+                          {visibleColumns.globalRules && (
+              <td className="p-2 sm:p-3">
+                {entry.appliedGlobalRules && entry.appliedGlobalRules.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {entry.appliedGlobalRules.map((rule: any, idx: number) => {
+                        // Check if rule still exists in settings
+                        let exists = false;
+                        if (settings) {
+                            if (rule.type === 'search') exists = (settings.globalSearchAndReplace || []).some((r: any) => r.id === rule.id);
+                            else if (rule.type === 'static') exists = (settings.globalStaticQueryParams || []).some((r: any) => r.id === rule.id);
+                            else if (rule.type === 'kept') exists = (settings.globalKeptQueryParams || []).some((r: any) => r.id === rule.id);
+                        } else {
+                            exists = true; // optimistic
+                        }
+
+                        return (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className={`text-[9px] px-1 py-0 h-auto cursor-pointer hover:bg-muted ${!exists ? 'opacity-50 line-through' : ''}`}
+                            onClick={() => onNavigateToTab?.('global-rules')}
+                            title={`${rule.description} ${!exists ? '(Gelöscht)' : ''}`}
+                          >
+                            <Globe className="h-2 w-2 mr-1 inline" />
+                            {rule.description}
+                          </Badge>
+                        );
+                    })}
+                  </div>
+                ) : (
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
+                )}
               </td>
               )}
               {visibleColumns.feedback && enableUserFeedback && (
