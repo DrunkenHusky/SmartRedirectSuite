@@ -1331,7 +1331,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rules = await storage.getProcessedUrlRules(config);
 
       const results = urls.map(url => {
-          const matchDetails = findMatchingRule(url, rules, config);
+          let matchDetails = null;
+          try {
+            matchDetails = findMatchingRule(url, rules, config);
+          } catch (e) {
+            // Ignore error, treat as no match or invalid URL
+          }
 
           let traceResult;
           if (matchDetails?.rule) {
