@@ -409,7 +409,12 @@ export class ImportExportService {
         }
 
         if (val && typeof val === 'string' && val.trim().length > 0) {
-          urls.push(val.trim());
+          const cleaned = val.trim();
+          // Skip common header rows
+          if (['original url', 'url', 'alte url', 'old url', 'source', 'quelle'].includes(cleaned.toLowerCase())) {
+            continue;
+          }
+          urls.push(cleaned);
         }
       }
 
