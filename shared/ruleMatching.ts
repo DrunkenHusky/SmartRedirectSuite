@@ -103,6 +103,49 @@ function isProcessedRule(rule: UrlRule | ProcessedUrlRule): rule is ProcessedUrl
   return 'normalizedPath' in rule && 'normalizedQuery' in rule;
 }
 
+function calculatePathMatchScore(
+  rulePath: string[],
+  reqPath: string[],
+  start: number
+): {
+  isMatch: boolean;
+  staticMatches: number;
+  wildcards: number;
+  hasPartialSegmentMatch: boolean;
+} {
+  let staticMatches = 0;
+  let wildcards = 0;
+  let hasPartialSegmentMatch = false;
+
+  for (let i = 0; i < rulePath.length; i++) {
+    const seg = rulePath[i];
+    const reqSeg = reqPath[start + i];
+
+    if (seg === "*" || seg.startsWith(":")) {
+      wildcards++;
+      continue;
+    }
+
+    // Check for explicit wildcard suffix (e.g., "prefix*")
+    if (seg.endsWith("*") && seg.length > 1) {
+      const prefix = seg.slice(0, -1);
+      if (reqSeg && reqSeg.startsWith(prefix)) {
+        staticMatches++;
+        hasPartialSegmentMatch = true;
+        continue;
+      }
+    }
+
+    if (seg === reqSeg) {
+      staticMatches++;
+    } else {
+      return { isMatch: false, staticMatches: 0, wildcards: 0, hasPartialSegmentMatch: false };
+    }
+  }
+
+  return { isMatch: true, staticMatches, wildcards, hasPartialSegmentMatch };
+}
+
 export function findMatchingRule(
   requestUrl: string,
   rules: UrlRule[] | ProcessedUrlRule[],
@@ -154,23 +197,10 @@ export function findMatchingRule(
     // Logic for Domain Matcher
     if (isDomainMatcher) {
       // Check if domain matches
-      // Simple exact domain match for now, or maybe endsWith for subdomains?
-      // User said "e.g. www.google.ch".
-      // Let's assume exact match or partial match on domain?
-      // "works in matcher not only for paths. It should also accept a domain"
       const [matcherDomain] = rule.matcher.split("?");
       if (reqHostname !== matcherDomain.toLowerCase()) {
          continue;
       }
-
-      // Domain matched!
-      // Treat it as a high score match.
-      // We need to calculate a score comparable to path matching.
-      // Let's give it a score based on domain length/specificity?
-      // Or just treat it as a "root" match with specificity?
-
-      // For domain matchers, we don't do path matching logic here.
-      // But we should check query params if present.
 
       // Query matching
       let queryPairs = 0;
@@ -220,39 +250,10 @@ export function findMatchingRule(
     if (rulePath.length > reqPath.length) continue;
 
     for (let start = 0; start <= reqPath.length - rulePath.length; start++) {
-      // Path matching
-      let staticMatches = 0;
-      let wildcards = 0;
-      let pathMismatch = false;
-      let hasPartialSegmentMatch = false;
+      const matchResult = calculatePathMatchScore(rulePath, reqPath, start);
+      if (!matchResult.isMatch) continue;
 
-      for (let i = 0; i < rulePath.length; i++) {
-        const seg = rulePath[i];
-        const reqSeg = reqPath[start + i];
-
-        if (seg === "*" || seg.startsWith(":")) {
-          wildcards++;
-          continue;
-        }
-
-        // Check for explicit wildcard suffix (e.g., "prefix*")
-        if (seg.endsWith("*") && seg.length > 1) {
-          const prefix = seg.slice(0, -1);
-          if (reqSeg && reqSeg.startsWith(prefix)) {
-            staticMatches++;
-            hasPartialSegmentMatch = true;
-            continue;
-          }
-        }
-
-        if (seg === reqSeg) {
-          staticMatches++;
-        } else {
-          pathMismatch = true;
-          break;
-        }
-      }
-      if (pathMismatch) continue;
+      const { staticMatches, wildcards, hasPartialSegmentMatch } = matchResult;
 
       // Query matching
       let queryPairs = 0;
@@ -437,25 +438,10 @@ export function findAllMatchingRules(
     if (rulePath.length > reqPath.length) continue;
 
     for (let start = 0; start <= reqPath.length - rulePath.length; start++) {
-      // Path matching
-      let staticMatches = 0;
-      let wildcards = 0;
-      let pathMismatch = false;
-      for (let i = 0; i < rulePath.length; i++) {
-        const seg = rulePath[i];
-        const reqSeg = reqPath[start + i];
-        if (seg === "*" || seg.startsWith(":")) {
-          wildcards++;
-          continue;
-        }
-        if (seg === reqSeg) {
-          staticMatches++;
-        } else {
-          pathMismatch = true;
-          break;
-        }
-      }
-      if (pathMismatch) continue;
+      const matchResult = calculatePathMatchScore(rulePath, reqPath, start);
+      if (!matchResult.isMatch) continue;
+
+      const { staticMatches, wildcards } = matchResult;
 
       // Query matching
       let queryPairs = 0;

@@ -16,7 +16,7 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts, resetAllLoginAttempts, getBlockedIps, blockIp } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { findMatchingRule, findAllMatchingRules } from "@shared/ruleMatching";
+import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
@@ -47,6 +47,32 @@ const requireAuth = (req: any, res: any, next: any) => {
   }
   next();
 };
+
+function handleRouteError(res: any, error: unknown, context: string) {
+  console.error(`${context} error:`, error instanceof Error ? error.message : String(error));
+  if (error instanceof Error) {
+    let cleanMessage = error.message;
+
+    // Handle Zod validation errors specifically
+    if (error.message.includes('[') && error.message.includes('"message"')) {
+      try {
+        const zodErrors = JSON.parse(error.message);
+        if (Array.isArray(zodErrors) && zodErrors.length > 0) {
+          cleanMessage = zodErrors[0].message || "Ungültige Eingabedaten";
+        }
+      } catch (parseError) {
+        // If parsing fails, use a generic message
+        cleanMessage = "Ungültige Eingabedaten. Bitte überprüfen Sie Ihre Eingaben.";
+      }
+    }
+
+    res.status(400).json({
+      error: cleanMessage
+    });
+  } else {
+    res.status(400).json({ error: "Ungültige Regel-Daten" });
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -437,30 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(rule);
       }
     } catch (error) {
-      console.error("Create rule error:", error instanceof Error ? error.message : String(error));
-      if (error instanceof Error) {
-        // Extract clean error message from Zod validation errors
-        let cleanMessage = error.message;
-        
-        // Handle Zod validation errors specifically
-        if (error.message.includes('[') && error.message.includes('"message"')) {
-          try {
-            const zodErrors = JSON.parse(error.message);
-            if (Array.isArray(zodErrors) && zodErrors.length > 0) {
-              cleanMessage = zodErrors[0].message || "Ungültige Eingabedaten";
-            }
-          } catch (parseError) {
-            // If parsing fails, use a generic message
-            cleanMessage = "Ungültige Eingabedaten. Bitte überprüfen Sie Ihre Eingaben.";
-          }
-        }
-        
-        res.status(400).json({ 
-          error: cleanMessage
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Regel-Daten" });
-      }
+      handleRouteError(res, error, "Create rule");
     }
   });
 
@@ -492,30 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(rule);
     } catch (error) {
-      console.error("Update rule error:", error instanceof Error ? error.message : String(error));
-      if (error instanceof Error) {
-        // Extract clean error message from Zod validation errors
-        let cleanMessage = error.message;
-        
-        // Handle Zod validation errors specifically
-        if (error.message.includes('[') && error.message.includes('"message"')) {
-          try {
-            const zodErrors = JSON.parse(error.message);
-            if (Array.isArray(zodErrors) && zodErrors.length > 0) {
-              cleanMessage = zodErrors[0].message || "Ungültige Eingabedaten";
-            }
-          } catch (parseError) {
-            // If parsing fails, use a generic message
-            cleanMessage = "Ungültige Eingabedaten. Bitte überprüfen Sie Ihre Eingaben.";
-          }
-        }
-        
-        res.status(400).json({ 
-          error: cleanMessage
-        });
-      } else {
-        res.status(400).json({ error: "Ungültige Regel-Daten" });
-      }
+      handleRouteError(res, error, "Update rule");
     }
   });
 
