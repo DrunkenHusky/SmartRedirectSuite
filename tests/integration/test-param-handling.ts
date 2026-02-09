@@ -24,25 +24,25 @@ const defaultNewDomain = 'https://thisisthenewurl.com/';
 
 test('Partial Rule - Default (Keep Params)', () => {
   const rule = createRule('/old', 'target', 'partial', false);
-  const result = generateUrlWithRule('https://old.com/old?q=1', rule, defaultNewDomain);
+  const  = generateUrlWithRule().url;
   assert.is(result, 'https://thisisthenewurl.com/target?q=1');
 });
 
 test('Partial Rule - Discard Params', () => {
   const rule = createRule('/old', 'target', 'partial', true);
-  const result = generateUrlWithRule('https://old.com/old?q=1&foo=bar', rule, defaultNewDomain);
+  const  = generateUrlWithRule().url;
   assert.is(result, 'https://thisisthenewurl.com/target');
 });
 
 test('Domain Rule - Default (Keep Params)', () => {
   const rule = createRule('old.com', 'https://new.com', 'domain', false);
-  const result = generateUrlWithRule('https://old.com/path?q=1', rule, defaultNewDomain);
+  const  = generateUrlWithRule().url;
   assert.is(result, 'https://new.com/path?q=1');
 });
 
 test('Domain Rule - Discard Params', () => {
   const rule = createRule('old.com', 'https://new.com', 'domain', true);
-  const result = generateUrlWithRule('https://old.com/path?q=1&foo=bar#hash', rule, defaultNewDomain);
+  const  = generateUrlWithRule().url;
   // Expect query params removed but path kept. Hash usually client side but if in input string it might persist or be stripped depending on implementation.
   // Current impl of discardQueryParams for domain uses split('?') which removes everything after '?' including hash if it comes after ?
   // But wait, hash is AFTER query params in URL standard.
@@ -93,19 +93,19 @@ test('Domain Rule - Discard Params', () => {
 
 test('Wildcard Rule - Default (Strip Params)', () => {
   const rule = createRule('/old/path', 'https://new.com/fixed', 'wildcard', false, false);
-  const result = generateUrlWithRule('https://old.com/old/path?q=1', rule, defaultNewDomain);
+  const  = generateUrlWithRule().url;
   assert.is(result, 'https://new.com/fixed');
 });
 
 test('Wildcard Rule - Keep Params', () => {
   const rule = createRule('/old/path', 'https://new.com/fixed', 'wildcard', false, true);
-  const result = generateUrlWithRule('https://old.com/old/path?q=1&foo=bar', rule, defaultNewDomain);
+  const  = generateUrlWithRule().url;
   assert.is(result, 'https://new.com/fixed?q=1&foo=bar');
 });
 
 test('Wildcard Rule - Keep Params (Target has existing params)', () => {
   const rule = createRule('/old/path', 'https://new.com/fixed?static=1', 'wildcard', false, true);
-  const result = generateUrlWithRule('https://old.com/old/path?q=1', rule, defaultNewDomain);
+  const  = generateUrlWithRule().url;
   // Should append
   assert.ok(result.includes('static=1'));
   assert.ok(result.includes('q=1'));

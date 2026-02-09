@@ -7,6 +7,8 @@ type ApplicationMetadata = {
   version: string;
   /** Human friendly application label */
   displayName: string;
+  /** Repository URL */
+  repositoryUrl: string;
 };
 
 const normalizeName = (name: unknown): string => {
@@ -44,6 +46,7 @@ export const APPLICATION_METADATA: ApplicationMetadata = Object.freeze({
   name: normalizedName,
   version: normalizedVersion,
   displayName: formatDisplayName(normalizedName),
+  repositoryUrl: "https://github.com/DrunkenHusky/SmartRedirectSuite",
 });
 
 export default APPLICATION_METADATA;

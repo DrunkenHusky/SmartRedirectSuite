@@ -118,6 +118,13 @@ export const urlTrackingSchema = z.object({
     })
     .optional()
     .nullable(),
+
+  redirectStrategy: z.enum(['rule', 'smart-search', 'domain-fallback']).optional(),
+  appliedGlobalRules: z.array(z.object({
+    id: z.string().uuid(),
+    type: z.enum(['search', 'static', 'kept']),
+    description: z.string()
+  })).optional().default([]),
 });
 
 export const insertUrlTrackingSchema = urlTrackingSchema.omit({
@@ -192,6 +199,33 @@ export const importRulesRequestSchema = z.object({
 /**
  * Enhanced General Settings Schema with comprehensive validation
  */
+
+/**
+ * Global Rule Schemas
+ */
+export const globalSearchAndReplaceSchema = z.object({
+  id: z.string().uuid(),
+  search: z.string().min(1, "Search term required"),
+  replace: z.string().optional().default(""),
+  caseSensitive: z.boolean().default(false),
+  order: z.number().int().default(0),
+});
+
+export const globalStaticQueryParamSchema = z.object({
+  id: z.string().uuid(),
+  key: z.string().min(1, "Key required"),
+  value: z.string(),
+  skipEncoding: z.boolean().default(false),
+});
+
+export const globalKeptQueryParamSchema = z.object({
+  id: z.string().uuid(),
+  keyPattern: z.string().min(1, "Pattern required"),
+  valuePattern: z.string().optional(),
+  targetKey: z.string().optional(),
+  skipEncoding: z.boolean().default(false),
+});
+
 export const generalSettingsSchema = z.object({
   id: z.string().uuid("Invalid settings ID"),
   
@@ -444,7 +478,12 @@ export const generalSettingsSchema = z.object({
     .max(365, "Zeitraum darf maximal 365 Tage sein")
     .default(30),
 
-  updatedAt: z.string().datetime("Invalid update timestamp"),
+
+  // Global Redirect Rules
+  globalSearchAndReplace: z.array(globalSearchAndReplaceSchema).optional().default([]),
+  globalStaticQueryParams: z.array(globalStaticQueryParamSchema).optional().default([]),
+  globalKeptQueryParams: z.array(globalKeptQueryParamSchema).optional().default([]),
+updatedAt: z.string().datetime("Invalid update timestamp"),
 }).strict().refine((data) => {
   if (data.defaultRedirectMode === 'search') {
     return !!data.defaultSearchUrl && data.defaultSearchUrl.trim().length > 0;
@@ -524,3 +563,7 @@ export type ImportRulesRequest = z.infer<typeof importRulesRequestSchema>;
 export type ImportSettingsRequest = z.infer<typeof importSettingsRequestSchema>;
 export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
 export type InsertGeneralSettings = z.infer<typeof insertGeneralSettingsSchema>;
+
+export type GlobalSearchAndReplace = z.infer<typeof globalSearchAndReplaceSchema>;
+export type GlobalStaticQueryParam = z.infer<typeof globalStaticQueryParamSchema>;
+export type GlobalKeptQueryParam = z.infer<typeof globalKeptQueryParamSchema>;

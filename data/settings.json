@@ -32,7 +32,7 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2026-02-04T16:02:41.882Z",
+  "updatedAt": "2026-02-06T18:40:05.273Z",
   "popupMode": "inline",
   "showLinkQualityGauge": true,
   "headerLogoUrl": "",
@@ -58,7 +58,7 @@
     {
       "pattern": "[?&]file=([^&]+)",
       "order": 0,
-      "pathPattern": "/documents",
+      "pathPattern": "",
       "skipEncoding": true
     }
   ],
@@ -75,5 +75,16 @@
   "feedbackSmartSearchFallbackQuestion": "Konntest du mit der Suche den gewünschten Inhalt finden?",
   "showSatisfactionTrend": true,
   "satisfactionTrendFeedbackOnly": false,
-  "satisfactionTrendDays": 30
+  "satisfactionTrendDays": 30,
+  "globalSearchAndReplace": [
+    {
+      "id": "e0e85d18-4b98-4524-be85-79545721c4f8",
+      "search": "/Seiten/",
+      "replace": "/SitePages/",
+      "caseSensitive": false,
+      "order": 0
+    }
+  ],
+  "globalStaticQueryParams": [],
+  "globalKeptQueryParams": []
 }

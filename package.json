@@ -9,7 +9,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:../vite.config",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "test:unit": "tsx tests/shared/appMetadata.test.ts && tsx tests/client/url-utils.test.ts",
     "test": "npm run test:unit && tsx tests/integration/test-url-transformation.js && tsx tests/integration/test-rule-specificity.ts && tsx tests/integration/test-server-features.js && tsx tests/integration/test-vite-config.ts",
@@ -37,7 +37,7 @@
     "cross-env": "^10.1.0",
     "csv-parse": "^6.1.0",
     "csv-stringify": "^6.6.0",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.2.4",
     "esbuild": "^0.27.1",
     "express": "^5.2.1",
     "express-session": "^1.18.2",
@@ -56,11 +56,14 @@
     "wouter": "^3.8.1",
     "zod": "^4.1.13"
   },
+  "overrides": {
+    "undici": "^6.23.0"
+  },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "@tailwindcss/vite": "^4.1.17",
+    "@tailwindcss/vite": "^4.1.18",
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.18.2",
     "@types/multer": "^2.0.0",

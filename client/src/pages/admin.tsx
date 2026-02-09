@@ -1,3 +1,4 @@
+import { ValidationModal } from "@/components/admin/ValidationModal";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,7 @@ import {
   FileJson,
   List,
   LogOut,
+  RefreshCw,
   Trash,
   Search,
   ArrowUpDown,
@@ -62,7 +64,8 @@ import {
   Filter,
   Share2,
   TrendingUp,
-  Activity
+  Activity,
+  Globe
 } from "lucide-react";
 import {
   Table,
@@ -81,6 +84,7 @@ import { RulesCardList } from "@/components/admin/RulesCardList";
 import { ImportPreviewTable } from "@/components/admin/ImportPreviewTable";
 import { StatsTable } from "@/components/admin/StatsTable";
 import { SatisfactionChart } from "@/components/admin/SatisfactionChart";
+import { GlobalRulesSettings } from "@/components/admin/GlobalRulesSettings";
 
 import type { UrlRule, GeneralSettings } from "@shared/schema";
 
@@ -204,6 +208,9 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
 }
 
 export default function AdminPage({ onClose }: AdminPageProps) {
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showValidationReloadDialog, setShowValidationReloadDialog] = useState(false);
+  const [validationReloadTrigger, setValidationReloadTrigger] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Default to false until verified
   const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Start with checking auth on mount
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
@@ -379,6 +386,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
     smartSearchRegex: "" as string | undefined | null,
     smartSearchRules: [] as { pattern: string; order: number; pathPattern?: string; searchUrl?: string; skipEncoding?: boolean }[],
+    globalSearchAndReplace: [] as any[],
+    globalStaticQueryParams: [] as any[],
+    globalKeptQueryParams: [] as any[],
     enableFeedbackSurvey: false,
     feedbackSurveyTitle: "Hat die Weiterleitung funktioniert?",
     feedbackSurveyQuestion: "Bitte bewerten Sie die Zielseite.",
@@ -497,6 +507,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   // Queries - Use paginated API for better performance with large datasets
+  const { data: allRules, isLoading: isLoadingAllRules } = useQuery({
+    queryKey: ["/api/admin/rules"],
+    enabled: showValidationModal && isAuthenticated,
+    queryFn: async () => {
+      const response = await fetch("/api/admin/rules", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed");
+      return response.json();
+    },
+  });
   const { data: paginatedRulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ["/api/admin/rules/paginated", rulesPage, rulesPerPage, debouncedRulesSearchQuery, rulesSortBy, rulesSortOrder],
     enabled: isAuthenticated,
@@ -727,6 +746,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         defaultSearchMessage: settingsData.defaultSearchMessage || "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
         smartSearchRegex: settingsData.smartSearchRegex || "",
         smartSearchRules: settingsData.smartSearchRules || [],
+        globalSearchAndReplace: settingsData.globalSearchAndReplace || [],
+        globalStaticQueryParams: settingsData.globalStaticQueryParams || [],
+        globalKeptQueryParams: settingsData.globalKeptQueryParams || [],
         enableFeedbackSurvey: settingsData.enableFeedbackSurvey ?? false,
         feedbackSurveyTitle: settingsData.feedbackSurveyTitle || "Hat die Weiterleitung funktioniert?",
         feedbackSurveyQuestion: settingsData.feedbackSurveyQuestion || "Bitte bewerten Sie die Zielseite.",
@@ -760,6 +782,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel erstellt", description: "Die URL-Regel wurde erfolgreich erstellt." });
     },
     onError: (error: any) => {
@@ -822,6 +845,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde erfolgreich aktualisiert." });
     },
     onError: (error: any) => {
@@ -1181,6 +1205,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   });
 
   const resetRuleForm = () => {
+      if (showValidationModal) setShowValidationReloadDialog(true);
+      if (showValidationModal) setShowValidationReloadDialog(true);
     setRuleForm({
       matcher: "",
       targetUrl: "",
@@ -1208,6 +1234,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel erstellt", description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
     },
     onError: (error: any) => {
@@ -1228,6 +1255,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setValidationError(null);
       setShowValidationDialog(false);
       resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
     },
     onError: (error: any) => {
@@ -1945,7 +1973,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
             {/* Enhanced Tab Navigation */}
             <div className="w-full overflow-hidden">
-              <TabsList className="grid w-full grid-cols-4 h-auto">
+              <TabsList className="grid w-full grid-cols-5 h-auto">
                 <TabsTrigger value="general" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="truncate leading-tight text-center">Allgemein</span>
@@ -1953,6 +1981,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <TabsTrigger value="rules" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="truncate leading-tight text-center">Regeln</span>
+                </TabsTrigger>
+                <TabsTrigger value="global-rules" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
+                  <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate leading-tight text-center">Global</span>
                 </TabsTrigger>
                 <TabsTrigger value="stats" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -3480,10 +3512,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </Button>
                       )}
                       
-                      {/* Create New Rule Button */}
+                                            {/* Validation Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-initial sm:w-auto"
+                        onClick={() => setShowValidationModal(true)}
+                      >
+                         <RefreshCw className="h-4 w-4 mr-2" />
+                         Konfigurationsvalidierung
+                      </Button>
+
+{/* Create New Rule Button */}
                       <Button
                         onClick={() => {
                           resetRuleForm();
+      if (showValidationModal) setShowValidationReloadDialog(true);
                           setIsRuleDialogOpen(true);
                         }}
                         size="sm"
@@ -3623,6 +3667,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             </TabsContent>
 
             {/* Statistics Tab */}
+            <TabsContent value="global-rules">
+              <GlobalRulesSettings
+                settings={generalSettings as any}
+                onUpdate={(updates) => setGeneralSettings({ ...generalSettings, ...updates })}
+                onSave={() => updateSettingsMutation.mutate(generalSettings, { onSuccess: () => { toast({ title: "Einstellungen gespeichert", description: "Die globalen Regeln wurden erfolgreich aktualisiert.", }); } })}
+                isSaving={updateSettingsMutation.isPending}
+                onOpenValidation={() => setShowValidationModal(true)}
+              />
+            </TabsContent>
             <TabsContent value="stats" className="space-y-6">
               {/* Statistics View Navigation */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -4204,6 +4257,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           showReferrer={generalSettings.enableReferrerTracking}
                           enableLinkQuality={generalSettings.showLinkQualityGauge}
                           enableUserFeedback={generalSettings.enableFeedbackSurvey}
+                          settings={generalSettings}
+                          onNavigateToTab={handleTabChange}
                         />
                         
                         {/* Pagination Controls for Browser View */}
@@ -5716,6 +5771,41 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             >
               Verstanden & Speichern
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+      <ValidationModal
+        open={showValidationModal}
+        onOpenChange={setShowValidationModal}
+        onEditRule={(ruleId) => {
+            const sourceRules = Array.isArray(allRules) ? allRules : rules;
+            const rule = sourceRules.find((r: any) => r.id === ruleId);
+            if (rule) {
+                handleEditRule(rule);
+            }
+        }}
+        rules={Array.isArray(allRules) ? allRules : []}
+        settings={settingsData}
+        reloadTrigger={validationReloadTrigger}
+        isLoadingRules={isLoadingAllRules}
+      />
+
+      <AlertDialog open={showValidationReloadDialog} onOpenChange={setShowValidationReloadDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Validierung neu laden?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sie haben eine Regel geändert. Möchten Sie die Konfigurationsvalidierung mit den neuen Einstellungen neu laden?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowValidationReloadDialog(false)}>Nein</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+                setShowValidationReloadDialog(false);
+                setValidationReloadTrigger(prev => prev + 1);
+            }}>Ja, neu laden</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

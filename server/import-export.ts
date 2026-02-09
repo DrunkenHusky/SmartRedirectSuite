@@ -375,4 +375,59 @@ export class ImportExportService {
     const buffer = write(workbook, { type: 'buffer', bookType: 'xlsx' });
     return buffer as unknown as Buffer;
   }
+  /**
+   * Extract URLs from uploaded file (First column)
+   */
+  static extractUrls(buffer: Buffer, filename: string, limit: number = 1000): { urls: string[], truncated: boolean, total: number } {
+    const ext = filename.split('.').pop()?.toLowerCase();
+
+    // Check supported extensions
+    if (!['csv', 'xlsx', 'xls'].includes(ext || '')) {
+        throw new Error(`Unsupported file format: ${ext}`);
+    }
+
+    try {
+      // Use xlsx library for all formats (handles CSV BOM, encoding, etc.)
+      const workbook = read(buffer, { type: 'buffer' });
+      const firstSheetName = workbook.SheetNames[0];
+      if (!firstSheetName) {
+        throw new Error("Empty workbook or no sheets found");
+      }
+      const worksheet = workbook.Sheets[firstSheetName];
+      // header: 1 returns array of arrays [["url1"], ["url2"]]
+      const rows: any[] = utils.sheet_to_json(worksheet, { header: 1 });
+
+      const urls: string[] = [];
+      for (const row of rows) {
+        let val: any;
+        if (Array.isArray(row)) {
+          val = row[0];
+        } else if (typeof row === 'object' && row !== null) {
+          val = Object.values(row)[0];
+        } else {
+          val = row;
+        }
+
+        if (val && typeof val === 'string' && val.trim().length > 0) {
+          const cleaned = val.trim();
+          // Skip common header rows
+          if (['original url', 'url', 'alte url', 'old url', 'source', 'quelle'].includes(cleaned.toLowerCase())) {
+            continue;
+          }
+          urls.push(cleaned);
+        }
+      }
+
+      const total = urls.length;
+      const truncated = total > limit;
+      return {
+        urls: urls.slice(0, limit),
+        truncated,
+        total
+      };
+    } catch (error) {
+       console.error("Error extracting URLs:", error);
+       throw new Error(`Failed to parse file: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 }

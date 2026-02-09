@@ -1,3 +1,4 @@
+import { traceUrlGeneration } from "@shared/url-trace";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createHash, timingSafeEqual } from "crypto";
@@ -849,8 +850,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const includeReferrer = settings.enableReferrerTracking;
           // CSV-Export
           const csvHeader = includeReferrer
-            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n'
-            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag\n';
+            ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag,Strategie,Globale Regeln\n'
+            : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag,Strategie,Globale Regeln\n';
 
           const csvData = trackingData.map(track => {
             // Prepare new fields
@@ -858,6 +859,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const feedback = track.feedback || '';
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
             const userProposedUrl = track.userProposedUrl || '';
+            const strategy = track.redirectStrategy || '';
+            const globalRules = (track.appliedGlobalRules || []).map(r => r.description).join('; ');
 
             if (includeReferrer) {
               return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
@@ -1266,6 +1269,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  // Extract URLs tool endpoint
+  app.post("/api/admin/tools/extract-urls", requireAuth, importUpload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+
+      const buffer = await import('fs/promises').then(fs => fs.readFile(req.file!.path));
+
+      const result = ImportExportService.extractUrls(buffer, req.file.originalname, 1000);
+
+      await import('fs/promises').then(fs => fs.unlink(req.file!.path)).catch(console.error);
+
+      res.json(result);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Extract URLs error:", errorMessage);
+      res.status(400).json({ error: errorMessage });
+    }
+  });
+
   // Export rules as CSV/Excel
   app.get("/api/admin/export/rules", requireAuth, async (req, res) => {
     try {
@@ -1296,6 +1322,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  // Validation Endpoint
+  app.post("/api/admin/validate-urls", requireAuth, async (req, res) => {
+    try {
+      const { urls } = z.object({ urls: z.array(z.string()) }).parse(req.body);
+      const settings = await storage.getGeneralSettings();
+      const config = { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection };
+      const rules = await storage.getProcessedUrlRules(config);
+
+      const results = urls.map(url => {
+          let matchDetails = null;
+          try {
+            matchDetails = findMatchingRule(url, rules, config);
+          } catch (e) {
+            // Ignore error, treat as no match or invalid URL
+          }
+
+          let traceResult;
+          if (matchDetails?.rule) {
+              traceResult = traceUrlGeneration(url, matchDetails.rule, settings.defaultNewDomain, settings);
+          } else {
+               const dummyRule = {
+                   id: 0, matcher: '', targetUrl: '', redirectType: 'fallback',
+                   order: 0, autoRedirect: false, createdAt: ''
+               };
+               traceResult = traceUrlGeneration(url, dummyRule, settings.defaultNewDomain, settings);
+          }
+
+          return {
+              url,
+              traceResult,
+              matchDetails: matchDetails ? {
+                  quality: matchDetails.quality,
+                  level: matchDetails.level,
+                  score: matchDetails.score,
+                  ruleId: matchDetails.rule.id,
+                  rule: matchDetails.rule
+              } : null
+          };
+      });
+
+      res.json(results);
+    } catch (error) {
+      console.error("Validation error:", error);
+      res.status(400).json({ error: "Validation failed" });
+    }
+  });
+
   const httpServer = createServer(app);
+
   return httpServer;
 }
