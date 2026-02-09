@@ -1,3 +1,32 @@
+# [2.17.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.16.0...v2.17.0) (2026-02-09)
+
+
+### Bug Fixes
+
+* add @tailwindcss/vite plugin to vite.config.ts ([453cbc7](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/453cbc7352dd1f7eb28474a7f73c5afbeda715d6))
+* **deps:** move @tailwindcss/vite to dependencies ([c584965](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/c5849659efa12c27b5abacc76cb599b252db253d))
+* ensure configuration validation tool files and integration are persisted ([2fea0ea](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/2fea0eab4d073d48a19ecf36b465e814cae3e7a0))
+* exclude vite.config from server bundle ([ea01bdb](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ea01bdb4fddf1a9cc8185eb95ffaa55fe55e8f30))
+* improve validation tool UI and search fallback ([9bed0a0](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/9bed0a09a0fe98faf50bf2b286e0d7b07b68039c))
+* make footer version link more visible ([0a8fff1](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0a8fff1b586d0669fc503505aa6d67b7f4a45da0))
+* prevent crash in validation tool and improve UI ([db2dc9e](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/db2dc9ef779894cd6bb38e5571a5ece5aad45177))
+* resolve CI build errors ([0bd5fd4](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/0bd5fd49379faeb7e36e26d9263e6973dcb1d1ac))
+
+
+### Features
+
+* add configuration validation tool ([812e447](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/812e447b2a50420953b8ad00b4d23d83c9f39bc0))
+* add configuration validation tool ([49d6e5f](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/49d6e5f32634864c9a368c738380449a8e7b82e6))
+* **admin:** make validation table URLs clickable ([74c5c7d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/74c5c7d77ce4aff9f9d29f0e6dcdc5973ab3dac3))
+* enhance ValidationModal UI with stacked URLs, expand/collapse all, and better details layout ([042b356](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/042b3564bea77d2326485728b58b58e5fda95c2b))
+* global redirect rules and extended logging ([537947b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/537947bdeccda9b9c6d9370b8c16ced304716225))
+* Link version number in footer to GitHub repository ([7b78665](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/7b786651e1889033867f541c7a1935c1c8d44150))
+
+
+### Reverts
+
+* undo changes to footer visibility ([b616e16](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b616e16c2eb0213ead3e67c352628c98991d8579))
+
 # [2.16.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.15.0...v2.16.0) (2026-02-04)
 
 
