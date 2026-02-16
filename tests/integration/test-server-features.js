@@ -23,7 +23,7 @@ process.chdir(tempDir);
 
 // Dynamic imports after changing working directory so storage uses temp data path
 // Note: Dynamic import("./...") resolves relative to the current module file
-const { registerRoutes } = await import("../../server/routes.ts");
+const { registerRoutes } = await import("../../server/routes/index.ts");
 const { FileSessionStore } = await import("../../server/fileSessionStore.ts");
 const { APPLICATION_METADATA } = await import("../../shared/appMetadata.ts");
 

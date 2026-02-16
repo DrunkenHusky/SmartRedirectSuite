@@ -7,6 +7,15 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { FileSessionStore } from "./fileSessionStore";
 import { rateLimitMiddleware, adminRateLimitMiddleware, csrfCheck } from "./middleware/security";
+import { errorHandler } from "./middleware/errorHandler";
+
+// Extend Express Session interface
+declare module 'express-session' {
+  interface SessionData {
+    isAdminAuthenticated?: boolean;
+    adminLoginTime?: number;
+  }
+}
 
 const app = express();
 
@@ -170,14 +179,7 @@ app.use('/api/admin', csrfCheck);
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    if (!res.headersSent) {
-      res.status(status).json({ message });
-    }
-    console.error('Server error:', err);
-  });
+  app.use(errorHandler);
 
   if (app.get("env") === "development") {
     await setupVite(app, server);
