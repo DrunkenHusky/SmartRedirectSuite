@@ -5166,6 +5166,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 </div>
                 )}
 
+            {ruleForm.redirectType === 'wildcard' && (
+              <div className="border-t pt-4">
+                <div className="flex items-start space-x-3">
+                  <Switch
+                    checked={ruleForm.forwardQueryParams}
+                    onCheckedChange={(checked) => setRuleForm(prev => ({
+                        ...prev,
+                        forwardQueryParams: checked,
+                        // If Forward is ON, Discard must be OFF (to avoid confusion in backend)
+                        // If Forward is OFF, Discard must be ON (to trigger keptQueryParams logic)
+                        discardQueryParams: !checked
+                    }))}
+                  />
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Alle Link-Parameter beibehalten
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Wenn aktiviert, werden die ursprünglichen Query-Parameter 1:1 an die Ziel-URL angehängt.
+                      Deaktivieren Sie dies, um spezifische Parameter auszuwählen oder umzubenennen.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
                 {/* Show Kept Params config if Discard is ON (Partial/Domain) OR Forward is OFF (Wildcard) */}
                 {((ruleForm.redirectType !== 'wildcard' && ruleForm.discardQueryParams) || (ruleForm.redirectType === 'wildcard' && !ruleForm.forwardQueryParams)) && (
                   <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 ml-4">
@@ -5326,31 +5351,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               </div>
             )}
 
-            {ruleForm.redirectType === 'wildcard' && (
-              <div className="border-t pt-4">
-                <div className="flex items-start space-x-3">
-                  <Switch
-                    checked={ruleForm.forwardQueryParams}
-                    onCheckedChange={(checked) => setRuleForm(prev => ({
-                        ...prev,
-                        forwardQueryParams: checked,
-                        // If Forward is ON, Discard must be OFF (to avoid confusion in backend)
-                        // If Forward is OFF, Discard must be ON (to trigger keptQueryParams logic)
-                        discardQueryParams: !checked
-                    }))}
-                  />
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Alle Link-Parameter beibehalten
-                    </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Wenn aktiviert, werden die ursprünglichen Query-Parameter 1:1 an die Ziel-URL angehängt.
-                      Deaktivieren Sie dies, um spezifische Parameter auszuwählen oder umzubenennen.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="border-t pt-4">
               <div className="flex items-start space-x-3">
