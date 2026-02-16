@@ -1,3 +1,10 @@
+## [2.17.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.17.0...v2.17.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* handle wildcard and domain redirect types correctly in traceUrlGeneration ([85306f9](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/85306f996c0da9ee1743478166abc3ca7eeae257))
+
 # [2.17.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.16.0...v2.17.0) (2026-02-09)
 
 
