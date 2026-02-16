@@ -113,6 +113,86 @@ export function traceUrlGeneration(
       });
       currentUrl = nextUrl;
 
+    } else if (redirectType === 'wildcard') {
+      // Logic for Wildcard Match
+      let nextUrl = '';
+      const cleanMatcher = rule.matcher.replace(/\*$/, '');
+      const rawTarget = rule.targetUrl || '';
+
+      let workingOldPath = oldPath;
+
+      // Handle query params discarding for wildcard
+      if (rule.discardQueryParams) {
+           if (workingOldPath.includes('?')) {
+               const queryIndex = workingOldPath.indexOf('?');
+               const hashIndex = workingOldPath.indexOf('#');
+               if (hashIndex !== -1 && hashIndex > queryIndex) {
+                    workingOldPath = workingOldPath.substring(0, queryIndex) + workingOldPath.substring(hashIndex);
+               } else {
+                    workingOldPath = workingOldPath.substring(0, queryIndex);
+               }
+           }
+      }
+
+      // Check if it's a domain wildcard or path wildcard
+      const isDomainMatcher = !rule.matcher.startsWith('/');
+
+      if (isDomainMatcher) {
+          // Fall back to domain replacement for domain wildcard for now
+          const targetDomain = rule.targetUrl || cleanDomain;
+          nextUrl = generateNewUrl(oldUrl, targetDomain);
+      } else {
+          // Path replacement
+          if (workingOldPath.startsWith(cleanMatcher)) {
+              const suffix = workingOldPath.substring(cleanMatcher.length);
+
+              let targetBase = rawTarget;
+
+              // Smart slash handling: if matcher implies directory wildcard, ensure target has trailing slash
+              if (cleanMatcher.endsWith('/') && !targetBase.endsWith('/')) {
+                  targetBase += '/';
+              }
+
+              // Ensure targetBase has leading slash if it's a relative path (not http/s) AND not empty
+              if (!targetBase.startsWith('http') && !targetBase.startsWith('/') && targetBase.length > 0) {
+                   targetBase = '/' + targetBase;
+              }
+
+              if (targetBase.startsWith('http')) {
+                  nextUrl = targetBase + suffix;
+              } else {
+                  // Standard path concatenation
+                  nextUrl = cleanDomain + targetBase + suffix;
+              }
+          } else {
+              // Fallback
+              nextUrl = cleanDomain + workingOldPath;
+          }
+      }
+
+      trace.push({
+          description: "Applied Wildcard Rule",
+          urlBefore: currentUrl,
+          urlAfter: nextUrl,
+          changed: currentUrl !== nextUrl,
+          type: 'rule'
+      });
+      currentUrl = nextUrl;
+
+    } else if (redirectType === 'domain') {
+      // Logic for Domain Replacement
+      const targetDomain = rule.targetUrl || cleanDomain;
+      const nextUrl = generateNewUrl(oldUrl, targetDomain);
+
+      trace.push({
+          description: "Applied Domain Replacement Rule",
+          urlBefore: currentUrl,
+          urlAfter: nextUrl,
+          changed: currentUrl !== nextUrl,
+          type: 'rule'
+      });
+      currentUrl = nextUrl;
+
     } else {
         let fallbackUrl = currentUrl;
 
