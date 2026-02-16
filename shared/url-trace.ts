@@ -113,6 +113,55 @@ export function traceUrlGeneration(
       });
       currentUrl = nextUrl;
 
+    } else if (redirectType === 'wildcard') {
+        let nextUrl = '';
+        const targetUrl = rule.targetUrl || '';
+
+        if (targetUrl.match(/^https?:\/\//)) {
+            nextUrl = targetUrl;
+        } else {
+            const cleanTarget = targetUrl.startsWith('/') ? targetUrl : '/' + targetUrl;
+            nextUrl = cleanDomain + cleanTarget;
+        }
+
+        trace.push({
+            description: "Applied Wildcard Rule",
+            urlBefore: currentUrl,
+            urlAfter: nextUrl,
+            changed: currentUrl !== nextUrl,
+            type: 'rule'
+        });
+        currentUrl = nextUrl;
+
+    } else if (redirectType === 'domain') {
+         let nextUrl = '';
+         const targetUrl = rule.targetUrl || '';
+         let targetBase = cleanDomain;
+
+         if (targetUrl) {
+             if (targetUrl.match(/^https?:\/\//)) {
+                 targetBase = targetUrl.replace(/\/$/, '');
+             } else {
+                 if (!targetUrl.startsWith('/')) {
+                     targetBase = 'https://' + targetUrl.replace(/\/$/, '');
+                 } else {
+                     targetBase = cleanDomain + targetUrl.replace(/\/$/, '');
+                 }
+             }
+         }
+
+         const normalizedOldPath = oldPath.startsWith('/') ? oldPath : '/' + oldPath;
+         nextUrl = targetBase + normalizedOldPath;
+
+         trace.push({
+            description: "Applied Domain Rule",
+            urlBefore: currentUrl,
+            urlAfter: nextUrl,
+            changed: currentUrl !== nextUrl,
+            type: 'rule'
+         });
+         currentUrl = nextUrl;
+
     } else {
         let fallbackUrl = currentUrl;
 
