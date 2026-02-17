@@ -52,4 +52,32 @@ test.describe('Import Encoding Logic', () => {
     const resultRaw = ImportExportService.normalizeRules(rawRules, { encodeImportedUrls: false });
     expect(resultRaw[0].rule.matcher).toBe('/päth');
   });
+
+  test('should handle already encoded URLs correctly (avoid double encoding)', () => {
+    const rawRules = [
+      {
+        'Matcher': '/path%20with%20spaces',
+        'Target URL': 'https://example.com/target%20with%20spaces'
+      }
+    ];
+
+    const result = ImportExportService.normalizeRules(rawRules, { encodeImportedUrls: true });
+    // Should remain single-encoded
+    expect(result[0].rule.matcher).toBe('/path%20with%20spaces');
+    expect(result[0].rule.targetUrl).toBe('https://example.com/target%20with%20spaces');
+  });
+
+  test('should handle malformed encoded URLs gracefully', () => {
+    const rawRules = [
+      {
+        'Matcher': '/path%with%invalid',
+        'Target URL': 'https://example.com/target%with%invalid'
+      }
+    ];
+
+    const result = ImportExportService.normalizeRules(rawRules, { encodeImportedUrls: true });
+    // Should encode the literal % as %25
+    expect(result[0].rule.matcher).toBe('/path%25with%25invalid');
+    expect(result[0].rule.targetUrl).toBe('https://example.com/target%25with%25invalid');
+  });
 });

@@ -91,10 +91,10 @@ export class ImportExportService {
       // Encode matcher and targetUrl to handle special characters and spaces if enabled
       if (options.encodeImportedUrls) {
         if (typeof rule.matcher === 'string') {
-          rule.matcher = encodeURI(rule.matcher);
+          try { rule.matcher = encodeURI(decodeURI(rule.matcher)); } catch (e) { rule.matcher = encodeURI(rule.matcher); }
         }
         if (typeof rule.targetUrl === 'string') {
-          rule.targetUrl = encodeURI(rule.targetUrl);
+          try { rule.targetUrl = encodeURI(decodeURI(rule.targetUrl)); } catch (e) { rule.targetUrl = encodeURI(rule.targetUrl); }
         }
       }
 
