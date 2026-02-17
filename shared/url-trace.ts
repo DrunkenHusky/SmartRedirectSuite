@@ -143,7 +143,7 @@ export function traceUrlGeneration(
           nextUrl = generateNewUrl(oldUrl, targetDomain);
       } else {
           // Path replacement
-          if (workingOldPath.startsWith(cleanMatcher)) {
+          if (workingOldPath.startsWith(cleanMatcher) || workingOldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
               const suffix = workingOldPath.substring(cleanMatcher.length);
 
               let targetBase = rawTarget;

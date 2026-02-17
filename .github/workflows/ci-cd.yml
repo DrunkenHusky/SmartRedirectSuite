@@ -23,6 +23,16 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+      - name: Ensure Valid Semver
+        run: |
+          VER=$(jq -r .version package.json)
+          if [[ "$VER" == *"."* ]]; then
+            echo "Version $VER seems valid."
+          else
+            echo "Version $VER is invalid (no dot). Resetting to 0.0.0-ci"
+            jq '.version = "0.0.0-ci"' package.json > package.json.tmp && mv package.json.tmp package.json
+            npm install --package-lock-only --ignore-scripts
+          fi
       - run: npm ci
       - run: npm test
       # Verify build works
@@ -48,6 +58,16 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Ensure Valid Semver
+        run: |
+          VER=$(jq -r .version package.json)
+          if [[ "$VER" == *"."* ]]; then
+            echo "Version $VER seems valid."
+          else
+            echo "Version $VER is invalid (no dot). Resetting to 0.0.0-ci"
+            jq '.version = "0.0.0-ci"' package.json > package.json.tmp && mv package.json.tmp package.json
+            npm install --package-lock-only --ignore-scripts
+          fi
       - run: npm ci
 
       - name: Semantic Release
