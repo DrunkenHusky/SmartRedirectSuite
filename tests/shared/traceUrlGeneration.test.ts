@@ -109,3 +109,17 @@ test('traceUrlGeneration: Wildcard Prefix', (t) => {
 
     assert.strictEqual(result.finalUrl, "https://new.com/newstuff");
 });
+
+test('traceUrlGeneration: Case-Insensitive Wildcard Match', (t) => {
+    const rule: any = {
+        matcher: "/news-center/news/lists/beitraege/post.aspx?id=2327",
+        targetUrl: "https://intranetnew.lolo.com/sites/Intranet-News/Lists/Beitraege/ViewPost.aspx?ID=1",
+        redirectType: "wildcard",
+        discardQueryParams: false
+    };
+
+    const oldUrl = "https://smartredirectsuite.onrender.com/News-Center/News/Lists/Beitraege/Post.aspx?ID=2327";
+    const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
+
+    assert.strictEqual(result.finalUrl, "https://intranetnew.lolo.com/sites/Intranet-News/Lists/Beitraege/ViewPost.aspx?ID=1");
+});
