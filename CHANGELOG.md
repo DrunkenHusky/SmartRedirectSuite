@@ -1,3 +1,10 @@
+## [2.17.2](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.17.1...v2.17.2) (2026-02-17)
+
+
+### Bug Fixes
+
+* prevent double encoding of already encoded URLs during import ([89344cc](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/89344cc7b0c7c3afda4cd2c27aabb3f2a1a5bcda))
+
 ## [2.17.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.17.0...v2.17.1) (2026-02-16)
 
 
