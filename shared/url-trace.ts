@@ -147,6 +147,8 @@ export function traceUrlGeneration(
               const suffix = workingOldPath.substring(cleanMatcher.length);
 
               let targetBase = rawTarget;
+              // NOTE: Smart slash handling and suffix appending removed to implement FULL REPLACEMENT.
+              // The target URL is respected exactly as entered by the user.
 
 
               // Ensure targetBase has leading slash if it's a relative path (not http/s) AND not empty
