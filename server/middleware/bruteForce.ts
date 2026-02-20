@@ -16,19 +16,51 @@ interface AttemptInfo {
   blockedUntil?: number;
 }
 
-async function readStore(): Promise<Record<string, AttemptInfo>> {
+const memoryStore = new Map<string, AttemptInfo>();
+let persistTimer: NodeJS.Timeout | null = null;
+
+async function loadStoreFromDisk(): Promise<void> {
   try {
     const data = await fs.readFile(storePath, "utf8");
-    return JSON.parse(data) as Record<string, AttemptInfo>;
-  } catch {
-    return {};
+    const parsed = JSON.parse(data) as Record<string, AttemptInfo>;
+
+    for (const [ip, info] of Object.entries(parsed)) {
+      memoryStore.set(ip, info);
+    }
+  } 
+  catch {
+
   }
 }
 
-async function writeStore(store: Record<string, AttemptInfo>): Promise<void> {
-  await fs.mkdir(path.dirname(storePath), { recursive: true });
-  await fs.writeFile(storePath, JSON.stringify(store));
+function schedulePersist(): void {
+  if (persistTimer) {
+    return;
+  }
+
+  persistTimer = setTimeout(async () => {
+    persistTimer = null;
+
+    try {
+      await fs.mkdir(path.dirname(storePath), { recursive: true });
+
+      const record: Record<string, AttemptInfo> = {};
+
+      for (const [ip, info] of memoryStore.entries()) {
+        record[ip] = info;
+      }
+
+      await fs.writeFile(storePath, JSON.stringify(record));
+    } 
+    catch (error) {
+      console.error("Failed to persist login-attempts store:", error);
+    }
+  }, 2000);
 }
+
+loadStoreFromDisk().catch((error) => {
+  console.error("Failed to load login-attempts store on startup:", error);
+});
 
 export async function bruteForceProtection(
   req: Request,
@@ -36,8 +68,7 @@ export async function bruteForceProtection(
   next: NextFunction
 ): Promise<void> {
   const ip = req.ip || req.connection.remoteAddress || "";
-  const store = await readStore();
-  const entry = store[ip];
+  const entry = memoryStore.get(ip);
   const now = Date.now();
 
   if (entry?.blockedUntil && entry.blockedUntil > now) {
@@ -47,54 +78,53 @@ export async function bruteForceProtection(
 
   // Cleanup expired blocks
   if (entry?.blockedUntil && entry.blockedUntil <= now) {
-    delete store[ip];
-    await writeStore(store);
+    memoryStore.delete(ip);
+    schedulePersist();
   }
 
   next();
 }
 
 export async function recordLoginFailure(ip: string): Promise<void> {
-  const store = await readStore();
-  const entry = store[ip] || { attempts: 0 };
+  const entry = memoryStore.get(ip) || { attempts: 0 };
   entry.attempts += 1;
 
   if (entry.attempts >= LOGIN_MAX_ATTEMPTS) {
     entry.blockedUntil = Date.now() + LOGIN_BLOCK_DURATION_MS;
   }
 
-  store[ip] = entry;
-  await writeStore(store);
+  memoryStore.set(ip, entry)
+  schedulePersist();
 }
 
 export async function resetLoginAttempts(ip: string): Promise<void> {
-  const store = await readStore();
-  if (store[ip]) {
-    delete store[ip];
-    await writeStore(store);
+  if(memoryStore.has(ip)) {
+    memoryStore.delete(ip);
+    schedulePersist();
   }
 }
 
 export async function resetAllLoginAttempts(): Promise<void> {
-  await writeStore({});
+  memoryStore.clear();
+  schedulePersist();
 }
 
 export async function getBlockedIps(): Promise<Array<{ ip: string; attempts: number; blockedUntil?: number }>> {
-  const store = await readStore();
   const now = Date.now();
-  return Object.entries(store)
-    .filter(([_, entry]) => entry.blockedUntil && entry.blockedUntil > now)
-    .map(([ip, entry]) => ({
-      ip,
-      attempts: entry.attempts,
-      blockedUntil: entry.blockedUntil,
-    }));
+  const result: Array<{ ip: string; attempts: number; blockedUntil?: number }> = [];
+
+  for (const [ip, entry] of memoryStore.entries()) {
+    if (entry.blockedUntil && entry.blockedUntil > now) {
+      result.push({ ip, attempts: entry.attempts, blockedUntil: entry.blockedUntil });
+    }
+  }
+
+  return result;
 }
 
 export async function blockIp(ip: string): Promise<void> {
-  const store = await readStore();
-  const entry = store[ip] || { attempts: 0 };
+  const entry = memoryStore.get(ip) || { attempts: 0 };
   entry.blockedUntil = Date.now() + LOGIN_BLOCK_DURATION_MS;
-  store[ip] = entry;
-  await writeStore(store);
+  memoryStore.set(ip, entry);
+  schedulePersist();
 }
