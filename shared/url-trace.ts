@@ -238,7 +238,7 @@ export function traceUrlGeneration(
 
     let effectiveSearchReplace: any[] = [];
 
-    if (generalSettings?.globalSearchAndReplace) {
+    if (generalSettings?.globalSearchAndReplace && !rule.ignoreGlobalRules) {
         effectiveSearchReplace = generalSettings.globalSearchAndReplace.filter((g: any) => {
             return !(rule.searchAndReplace || []).some((r: any) => r.search === g.search);
         });
@@ -293,7 +293,7 @@ export function traceUrlGeneration(
         } else if (rule.discardQueryParams) {
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
 
-             if (generalSettings?.globalKeptQueryParams) {
+             if (generalSettings?.globalKeptQueryParams && !rule.ignoreGlobalRules) {
                  effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
              }
 
@@ -317,7 +317,7 @@ export function traceUrlGeneration(
     } else {
         if (rule.discardQueryParams) {
              let effectiveKeptParams: any[] = rule.keptQueryParams || [];
-             if (generalSettings?.globalKeptQueryParams) {
+             if (generalSettings?.globalKeptQueryParams && !rule.ignoreGlobalRules) {
                  effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
              }
 
@@ -342,7 +342,7 @@ export function traceUrlGeneration(
 
     let effectiveStaticParams: any[] = [];
 
-    if (generalSettings?.globalStaticQueryParams) {
+    if (generalSettings?.globalStaticQueryParams && !rule.ignoreGlobalRules) {
         effectiveStaticParams = generalSettings.globalStaticQueryParams.filter((g: any) => {
             return !(rule.staticQueryParams || []).some((r: any) => r.key === g.key);
         });

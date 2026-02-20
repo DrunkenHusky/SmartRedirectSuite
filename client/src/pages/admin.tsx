@@ -225,6 +225,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     keptQueryParams: [] as { keyPattern: string; valuePattern?: string; targetKey?: string }[],
     staticQueryParams: [] as { key: string; value: string }[],
     forwardQueryParams: false,
+      ignoreGlobalRules: false,
+    ignoreGlobalRules: false,
     searchAndReplace: [] as { search: string; replace: string; caseSensitive: boolean }[],
   });
   const targetUrlPlaceholder =
@@ -1217,6 +1219,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       keptQueryParams: [],
       staticQueryParams: [],
       forwardQueryParams: false,
+      ignoreGlobalRules: false,
+    ignoreGlobalRules: false,
       searchAndReplace: []
     });
     setEditingRule(null);
@@ -1360,6 +1364,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       keptQueryParams: rule.keptQueryParams || [],
       staticQueryParams: rule.staticQueryParams || [],
       forwardQueryParams: rule.forwardQueryParams || false,
+      ignoreGlobalRules: rule.ignoreGlobalRules || false,
       searchAndReplace: rule.searchAndReplace || [],
     });
     setIsRuleDialogOpen(true);
@@ -4889,7 +4894,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               />
             </div>
 
-            {/* Search and Replace */}
+                        {/* Ignore Global Rules */}
+            <div className="border-t pt-4">
+              <div className="flex items-start space-x-3">
+                <Switch
+                  checked={ruleForm.ignoreGlobalRules}
+                  onCheckedChange={(checked) => setRuleForm(prev => ({ ...prev, ignoreGlobalRules: checked }))}
+                />
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Globale Regeln ignorieren
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Wenn aktiviert, werden globale Suchen & Ersetzen-Regeln sowie globale Parameter-Regeln für diese URL nicht angewendet.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+{/* Search and Replace */}
             <div className="border-t pt-4">
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   Suchen & Ersetzen

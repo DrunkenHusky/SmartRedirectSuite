@@ -68,6 +68,7 @@ export const urlRuleSchemaWithValidation = z.object({
     skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
+  ignoreGlobalRules: z.boolean().default(false),
   searchAndReplace: z.array(z.object({
     search: z.string().min(1, "Search term required"),
     replace: z.string().optional().default(""),
@@ -137,6 +138,7 @@ export const updateUrlRuleSchemaWithValidation = z.object({
     skipEncoding: z.boolean().default(false),
   })).optional(),
   forwardQueryParams: z.boolean().optional(),
+  ignoreGlobalRules: z.boolean().default(false),
   searchAndReplace: z.array(z.object({
     search: z.string().min(1, "Search term required"),
     replace: z.string().optional().default(""),
@@ -204,6 +206,7 @@ export const importUrlRuleSchemaWithValidation = z.object({
     skipEncoding: z.boolean().default(false),
   })).optional().default([]),
   forwardQueryParams: z.boolean().default(false),
+  ignoreGlobalRules: z.boolean().default(false),
   searchAndReplace: z.array(z.object({
     search: z.string().min(1, "Search term required"),
     replace: z.string().optional().default(""),
