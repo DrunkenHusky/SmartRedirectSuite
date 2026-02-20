@@ -26,7 +26,7 @@ Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-A
 - **Automatische Weiterleitung**: Globale Aktivierung einer sofortigen Weiterleitung für alle Regeln.
 
 ## Regeln verwalten
-1. **Neue Regel** anlegen: URL-Matcher, Ziel-URL, Redirect-Typ (*Teilweise*, *Vollständig* oder *Domain*), optionaler Info-Text und automatische Weiterleitung konfigurieren.
+1. **Neue Regel** anlegen: URL-Matcher, Ziel-URL, Redirect-Typ (*Teilweise* - ersetzt nur den Anfang, *Vollständig* - ersetzt den gesamten Pfad, oder *Domain*), optionaler Info-Text und automatische Weiterleitung konfigurieren.
    - **Parameter-Behandlung**:
      - Bei *Teilweise/Domain*: Option "Alle Link-Parameter entfernen" (Standard: Aus/Parameter behalten).
      - Bei *Vollständig*: Option "Link-Parameter beibehalten" (Standard: Aus/Parameter entfernen).

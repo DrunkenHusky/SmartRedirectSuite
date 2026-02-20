@@ -147,11 +147,9 @@ export function traceUrlGeneration(
               const suffix = workingOldPath.substring(cleanMatcher.length);
 
               let targetBase = rawTarget;
+              // NOTE: Smart slash handling and suffix appending removed to implement FULL REPLACEMENT.
+              // The target URL is respected exactly as entered by the user.
 
-              // Smart slash handling: if matcher implies directory wildcard, ensure target has trailing slash
-              if (cleanMatcher.endsWith('/') && !targetBase.endsWith('/')) {
-                  targetBase += '/';
-              }
 
               // Ensure targetBase has leading slash if it's a relative path (not http/s) AND not empty
               if (!targetBase.startsWith('http') && !targetBase.startsWith('/') && targetBase.length > 0) {
@@ -159,10 +157,10 @@ export function traceUrlGeneration(
               }
 
               if (targetBase.startsWith('http')) {
-                  nextUrl = targetBase + suffix;
+                  nextUrl = targetBase;
               } else {
                   // Standard path concatenation
-                  nextUrl = cleanDomain + targetBase + suffix;
+                  nextUrl = cleanDomain + targetBase;
               }
           } else {
               // Fallback
