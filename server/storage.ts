@@ -176,6 +176,7 @@ export class FileStorage implements IStorage {
   private lastCacheConfig: RuleMatchingConfig | null = null;
   private settingsCache: GeneralSettings | null = null;
   private trackingCache: UrlTracking[] | null = null;
+  private trackingPersistTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     this.ensureDataDirectory();
@@ -230,6 +231,26 @@ export class FileStorage implements IStorage {
 
   private async writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+  }
+
+  private scheduleTrackingPersist(): void {
+    if (this.trackingPersistTimer) {
+      return;
+    }
+
+    this.trackingPersistTimer = setTimeout(async () => {
+      this.trackingPersistTimer = null;
+
+      if (!this.trackingCache) {
+        return;
+      }
+
+      try {
+        await this.writeJsonFile(TRACKING_FILE, this.trackingCache);
+      } catch (error) {
+        console.error("Failed to persist tracking data:", error);
+      }
+    }, 5000);
   }
 
   // Helper to ensure rules are loaded and processed
@@ -603,6 +624,11 @@ export class FileStorage implements IStorage {
 
   // URL-Tracking implementierung
   async clearAllTracking(): Promise<void> {
+    if (this.trackingPersistTimer) {
+      clearTimeout(this.trackingPersistTimer);
+      this.trackingPersistTimer = null;
+    }
+    
     await this.writeJsonFile(TRACKING_FILE, []);
     this.trackingCache = [];
   }
@@ -616,7 +642,7 @@ export class FileStorage implements IStorage {
         ...insertTracking,
         id: randomUUID(),
         ruleIds: insertTracking.ruleIds || [],
-      };
+      } as UrlTracking;
     }
 
     const trackingData = await this.ensureTrackingLoaded();
@@ -624,7 +650,7 @@ export class FileStorage implements IStorage {
       ...insertTracking,
       id: randomUUID(),
       ruleIds: insertTracking.ruleIds || [],
-    };
+    } as UrlTracking;
 
     // In strict non-cache mode, ensureTrackingLoaded returns a new array from disk
     // In cache mode, it returns the cache reference
@@ -643,12 +669,8 @@ export class FileStorage implements IStorage {
       trackingData.splice(0, removeCount);
     }
 
-    // If cache is disabled, we need to ensure we don't keep the reference if we obtained it from ensureTrackingLoaded
-    // But ensureTrackingLoaded handles clearing this.trackingCache if disabled.
-    // However, if we just pushed to 'trackingData', and it WAS the cache, we are good.
-    // If it WAS NOT the cache (fresh load), we are also good for the write.
-
-    await this.writeJsonFile(TRACKING_FILE, trackingData);
+    this.scheduleTrackingPersist();
+    
     return tracking;
   }
 
@@ -664,13 +686,14 @@ export class FileStorage implements IStorage {
     }
 
     const entry = trackingData[index];
-    const updatedEntry = { ...entry, ...updates };
+    const updatedEntry = { ...entry, ...updates } as UrlTracking;
 
     // Update the entry in place
     trackingData[index] = updatedEntry;
 
     // Persist changes
-    await this.writeJsonFile(TRACKING_FILE, trackingData);
+    this.scheduleTrackingPersist();
+
     return true;
   }
 
@@ -822,6 +845,7 @@ export class FileStorage implements IStorage {
     feedback: {
       ok: number;
       nok: number;
+      autoRedirect: number;
       missing: number;
     };
   }> {
@@ -1197,7 +1221,8 @@ export class FileStorage implements IStorage {
 
       // Legacy single rule support
       if (entry.ruleId && rulesMap.has(entry.ruleId)) {
-        enriched.rule = rulesMap.get(entry.ruleId);
+        const foundRule = rulesMap.get(entry.ruleId);
+        if (foundRule) enriched.rule = foundRule;
       }
 
       // Multiple rules support
@@ -1207,7 +1232,8 @@ export class FileStorage implements IStorage {
           .filter((r): r is UrlRule => r !== undefined);
       } else if (entry.ruleId && rulesMap.has(entry.ruleId)) {
         // Fallback: populate rules array from single ruleId for consistent UI handling
-        enriched.rules = [rulesMap.get(entry.ruleId)!];
+        const fallbackRule = rulesMap.get(entry.ruleId);
+        enriched.rules = fallbackRule ? [fallbackRule] : [];
       } else {
         enriched.rules = [];
       }
@@ -1306,7 +1332,11 @@ export class FileStorage implements IStorage {
       if (importRule.id && rulesById.has(importRule.id)) {
         // Update existing rule by ID
         const index = rulesById.get(importRule.id)!;
-        const existingRule = newRules[index];
+        const existingRule = newRules[index]!;
+        
+        if (!existingRule) { 
+          imported++; continue; 
+        }
 
         // Remove old matcher from index if it changed
         if (existingRule.matcher !== importRule.matcher) {
@@ -1361,7 +1391,11 @@ export class FileStorage implements IStorage {
       } else if (rulesByMatcher.has(importRule.matcher)) {
          // No ID, but matcher exists - update
          const index = rulesByMatcher.get(importRule.matcher)!;
-         const existingRule = newRules[index];
+         const existingRule = newRules[index]!;
+
+         if (!existingRule) { 
+          imported++; continue; 
+        }
 
          const updatedRule: UrlRule = {
            id: existingRule.id,
@@ -1454,8 +1488,7 @@ export class FileStorage implements IStorage {
         headerBackgroundColor: "#ffffff",
         popupMode: "active",
         mainTitle: "Veralteter Link erkannt",
-        mainDescription:
-          "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten.",
+        mainDescription: "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten.",
         mainBackgroundColor: "#ffffff",
         alertIcon: "AlertTriangle",
         alertBackgroundColor: "yellow",
@@ -1470,21 +1503,43 @@ export class FileStorage implements IStorage {
         showUrlButtonText: "Zeige mir die neue URL",
         popupButtonText: "Zeige mir die neue URL",
         specialHintsTitle: "Spezielle Hinweise für diese URL",
-        specialHintsDescription:
-          "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL.",
+        specialHintsDescription: "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL.",
         specialHintsIcon: "Info",
         infoTitle: "Zusätzliche Informationen",
         infoTitleIcon: "Info",
         infoItems: ["", "", ""],
         infoIcons: ["Bookmark", "Share2", "Clock"],
-        footerCopyright:
-          "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
+        footerCopyright: "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
         caseSensitiveLinkDetection: false,
         enableReferrerTracking: true,
         updatedAt: new Date().toISOString(),
         autoRedirect: false,
 
-        // User Feedback Defaults
+        // Redirect mode
+        defaultRedirectMode: "domain",
+        defaultSearchUrl: "",
+        defaultSearchMessage: "Keine direkte Übereinstimmung gefunden. Sie werden zur Suche weitergeleitet.",
+        defaultSearchSkipEncoding: false,
+        smartSearchRules: [],
+
+        // Import
+        encodeImportedUrls: true,
+
+        // Quality gauge
+        showLinkQualityGauge: true,
+
+        // Match quality explanations
+        matchHighExplanation: "Die neue URL entspricht exakt der angeforderten Seite oder ist die Startseite. Höchste Qualität.",
+        matchMediumExplanation: "Die URL wurde erkannt, weicht aber leicht ab (z.B. zusätzliche Parameter).",
+        matchLowExplanation: "Es wurde nur ein Teil der URL erkannt und ersetzt (Partial Match).",
+        matchRootExplanation: "Startseite erkannt. Direkte Weiterleitung auf die neue Domain.",
+        matchNoneExplanation: "Die URL konnte nicht spezifisch zugeordnet werden. Es wird auf die Standard-Seite weitergeleitet.",
+
+        // Tracking
+        enableTrackingCache: true,
+        maxStatsEntries: 0,
+
+        // User Feedback
         enableFeedbackSurvey: false,
         feedbackSurveyTitle: "War die neue URL korrekt?",
         feedbackSurveyQuestion: "Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern.",
@@ -1492,12 +1547,28 @@ export class FileStorage implements IStorage {
         feedbackButtonYes: "Ja, OK",
         feedbackButtonNo: "Nein",
 
-        // Feedback Comment Defaults
+        // Feedback Comment
         enableFeedbackComment: false,
         feedbackCommentTitle: "Kennen Sie die korrekte URL?",
         feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
         feedbackCommentPlaceholder: "https://...",
         feedbackCommentButton: "Absenden",
+
+        // Feedback Smart Search Fallback
+        enableFeedbackSmartSearchFallback: false,
+        feedbackSmartSearchFallbackTitle: "Vorschlag: Suche verwenden",
+        feedbackSmartSearchFallbackDescription: "Keine passende Weiterleitung gefunden. Versuchen Sie es mit der Suche.",
+        feedbackSmartSearchFallbackQuestion: "Hat dieser Link funktioniert?",
+
+        // Satisfaction Trend
+        showSatisfactionTrend: true,
+        satisfactionTrendFeedbackOnly: false,
+        satisfactionTrendDays: 30,
+
+        // Global Rules
+        globalSearchAndReplace: [],
+        globalStaticQueryParams: [],
+        globalKeptQueryParams: [],
       };
 
       // Save default settings directly to avoid infinite loop
