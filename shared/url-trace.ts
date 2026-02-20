@@ -148,10 +148,6 @@ export function traceUrlGeneration(
 
               let targetBase = rawTarget;
 
-              // Smart slash handling: if matcher implies directory wildcard, ensure target has trailing slash
-              if (cleanMatcher.endsWith('/') && !targetBase.endsWith('/')) {
-                  targetBase += '/';
-              }
 
               // Ensure targetBase has leading slash if it's a relative path (not http/s) AND not empty
               if (!targetBase.startsWith('http') && !targetBase.startsWith('/') && targetBase.length > 0) {
@@ -159,10 +155,10 @@ export function traceUrlGeneration(
               }
 
               if (targetBase.startsWith('http')) {
-                  nextUrl = targetBase + suffix;
+                  nextUrl = targetBase;
               } else {
                   // Standard path concatenation
-                  nextUrl = cleanDomain + targetBase + suffix;
+                  nextUrl = cleanDomain + targetBase;
               }
           } else {
               // Fallback
