@@ -1,3 +1,10 @@
+# [2.19.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.18.0...v2.19.0) (2026-02-21)
+
+
+### Features
+
+* support regex value extraction in Keep Query Params logic ([b3a297a](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b3a297adaa878d2396ee0c16de5aeb5f26a6587e))
+
 # [2.18.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.17.2...v2.18.0) (2026-02-17)
 
 
