@@ -1,3 +1,10 @@
+# [2.18.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.17.2...v2.18.0) (2026-02-17)
+
+
+### Features
+
+* add NextRelease version update and CI compatibility ([4ae99d2](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/4ae99d201c999b8794642fd3869062dd4443bb34))
+
 ## [2.17.2](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.17.1...v2.17.2) (2026-02-17)
 
 
