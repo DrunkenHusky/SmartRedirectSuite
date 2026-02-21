@@ -236,42 +236,6 @@ export function traceUrlGeneration(
         currentUrl = fallback;
     }
 
-    let effectiveSearchReplace: any[] = [];
-
-    if (generalSettings?.globalSearchAndReplace) {
-        effectiveSearchReplace = generalSettings.globalSearchAndReplace.filter((g: any) => {
-            return !(rule.searchAndReplace || []).some((r: any) => r.search === g.search);
-        });
-    }
-
-    if (rule.searchAndReplace) {
-        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace || []];
-    }
-
-    for (const item of effectiveSearchReplace) {
-        const result = applySearchAndReplaceSingle(currentUrl, item);
-        if (result !== currentUrl) {
-            const isGlobal = !!item.id;
-
-            trace.push({
-                description: `Search & Replace: "${item.search}" -> "${item.replace || ''}"`,
-                urlBefore: currentUrl,
-                urlAfter: result,
-                changed: true,
-                type: isGlobal ? 'global' : 'rule'
-            });
-
-            if (isGlobal) {
-                appliedGlobalRules.push({
-                    id: item.id,
-                    type: 'search',
-                    description: `S&R: "${item.search}" -> "${item.replace || ''}"`
-                });
-            }
-            currentUrl = result;
-        }
-    }
-
     if (redirectType === 'wildcard') {
         if (rule.forwardQueryParams) {
              try {
@@ -367,6 +331,48 @@ export function traceUrlGeneration(
             type: 'global'
          });
       }
+    }
+
+    let effectiveSearchReplace: any[] = [];
+
+    if (generalSettings?.globalSearchAndReplace) {
+        effectiveSearchReplace = generalSettings.globalSearchAndReplace.filter((g: any) => {
+            return !(rule.searchAndReplace || []).some((r: any) => {
+                // Precise match
+                if (r.search === g.search) return true;
+                // Case-insensitive override if both are insensitive
+                if (!r.caseSensitive && !g.caseSensitive && r.search.toLowerCase() === g.search.toLowerCase()) return true;
+                return false;
+            });
+        });
+    }
+
+    if (rule.searchAndReplace) {
+        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace || []];
+    }
+
+    for (const item of effectiveSearchReplace) {
+        const result = applySearchAndReplaceSingle(currentUrl, item);
+        if (result !== currentUrl) {
+            const isGlobal = !!item.id;
+
+            trace.push({
+                description: `Search & Replace: "${item.search}" -> "${item.replace || ''}"`,
+                urlBefore: currentUrl,
+                urlAfter: result,
+                changed: true,
+                type: isGlobal ? 'global' : 'rule'
+            });
+
+            if (isGlobal) {
+                appliedGlobalRules.push({
+                    id: item.id,
+                    type: 'search',
+                    description: `S&R: "${item.search}" -> "${item.replace || ''}"`
+                });
+            }
+            currentUrl = result;
+        }
     }
 
     return {
