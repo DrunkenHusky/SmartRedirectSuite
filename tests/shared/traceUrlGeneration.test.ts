@@ -69,7 +69,7 @@ const mockSettings: GeneralSettings = {
     smartSearchRules: []
 };
 
-test('traceUrlGeneration: Wildcard Redirect', (t) => {
+test('traceUrlGeneration: Wildcard Redirect (Full Replacement)', (t) => {
     const rule: any = {
         matcher: "/blog/*",
         targetUrl: "/news",
@@ -81,7 +81,9 @@ test('traceUrlGeneration: Wildcard Redirect', (t) => {
     const oldUrl = "http://old.com/blog/article-123";
     const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
 
-    assert.strictEqual(result.finalUrl, "https://new.com/news/article-123");
+    // Expecting full replacement of /blog/article-123 with /news
+    // Suffix "article-123" should NOT be appended
+    assert.strictEqual(result.finalUrl, "https://new.com/news");
 });
 
 test('traceUrlGeneration: Domain Redirect', (t) => {
@@ -94,10 +96,11 @@ test('traceUrlGeneration: Domain Redirect', (t) => {
     const oldUrl = "http://old-domain.com/some/path";
     const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
 
+    // Domain redirect should preserve path
     assert.strictEqual(result.finalUrl, "https://brand-new.com/some/path");
 });
 
-test('traceUrlGeneration: Wildcard Prefix', (t) => {
+test('traceUrlGeneration: Wildcard Prefix (Full Replacement)', (t) => {
     const rule: any = {
         matcher: "/old*",
         targetUrl: "/new",
@@ -107,7 +110,8 @@ test('traceUrlGeneration: Wildcard Prefix', (t) => {
     const oldUrl = "http://old.com/oldstuff";
     const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
 
-    assert.strictEqual(result.finalUrl, "https://new.com/newstuff");
+    // Expecting full replacement
+    assert.strictEqual(result.finalUrl, "https://new.com/new");
 });
 
 test('traceUrlGeneration: Case-Insensitive Wildcard Match', (t) => {
@@ -122,4 +126,36 @@ test('traceUrlGeneration: Case-Insensitive Wildcard Match', (t) => {
     const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
 
     assert.strictEqual(result.finalUrl, "https://intranetnew.lolo.com/sites/Intranet-News/Lists/Beitraege/ViewPost.aspx?ID=1");
+});
+
+test('traceUrlGeneration: Wildcard with Forward Query Params', (t) => {
+    const rule: any = {
+        matcher: "/products/",
+        targetUrl: "/new-products",
+        redirectType: "wildcard",
+        forwardQueryParams: true,
+        discardQueryParams: false
+    };
+
+    const oldUrl = "http://old.com/products/item?id=123&ref=test";
+    const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
+
+    // Expect full replacement (/products/item -> /new-products) BUT with query params preserved
+    assert.strictEqual(result.finalUrl, "https://new.com/new-products?id=123&ref=test");
+});
+
+test('traceUrlGeneration: Wildcard with Discard Query Params', (t) => {
+    const rule: any = {
+        matcher: "/products/",
+        targetUrl: "/new-products",
+        redirectType: "wildcard",
+        forwardQueryParams: false,
+        discardQueryParams: true
+    };
+
+    const oldUrl = "http://old.com/products/item?id=123&ref=test";
+    const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
+
+    // Expect full replacement and NO query params
+    assert.strictEqual(result.finalUrl, "https://new.com/new-products");
 });

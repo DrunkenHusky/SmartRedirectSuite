@@ -147,11 +147,9 @@ export function traceUrlGeneration(
               const suffix = workingOldPath.substring(cleanMatcher.length);
 
               let targetBase = rawTarget;
+              // NOTE: Smart slash handling and suffix appending removed to implement FULL REPLACEMENT.
+              // The target URL is respected exactly as entered by the user.
 
-              // Smart slash handling: if matcher implies directory wildcard, ensure target has trailing slash
-              if (cleanMatcher.endsWith('/') && !targetBase.endsWith('/')) {
-                  targetBase += '/';
-              }
 
               // Ensure targetBase has leading slash if it's a relative path (not http/s) AND not empty
               if (!targetBase.startsWith('http') && !targetBase.startsWith('/') && targetBase.length > 0) {
@@ -159,10 +157,10 @@ export function traceUrlGeneration(
               }
 
               if (targetBase.startsWith('http')) {
-                  nextUrl = targetBase + suffix;
+                  nextUrl = targetBase;
               } else {
                   // Standard path concatenation
-                  nextUrl = cleanDomain + targetBase + suffix;
+                  nextUrl = cleanDomain + targetBase;
               }
           } else {
               // Fallback
@@ -236,42 +234,6 @@ export function traceUrlGeneration(
 
         // Update currentUrl for global rules application
         currentUrl = fallback;
-    }
-
-    let effectiveSearchReplace: any[] = [];
-
-    if (generalSettings?.globalSearchAndReplace) {
-        effectiveSearchReplace = generalSettings.globalSearchAndReplace.filter((g: any) => {
-            return !(rule.searchAndReplace || []).some((r: any) => r.search === g.search);
-        });
-    }
-
-    if (rule.searchAndReplace) {
-        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace || []];
-    }
-
-    for (const item of effectiveSearchReplace) {
-        const result = applySearchAndReplaceSingle(currentUrl, item);
-        if (result !== currentUrl) {
-            const isGlobal = !!item.id;
-
-            trace.push({
-                description: `Search & Replace: "${item.search}" -> "${item.replace || ''}"`,
-                urlBefore: currentUrl,
-                urlAfter: result,
-                changed: true,
-                type: isGlobal ? 'global' : 'rule'
-            });
-
-            if (isGlobal) {
-                appliedGlobalRules.push({
-                    id: item.id,
-                    type: 'search',
-                    description: `S&R: "${item.search}" -> "${item.replace || ''}"`
-                });
-            }
-            currentUrl = result;
-        }
     }
 
     if (redirectType === 'wildcard') {
@@ -369,6 +331,48 @@ export function traceUrlGeneration(
             type: 'global'
          });
       }
+    }
+
+    let effectiveSearchReplace: any[] = [];
+
+    if (generalSettings?.globalSearchAndReplace) {
+        effectiveSearchReplace = generalSettings.globalSearchAndReplace.filter((g: any) => {
+            return !(rule.searchAndReplace || []).some((r: any) => {
+                // Precise match
+                if (r.search === g.search) return true;
+                // Case-insensitive override if both are insensitive
+                if (!r.caseSensitive && !g.caseSensitive && r.search.toLowerCase() === g.search.toLowerCase()) return true;
+                return false;
+            });
+        });
+    }
+
+    if (rule.searchAndReplace) {
+        effectiveSearchReplace = [...effectiveSearchReplace, ...rule.searchAndReplace || []];
+    }
+
+    for (const item of effectiveSearchReplace) {
+        const result = applySearchAndReplaceSingle(currentUrl, item);
+        if (result !== currentUrl) {
+            const isGlobal = !!item.id;
+
+            trace.push({
+                description: `Search & Replace: "${item.search}" -> "${item.replace || ''}"`,
+                urlBefore: currentUrl,
+                urlAfter: result,
+                changed: true,
+                type: isGlobal ? 'global' : 'rule'
+            });
+
+            if (isGlobal) {
+                appliedGlobalRules.push({
+                    id: item.id,
+                    type: 'search',
+                    description: `S&R: "${item.search}" -> "${item.replace || ''}"`
+                });
+            }
+            currentUrl = result;
+        }
     }
 
     return {
