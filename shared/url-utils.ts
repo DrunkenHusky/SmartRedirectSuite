@@ -136,10 +136,26 @@ export function getKeptQueryStringWithLog(oldUrl: string, keptRules: { keyPatter
         entries.forEach(([key, value], index) => {
           if (!addedIndices.has(index)) {
             if (keyRegex.test(key)) {
-              if (!valRegex || valRegex.test(value)) {
+              let processedValue = value;
+              let shouldKeep = true;
+
+              if (valRegex) {
+                  const match = valRegex.exec(value);
+                  if (match) {
+                      if (match.length > 1) {
+                          processedValue = match[1];
+                      } else {
+                          processedValue = match[0];
+                      }
+                  } else {
+                      shouldKeep = false;
+                  }
+              }
+
+              if (shouldKeep) {
                 const finalKey = (rule.targetKey && rule.targetKey.trim() !== '') ? rule.targetKey : key;
                 const encodedKey = encodeURIComponent(finalKey);
-                const encodedValue = rule.skipEncoding ? value : encodeURIComponent(value);
+                const encodedValue = rule.skipEncoding ? processedValue : encodeURIComponent(processedValue);
                 parts.push(`${encodedKey}=${encodedValue}`);
                 addedIndices.add(index);
                 ruleMatched = true;
