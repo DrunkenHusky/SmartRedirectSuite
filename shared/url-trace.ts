@@ -337,7 +337,13 @@ export function traceUrlGeneration(
 
     if (generalSettings?.globalSearchAndReplace) {
         effectiveSearchReplace = generalSettings.globalSearchAndReplace.filter((g: any) => {
-            return !(rule.searchAndReplace || []).some((r: any) => r.search === g.search);
+            return !(rule.searchAndReplace || []).some((r: any) => {
+                // Precise match
+                if (r.search === g.search) return true;
+                // Case-insensitive override if both are insensitive
+                if (!r.caseSensitive && !g.caseSensitive && r.search.toLowerCase() === g.search.toLowerCase()) return true;
+                return false;
+            });
         });
     }
 
