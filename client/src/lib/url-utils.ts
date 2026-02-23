@@ -2,11 +2,10 @@ import {
     extractPath,
     generateNewUrl,
     extractSearchTerm,
-    validateUrl,
     applySearchAndReplaceSingle,
     appendQueryString,
-    getKeptQueryStringWithLog,
-    getStaticQueryStringWithLog,
+    processKeptQueryParams,
+    processStaticQueryParams,
     type SmartSearchRule,
     type AppliedGlobalRule
 } from "@shared/url-utils";
@@ -17,11 +16,10 @@ export {
     extractPath,
     generateNewUrl,
     extractSearchTerm,
-    validateUrl,
     applySearchAndReplaceSingle,
     appendQueryString,
-    getKeptQueryStringWithLog,
-    getStaticQueryStringWithLog,
+    processKeptQueryParams,
+    processStaticQueryParams,
     generateUrlWithRule,
     type SmartSearchRule,
     type AppliedGlobalRule

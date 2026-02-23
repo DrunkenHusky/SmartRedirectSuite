@@ -4,8 +4,8 @@ import {
     extractSearchTerm,
     applySearchAndReplaceSingle,
     appendQueryString,
-    getKeptQueryStringWithLog,
-    getStaticQueryStringWithLog,
+    processKeptQueryParams,
+    processStaticQueryParams,
     type AppliedGlobalRule
 } from "./url-utils";
 import type { GeneralSettings } from "./schema";
@@ -49,24 +49,25 @@ export function traceUrlGeneration(
     // Ensure we have a valid domain to target
     const cleanDomain = (newDomain || 'https://thisisthenewurl.com/').replace(/\/$/, '');
 
+    // Logic for query param discarding (Partial and Wildcard only)
+    let workingOldPath = oldPath;
+    let paramsDiscarded = false;
+
+    if ((redirectType === 'partial' || redirectType === 'wildcard') && rule.discardQueryParams) {
+         if (workingOldPath.includes('?')) {
+             paramsDiscarded = true;
+             const queryIndex = workingOldPath.indexOf('?');
+             const hashIndex = workingOldPath.indexOf('#');
+             if (hashIndex !== -1 && hashIndex > queryIndex) {
+                  workingOldPath = workingOldPath.substring(0, queryIndex) + workingOldPath.substring(hashIndex);
+             } else {
+                  workingOldPath = workingOldPath.substring(0, queryIndex);
+             }
+         }
+    }
+
     if (redirectType === 'partial') {
       // Logic for Partial Match
-      let paramsDiscarded = false;
-      let workingOldPath = oldPath;
-
-      if (rule.discardQueryParams) {
-           if (workingOldPath.includes('?')) {
-               paramsDiscarded = true;
-               const queryIndex = workingOldPath.indexOf('?');
-               const hashIndex = workingOldPath.indexOf('#');
-               if (hashIndex !== -1 && hashIndex > queryIndex) {
-                    workingOldPath = workingOldPath.substring(0, queryIndex) + workingOldPath.substring(hashIndex);
-               } else {
-                    workingOldPath = workingOldPath.substring(0, queryIndex);
-               }
-           }
-      }
-
       const isDomainMatcher = !rule.matcher.startsWith('/');
       let nextUrl = '';
 
@@ -119,21 +120,6 @@ export function traceUrlGeneration(
       const cleanMatcher = rule.matcher.replace(/\*$/, '');
       const rawTarget = rule.targetUrl || '';
 
-      let workingOldPath = oldPath;
-
-      // Handle query params discarding for wildcard
-      if (rule.discardQueryParams) {
-           if (workingOldPath.includes('?')) {
-               const queryIndex = workingOldPath.indexOf('?');
-               const hashIndex = workingOldPath.indexOf('#');
-               if (hashIndex !== -1 && hashIndex > queryIndex) {
-                    workingOldPath = workingOldPath.substring(0, queryIndex) + workingOldPath.substring(hashIndex);
-               } else {
-                    workingOldPath = workingOldPath.substring(0, queryIndex);
-               }
-           }
-      }
-
       // Check if it's a domain wildcard or path wildcard
       const isDomainMatcher = !rule.matcher.startsWith('/');
 
@@ -144,12 +130,7 @@ export function traceUrlGeneration(
       } else {
           // Path replacement
           if (workingOldPath.startsWith(cleanMatcher) || workingOldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
-              const suffix = workingOldPath.substring(cleanMatcher.length);
-
               let targetBase = rawTarget;
-              // NOTE: Smart slash handling and suffix appending removed to implement FULL REPLACEMENT.
-              // The target URL is respected exactly as entered by the user.
-
 
               // Ensure targetBase has leading slash if it's a relative path (not http/s) AND not empty
               if (!targetBase.startsWith('http') && !targetBase.startsWith('/') && targetBase.length > 0) {
@@ -236,72 +217,48 @@ export function traceUrlGeneration(
         currentUrl = fallback;
     }
 
-    if (redirectType === 'wildcard') {
-        if (rule.forwardQueryParams) {
-             try {
-                const oldUrlObj = new URL(oldUrl);
-                if (oldUrlObj.search) {
-                    const beforeAppend = currentUrl;
-                    currentUrl = appendQueryString(currentUrl, oldUrlObj.search);
-                    if (currentUrl !== beforeAppend) {
-                        trace.push({
-                            description: "Forwarded Query Parameters (Wildcard)",
-                            urlBefore: beforeAppend,
-                            urlAfter: currentUrl,
-                            changed: true,
-                            type: 'rule'
-                        });
-                    }
+    const isWildcardForward = (redirectType === 'wildcard' && rule.forwardQueryParams);
+
+    if (isWildcardForward) {
+         try {
+            const oldUrlObj = new URL(oldUrl);
+            if (oldUrlObj.search) {
+                const beforeAppend = currentUrl;
+                currentUrl = appendQueryString(currentUrl, oldUrlObj.search);
+                if (currentUrl !== beforeAppend) {
+                    trace.push({
+                        description: "Forwarded Query Parameters (Wildcard)",
+                        urlBefore: beforeAppend,
+                        urlAfter: currentUrl,
+                        changed: true,
+                        type: 'rule'
+                    });
                 }
-             } catch(e) {}
-        } else if (rule.discardQueryParams) {
-             let effectiveKeptParams: any[] = rule.keptQueryParams || [];
+            }
+         } catch(e) {}
+    } else if (rule.discardQueryParams) {
+         let effectiveKeptParams: any[] = rule.keptQueryParams || [];
 
-             if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
+         if (generalSettings?.globalKeptQueryParams) {
+             effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
+         }
+
+         if (effectiveKeptParams.length > 0) {
+             const { queryString, matchedRules } = processKeptQueryParams(oldUrl, effectiveKeptParams);
+             const beforeAppend = currentUrl;
+             currentUrl = appendQueryString(currentUrl, queryString);
+             if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
+
+             if (currentUrl !== beforeAppend) {
+                 trace.push({
+                    description: "Restored Kept Query Parameters",
+                    urlBefore: beforeAppend,
+                    urlAfter: currentUrl,
+                    changed: true,
+                    type: 'rule'
+                 });
              }
-
-             if (effectiveKeptParams.length > 0) {
-                 const { queryString, matchedRules } = getKeptQueryStringWithLog(oldUrl, effectiveKeptParams);
-                 const beforeAppend = currentUrl;
-                 currentUrl = appendQueryString(currentUrl, queryString);
-                 if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
-
-                 if (currentUrl !== beforeAppend) {
-                     trace.push({
-                        description: "Restored Kept Query Parameters",
-                        urlBefore: beforeAppend,
-                        urlAfter: currentUrl,
-                        changed: true,
-                        type: 'rule'
-                     });
-                 }
-             }
-        }
-    } else {
-        if (rule.discardQueryParams) {
-             let effectiveKeptParams: any[] = rule.keptQueryParams || [];
-             if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
-             }
-
-             if (effectiveKeptParams.length > 0) {
-                 const { queryString, matchedRules } = getKeptQueryStringWithLog(oldUrl, effectiveKeptParams);
-                 const beforeAppend = currentUrl;
-                 currentUrl = appendQueryString(currentUrl, queryString);
-                 if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
-
-                 if (currentUrl !== beforeAppend) {
-                     trace.push({
-                        description: "Restored Kept Query Parameters",
-                        urlBefore: beforeAppend,
-                        urlAfter: currentUrl,
-                        changed: true,
-                        type: 'rule'
-                     });
-                 }
-             }
-        }
+         }
     }
 
     let effectiveStaticParams: any[] = [];
@@ -317,7 +274,7 @@ export function traceUrlGeneration(
     }
 
     if (effectiveStaticParams.length > 0) {
-      const { queryString, matchedRules } = getStaticQueryStringWithLog(effectiveStaticParams);
+      const { queryString, matchedRules } = processStaticQueryParams(effectiveStaticParams);
       const beforeAppend = currentUrl;
       currentUrl = appendQueryString(currentUrl, queryString);
       if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);

@@ -83,16 +83,7 @@ export function extractPath(url: string): string {
   }
 }
 
-export function validateUrl(url: string): boolean {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function getStaticQueryStringWithLog(staticParams: { key: string; value: string; skipEncoding?: boolean; id?: string }[]): { queryString: string, matchedRules: AppliedGlobalRule[] } {
+export function processStaticQueryParams(staticParams: { key: string; value: string; skipEncoding?: boolean; id?: string }[]): { queryString: string, matchedRules: AppliedGlobalRule[] } {
   const matchedRules: AppliedGlobalRule[] = [];
   try {
     const parts: string[] = [];
@@ -118,7 +109,7 @@ export function getStaticQueryStringWithLog(staticParams: { key: string; value: 
   }
 }
 
-export function getKeptQueryStringWithLog(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string; skipEncoding?: boolean; id?: string }[]): { queryString: string, matchedRules: AppliedGlobalRule[] } {
+export function processKeptQueryParams(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string; skipEncoding?: boolean; id?: string }[]): { queryString: string, matchedRules: AppliedGlobalRule[] } {
   const matchedRules: AppliedGlobalRule[] = [];
   try {
     const urlObj = new URL(oldUrl, 'http://dummy.com');
@@ -183,21 +174,21 @@ export function getKeptQueryStringWithLog(oldUrl: string, keptRules: { keyPatter
 }
 
 function extractLastPathSegment(url: string): string | null {
+  let path = '/';
   try {
       const urlObj = new URL(url, 'http://dummy.com');
-      const pathname = urlObj.pathname;
-      const segments = pathname.split('/').filter(s => s && s.trim().length > 0);
-      return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
+      path = urlObj.pathname;
   } catch (e) {
       try {
         const pathMatch = url.match(/^https?:\/\/[^\/]+(\/.*)?$/);
-        const path = pathMatch?.[1] || '/';
-        const segments = path.split('/').filter(s => s && s.trim().length > 0);
-        return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
+        path = pathMatch?.[1] || '/';
       } catch (err) {
         return null;
       }
   }
+
+  const segments = path.split('/').filter(s => s && s.trim().length > 0);
+  return segments.length > 0 ? decodeURIComponent(segments[segments.length - 1]) : null;
 }
 
 export function extractSearchTerm(

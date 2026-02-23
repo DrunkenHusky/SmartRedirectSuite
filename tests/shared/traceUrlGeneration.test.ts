@@ -159,3 +159,55 @@ test('traceUrlGeneration: Wildcard with Discard Query Params', (t) => {
     // Expect full replacement and NO query params
     assert.strictEqual(result.finalUrl, "https://new.com/new-products");
 });
+
+test('traceUrlGeneration: Kept Query Params', (t) => {
+    const rule: any = {
+        matcher: "/products/",
+        targetUrl: "/new-products",
+        redirectType: "wildcard",
+        forwardQueryParams: false,
+        discardQueryParams: true,
+        keptQueryParams: [
+            { keyPattern: "^id$", skipEncoding: true }
+        ]
+    };
+
+    const oldUrl = "http://old.com/products/item?id=123&ref=test";
+    const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
+
+    // Expect full replacement, ref discarded, but id kept
+    assert.strictEqual(result.finalUrl, "https://new.com/new-products?id=123");
+});
+
+test('traceUrlGeneration: Static Query Params', (t) => {
+    const rule: any = {
+        matcher: "/products/",
+        targetUrl: "/new-products",
+        redirectType: "wildcard",
+        staticQueryParams: [
+            { key: "source", value: "redirect" }
+        ]
+    };
+
+    const oldUrl = "http://old.com/products/item";
+    const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
+
+    // Expect full replacement + static param
+    assert.strictEqual(result.finalUrl, "https://new.com/new-products?source=redirect");
+});
+
+test('traceUrlGeneration: Partial Redirect with Discard Query Params', (t) => {
+    const rule: any = {
+        matcher: "/old-section",
+        targetUrl: "/new-section",
+        redirectType: "partial",
+        discardQueryParams: true
+    };
+
+    const oldUrl = "http://old.com/old-section/page?foo=bar";
+    const result = traceUrlGeneration(oldUrl, rule, "https://new.com", mockSettings);
+
+    // Partial match: /old-section/page -> /new-section/page
+    // Discard Query Params: ?foo=bar removed
+    assert.strictEqual(result.finalUrl, "https://new.com/new-section/page");
+});
