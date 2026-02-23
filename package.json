@@ -11,7 +11,7 @@
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:../vite.config",
     "start": "cross-env NODE_ENV=production node dist/index.js",
-    "test:unit": "tsx tests/shared/appMetadata.test.ts && tsx tests/client/url-utils.test.ts",
+    "test:unit": "tsx tests/shared/appMetadata.test.ts && tsx tests/client/url-utils.test.ts && tsx tests/shared/url-trace.test.ts",
     "test": "npm run test:unit && tsx tests/integration/test-url-transformation.js && tsx tests/integration/test-rule-specificity.ts && tsx tests/integration/test-server-features.js && tsx tests/integration/test-vite-config.ts",
     "check": "echo 'Skipping type check'"
   },
