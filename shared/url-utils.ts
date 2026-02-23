@@ -292,3 +292,51 @@ export function extractSearchTerm(
 
   return { searchTerm, searchUrl, skipEncoding };
 }
+
+export function getMatchingSuffix(originalPath: string, matcher: string): string | null {
+  const cleanMatcher = matcher.replace(/\/$/, '');
+  let decodedMatcher = '';
+  try {
+      decodedMatcher = decodeURIComponent(cleanMatcher).toLowerCase();
+  } catch (e) {
+      decodedMatcher = cleanMatcher.toLowerCase();
+  }
+
+  let currentDecoded = '';
+  let i = 0;
+  const len = originalPath.length;
+
+  while (i < len) {
+      if (currentDecoded === decodedMatcher) {
+          return originalPath.substring(i);
+      }
+
+      if (currentDecoded.length > decodedMatcher.length) {
+           break;
+      }
+
+      const char = originalPath[i];
+      if (char === '%' && i + 2 < len) {
+          const hex = originalPath.substring(i + 1, i + 3);
+          if (/^[0-9A-Fa-f]{2}$/.test(hex)) {
+              try {
+                  const decodedChar = decodeURIComponent('%' + hex);
+                  currentDecoded += decodedChar.toLowerCase();
+                  i += 3;
+                  continue;
+              } catch (e) {
+                  // fall through
+              }
+          }
+      }
+
+      currentDecoded += char.toLowerCase();
+      i++;
+  }
+
+  if (currentDecoded === decodedMatcher) {
+      return originalPath.substring(i);
+  }
+
+  return null;
+}
