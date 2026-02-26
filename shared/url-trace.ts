@@ -87,15 +87,33 @@ export function traceUrlGeneration(
         const cleanMatcher = rule.matcher.replace(/\/$/, '');
         const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, '');
 
+        // Decode both sides for comparison to avoid percent-encoding case mismatches.
+        // The schema lowercases hex digits (%2F -> %2f) but URL() normalizes to uppercase (%2f -> %2F).
+        // Decoding both sides ensures consistent comparison regardless of encoding case.
+        let decodedOldPath: string;
+        let decodedMatcher: string;
+
+        try {
+          decodedOldPath = decodeURIComponent(workingOldPath);
+        } catch {
+          decodedOldPath = workingOldPath;
+        }
+
+        try {
+          decodedMatcher = decodeURIComponent(cleanMatcher);
+        } catch {
+          decodedMatcher = cleanMatcher;
+        }
+
         let newPath;
-        if (workingOldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
-          const remainingPath = workingOldPath.substring(cleanMatcher.length);
-          newPath = '/' + cleanTarget + remainingPath;
+        if (decodedOldPath.toLowerCase().startsWith(decodedMatcher.toLowerCase())) {
+          const remainingDecoded = decodedOldPath.substring(decodedMatcher.length);
+          newPath = '/' + cleanTarget + remainingDecoded;
         } else {
-          const matcherIndex = workingOldPath.toLowerCase().indexOf(cleanMatcher.toLowerCase());
+          const matcherIndex = decodedOldPath.toLowerCase().indexOf(decodedMatcher.toLowerCase());
           if (matcherIndex !== -1) {
-            const beforeMatch = workingOldPath.substring(0, matcherIndex);
-            const afterMatch = workingOldPath.substring(matcherIndex + cleanMatcher.length);
+            const beforeMatch = decodedOldPath.substring(0, matcherIndex);
+            const afterMatch = decodedOldPath.substring(matcherIndex + decodedMatcher.length);
             newPath = beforeMatch + '/' + cleanTarget + afterMatch;
           } else {
             newPath = '/' + cleanTarget;
@@ -103,6 +121,7 @@ export function traceUrlGeneration(
         }
         nextUrl = cleanDomain + newPath;
       }
+
 
       trace.push({
           description: "Applied Partial/Path Rule" + (paramsDiscarded ? " (Query Params Discarded)" : ""),
@@ -142,9 +161,24 @@ export function traceUrlGeneration(
           const targetDomain = rule.targetUrl || cleanDomain;
           nextUrl = generateNewUrl(oldUrl, targetDomain);
       } else {
-          // Path replacement
-          if (workingOldPath.startsWith(cleanMatcher) || workingOldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
-              const suffix = workingOldPath.substring(cleanMatcher.length);
+
+          let decodedOldPathWild: string;
+          let decodedMatcherWild: string;
+          try {
+            decodedOldPathWild = decodeURIComponent(workingOldPath);
+          } catch {
+            decodedOldPathWild = workingOldPath;
+          }
+          try {
+            decodedMatcherWild = decodeURIComponent(cleanMatcher);
+          } catch {
+            decodedMatcherWild = cleanMatcher;
+          }
+
+
+          // Compare decoded strings instead of raw encoded strings
+          if (decodedOldPathWild.toLowerCase().startsWith(decodedMatcherWild.toLowerCase())) {
+              const suffix = decodedOldPathWild.substring(decodedMatcherWild.length);
 
               let targetBase = rawTarget;
 

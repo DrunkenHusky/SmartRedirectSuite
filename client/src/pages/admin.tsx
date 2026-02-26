@@ -778,6 +778,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] })
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -841,6 +842,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", `/api/admin/rules/${id}`, rule),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -903,6 +905,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/rules/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
         title: "Regel gelöscht",
         description: "1 Regel wurde erfolgreich gelöscht.",
@@ -1067,6 +1070,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setSelectedRuleIds([]);
       setShowBulkDeleteDialog(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
     },
     onError: (error: any) => {
       if (error?.status === 403 || error?.status === 401) {
@@ -1230,6 +1234,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("POST", "/api/admin/rules", { ...rule, forceCreate: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -1251,6 +1256,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", `/api/admin/rules/${id}`, { ...rule, forceUpdate: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -1600,6 +1606,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       setShowPreviewDialog(false);
       setImportPreviewData(null);
 
@@ -1679,6 +1686,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       setShowDeleteAllDialog(false);
       setDeleteAllConfirmationText("");
       toast({

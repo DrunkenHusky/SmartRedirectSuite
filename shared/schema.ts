@@ -38,7 +38,9 @@ export const urlRuleSchema = z.object({
     .min(1, "URL matcher cannot be empty")
     .max(500, "URL matcher too long")
     .regex(URL_MATCHER_PATTERN, "Invalid URL matcher format")
-    .transform(val => val.toLowerCase().trim()), // Normalize for consistency
+    // Removed .toLowerCase() -- it lowercased hex digits in percent-encoded chars (%2F -> %2f)
+    // causing mismatches with URL() which normalizes to uppercase. Matching is already case-insensitive.
+    .transform(val => val.trim()),
   targetUrl: z.string()
     .max(2000, "Target URL too long")
     .optional(),

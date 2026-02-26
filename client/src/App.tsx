@@ -62,6 +62,7 @@ function App() {
     localStorage.removeItem('showAdminView');
     localStorage.removeItem('adminActiveTab');
     localStorage.removeItem('adminStatsView');
+    queryClient.invalidateQueries();
     setCurrentView('migration');
   };
 
