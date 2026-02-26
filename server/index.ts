@@ -7,6 +7,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { FileSessionStore } from "./fileSessionStore";
 import { rateLimitMiddleware, adminRateLimitMiddleware, csrfCheck } from "./middleware/security";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -193,4 +194,15 @@ app.use('/api/admin', csrfCheck);
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  //Graceful shutdown handler to flush pending debounced rule writes
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`Received ${signal}, flushing pending writes...`);
+
+    await storage.flushRulesPersist();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 })();

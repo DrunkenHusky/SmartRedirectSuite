@@ -178,6 +178,16 @@ export class FileStorage implements IStorage {
   private trackingCache: UrlTracking[] | null = null;
   private trackingPersistTimer: NodeJS.Timeout | null = null;
 
+  //ID to index and matcher to index lookup maps for rule access
+  private ruleIdToIndex: Map<string, number> | null = null;
+  private ruleMatcherToIndex: Map<string, number> | null = null;
+
+  //Parallel clean rules cache ready for disk writes without transformation
+  private cleanRulesCache: UrlRule[] | null = null;
+
+  //Write debounce state for batching rapid sequential writes
+  private rulesPersistTimer: NodeJS.Timeout | null = null;
+  private rulesPersistPending: boolean = false;
   constructor() {
     this.ensureDataDirectory();
   }
@@ -229,8 +239,10 @@ export class FileStorage implements IStorage {
     }
   }
 
-  private async writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+  private async writeJsonFile<T>(filePath: string, data: T[], prettyPrint: boolean = false): Promise<void> {
+    const json = prettyPrint ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+
+    await fs.writeFile(filePath, json);
   }
 
   private scheduleTrackingPersist(): void {
@@ -252,6 +264,63 @@ export class FileStorage implements IStorage {
       }
     }, 5000);
   }
+
+  //Rebuild both ID to index and matcher to index lookup maps from current rulesCache
+  private rebuildIndexMaps(): void {
+    if (!this.rulesCache) {
+      this.ruleIdToIndex = null;
+      this.ruleMatcherToIndex = null;
+      return;
+    }
+
+    this.ruleIdToIndex = new Map();
+    this.ruleMatcherToIndex = new Map();
+
+    for (let i = 0; i < this.rulesCache.length; i++) {
+      this.ruleIdToIndex.set(this.rulesCache[i]!.id, i);
+      this.ruleMatcherToIndex.set(this.rulesCache[i]!.matcher, i);
+    }
+  }
+
+  //Debounced write for rules.json to batch rapid sequential mutations
+  private scheduleRulesPersist(): void {
+    this.rulesPersistPending = true;
+
+    if (this.rulesPersistTimer) {
+      clearTimeout(this.rulesPersistTimer);
+    }
+
+    this.rulesPersistTimer = setTimeout(async () => {
+      this.rulesPersistTimer = null;
+      this.rulesPersistPending = false;
+
+      if (!this.cleanRulesCache) {
+        return;
+      }
+
+      try {
+        await this.writeJsonFile(RULES_FILE, this.cleanRulesCache);
+      } catch (error) {
+        console.error("Failed to persist rules data:", error);
+        this.rulesPersistPending = true;
+      }
+    }, 500);
+  }
+
+  //Immediate flush for operations that need guaranteed persistence and shutdown
+  async flushRulesPersist(): Promise<void> {
+    if (this.rulesPersistTimer) {
+      clearTimeout(this.rulesPersistTimer);
+      this.rulesPersistTimer = null;
+    }
+
+    if (this.rulesPersistPending && this.cleanRulesCache) {
+      this.rulesPersistPending = false;
+
+      await this.writeJsonFile(RULES_FILE, this.cleanRulesCache);
+    }
+  }
+
 
   // Helper to ensure rules are loaded and processed
   private async ensureRulesLoaded(config?: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
@@ -287,6 +356,7 @@ export class FileStorage implements IStorage {
 
           this.rulesCache = newCache;
           this.lastCacheConfig = config;
+          this.rebuildIndexMaps();
         }
       }
       return this.rulesCache;
@@ -294,6 +364,9 @@ export class FileStorage implements IStorage {
 
     // Cache miss: Load from file
     const rawRules = await this.readJsonFile<UrlRule>(RULES_FILE, []);
+
+    //Store clean version before processing for disk writes without transformation
+    this.cleanRulesCache = rawRules;
 
     // Determine config: use provided or fetch settings to build default
     let effectiveConfig = config;
@@ -321,6 +394,9 @@ export class FileStorage implements IStorage {
     // Process rules
     this.rulesCache = processed;
     this.lastCacheConfig = effectiveConfig;
+
+    //Build index maps after initial load
+    this.rebuildIndexMaps();
 
     return this.rulesCache;
   }
@@ -369,6 +445,11 @@ export class FileStorage implements IStorage {
   // Public method to get clean rules for export
   async getCleanUrlRules(): Promise<UrlRule[]> {
     const rules = await this.ensureRulesLoaded();
+
+    if (this.cleanRulesCache) {
+      return this.cleanRulesCache;
+    }
+    
     return this.cleanRulesForSave(rules);
   }
 
@@ -459,6 +540,14 @@ export class FileStorage implements IStorage {
 
   async getUrlRule(id: string): Promise<UrlRule | undefined> {
     const rules = await this.getUrlRules();
+
+    //Use index map for lookup instead of linear scan
+    if (this.ruleIdToIndex) {
+      const index = this.ruleIdToIndex.get(id);
+
+      return index !== undefined ? rules[index] : undefined;
+    }
+
     return rules.find((rule) => rule.id === id);
   }
 
@@ -474,13 +563,17 @@ export class FileStorage implements IStorage {
       // Validate for duplicates and overlaps
       const validationErrors: string[] = [];
 
-      // Check for exact duplicates
-      const existingRuleWithSameMatcher = rules.find(
-        (r) => r.matcher === insertRule.matcher,
-      );
-      if (existingRuleWithSameMatcher) {
+      const hasDuplicateMatcher = this.ruleMatcherToIndex
+        ? this.ruleMatcherToIndex.has(insertRule.matcher)
+        : rules.some((r) => r.matcher === insertRule.matcher);
+
+      //Look up the existing rule ID via index map for the error message
+      if (hasDuplicateMatcher) {
+        const existingIndex = this.ruleMatcherToIndex?.get(insertRule.matcher);
+        const existingId = existingIndex !== undefined ? rules[existingIndex]?.id : rules.find(r => r.matcher === insertRule.matcher)?.id;
+
         validationErrors.push(
-          `URL-Matcher bereits vorhanden: "${insertRule.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
+          `URL-Matcher bereits vorhanden: "${insertRule.matcher}" (existierende Regel-ID: ${existingId})`,
         );
       }
 
@@ -506,15 +599,24 @@ export class FileStorage implements IStorage {
     const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
     const processedRule = preprocessRule(rawRule, config);
 
-    // Create copy for modification
-    const newRules = [...rules, processedRule];
+    //Push to rulesCache in place instead of full array copy
+    rules.push(processedRule);
 
-    // Save cleanly to file
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
+    if (this.cleanRulesCache) {
+      this.cleanRulesCache.push(rawRule);
+    }
 
-    // Update cache after successful write
-    this.rulesCache = newRules;
-    // lastCacheConfig remains valid
+    const newIndex = rules.length - 1;
+
+    if (this.ruleIdToIndex) {
+      this.ruleIdToIndex.set(rawRule.id, newIndex);
+    }
+
+    if (this.ruleMatcherToIndex) {
+      this.ruleMatcherToIndex.set(rawRule.matcher, newIndex);
+    }
+
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesCache || this.cleanRulesForSave(rules));
 
     return processedRule;
   }
@@ -525,21 +627,40 @@ export class FileStorage implements IStorage {
     force: boolean = false,
   ): Promise<UrlRule | undefined> {
     const rules = await this.ensureRulesLoaded();
-    const index = rules.findIndex((rule) => rule.id === id);
-    if (index === -1) return undefined;
+
+    //Use index map for lookup instead of linear scan
+    const index = this.ruleIdToIndex
+      ? this.ruleIdToIndex.get(id)
+      : rules.findIndex((rule) => rule.id === id);
+
+    if (index === undefined || index === -1) {
+      return undefined;
+    }
 
     // Skip validation if force flag is set or if matcher is not being updated
     if (!force && updateData.matcher) {
       const validationErrors: string[] = [];
 
-      // Check for exact duplicates (excluding the current rule being updated)
-      const existingRuleWithSameMatcher = rules.find(
-        (r) => r.matcher === updateData.matcher && r.id !== id,
-      );
-      if (existingRuleWithSameMatcher) {
-        validationErrors.push(
-          `URL-Matcher bereits vorhanden: "${updateData.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
+      //Use matcher index map duplicate check
+      if (this.ruleMatcherToIndex) {
+        const existingIndex = this.ruleMatcherToIndex.get(updateData.matcher);
+
+        if (existingIndex !== undefined && rules[existingIndex]?.id !== id) {
+          validationErrors.push(
+            `URL-Matcher bereits vorhanden: "${updateData.matcher}" (existierende Regel-ID: ${rules[existingIndex]!.id})`,
+          );
+        }
+      } else {
+        // Fallback to linear scan if maps not available
+        const existingRuleWithSameMatcher = rules.find(
+          (r) => r.matcher === updateData.matcher && r.id !== id,
         );
+
+        if (existingRuleWithSameMatcher) {
+          validationErrors.push(
+            `URL-Matcher bereits vorhanden: "${updateData.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
+          );
+        }
       }
 
       // Check for overlapping patterns (excluding the current rule being updated)
@@ -551,41 +672,65 @@ export class FileStorage implements IStorage {
       }
     }
 
-    // Create shallow copy of rules
-    const newRules = [...rules];
+    //Track old matcher for index map update
+    const oldMatcher = rules[index]!.matcher;
 
     // Create updated rule
-    const updatedRaw = { ...newRules[index], ...updateData };
+    const updatedRaw = { ...rules[index]!, ...updateData };
 
     // Sanitize flags based on redirect type
     sanitizeRuleFlags(updatedRaw);
 
     // Re-process the updated rule
     const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
-    newRules[index] = preprocessRule(updatedRaw as UrlRule, config);
 
-    // Save cleanly
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
+    //Update rulesCache in-place instead of full array copy
+    rules[index] = preprocessRule(updatedRaw as UrlRule, config);
 
-    // Update cache after successful write
-    this.rulesCache = newRules;
+    //Update cleanRulesCache at the same index
+    if (this.cleanRulesCache) {
+      const { normalizedPath, normalizedQuery, queryMap, normalizedTarget, isRegex, regex, isDomainMatcher, ...cleanRule } = rules[index] as any;
 
-    return newRules[index];
+      this.cleanRulesCache[index] = cleanRule as UrlRule;
+    }
+
+    //Update matcher index map if matcher changed
+    if (this.ruleMatcherToIndex && updateData.matcher && oldMatcher !== updateData.matcher) {
+      this.ruleMatcherToIndex.delete(oldMatcher);
+      this.ruleMatcherToIndex.set(updateData.matcher, index);
+    }
+
+    //Use debounced write instead of immediate write
+    this.scheduleRulesPersist();
+
+    return rules[index];
   }
 
   async deleteUrlRule(id: string): Promise<boolean> {
     const rules = await this.ensureRulesLoaded();
-    const index = rules.findIndex((rule) => rule.id === id);
-    if (index === -1) return false;
 
-    // Create shallow copy of rules
-    const newRules = [...rules];
-    newRules.splice(index, 1);
+    //Use index map for lookup instead of linear scan
+    const index = this.ruleIdToIndex
+      ? this.ruleIdToIndex.get(id)
+      : rules.findIndex((rule) => rule.id === id);
 
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
+    if (index === undefined || index === -1) {
+      return false;
+    }
 
-    // Update cache after successful write
-    this.rulesCache = newRules;
+    //Splice rulesCache in-place instead of full array copy
+    rules.splice(index, 1);
+
+    //Splice cleanRulesCache at the same index
+    if (this.cleanRulesCache) {
+      this.cleanRulesCache.splice(index, 1);
+    }
+
+    //Rebuild index maps since indices shifted after splice
+    this.rebuildIndexMaps();
+
+    //Use debounced write instead of immediate write
+    this.scheduleRulesPersist();
 
     return true;
   }
@@ -598,6 +743,8 @@ export class FileStorage implements IStorage {
     const idsToDelete = new Set(ids);
 
     const originalCount = rules.length;
+
+    //Filter rulesCache in-place by reassigning
     const filteredRules = rules.filter((rule) => !idsToDelete.has(rule.id));
     const deletedCount = originalCount - filteredRules.length;
     const notFoundCount = ids.length - deletedCount;
@@ -606,11 +753,20 @@ export class FileStorage implements IStorage {
       `ATOMIC BULK DELETE: Original ${originalCount}, Requested ${ids.length}, Deleted ${deletedCount}, Not found ${notFoundCount}`,
     );
 
-    // Single atomic write operation
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(filteredRules));
-
-    // Update cache after successful write
+    //Update rulesCache to filtered result
     this.rulesCache = filteredRules;
+
+    //Filter cleanRulesCache with the same ID set
+    if (this.cleanRulesCache) {
+      this.cleanRulesCache = this.cleanRulesCache.filter((rule) => !idsToDelete.has(rule.id));
+    }
+
+    //Rebuild index maps since indices changed completely
+    this.rebuildIndexMaps();
+
+    //Write cleanRulesCache directly instead of cleanRulesForSave
+    //Single atomic write operation - immediate, not debounced (already a single atomic operation)
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesCache || this.cleanRulesForSave(filteredRules));
 
     return { deleted: deletedCount, notFound: notFoundCount };
   }
@@ -620,6 +776,10 @@ export class FileStorage implements IStorage {
     // Update cache after successful write
     this.rulesCache = [];
     // Cache config stays valid for empty array
+
+    this.cleanRulesCache = [];
+    this.ruleIdToIndex = new Map();
+    this.ruleMatcherToIndex = new Map();
   }
 
   // URL-Tracking implementierung
@@ -1445,10 +1605,17 @@ export class FileStorage implements IStorage {
     }
 
     // Save all rules back to file
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
+    //Build cleanRulesCache from newRules before writing
+    this.cleanRulesCache = this.cleanRulesForSave(newRules);
+
+    //Write cleanRulesCache directly instead of cleanRulesForSave on every write
+    await this.writeJsonFile(RULES_FILE, this.cleanRulesCache);
 
     // Update cache after successful write
     this.rulesCache = newRules;
+
+    //Rebuild class-level index maps from updated cache
+    this.rebuildIndexMaps();
 
     return { imported, updated, errors: [] };
   }
@@ -1640,9 +1807,14 @@ export class FileStorage implements IStorage {
 
   async forceCacheRebuild(): Promise<void> {
     console.log("Forcing cache rebuild...");
+    await this.flushRulesPersist();
     this.rulesCache = null;
     this.lastCacheConfig = null;
     this.trackingCache = null;
+    this.cleanRulesCache = null;
+    this.ruleIdToIndex = null;
+    this.ruleMatcherToIndex = null;
+
     await this.ensureRulesLoaded();
     console.log("Cache rebuild complete.");
   }
