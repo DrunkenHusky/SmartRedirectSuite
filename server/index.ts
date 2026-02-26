@@ -199,7 +199,11 @@ app.use('/api/admin', csrfCheck);
   const gracefulShutdown = async (signal: string) => {
     console.log(`Received ${signal}, flushing pending writes...`);
 
-    await storage.flushRulesPersist();
+        await Promise.all([
+    storage.flushRulesPersist(),
+      storage.flushTrackingPersist(),
+    ]);
+    console.log("All pending writes flushed.");
     process.exit(0);
   };
 

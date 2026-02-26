@@ -192,6 +192,39 @@ export class FileStorage implements IStorage {
     this.ensureDataDirectory();
   }
 
+  private async tryParseJsonFile<T>(filePath: string): Promise<T[]> {
+    const stats = await fs.stat(filePath);
+
+    if (stats.size > 10 * 1024 * 1024) {
+      const { createReadStream } = await import('fs');
+
+      return new Promise<T[]>((resolve, reject) => {
+        let buffer = '';
+        const stream = createReadStream(filePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
+
+        stream.on('data', (chunk: string | Buffer) => {
+          buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf8');
+        });
+
+        stream.on('end', () => {
+          try {
+            const parsed = JSON.parse(buffer);
+            resolve(parsed);
+          }
+          catch (error) {
+            reject(error);
+          }
+        });
+
+        stream.on('error', reject);
+      });
+    }
+
+    const data = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(data);
+  }
+
+
   private async ensureDataDirectory() {
     try {
       await fs.access(DATA_DIR);
@@ -205,44 +238,43 @@ export class FileStorage implements IStorage {
     defaultValue: T[],
   ): Promise<T[]> {
     try {
-      const stats = await fs.stat(filePath);
+      return await this.tryParseJsonFile<T>(filePath);
+    } catch (mainError) {
+      const fileExists = await fs.access(filePath).then(() => true).catch(() => false);
 
-      if (stats.size > 10 * 1024 * 1024) {
-        const { createReadStream } = await import('fs');
-
-        return new Promise<T[]>((resolve, reject) => {
-          let buffer = '';
-          const stream = createReadStream(filePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
-
-          stream.on('data', (chunk: string | Buffer) => {
-            buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf8');
-          });
-
-          stream.on('end', () => {
-            try {
-              const parsed = JSON.parse(buffer);
-              resolve(parsed);
-            }
-            catch (error) {
-              reject(error);
-            }
-          });
-
-          stream.on('error', reject);
-        });
+      if (fileExists) {
+        console.error(`CORRUPTION DETECTED in ${filePath}: ${mainError instanceof Error ? mainError.message : String(mainError)}`);
       }
 
-      const data = await fs.readFile(filePath, "utf-8");
-      return JSON.parse(data);
-    } catch {
-      return defaultValue;
+      const backupPath = filePath + '.bak';
+
+      try {
+        const backupData = await this.tryParseJsonFile<T>(backupPath);
+
+        console.warn(`RECOVERED ${backupData.length} entries from backup ${backupPath}`);
+
+        await fs.copyFile(backupPath, filePath);
+
+        return backupData;
+      } catch {
+        if (fileExists) {
+          console.error(`BACKUP ALSO UNAVAILABLE for ${filePath}, returning empty default. DATA MAY BE LOST.`);
+        }
+
+        return defaultValue;
+      }
     }
   }
 
+  //Atomic write via temp file + rename instead of direct fs.writeFile to prevent corruption on crash
   private async writeJsonFile<T>(filePath: string, data: T[], prettyPrint: boolean = false): Promise<void> {
     const json = prettyPrint ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+    const tempPath = filePath + '.tmp';
+    const backupPath = filePath + '.bak';
 
-    await fs.writeFile(filePath, json);
+    await fs.writeFile(tempPath, json);
+    await fs.copyFile(filePath, backupPath).catch(() => {});
+    await fs.rename(tempPath, filePath);
   }
 
   private scheduleTrackingPersist(): void {
@@ -321,6 +353,17 @@ export class FileStorage implements IStorage {
     }
   }
 
+  //Immediate flush for pending tracking data on shutdown
+  async flushTrackingPersist(): Promise<void> {
+    if (this.trackingPersistTimer) {
+      clearTimeout(this.trackingPersistTimer);
+      this.trackingPersistTimer = null;
+    }
+
+    if (this.trackingCache) {
+      await this.writeJsonFile(TRACKING_FILE, this.trackingCache);
+    }
+  }
 
   // Helper to ensure rules are loaded and processed
   private async ensureRulesLoaded(config?: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
@@ -1808,6 +1851,7 @@ export class FileStorage implements IStorage {
   async forceCacheRebuild(): Promise<void> {
     console.log("Forcing cache rebuild...");
     await this.flushRulesPersist();
+    await this.flushTrackingPersist();
     this.rulesCache = null;
     this.lastCacheConfig = null;
     this.trackingCache = null;
