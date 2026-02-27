@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Robert210793/SmartRedirectSuite---SQLIte-Rework/compare/v1.0.0...v1.0.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* rename to kebab-case to avoid tsx case-sensitivity issue on Linux ([99d79cd](https://github.com/Robert210793/SmartRedirectSuite---SQLIte-Rework/commit/99d79cd3fe18d391e5bb8ca3f37fd99ba8f8e3ef))
+
 # 1.0.0 (2026-02-27)
 
 
