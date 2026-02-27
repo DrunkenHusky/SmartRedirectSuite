@@ -2399,6 +2399,74 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Text für den Button der das PopUp-Fenster öffnet
                             </p>
                           </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Kopieren Button-Text
+                              </label>
+                              <div className="flex gap-3 items-center">
+                                <DebouncedInput
+                                  id="copyButtonText"
+                                  value={generalSettings.copyButtonText}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })}
+                                  placeholder="URL kopieren"
+                                  className={`flex-1 bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? "border-red-500 focus:border-red-500" : ""}`}
+                                  disabled={generalSettings.popupMode === "disabled" || !generalSettings.enableCopyButton}
+                                />
+                                <Switch
+                                  checked={generalSettings.enableCopyButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableCopyButton: checked })}
+                                  disabled={generalSettings.popupMode === "disabled"}
+                                  title="Button anzeigen/ausblenden"
+                                />
+                              </div>
+                              {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Öffnen Button-Text
+                              </label>
+                              <div className="flex gap-3 items-center">
+                                <DebouncedInput
+                                  id="openButtonText"
+                                  value={generalSettings.openButtonText}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })}
+                                  placeholder="In neuem Tab öffnen"
+                                  className={`flex-1 bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? "border-red-500 focus:border-red-500" : ""}`}
+                                  disabled={generalSettings.popupMode === "disabled" || !generalSettings.enableOpenButton}
+                                />
+                                <Switch
+                                  checked={generalSettings.enableOpenButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableOpenButton: checked })}
+                                  disabled={generalSettings.popupMode === "disabled"}
+                                  title="Button anzeigen/ausblenden"
+                                />
+                              </div>
+                              {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
+                            </div>
+                          </div>
+
+                          <div className="pt-2">
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              Verhalten bei Klick auf neue URL
+                            </label>
+                            <Select value={generalSettings.newUrlClickBehavior} onValueChange={(value) =>
+                              setGeneralSettings({ ...generalSettings, newUrlClickBehavior: value as any })
+                            } disabled={generalSettings.popupMode === "disabled"}>
+                              <SelectTrigger className="bg-white dark:bg-gray-700">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Deaktiviert (Keine Aktion)</SelectItem>
+                                <SelectItem value="open">In neuem Tab öffnen</SelectItem>
+                                <SelectItem value="copy">URL in Zwischenablage kopieren</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Legt fest, was passiert, wenn der Nutzer direkt auf das Feld mit der neuen URL klickt.
+                            </p>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">

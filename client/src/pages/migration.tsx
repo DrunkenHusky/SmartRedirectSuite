@@ -668,12 +668,12 @@ return (
                                   className={`bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors ${settings?.newUrlClickBehavior === "none" ? "cursor-default" : "cursor-pointer"} h-full flex items-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 outline-none`}
                                   onClick={handleNewUrlClick}
                                   role="button"
-                                  tabIndex={0}
+                                  tabIndex={settings?.newUrlClickBehavior === "none" ? -1 : 0}
                                   aria-label="Neue URL in die Zwischenablage kopieren"
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
-                                      handleCopy();
+                                      handleNewUrlClick();
                                     }
                                   }}
                                 >
