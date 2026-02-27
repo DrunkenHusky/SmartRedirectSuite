@@ -1,0 +1,29 @@
+
+> smartredirectsuite@6946780 dev
+> cross-env NODE_ENV=development tsx server/index.ts
+
+WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.
+WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.
+INFO: Alle existierenden Sitzungen wurden bereinigt.
+8:22:30 AM [express] serving on port 5000
+(!) Failed to run dependency scan. Skipping dependency pre-bundling. Error:   Failed to scan for dependencies from entries:
+  /app/client/index.html
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mExpected ">" but found "\"\n                                  onClick={handleNewUrlClick}\n                                  role=\""[0m
+
+    client/src/pages/migration.tsx:668:332:
+[37m      668 │ ...visible:ring-offset-2 focus-visible:ring-green-500 outline-non`}[32m"[37m
+          │                                                                    [32m^[37m
+          ╵                                                                    [32m>[0m
+
+
+    at failureErrorWithLog (/app/node_modules/vite/node_modules/esbuild/lib/main.js:1467:15)
+    at /app/node_modules/vite/node_modules/esbuild/lib/main.js:926:25
+    at runOnEndCallbacks (/app/node_modules/vite/node_modules/esbuild/lib/main.js:1307:45)
+    at buildResponseToResult (/app/node_modules/vite/node_modules/esbuild/lib/main.js:924:7)
+    at /app/node_modules/vite/node_modules/esbuild/lib/main.js:936:9
+    at new Promise (<anonymous>)
+    at requestCallbacks.on-end (/app/node_modules/vite/node_modules/esbuild/lib/main.js:935:54)
+    at handleRequest (/app/node_modules/vite/node_modules/esbuild/lib/main.js:628:17)
+    at handleIncomingPacket (/app/node_modules/vite/node_modules/esbuild/lib/main.js:653:7)
+    at Socket.readFromStdout (/app/node_modules/vite/node_modules/esbuild/lib/main.js:581:7)

@@ -355,9 +355,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     urlComparisonBackgroundColor: "#ffffff",
     oldUrlLabel: "Alte URL (veraltet)",
     newUrlLabel: "Neue URL (verwenden Sie diese)",
+    newUrlClickBehavior: "copy" as "none" | "open" | "copy",
     defaultNewDomain: "https://thisisthenewurl.com/",
     copyButtonText: "URL kopieren",
+    enableCopyButton: true,
     openButtonText: "In neuem Tab öffnen",
+    enableOpenButton: true,
     showUrlButtonText: "Zeige mir die neue URL",
     popupButtonText: "Zeige mir die neue URL",
     specialHintsTitle: "Spezielle Hinweise für diese URL",
@@ -715,9 +718,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         urlComparisonBackgroundColor: settingsData.urlComparisonBackgroundColor || "#ffffff",
         oldUrlLabel: settingsData.oldUrlLabel || "Alte URL (veraltet)",
         newUrlLabel: settingsData.newUrlLabel || "Neue URL (verwenden Sie diese)",
+        newUrlClickBehavior: settingsData.newUrlClickBehavior || "copy",
         defaultNewDomain: settingsData.defaultNewDomain || "https://thisisthenewurl.com/",
         copyButtonText: settingsData.copyButtonText || "URL kopieren",
+        enableCopyButton: settingsData.enableCopyButton ?? true,
         openButtonText: settingsData.openButtonText || "In neuem Tab öffnen",
+        enableOpenButton: settingsData.enableOpenButton ?? true,
         showUrlButtonText: settingsData.showUrlButtonText || "Zeige mir die neue URL",
         popupButtonText: settingsData.popupButtonText || "Zeige mir die neue URL",
         specialHintsTitle: settingsData.specialHintsTitle || "Spezielle Hinweise für diese URL",
@@ -2891,11 +2897,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                        <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
                                        <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Switch
+                                  id="enableCopyButton"
+                                  checked={generalSettings.enableCopyButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableCopyButton: checked })}
+                                />
+                                <label htmlFor="enableCopyButton" className="text-xs text-gray-500">
+                                  Kopieren-Button anzeigen
+                                </label>
+                              </div>
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
                                        <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Switch
+                                  id="enableOpenButton"
+                                  checked={generalSettings.enableOpenButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableOpenButton: checked })}
+                                />
+                                <label htmlFor="enableOpenButton" className="text-xs text-gray-500">
+                                  Öffnen-Button anzeigen
+                                </label>
+                              </div>
                                      </div>
                                    </div>
                                </div>

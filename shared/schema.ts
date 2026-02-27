@@ -282,6 +282,7 @@ export const generalSettingsSchema = z.object({
     .min(1, "Label für neue URL darf nicht leer sein")
     .max(50, "Label für neue URL ist zu lang")
     .trim(),
+  newUrlClickBehavior: z.enum(["none", "open", "copy"]).default("copy"),
   defaultNewDomain: z.string()
     .max(500, "Standard-Domain ist zu lang")
     .refine((val) => val.startsWith('http://') || val.startsWith('https://'), {
@@ -324,10 +325,12 @@ export const generalSettingsSchema = z.object({
     .min(1, "Kopieren-Button-Text darf nicht leer sein")
     .max(50, "Kopieren-Button-Text ist zu lang")
     .trim(),
+  enableCopyButton: z.boolean().default(true),
   openButtonText: z.string()
     .min(1, "Öffnen-Button-Text darf nicht leer sein")
     .max(50, "Öffnen-Button-Text ist zu lang")
     .trim(),
+  enableOpenButton: z.boolean().default(true),
   showUrlButtonText: z.string()
     .min(1, "URL-anzeigen-Button-Text darf nicht leer sein")
     .max(50, "URL-anzeigen-Button-Text ist zu lang")
