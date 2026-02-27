@@ -557,7 +557,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
     onAdminAccess();
   };
 
-  return (
+
+  const handleNewUrlClick = () => {
+    if (settings?.newUrlClickBehavior === "copy") {
+      handleCopy();
+    } else if (settings?.newUrlClickBehavior === "open") {
+      handleOpenNewTab();
+    }
+  };
+return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="bg-surface shadow-sm border-b border-border" style={{ backgroundColor: settings?.headerBackgroundColor || 'white' }}>
@@ -657,15 +665,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                 <div
-                                  className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-pointer h-full flex items-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 outline-none"
-                                  onClick={handleCopy}
+                                  className={`bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors ${settings?.newUrlClickBehavior === "none" ? "cursor-default" : "cursor-pointer"} h-full flex items-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 outline-none`}
+                                  onClick={handleNewUrlClick}
                                   role="button"
-                                  tabIndex={0}
+                                  tabIndex={settings?.newUrlClickBehavior === "none" ? -1 : 0}
                                   aria-label="Neue URL in die Zwischenablage kopieren"
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
-                                      handleCopy();
+                                      handleNewUrlClick();
                                     }
                                   }}
                                 >
@@ -675,7 +683,10 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                                 </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                <p>Klicken zum Kopieren</p>
+                                <p>
+                                  {settings?.newUrlClickBehavior === "copy" && "Klicken zum Kopieren"}
+                                  {settings?.newUrlClickBehavior === "open" && "Klicken zum Öffnen"}
+                                </p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -686,7 +697,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3">
-                      <Button
+                      {settings?.enableCopyButton !== false && (<Button
                         onClick={handleCopy}
                         className="flex items-center space-x-2 transition-all duration-200"
                         aria-label={isCopied ? "URL kopiert" : "Neue URL in Zwischenablage kopieren"}
@@ -698,8 +709,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                           <Copy className="h-4 w-4" />
                         )}
                         <span>{isCopied ? "Kopiert!" : (settings?.copyButtonText || "URL kopieren")}</span>
-                      </Button>
-                      <Button
+                      </Button>)}
+                      {settings?.enableOpenButton !== false && (<Button
                         variant="secondary"
                         onClick={handleOpenNewTab}
                         className="flex items-center space-x-2"
@@ -707,7 +718,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       >
                         <ExternalLink className="h-4 w-4" />
                         <span>{settings?.openButtonText || "In neuem Tab öffnen"}</span>
-                      </Button>
+                      </Button>)}
                     </div>
 
                     {/* Success Message */}

@@ -355,9 +355,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     urlComparisonBackgroundColor: "#ffffff",
     oldUrlLabel: "Alte URL (veraltet)",
     newUrlLabel: "Neue URL (verwenden Sie diese)",
+    newUrlClickBehavior: "copy" as "none" | "open" | "copy",
     defaultNewDomain: "https://thisisthenewurl.com/",
     copyButtonText: "URL kopieren",
+    enableCopyButton: true,
     openButtonText: "In neuem Tab öffnen",
+    enableOpenButton: true,
     showUrlButtonText: "Zeige mir die neue URL",
     popupButtonText: "Zeige mir die neue URL",
     specialHintsTitle: "Spezielle Hinweise für diese URL",
@@ -715,9 +718,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         urlComparisonBackgroundColor: settingsData.urlComparisonBackgroundColor || "#ffffff",
         oldUrlLabel: settingsData.oldUrlLabel || "Alte URL (veraltet)",
         newUrlLabel: settingsData.newUrlLabel || "Neue URL (verwenden Sie diese)",
+        newUrlClickBehavior: settingsData.newUrlClickBehavior || "copy",
         defaultNewDomain: settingsData.defaultNewDomain || "https://thisisthenewurl.com/",
         copyButtonText: settingsData.copyButtonText || "URL kopieren",
+        enableCopyButton: settingsData.enableCopyButton ?? true,
         openButtonText: settingsData.openButtonText || "In neuem Tab öffnen",
+        enableOpenButton: settingsData.enableOpenButton ?? true,
         showUrlButtonText: settingsData.showUrlButtonText || "Zeige mir die neue URL",
         popupButtonText: settingsData.popupButtonText || "Zeige mir die neue URL",
         specialHintsTitle: settingsData.specialHintsTitle || "Spezielle Hinweise für diese URL",
@@ -2393,6 +2399,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               Text für den Button der das PopUp-Fenster öffnet
                             </p>
                           </div>
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -2709,7 +2716,76 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
                           )}
 
-                           {/* Field 4: Fallback Info Messages (Grouped) */}
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Kopieren Button-Text
+                              </label>
+                              <div className="flex gap-3 items-center">
+                                <DebouncedInput
+                                  id="copyButtonText"
+                                  value={generalSettings.copyButtonText}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })}
+                                  placeholder="URL kopieren"
+                                  className={`flex-1 bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? "border-red-500 focus:border-red-500" : ""}`}
+                                  disabled={generalSettings.popupMode === "disabled" || !generalSettings.enableCopyButton}
+                                />
+                                <Switch
+                                  checked={generalSettings.enableCopyButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableCopyButton: checked })}
+                                  disabled={generalSettings.popupMode === "disabled"}
+                                  title="Button anzeigen/ausblenden"
+                                />
+                              </div>
+                              {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Öffnen Button-Text
+                              </label>
+                              <div className="flex gap-3 items-center">
+                                <DebouncedInput
+                                  id="openButtonText"
+                                  value={generalSettings.openButtonText}
+                                  onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })}
+                                  placeholder="In neuem Tab öffnen"
+                                  className={`flex-1 bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? "border-red-500 focus:border-red-500" : ""}`}
+                                  disabled={generalSettings.popupMode === "disabled" || !generalSettings.enableOpenButton}
+                                />
+                                <Switch
+                                  checked={generalSettings.enableOpenButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableOpenButton: checked })}
+                                  disabled={generalSettings.popupMode === "disabled"}
+                                  title="Button anzeigen/ausblenden"
+                                />
+                              </div>
+                              {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
+                            </div>
+                          </div>
+
+                          <div className="pt-2">
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                              Verhalten bei Klick auf neue URL
+                            </label>
+                            <Select value={generalSettings.newUrlClickBehavior} onValueChange={(value) =>
+                              setGeneralSettings({ ...generalSettings, newUrlClickBehavior: value as any })
+                            } disabled={generalSettings.popupMode === "disabled"}>
+                              <SelectTrigger className="bg-white dark:bg-gray-700">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Deaktiviert (Keine Aktion)</SelectItem>
+                                <SelectItem value="open">In neuem Tab öffnen</SelectItem>
+                                <SelectItem value="copy">URL in Zwischenablage kopieren</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Legt fest, was passiert, wenn der Nutzer direkt auf das Feld mit der neuen URL klickt.
+                            </p>
+                          </div>
+
+{/* Field 4: Fallback Info Messages (Grouped) */}
                            <div className="border-t pt-4 mt-4">
                                 <h4 className="text-sm font-medium mb-4">Fallback-Info-Nachrichten</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2891,11 +2967,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                        <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
                                        <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Switch
+                                  id="enableCopyButton"
+                                  checked={generalSettings.enableCopyButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableCopyButton: checked })}
+                                />
+                                <label htmlFor="enableCopyButton" className="text-xs text-gray-500">
+                                  Kopieren-Button anzeigen
+                                </label>
+                              </div>
                                      </div>
                                      <div>
                                        <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
                                        <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Switch
+                                  id="enableOpenButton"
+                                  checked={generalSettings.enableOpenButton}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableOpenButton: checked })}
+                                />
+                                <label htmlFor="enableOpenButton" className="text-xs text-gray-500">
+                                  Öffnen-Button anzeigen
+                                </label>
+                              </div>
                                      </div>
                                    </div>
                                </div>
