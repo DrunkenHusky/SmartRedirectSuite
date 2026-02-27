@@ -1,6 +1,6 @@
 import type { IStorage } from "./storage";
 import { FileStorage } from "./storage";
-import { SqliteStorage } from "./sqlitestorage";
+import { SqliteStorage } from "./sqlite-storage";
 
 function createStorage(): IStorage {
   const useSqlite = process.env.STORAGE_BACKEND === "sqlite";
