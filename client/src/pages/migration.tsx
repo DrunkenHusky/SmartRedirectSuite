@@ -657,15 +657,36 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                 <div
-                                  className="bg-green-50 border border-green-200 rounded-md p-3 hover:bg-green-100 transition-colors cursor-pointer h-full flex items-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 outline-none"
-                                  onClick={handleCopy}
+                                  className={`bg-green-50 border border-green-200 rounded-md p-3 transition-colors h-full flex items-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 outline-none ${settings?.newUrlClickBehavior === "none" ? "" : "cursor-pointer hover:bg-green-100"}`}
+                                  onClick={() => {
+                                    if (settings?.newUrlClickBehavior === 'open') {
+                                      handleOpenNewTab();
+                                    } else if (settings?.newUrlClickBehavior === 'none') {
+                                      // Do nothing
+                                    } else {
+                                      // Default to copy
+                                      handleCopy();
+                                    }
+                                  }}
                                   role="button"
                                   tabIndex={0}
-                                  aria-label="Neue URL in die Zwischenablage kopieren"
+                                  aria-label={
+                                    settings?.newUrlClickBehavior === 'open'
+                                      ? "Neue URL in neuem Tab öffnen"
+                                      : settings?.newUrlClickBehavior === 'none'
+                                        ? "Neue URL"
+                                        : "Neue URL in die Zwischenablage kopieren"
+                                  }
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
-                                      handleCopy();
+                                      if (settings?.newUrlClickBehavior === 'open') {
+                                        handleOpenNewTab();
+                                      } else if (settings?.newUrlClickBehavior === 'none') {
+                                        // Do nothing
+                                      } else {
+                                        handleCopy();
+                                      }
                                     }
                                   }}
                                 >
@@ -686,28 +707,32 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3">
-                      <Button
-                        onClick={handleCopy}
-                        className="flex items-center space-x-2 transition-all duration-200"
-                        aria-label={isCopied ? "URL kopiert" : "Neue URL in Zwischenablage kopieren"}
-                        variant={isCopied ? "outline" : "default"}
-                      >
-                        {isCopied ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                        <span>{isCopied ? "Kopiert!" : (settings?.copyButtonText || "URL kopieren")}</span>
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={handleOpenNewTab}
-                        className="flex items-center space-x-2"
-                        aria-label="Neue URL in neuem Tab öffnen"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        <span>{settings?.openButtonText || "In neuem Tab öffnen"}</span>
-                      </Button>
+                      {(settings?.enableCopyButton ?? true) && (
+                        <Button
+                          onClick={handleCopy}
+                          className="flex items-center space-x-2 transition-all duration-200"
+                          aria-label={isCopied ? "URL kopiert" : "Neue URL in Zwischenablage kopieren"}
+                          variant={isCopied ? "outline" : "default"}
+                        >
+                          {isCopied ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                          <span>{isCopied ? "Kopiert!" : (settings?.copyButtonText || "URL kopieren")}</span>
+                        </Button>
+                      )}
+                      {(settings?.enableOpenButton ?? true) && (
+                        <Button
+                          variant="secondary"
+                          onClick={handleOpenNewTab}
+                          className="flex items-center space-x-2"
+                          aria-label="Neue URL in neuem Tab öffnen"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span>{settings?.openButtonText || "In neuem Tab öffnen"}</span>
+                        </Button>
+                      )}
                     </div>
 
                     {/* Success Message */}
