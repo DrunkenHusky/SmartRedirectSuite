@@ -15,7 +15,7 @@ import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ru
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 
 // Helper to ensure only relevant flags are stored
-function sanitizeRuleFlags(rule: any): any {
+export function sanitizeRuleFlags(rule: any): any {
   if (rule.redirectType === "wildcard") {
     // Wildcard rules can now use both forwardQueryParams (legacy/simple) and discardQueryParams (advanced)
     // No deletion of parameter flags for wildcard
@@ -49,10 +49,11 @@ export interface IStorage {
     totalAllRules: number;
   }>;
   getUrlRule(id: string): Promise<UrlRule | undefined>;
-  createUrlRule(rule: InsertUrlRule): Promise<UrlRule>;
+  createUrlRule(rule: InsertUrlRule, force?: boolean): Promise<UrlRule>;
   updateUrlRule(
     id: string,
     rule: Partial<InsertUrlRule>,
+    force?: boolean,
   ): Promise<UrlRule | undefined>;
   deleteUrlRule(id: string): Promise<boolean>;
   bulkDeleteUrlRules(
@@ -148,10 +149,13 @@ export interface IStorage {
   getGeneralSettings(): Promise<GeneralSettings>;
   updateGeneralSettings(
     settings: InsertGeneralSettings,
+    replaceMode?: boolean,
   ): Promise<GeneralSettings>;
 
   // Maintenance
   forceCacheRebuild(): Promise<void>;
+  getCleanUrlRules(): Promise<UrlRule[]>;
+  shutdown(): Promise<void>;
 }
 
 export class FileStorage implements IStorage {
@@ -1861,6 +1865,16 @@ export class FileStorage implements IStorage {
 
     await this.ensureRulesLoaded();
     console.log("Cache rebuild complete.");
+  }
+
+  async shutdown(): Promise<void> {
+    console.log("FileStorage shutting down, flushing pending writes...");
+
+    await this.flushRulesPersist();
+
+    await this.flushTrackingPersist();
+
+    console.log("FileStorage shutdown complete.");
   }
 }
 

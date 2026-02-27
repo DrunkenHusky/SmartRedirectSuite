@@ -197,13 +197,11 @@ app.use('/api/admin', csrfCheck);
 
   //Graceful shutdown handler to flush pending debounced rule writes
   const gracefulShutdown = async (signal: string) => {
-    console.log(`Received ${signal}, flushing pending writes...`);
+    console.log(`Received ${signal}, shutting down storage...`);
 
-        await Promise.all([
-    storage.flushRulesPersist(),
-      storage.flushTrackingPersist(),
-    ]);
-    console.log("All pending writes flushed.");
+    await storage.shutdown();
+
+    console.log("Storage shutdown complete.");
     process.exit(0);
   };
 
