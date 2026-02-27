@@ -32,7 +32,7 @@
   "footerCopyright": "Proudly brewed with Generative AI.",
   "caseSensitiveLinkDetection": false,
   "autoRedirect": false,
-  "updatedAt": "2026-02-06T18:40:05.273Z",
+  "updatedAt": "2026-02-27T16:26:40.619Z",
   "popupMode": "inline",
   "showLinkQualityGauge": true,
   "headerLogoUrl": "",
@@ -86,5 +86,8 @@
     }
   ],
   "globalStaticQueryParams": [],
-  "globalKeptQueryParams": []
+  "globalKeptQueryParams": [],
+  "enableCopyButton": false,
+  "enableOpenButton": false,
+  "newUrlClickBehavior": "open"
 }

@@ -318,6 +318,11 @@ export const generalSettingsSchema = z.object({
     pathPattern: z.string().max(500, "Path Pattern too long").optional().nullable(),
     skipEncoding: z.boolean().default(false)
   })).optional().default([]),
+
+  // Migration Page Interactions
+  enableCopyButton: z.boolean().default(true),
+  enableOpenButton: z.boolean().default(true),
+  newUrlClickBehavior: z.enum(['none', 'copy', 'open']).default('copy'),
     
   // Button texts with validation
   copyButtonText: z.string()

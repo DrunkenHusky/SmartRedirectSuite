@@ -2296,6 +2296,62 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
+                      {/* 1.5 Interactions Settings */}
+                      <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs sm:text-sm font-semibold">1.5</div>
+                          <div>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">Interaktionen</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">Steuern Sie die Interaktionsmöglichkeiten auf der Migrationsseite</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                  <label className="text-sm font-medium text-foreground">Kopier-Button anzeigen</label>
+                                  <p className="text-xs text-muted-foreground">Blendet den Button zum Kopieren der URL ein/aus</p>
+                                </div>
+                                <Switch
+                                  checked={generalSettings.enableCopyButton ?? true}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableCopyButton: checked })}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                  <label className="text-sm font-medium text-foreground">Öffnen-Button anzeigen</label>
+                                  <p className="text-xs text-muted-foreground">Blendet den Button zum Öffnen im neuen Tab ein/aus</p>
+                                </div>
+                                <Switch
+                                  checked={generalSettings.enableOpenButton ?? true}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableOpenButton: checked })}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-foreground">Verhalten bei Klick auf URL-Feld</label>
+                              <Select
+                                value={generalSettings.newUrlClickBehavior || 'copy'}
+                                onValueChange={(value) => setGeneralSettings({ ...generalSettings, newUrlClickBehavior: value as any })}
+                              >
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="copy">Kopieren (Standard)</SelectItem>
+                                  <SelectItem value="open">In neuem Tab öffnen</SelectItem>
+                                  <SelectItem value="none">Keine Aktion</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Definiert was passiert, wenn der Nutzer direkt auf das Feld mit der neuen URL klickt.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* 2. PopUp Content Settings */}
                       <div className="space-y-4 sm:space-y-6">
                         <div className="flex items-center gap-3 border-b pb-3">
