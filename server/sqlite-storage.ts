@@ -46,8 +46,12 @@ export class SqliteStorage implements IStorage {
     }
 
     this.db = new Database(DB_FILE);
-    this.db.pragma("journal_mode = WAL");
-    this.db.pragma("synchronous = NORMAL");
+    this.db.pragma("journal_mode = DELETE");
+    this.db.pragma("synchronous = FULL");
+    this.db.pragma("busy_timeout = 5000");
+    this.db.pragma("locking_mode = EXCLUSIVE");
+    this.db.pragma("temp_store = MEMORY");
+
     this.jsonFallback = new FileStorage();
 
     this.createRulesTable();
