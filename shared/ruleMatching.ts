@@ -73,7 +73,7 @@ export function normalizeQuery(
     if (!map.has(normKey)) map.set(normKey, []);
     map.get(normKey)!.push(decodeURIComponent(value));
   }
-  for (const [key, arr] of map) {
+  for (const [, arr] of map) {
     arr.sort();
   }
   return map;

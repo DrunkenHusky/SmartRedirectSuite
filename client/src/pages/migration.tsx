@@ -18,7 +18,7 @@ import {
   Bookmark,
   Share2,
   Clock,
-  BarChart3,
+
   Settings,
   Star,
   Heart,
@@ -78,7 +78,6 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
   const [infoText, setInfoText] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showMainDialog, setShowMainDialog] = useState(false);
-  const [showUrlComparison, setShowUrlComparison] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

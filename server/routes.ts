@@ -17,7 +17,7 @@ import { LocalFileUploadService } from "./localFileUpload";
 import { bruteForceProtection, recordLoginFailure, resetLoginAttempts, resetAllLoginAttempts, getBlockedIps, blockIp } from "./middleware/bruteForce";
 import { apiRateLimiter, trackingRateLimiter } from "./middleware/rateLimit";
 import path from "path";
-import { findMatchingRule, findAllMatchingRules } from "@shared/ruleMatching";
+import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
 import { ImportExportService } from "./import-export";
@@ -859,8 +859,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const feedback = track.feedback || '';
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
             const userProposedUrl = track.userProposedUrl || '';
-            const strategy = track.redirectStrategy || '';
-            const globalRules = (track.appliedGlobalRules || []).map(r => r.description).join('; ');
 
             if (includeReferrer) {
               return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;

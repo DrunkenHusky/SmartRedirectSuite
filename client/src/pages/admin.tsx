@@ -18,7 +18,7 @@ import {
   DialogFooter,
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { 
@@ -30,13 +30,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+
 } from "@/components/ui/alert-dialog";
 import { 
   Shield, 
   X, 
   Plus, 
-  Edit, 
+
   Trash2, 
   Download, 
   Upload,
@@ -52,7 +52,7 @@ import {
   RefreshCw,
   Trash,
   Search,
-  ArrowUpDown,
+
   ArrowUp,
   ArrowDown,
   ArrowRightLeft,
@@ -411,7 +411,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Statistics filters and state
   const [statsFilter, setStatsFilter] = useState('all' as '24h' | '7d' | 'all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [statsView, setStatsView] = useState<'top100' | 'browser'>(() => {
@@ -1237,7 +1236,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel erstellt", description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({ 
         title: "Fehler", 
         description: "Die Regel konnte auch mit Force-Option nicht erstellt werden.",
@@ -1258,7 +1257,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({ 
         title: "Fehler", 
         description: "Die Regel konnte auch mit Force-Option nicht aktualisiert werden.",
@@ -1789,16 +1788,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     }
   };
 
-  const getSortIcon = (column: string) => {
-    if (sortBy !== column) return <ArrowUpDown className="h-4 w-4" />;
-    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
-  };
 
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('de-DE');
   };
 
-  const maxCount = statsData?.topUrls?.[0]?.count || 1;
 
   const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -2217,7 +2211,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                               throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                                             }
                                             
-                                            const deleteData = await response.json();
+                                            await response.json();
                                             
                                             // Update local state to immediately remove logo URL
                                             setGeneralSettings(prev => ({

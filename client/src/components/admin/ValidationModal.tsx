@@ -20,7 +20,7 @@ interface ValidationModalProps {
     isLoadingRules?: boolean;
 }
 
-function ResultRow({ result, index, isExpanded, onToggle, onEditRule }: { result: any, index: number, isExpanded: boolean, onToggle: () => void, onEditRule: (id: number) => void }) {
+function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, isExpanded: boolean, onToggle: () => void, onEditRule: (id: number) => void }) {
     // Helper to get step styles
     const getStepStyle = (step: any) => {
         if (!step.changed) {
@@ -237,7 +237,7 @@ function ResultRow({ result, index, isExpanded, onToggle, onEditRule }: { result
     );
 }
 
-export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], settings, reloadTrigger, isLoadingRules = false }: ValidationModalProps) {
+export function ValidationModal({ open, onOpenChange, onEditRule,  reloadTrigger, isLoadingRules = false }: ValidationModalProps) {
     const [pastedText, setPastedText] = useState("");
     const [activeTab, setActiveTab] = useState("paste");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -569,7 +569,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, rules = [], se
                                                 <ResultRow
                                                     key={i}
                                                     result={result}
-                                                    index={i}
+
                                                     isExpanded={expandedRows.has(i)}
                                                     onToggle={() => toggleRow(i)}
                                                     onEditRule={onEditRule}

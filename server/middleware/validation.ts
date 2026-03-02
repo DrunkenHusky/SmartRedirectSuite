@@ -5,7 +5,6 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { z, ZodSchema, ZodError } from 'zod';
-import { createError } from './errorHandler';
 
 /**
  * Validation middleware factory

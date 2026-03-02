@@ -11,14 +11,11 @@ interface QualityGaugeProps {
 export function QualityGauge({ score, level, explanation }: QualityGaugeProps) {
   // Determine color classes
   let colorClass = "text-green-600 bg-green-50";
-  let iconColor = "#16a34a"; // green-600
 
   if (level === 'red') {
     colorClass = "text-red-600 bg-red-50";
-    iconColor = "#dc2626"; // red-600
   } else if (level === 'yellow') {
     colorClass = "text-yellow-600 bg-yellow-50";
-    iconColor = "#ca8a04"; // yellow-600
   }
 
   return (

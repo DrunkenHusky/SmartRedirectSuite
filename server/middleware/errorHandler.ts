@@ -19,7 +19,7 @@ export function errorHandler(
   error: ErrorWithCode,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   // Log error with context
   const errorContext = {

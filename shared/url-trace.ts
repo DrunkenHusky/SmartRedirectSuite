@@ -144,7 +144,6 @@ export function traceUrlGeneration(
       } else {
           // Path replacement
           if (workingOldPath.startsWith(cleanMatcher) || workingOldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
-              const suffix = workingOldPath.substring(cleanMatcher.length);
 
               let targetBase = rawTarget;
               // NOTE: Smart slash handling and suffix appending removed to implement FULL REPLACEMENT.
