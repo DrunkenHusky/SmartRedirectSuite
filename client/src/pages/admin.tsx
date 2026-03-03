@@ -356,6 +356,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     oldUrlLabel: "Alte URL (veraltet)",
     newUrlLabel: "Neue URL (verwenden Sie diese)",
     defaultNewDomain: "https://thisisthenewurl.com/",
+    enableCopyButton: true,
+    enableOpenButton: true,
+    newUrlClickBehavior: "copy",
     copyButtonText: "URL kopieren",
     openButtonText: "In neuem Tab öffnen",
     showUrlButtonText: "Zeige mir die neue URL",
@@ -716,6 +719,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         oldUrlLabel: settingsData.oldUrlLabel || "Alte URL (veraltet)",
         newUrlLabel: settingsData.newUrlLabel || "Neue URL (verwenden Sie diese)",
         defaultNewDomain: settingsData.defaultNewDomain || "https://thisisthenewurl.com/",
+        enableCopyButton: settingsData.enableCopyButton ?? true,
+        enableOpenButton: settingsData.enableOpenButton ?? true,
+        newUrlClickBehavior: settingsData.newUrlClickBehavior || "copy",
         copyButtonText: settingsData.copyButtonText || "URL kopieren",
         openButtonText: settingsData.openButtonText || "In neuem Tab öffnen",
         showUrlButtonText: settingsData.showUrlButtonText || "Zeige mir die neue URL",
@@ -2349,6 +2355,22 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </p>
                             </div>
                           </div>
+
+                          {/* Action Buttons */}
+                          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
+                                  <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
+                                  {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
+                                  <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
+                                  {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
+                                </div>
+                              </div>
+                          </div>
                         </div>
                       </div>
 
@@ -2940,21 +2962,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                  )}
                                </div>
 
-                               {/* Action Buttons */}
-                               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                     <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
-                                       <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
-                                       {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
-                                     </div>
-                                     <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
-                                       <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
-                                       {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
-                                     </div>
-                                   </div>
-                               </div>
+
                            </div>
                         </div>
                       </div>

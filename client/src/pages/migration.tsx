@@ -973,21 +973,25 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 </div>
 
                 <div className="flex gap-2 justify-center pb-2">
-                    <Button
-                        variant="outline"
-                        onClick={handleCopySearchFallback}
-                        className="flex items-center gap-2"
-                    >
-                        {isSearchFallbackCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        {settings?.copyButtonText || "Kopieren"}
-                    </Button>
-                    <Button
-                        onClick={handleOpenSearchFallback}
-                        className="flex items-center gap-2"
-                    >
-                        <ExternalLink className="h-4 w-4" />
-                        {settings?.openButtonText || "Öffnen"}
-                    </Button>
+                    {settings?.enableCopyButton && (
+                        <Button
+                            variant="outline"
+                            onClick={handleCopySearchFallback}
+                            className="flex items-center gap-2"
+                        >
+                            {isSearchFallbackCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {settings?.copyButtonText || "Kopieren"}
+                        </Button>
+                    )}
+                    {settings?.enableOpenButton && (
+                        <Button
+                            onClick={handleOpenSearchFallback}
+                            className="flex items-center gap-2"
+                        >
+                            <ExternalLink className="h-4 w-4" />
+                            {settings?.openButtonText || "Öffnen"}
+                        </Button>
+                    )}
                 </div>
 
                 {hasInteractedWithSearchFallback && (
