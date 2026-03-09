@@ -45,7 +45,7 @@
   "enableTrackingCache": true,
   "maxStatsEntries": 0,
   "defaultRedirectMode": "search",
-  "defaultSearchUrl": "https://newapp.com/q=",
+  "defaultSearchUrl": "https://example.com/q=",
   "defaultSearchMessage": "Wir konnten keine Weiterleitung f\u00fcr deinen alten Link finden. Bitte nutze die Suche. Wir haben dir einen Suchlink automatisch zusammengestellt.",
   "enableReferrerTracking": true,
   "enableFeedbackSurvey": true,
