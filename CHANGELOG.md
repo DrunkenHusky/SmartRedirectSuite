@@ -1,3 +1,17 @@
+# [2.20.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.19.0...v2.20.0) (2026-03-09)
+
+
+### Bug Fixes
+
+* **admin:** invalidate allRules query on rule mutation ([1b85c22](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1b85c224f0273a25fd0a46087865a48690904ecf))
+
+
+### Features
+
+* **admin:** add toggles for copy/open buttons and configurable url click behavior on migration page ([b824982](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/b824982cfa9af589707ff844a1bcf32999bdec5f))
+* **admin:** add toggles for copy/open buttons and configurable url click behavior on migration page ([ff76c31](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ff76c315326219beb436cc6112b121088679ed23))
+* make migration page interactions configurable ([e297cfd](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e297cfd2564eacbfeb8f4464cb66f509a6f4c11b))
+
 # [2.19.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.18.0...v2.19.0) (2026-02-21)
 
 
