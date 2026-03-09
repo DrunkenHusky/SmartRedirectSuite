@@ -170,12 +170,13 @@ export class FileStorage implements IStorage {
     }
   }
 
-  // Unified cache that holds rules that are processed or will be processed
+// Unified cache that holds rules that are processed or will be processed
   // We type it as ProcessedUrlRule[] because we ensure they are processed when loaded
   private rulesCache: ProcessedUrlRule[] | null = null;
   private lastCacheConfig: RuleMatchingConfig | null = null;
   private settingsCache: GeneralSettings | null = null;
   private trackingCache: UrlTracking[] | null = null;
+  private writeLocks: Map<string, Promise<void>> = new Map();
 
   constructor() {
     this.ensureDataDirectory();
@@ -189,7 +190,7 @@ export class FileStorage implements IStorage {
     }
   }
 
-  private async readJsonFile<T>(
+private async readJsonFile<T>(
     filePath: string,
     defaultValue: T[],
   ): Promise<T[]> {
@@ -211,25 +212,70 @@ export class FileStorage implements IStorage {
             try {
               const parsed = JSON.parse(buffer);
               resolve(parsed);
-            }
-            catch (error) {
-              reject(error);
+            } catch (err) {
+              // Attempt to backup corrupted file
+              const backupPath = `${filePath}.corrupted.${Date.now()}`;
+              console.error(`Error parsing large JSON file ${filePath}, backing up to ${backupPath}`, err);
+              fs.rename(filePath, backupPath).catch(renameErr => {
+                 console.error(`Failed to backup corrupted file ${filePath}`, renameErr);
+              });
+              resolve(defaultValue);
             }
           });
 
-          stream.on('error', reject);
+          stream.on('error', (err) => {
+             console.error(`Stream error reading ${filePath}`, err);
+             resolve(defaultValue);
+          });
         });
+      } else {
+        const data = await fs.readFile(filePath, "utf-8");
+        return JSON.parse(data);
       }
-
-      const data = await fs.readFile(filePath, "utf-8");
-      return JSON.parse(data);
-    } catch {
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') {
+         // Attempt to backup corrupted file if it's not a missing file error
+         const backupPath = `${filePath}.corrupted.${Date.now()}`;
+         console.error(`Error reading/parsing JSON file ${filePath}, backing up to ${backupPath}`, err);
+         fs.rename(filePath, backupPath).catch(renameErr => {
+             console.error(`Failed to backup corrupted file ${filePath}`, renameErr);
+         });
+      }
       return defaultValue;
     }
   }
 
-  private async writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+private async writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
+    const doWrite = async () => {
+      const tmpPath = `${filePath}.tmp`;
+      try {
+        await fs.writeFile(tmpPath, JSON.stringify(data, null, 2));
+        await fs.rename(tmpPath, filePath);
+      } catch (err) {
+        console.error(`Error writing JSON to ${filePath}`, err);
+        // Try to clean up tmp file if rename fails
+        try {
+          await fs.unlink(tmpPath);
+        } catch (unlinkErr) {
+          // Ignore unlink errors
+        }
+        throw err;
+      }
+    };
+
+    // Chain the promise if there is an existing lock
+    let lock = this.writeLocks.get(filePath) || Promise.resolve();
+    lock = lock.catch(() => {}).then(doWrite).catch(err => {
+       console.error(`Lock write failed for ${filePath}`, err);
+       throw err;
+    }).finally(() => {
+       // Clean up the lock if we are the last one
+       if (this.writeLocks.get(filePath) === lock) {
+           this.writeLocks.delete(filePath);
+       }
+    });
+    this.writeLocks.set(filePath, lock);
+    return lock;
   }
 
   // Helper to ensure rules are loaded and processed
