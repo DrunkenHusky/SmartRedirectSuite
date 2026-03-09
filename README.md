@@ -321,6 +321,8 @@ Im Admin-Panel können Texte, Farben und UI-Elemente angepasst werden, einschlie
 - Header und Icons
 - Popup-Texte
 - Labels im URL-Vergleich
+- Sichtbarkeit der Buttons ("URL kopieren" und "In neuem Tab öffnen")
+- Klickverhalten der angezeigten URL (Kopieren, Öffnen, oder Keine Aktion)
 - Button-Beschriftungen
 - Zusätzliche Info-Bereiche
 
