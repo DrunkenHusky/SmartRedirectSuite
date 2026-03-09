@@ -903,7 +903,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   const deleteRuleMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/rules/${id}`),
+    onMutate: async (deletedId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/admin/rules/paginated"] });
+
+      const queryKey = ["/api/admin/rules/paginated", rulesPage, rulesPerPage, debouncedRulesSearchQuery, rulesSortBy, rulesSortOrder];
+      const previousData = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          rules: old.rules.filter((rule: any) => rule.id !== deletedId),
+          total: Math.max(0, old.total - 1),
+          totalAllRules: Math.max(0, old.totalAllRules - 1),
+        };
+      });
+
+      return { previousData, queryKey };
+    },
     onSuccess: () => {
+      //Still invalidate to get authoritative server state (correct totals, pagination)
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
@@ -911,7 +931,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         description: "1 Regel wurde erfolgreich gelöscht.",
       });
     },
-    onError: (error: any) => {
+    //Added rollback context parameter and rollback logic
+    onError: (error: any, deletedId: string, context: any) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
+
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
@@ -1049,6 +1074,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       const response = await apiRequest("DELETE", "/api/admin/bulk-delete-rules", { ruleIds: validRuleIds });
       return await response.json();
     },
+    //Optimistic UI update -- immediately remove all selected rules from cache
+    onMutate: async (ruleIds: string[]) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/admin/rules/paginated"] });
+
+      const queryKey = ["/api/admin/rules/paginated", rulesPage, rulesPerPage, debouncedRulesSearchQuery, rulesSortBy, rulesSortOrder];
+      const previousData = queryClient.getQueryData(queryKey);
+      const idsToDelete = new Set(ruleIds);
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+
+        const remainingRules = old.rules.filter((rule: any) => !idsToDelete.has(rule.id));
+        const removedCount = old.rules.length - remainingRules.length;
+
+        return {
+          ...old,
+          rules: remainingRules,
+          total: Math.max(0, old.total - removedCount),
+          totalAllRules: Math.max(0, old.totalAllRules - removedCount),
+        };
+      });
+
+      setSelectedRuleIds([]);
+
+      return { previousData, queryKey };
+    },
     onSuccess: (result, ruleIds) => {
       const deletedCount = result.deletedCount || 0;
       const failedCount = (result.failedCount || 0) + (result.notFoundCount || 0);
@@ -1067,12 +1117,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         });
       }
       
-      setSelectedRuleIds([]);
       setShowBulkDeleteDialog(false);
+
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
     },
-    onError: (error: any) => {
+    //Added rollback context parameter and rollback logic
+    onError: (error: any, ruleIds: string[], context: any) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
+
+      setSelectedRuleIds(ruleIds);
+      
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({

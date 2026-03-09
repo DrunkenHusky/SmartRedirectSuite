@@ -2,7 +2,7 @@ import { traceUrlGeneration } from "@shared/url-trace";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createHash, timingSafeEqual } from "crypto";
-import { storage } from "./storage";
+import { storage } from "./storageFactory";
 import {
   insertUrlTrackingSchema,
   exportRequestSchema,
