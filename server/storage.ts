@@ -1430,6 +1430,15 @@ export class FileStorage implements IStorage {
       if (!settings.popupMode) {
         settings.popupMode = "active";
       }
+      if (typeof settings.enableCopyButton !== "boolean") {
+        settings.enableCopyButton = true;
+      }
+      if (typeof settings.enableOpenButton !== "boolean") {
+        settings.enableOpenButton = true;
+      }
+      if (!settings.newUrlClickBehavior) {
+        settings.newUrlClickBehavior = "copy";
+      }
       if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
         settings.caseSensitiveLinkDetection = false;
       }
@@ -1465,6 +1474,9 @@ export class FileStorage implements IStorage {
         oldUrlLabel: "Alte URL (veraltet)",
         newUrlLabel: "Neue URL (verwenden Sie diese)",
         defaultNewDomain: "https://thisisthenewurl.com/",
+        enableCopyButton: true,
+        enableOpenButton: true,
+        newUrlClickBehavior: "copy",
         copyButtonText: "URL kopieren",
         openButtonText: "In neuem Tab öffnen",
         showUrlButtonText: "Zeige mir die neue URL",

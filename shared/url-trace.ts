@@ -6,6 +6,7 @@ import {
     appendQueryString,
     getKeptQueryStringWithLog,
     getStaticQueryStringWithLog,
+    getMatchingSuffix,
     type AppliedGlobalRule
 } from "./url-utils";
 import type { GeneralSettings } from "./schema";
@@ -88,9 +89,9 @@ export function traceUrlGeneration(
         const cleanTarget = rule.targetUrl.replace(/^\/|\/$/g, '');
 
         let newPath;
-        if (workingOldPath.toLowerCase().startsWith(cleanMatcher.toLowerCase())) {
-          const remainingPath = workingOldPath.substring(cleanMatcher.length);
-          newPath = '/' + cleanTarget + remainingPath;
+        const remainingSuffix = getMatchingSuffix(workingOldPath, cleanMatcher);
+        if (remainingSuffix !== null) {
+          newPath = '/' + cleanTarget + remainingSuffix;
         } else {
           const matcherIndex = workingOldPath.toLowerCase().indexOf(cleanMatcher.toLowerCase());
           if (matcherIndex !== -1) {

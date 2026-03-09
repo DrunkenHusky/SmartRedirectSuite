@@ -356,6 +356,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     oldUrlLabel: "Alte URL (veraltet)",
     newUrlLabel: "Neue URL (verwenden Sie diese)",
     defaultNewDomain: "https://thisisthenewurl.com/",
+    enableCopyButton: true,
+    enableOpenButton: true,
+    newUrlClickBehavior: "copy",
     copyButtonText: "URL kopieren",
     openButtonText: "In neuem Tab öffnen",
     showUrlButtonText: "Zeige mir die neue URL",
@@ -716,6 +719,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         oldUrlLabel: settingsData.oldUrlLabel || "Alte URL (veraltet)",
         newUrlLabel: settingsData.newUrlLabel || "Neue URL (verwenden Sie diese)",
         defaultNewDomain: settingsData.defaultNewDomain || "https://thisisthenewurl.com/",
+        enableCopyButton: settingsData.enableCopyButton ?? true,
+        enableOpenButton: settingsData.enableOpenButton ?? true,
+        newUrlClickBehavior: settingsData.newUrlClickBehavior || "copy",
         copyButtonText: settingsData.copyButtonText || "URL kopieren",
         openButtonText: settingsData.openButtonText || "In neuem Tab öffnen",
         showUrlButtonText: settingsData.showUrlButtonText || "Zeige mir die neue URL",
@@ -777,6 +783,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("POST", "/api/admin/rules", rule),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats/entries/paginated"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
@@ -841,6 +848,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", `/api/admin/rules/${id}`, rule),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -903,6 +911,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/rules/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       toast({
         title: "Regel gelöscht",
         description: "1 Regel wurde erfolgreich gelöscht.",
@@ -1067,6 +1076,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setSelectedRuleIds([]);
       setShowBulkDeleteDialog(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
     },
     onError: (error: any) => {
       if (error?.status === 403 || error?.status === 401) {
@@ -1230,6 +1240,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("POST", "/api/admin/rules", { ...rule, forceCreate: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -1251,6 +1262,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       apiRequest("PUT", `/api/admin/rules/${id}`, { ...rule, forceUpdate: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       setIsRuleDialogOpen(false);
       setValidationError(null);
       setShowValidationDialog(false);
@@ -1600,6 +1612,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       setShowPreviewDialog(false);
       setImportPreviewData(null);
 
@@ -1679,6 +1692,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       setShowDeleteAllDialog(false);
       setDeleteAllConfirmationText("");
       toast({
@@ -2288,6 +2302,78 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       </div>
 
+                      {/* 1.5 Interactions Settings */}
+                      <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center gap-3 border-b pb-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs sm:text-sm font-semibold">1.5</div>
+                          <div>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">Interaktionen</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">Steuern Sie die Interaktionsmöglichkeiten auf der Migrationsseite</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                  <label className="text-sm font-medium text-foreground">Kopier-Button anzeigen</label>
+                                  <p className="text-xs text-muted-foreground">Blendet den Button zum Kopieren der URL ein/aus</p>
+                                </div>
+                                <Switch
+                                  checked={generalSettings.enableCopyButton ?? true}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableCopyButton: checked })}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                  <label className="text-sm font-medium text-foreground">Öffnen-Button anzeigen</label>
+                                  <p className="text-xs text-muted-foreground">Blendet den Button zum Öffnen im neuen Tab ein/aus</p>
+                                </div>
+                                <Switch
+                                  checked={generalSettings.enableOpenButton ?? true}
+                                  onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableOpenButton: checked })}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2 text-foreground">Verhalten bei Klick auf URL-Feld</label>
+                              <Select
+                                value={generalSettings.newUrlClickBehavior || 'copy'}
+                                onValueChange={(value) => setGeneralSettings({ ...generalSettings, newUrlClickBehavior: value as any })}
+                              >
+                                <SelectTrigger className="bg-white dark:bg-gray-700">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="copy">Kopieren (Standard)</SelectItem>
+                                  <SelectItem value="open">In neuem Tab öffnen</SelectItem>
+                                  <SelectItem value="none">Keine Aktion</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Definiert was passiert, wenn der Nutzer direkt auf das Feld mit der neuen URL klickt.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
+                                  <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
+                                  {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
+                                  <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
+                                  {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
+                                </div>
+                              </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* 2. PopUp Content Settings */}
                       <div className="space-y-4 sm:space-y-6">
                         <div className="flex items-center gap-3 border-b pb-3">
@@ -2876,21 +2962,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                  )}
                                </div>
 
-                               {/* Action Buttons */}
-                               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                     <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
-                                       <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
-                                       {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
-                                     </div>
-                                     <div>
-                                       <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
-                                       <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
-                                       {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
-                                     </div>
-                                   </div>
-                               </div>
+
                            </div>
                         </div>
                       </div>
