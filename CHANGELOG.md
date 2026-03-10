@@ -1,3 +1,15 @@
+# [2.21.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.20.0...v2.21.0) (2026-03-10)
+
+
+### Features
+
+* Add public API endpoint and test for URL transformation ([e425d87](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/e425d870b5f81eaaa435486489341d92dc63790a))
+* Add public API endpoint for URL transformation ([2739dfa](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/2739dfa79bdecc132bfa543f02743889ebab1912))
+* Add public API endpoint for URL transformation with UI tracking ([ab247da](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/ab247da6ed4d5dbe8d6fae1d1599ff06d22f101b))
+* Add public API endpoint for URL transformation with UI tracking ([f3630ff](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f3630fff135c2025d0f37a1fd726dab47154a6eb))
+* Automatisches Anpassen von Office-Dokumenten via Transform API ([f8d6e75](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f8d6e75c3cc785b360e19cca67d8b3c687c9b32c))
+* Automatisches Anpassen von Office-Dokumenten via Transform API ([f2e15ac](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/f2e15acb1abcf5d4017806b9f67f494637a68d5e))
+
 # [2.20.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.19.0...v2.20.0) (2026-03-09)
 
 
