@@ -278,7 +278,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   const [debouncedStatsSearchQuery, setDebouncedStatsSearchQuery] = useState("");
   const [statsRuleFilter, setStatsRuleFilter] = useState<'all' | 'with_rule' | 'no_rule'>('all');
   const [statsQualityFilter, setStatsQualityFilter] = useState<string>("all");
-  const [statsFeedbackFilter, setStatsFeedbackFilter] = useState<'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty'>('all');
+  const [statsFeedbackFilter, setStatsFeedbackFilter] = useState<'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty'>('all');
   const statsSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Responsive state
@@ -3831,7 +3831,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                       <Select
                         value={statsFeedbackFilter}
-                        onValueChange={(value) => setStatsFeedbackFilter(value as 'all' | 'OK' | 'NOK' | 'empty')}
+                        onValueChange={(value) => setStatsFeedbackFilter(value as 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
                           <SelectValue placeholder="Feedback" />
@@ -3841,6 +3841,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <SelectItem value="OK">👍 OK</SelectItem>
                           <SelectItem value="NOK">👎 NOK</SelectItem>
                           <SelectItem value="auto-redirect">⚡ Auto</SelectItem>
+                          <SelectItem value="API">🤖 API</SelectItem>
                           <SelectItem value="empty">Kein Feedback</SelectItem>
                         </SelectContent>
                       </Select>

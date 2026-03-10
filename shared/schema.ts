@@ -108,7 +108,7 @@ export const urlTrackingSchema = z.object({
     .max(100, "Match quality must be <= 100")
     .optional()
     .default(0),
-  feedback: z.enum(['OK', 'NOK', 'auto-redirect'])
+  feedback: z.enum(['OK', 'NOK', 'auto-redirect', 'API'])
     .optional()
     .nullable(),
   userProposedUrl: z.string()
