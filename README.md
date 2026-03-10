@@ -291,6 +291,46 @@ npm start          # Produktion
 
 Die Anwendung läuft anschließend unter `http://localhost:5000`.
 
+## Öffentliche API
+
+Die SmartRedirect Suite bietet einen öffentlichen API-Endpunkt zur Automatisierung von URL-Transformationen. Dieser Endpunkt erfordert keine Authentifizierung und wendet das konfigurierte Rate-Limiting an.
+
+### URL-Transformation Endpoint
+
+`POST /api/public/transform`
+
+Mit diesem Endpoint können Sie eine alte URL übergeben und erhalten die entsprechende neue URL gemäß den konfigurierten Weiterleitungsregeln zurück. Die URL kann entweder als JSON-Body oder als Query-Parameter übergeben werden.
+
+**Request Body (JSON)**
+
+```json
+{
+  "url": "https://intranet.alt.com/sites/team/docs/handbuch.pdf"
+}
+```
+
+**Request via Query-Parameter**
+
+`POST /api/public/transform?url=https://intranet.alt.com/sites/team/docs/handbuch.pdf`
+
+**Response (JSON)**
+
+```json
+{
+  "oldUrl": "https://intranet.alt.com/sites/team/docs/handbuch.pdf",
+  "newUrl": "https://neuesintranet.cloud.com/teams/finance/docs/handbuch.pdf",
+  "hasMatch": true,
+  "ruleId": "123e4567-e89b-12d3-a456-426614174000",
+  "redirectStrategy": "rule"
+}
+```
+
+- `oldUrl`: Die ursprüngliche URL.
+- `newUrl`: Die generierte Ziel-URL.
+- `hasMatch`: `true`, wenn eine spezifische Regel angewendet wurde, ansonsten `false`.
+- `ruleId`: Die UUID der angewendeten Regel (falls vorhanden).
+- `redirectStrategy`: Der angewendete Weiterleitungsmodus (z.B. `rule`, `domain-fallback`, `smart-search`).
+
 ## Administration
 
 Der Admin-Bereich lässt sich über das Zahnrad-Symbol oben rechts oder direkt über den URL-Parameter `?admin=true` öffnen.

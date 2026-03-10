@@ -296,6 +296,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public API Endpoint for URL Transformation
+  app.post("/api/public/transform", apiRateLimiter, async (req, res) => {
+    try {
+      // Support both body and query parameters for flexibility in automations
+      const urlInput = req.body?.url || req.query?.url;
+
+      if (!urlInput || typeof urlInput !== 'string') {
+        res.status(400).json({ error: "Bitte geben Sie eine gültige 'url' als Parameter oder im Body an." });
+        return;
+      }
+
+      const settings = await storage.getGeneralSettings();
+      const config = {
+        ...RULE_MATCHING_CONFIG,
+        CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
+      };
+
+      const rules = await storage.getProcessedUrlRules(config);
+      const matchDetails = findMatchingRule(urlInput, rules, config);
+
+      let traceResult;
+      if (matchDetails?.rule) {
+        traceResult = traceUrlGeneration(urlInput, matchDetails.rule, settings.defaultNewDomain, settings);
+      } else {
+        const dummyRule = {
+          id: 0, matcher: '', targetUrl: '', redirectType: 'fallback',
+          order: 0, autoRedirect: false, createdAt: ''
+        };
+        traceResult = traceUrlGeneration(urlInput, dummyRule as any, settings.defaultNewDomain, settings);
+      }
+
+      res.json({
+        oldUrl: urlInput,
+        newUrl: traceResult.finalUrl,
+        hasMatch: !!matchDetails,
+        ruleId: matchDetails?.rule?.id || null,
+        redirectStrategy: traceResult.strategy || (matchDetails ? 'rule' : 'domain-fallback')
+      });
+    } catch (error) {
+      console.error("Public transform API error:", error);
+      res.status(500).json({ error: "Interner Serverfehler bei der URL-Transformation" });
+    }
+  });
+
   // Admin-Authentifizierung
   app.post("/api/admin/login", bruteForceProtection, async (req, res) => {
     const ip = req.ip || req.connection.remoteAddress || "";
