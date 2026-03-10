@@ -18,7 +18,8 @@ import {
   ThumbsDown,
   Zap,
   Settings,
-  Globe
+  Globe,
+  Bot
 } from "lucide-react";
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
