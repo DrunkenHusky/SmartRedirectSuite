@@ -472,6 +472,11 @@ const StatsTable = memo(({
               <td className="p-2 sm:p-3">
                 {entry.feedback === 'OK' ? (
                   <ThumbsUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : entry.feedback === 'API' ? (
+                  <div className="flex items-center gap-1" title="API Call">
+                    <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <span className="text-[10px] text-muted-foreground hidden lg:inline">API</span>
+                  </div>
                 ) : entry.feedback === 'auto-redirect' ? (
                   <div className="flex items-center gap-1" title="Automatische Weiterleitung">
                      <Zap className="h-4 w-4 text-blue-500" />

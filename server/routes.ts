@@ -327,6 +327,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         traceResult = traceUrlGeneration(urlInput, dummyRule as any, settings.defaultNewDomain, settings);
       }
 
+      // Track the API call in statistics
+      try {
+        const urlObj = new URL(urlInput);
+        const path = urlObj.pathname + urlObj.search;
+
+        await storage.trackUrlAccess({
+          oldUrl: urlInput,
+          newUrl: traceResult.finalUrl,
+          path: path,
+          timestamp: new Date().toISOString(),
+          userAgent: req.get('user-agent') || 'Public API',
+          referrer: req.get('referer') || '',
+          ruleId: matchDetails?.rule?.id,
+          ruleIds: traceResult.appliedGlobalRules?.map(r => r.id) || [],
+          matchQuality: matchDetails?.quality || 0,
+          feedback: 'API',
+          redirectStrategy: traceResult.strategy || (matchDetails ? 'rule' : 'domain-fallback'),
+          appliedGlobalRules: traceResult.appliedGlobalRules || []
+        });
+      } catch (trackError) {
+        console.error("Failed to track public API access:", trackError);
+        // Continue even if tracking fails so the API client still gets a response
+      }
+
       res.json({
         oldUrl: urlInput,
         newUrl: traceResult.finalUrl,
@@ -844,9 +868,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Feedback filter
-      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty' = 'all';
-      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'auto-redirect', 'empty'].includes(req.query.feedbackFilter as string)) {
-        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty';
+      let feedbackFilter: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty' = 'all';
+      if (req.query.feedbackFilter && ['all', 'OK', 'NOK', 'auto-redirect', 'API', 'empty'].includes(req.query.feedbackFilter as string)) {
+        feedbackFilter = req.query.feedbackFilter as 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty';
       }
 
       const result = await storage.getTrackingEntriesPaginated(

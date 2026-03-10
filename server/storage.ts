@@ -125,7 +125,7 @@ export interface IStorage {
     ruleFilter?: 'all' | 'with_rule' | 'no_rule',
     minQuality?: number,
     maxQuality?: number,
-    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'empty',
+    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'API' | 'empty',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -1059,7 +1059,7 @@ export class FileStorage implements IStorage {
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
     minQuality?: number,
     maxQuality?: number,
-    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'empty',
+    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
