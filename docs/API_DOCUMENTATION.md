@@ -826,3 +826,17 @@ artillery quick --count 100 --num 10 http://localhost:5000/api/health
 ```
 
 This comprehensive API documentation provides all the information needed to integrate with and maintain the SmartRedirect Suite in enterprise environments.
+
+### PowerShell (Office Automation)
+
+**Use Case: Automatisiertes Anpassen von Office Dokumenten im Batch via Skript**
+
+Oftmals müssen nach einer Migration nicht nur Links im Intranet, sondern auch in tausenden bestehenden Dokumenten aktualisiert werden. Das bereitgestellte PowerShell-Skript (`scripts/Update-OfficeLinks.ps1`) durchsucht alle Microsoft Word (`.docx`), Excel (`.xlsx`) und PowerPoint (`.pptx`) Dateien in einem Verzeichnis. Es liest alle darin enthaltenen Hyperlinks aus und prüft diese gegen den `/api/public/transform` Endpoint. Wird eine aktualisierte URL zurückgegeben, wird der Link im Dokument automatisch ersetzt.
+
+**Optionaler PDF-Export:**
+Beispielsweise Weisungen, die Benutzern als PDF vorliegen, müssen im Originaldokument (z. B. Word) angepasst werden und dann erneut als PDF zur Verfügung gestellt werden. Dafür bietet das Skript den Schalter `-ExportToPDF`.
+
+```powershell
+# Beispielaufruf des Skripts (zu finden unter scripts/Update-OfficeLinks.ps1)
+.\Update-OfficeLinks.ps1 -FolderPath "C:\Dokumente\Weisungen" -ApiEndpoint "https://yourdomain.com/api/public/transform" -ExportToPDF
+```
