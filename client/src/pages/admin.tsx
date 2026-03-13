@@ -4269,12 +4269,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
                                       <td className="p-2 sm:p-3">
                                         <div className="flex items-center gap-2">
-                                          <img
-                                            src={`https://www.google.com/s2/favicons?domain=${ref.domain}&sz=16`}
-                                            alt=""
-                                            className="w-4 h-4 opacity-70"
-                                            onError={(e) => e.currentTarget.style.display = 'none'}
-                                          />
                                           <span className="text-xs sm:text-sm text-foreground truncate max-w-[150px] sm:max-w-[200px]" title={ref.domain}>
                                             {ref.domain}
                                           </span>
