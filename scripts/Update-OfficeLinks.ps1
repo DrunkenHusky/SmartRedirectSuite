@@ -29,6 +29,10 @@
     Die URL zum Transform API Endpoint der SmartRedirect Suite.
     Standard: "https://yourdomain.com/api/public/transform"
 
+.PARAMETER UrlFilter
+    Optionaler Regex-Filter. Wenn gesetzt, werden nur Hyperlinks verarbeitet,
+    deren URL auf diesen regulären Ausdruck zutrifft (z.B. "intranet\.corp\.com").
+
 .PARAMETER ExportToPDF
     Optionaler Schalter. Wenn gesetzt, wird jedes verarbeitete Dokument zusätzlich als PDF
     exportiert (im selben Verzeichnis, gleicher Name, Endung .pdf).
@@ -47,6 +51,9 @@ param (
 
     [Parameter(Mandatory=$false)]
     [string]$ApiEndpoint = "https://yourdomain.com/api/public/transform",
+
+    [Parameter(Mandatory=$false)]
+    [string]$UrlFilter,
 
     [switch]$ExportToPDF,
 
@@ -134,6 +141,9 @@ if ($wordFiles.Count -gt 0) {
                 $linksChanged = $false
 
                 foreach ($hyperlink in $doc.Hyperlinks) {
+                    if ($UrlFilter -and $hyperlink.Address -notmatch $UrlFilter) {
+                        continue
+                    }
                     if (-not [string]::IsNullOrEmpty($hyperlink.Address)) {
                         $newUrl = Get-TransformedUrl -Url $hyperlink.Address
                         if ($newUrl -and $newUrl -ne $hyperlink.Address) {
@@ -195,6 +205,9 @@ if ($excelFiles.Count -gt 0) {
 
                 foreach ($ws in $wb.Worksheets) {
                     foreach ($hyperlink in $ws.Hyperlinks) {
+                        if ($UrlFilter -and $hyperlink.Address -notmatch $UrlFilter) {
+                            continue
+                        }
                         if (-not [string]::IsNullOrEmpty($hyperlink.Address)) {
                             $newUrl = Get-TransformedUrl -Url $hyperlink.Address
                             if ($newUrl -and $newUrl -ne $hyperlink.Address) {
@@ -258,6 +271,9 @@ if ($pptFiles.Count -gt 0) {
 
                 foreach ($slide in $presentation.Slides) {
                     foreach ($hyperlink in $slide.Hyperlinks) {
+                        if ($UrlFilter -and $hyperlink.Address -notmatch $UrlFilter) {
+                            continue
+                        }
                         if (-not [string]::IsNullOrEmpty($hyperlink.Address)) {
                             $newUrl = Get-TransformedUrl -Url $hyperlink.Address
                             if ($newUrl -and $newUrl -ne $hyperlink.Address) {
