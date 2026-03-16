@@ -30,6 +30,42 @@ export interface UrlTraceResult {
     searchFallback?: string;
 }
 
+function restoreKeptQueryParams(
+    currentUrl: string,
+    oldUrl: string,
+    rule: any,
+    generalSettings: GeneralSettings | undefined,
+    appliedGlobalRules: AppliedGlobalRule[],
+    trace: UrlTraceStep[]
+): string {
+    let effectiveKeptParams: any[] = rule.keptQueryParams || [];
+
+    if (generalSettings?.globalKeptQueryParams) {
+        effectiveKeptParams = [...effectiveKeptParams, ...(generalSettings.globalKeptQueryParams || [])];
+    }
+
+    if (effectiveKeptParams.length > 0) {
+        const { queryString, matchedRules } = getKeptQueryStringWithLog(oldUrl, effectiveKeptParams);
+        const beforeAppend = currentUrl;
+        const newUrl = appendQueryString(currentUrl, queryString);
+        if (matchedRules && Array.isArray(matchedRules)) {
+            appliedGlobalRules.push(...matchedRules);
+        }
+
+        if (newUrl !== beforeAppend) {
+            trace.push({
+                description: "Restored Kept Query Parameters",
+                urlBefore: beforeAppend,
+                urlAfter: newUrl,
+                changed: true,
+                type: 'rule'
+            });
+        }
+        return newUrl;
+    }
+    return currentUrl;
+}
+
 export function traceUrlGeneration(
   oldUrl: string,
   rule: any,
@@ -256,52 +292,11 @@ export function traceUrlGeneration(
                 }
              } catch(e) {}
         } else if (rule.discardQueryParams) {
-             let effectiveKeptParams: any[] = rule.keptQueryParams || [];
-
-             if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
-             }
-
-             if (effectiveKeptParams.length > 0) {
-                 const { queryString, matchedRules } = getKeptQueryStringWithLog(oldUrl, effectiveKeptParams);
-                 const beforeAppend = currentUrl;
-                 currentUrl = appendQueryString(currentUrl, queryString);
-                 if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
-
-                 if (currentUrl !== beforeAppend) {
-                     trace.push({
-                        description: "Restored Kept Query Parameters",
-                        urlBefore: beforeAppend,
-                        urlAfter: currentUrl,
-                        changed: true,
-                        type: 'rule'
-                     });
-                 }
-             }
+             currentUrl = restoreKeptQueryParams(currentUrl, oldUrl, rule, generalSettings, appliedGlobalRules, trace);
         }
     } else {
         if (rule.discardQueryParams) {
-             let effectiveKeptParams: any[] = rule.keptQueryParams || [];
-             if (generalSettings?.globalKeptQueryParams) {
-                 effectiveKeptParams = [...effectiveKeptParams, ...generalSettings.globalKeptQueryParams || []];
-             }
-
-             if (effectiveKeptParams.length > 0) {
-                 const { queryString, matchedRules } = getKeptQueryStringWithLog(oldUrl, effectiveKeptParams);
-                 const beforeAppend = currentUrl;
-                 currentUrl = appendQueryString(currentUrl, queryString);
-                 if (matchedRules && Array.isArray(matchedRules)) appliedGlobalRules.push(...matchedRules);
-
-                 if (currentUrl !== beforeAppend) {
-                     trace.push({
-                        description: "Restored Kept Query Parameters",
-                        urlBefore: beforeAppend,
-                        urlAfter: currentUrl,
-                        changed: true,
-                        type: 'rule'
-                     });
-                 }
-             }
+             currentUrl = restoreKeptQueryParams(currentUrl, oldUrl, rule, generalSettings, appliedGlobalRules, trace);
         }
     }
 
