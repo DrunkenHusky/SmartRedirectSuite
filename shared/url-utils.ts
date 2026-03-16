@@ -83,15 +83,6 @@ export function extractPath(url: string): string {
   }
 }
 
-export function validateUrl(url: string): boolean {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function getStaticQueryStringWithLog(staticParams: { key: string; value: string; skipEncoding?: boolean; id?: string }[]): { queryString: string, matchedRules: AppliedGlobalRule[] } {
   const matchedRules: AppliedGlobalRule[] = [];
   try {
