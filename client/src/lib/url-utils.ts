@@ -2,7 +2,7 @@ import {
     extractPath,
     generateNewUrl,
     extractSearchTerm,
-    validateUrl,
+
     applySearchAndReplaceSingle,
     appendQueryString,
     getKeptQueryStringWithLog,
@@ -17,7 +17,7 @@ export {
     extractPath,
     generateNewUrl,
     extractSearchTerm,
-    validateUrl,
+
     applySearchAndReplaceSingle,
     appendQueryString,
     getKeptQueryStringWithLog,

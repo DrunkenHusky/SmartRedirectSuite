@@ -66,19 +66,6 @@ export function errorHandler(
   });
 }
 
-/**
- * 404 handler for unmatched routes
- */
-export function notFoundHandler(req: Request, res: Response): void {
-  res.status(404).json({
-    success: false,
-    error: 'Resource not found',
-    code: 'NOT_FOUND',
-    path: req.path,
-    method: req.method,
-    timestamp: new Date().toISOString(),
-  });
-}
 
 /**
  * Async wrapper to catch promise rejections
@@ -89,30 +76,4 @@ export function asyncHandler<T extends Request, U extends Response>(
   return (req: T, res: U, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
-}
-
-/**
- * Create application-specific error
- */
-export function createError(
-  message: string,
-  statusCode = 500,
-  code?: string,
-  details?: unknown
-): ErrorWithCode {
-  const error = new Error(message) as ErrorWithCode;
-  error.statusCode = statusCode;
-  error.code = code;
-  error.details = details;
-  return error;
-}
-
-/**
- * Validation error helper
- */
-export function createValidationError(field: string, message: string): ErrorWithCode {
-  return createError(`Validation failed for ${field}: ${message}`, 400, 'VALIDATION_ERROR', {
-    field,
-    message,
-  });
 }
