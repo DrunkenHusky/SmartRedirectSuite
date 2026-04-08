@@ -1982,7 +1982,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       </header>
 
       {/* Mobile-Optimized Admin Content */}
-      <main className="py-4 sm:py-8 px-3 sm:px-4 overflow-x-hidden">
+      <main className="py-4 sm:py-8 px-3 sm:px-4 ">
         <div className="max-w-6xl mx-auto w-full">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
             {/* Enhanced Tab Navigation */}
