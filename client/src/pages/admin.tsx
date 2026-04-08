@@ -3536,7 +3536,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
 
                     {/* Save Button */}
-                    <div className="border-t pt-6 mt-8">
+                    <div className="sticky bottom-0 z-40 bg-card border-t pt-4 pb-4 mt-8 px-4 sm:px-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 rounded-b-xl shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.2)]">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">
