@@ -203,15 +203,80 @@ export class FileStorage implements IStorage {
     }
   }
 
+
   private async initDatabase() {
     try {
       await initDb();
+      await this.migrateJsonToDb();
       this.dbInitialized = true;
       console.log('Database initialized successfully');
     } catch (err) {
       console.error('Failed to initialize database', err);
     }
   }
+
+  private async migrateJsonToDb() {
+    const rulesFile = path.join(DATA_DIR, "rules.json");
+    const settingsFile = path.join(DATA_DIR, "settings.json");
+    const trackingFile = path.join(DATA_DIR, "tracking.json");
+
+    try {
+      await fs.access(rulesFile);
+      console.log('Migrating rules.json to DB...');
+      const data = await fs.readFile(rulesFile, 'utf8');
+      const rules = JSON.parse(data);
+      if (Array.isArray(rules)) {
+        for (const rule of rules) {
+           const existing = await UrlRuleModel.findByPk(rule.id);
+           if (!existing) {
+              await UrlRuleModel.create(rule as any);
+           }
+        }
+      }
+      await fs.rename(rulesFile, rulesFile + '.bak');
+    } catch (e) {
+      // Ignore if file doesn't exist
+    }
+
+    try {
+      await fs.access(settingsFile);
+      console.log('Migrating settings.json to DB...');
+      const data = await fs.readFile(settingsFile, 'utf8');
+      const settings = JSON.parse(data);
+      if (settings && settings.id) {
+         const existing = await GeneralSettingsModel.findOne();
+         if (!existing) {
+             await GeneralSettingsModel.create({
+                id: settings.id,
+                data: settings
+             } as any);
+         }
+      }
+      await fs.rename(settingsFile, settingsFile + '.bak');
+    } catch (e) {
+      // Ignore if file doesn't exist
+    }
+
+    try {
+      await fs.access(trackingFile);
+      console.log('Migrating tracking.json to DB...');
+      const data = await fs.readFile(trackingFile, 'utf8');
+      const tracking = JSON.parse(data);
+      if (Array.isArray(tracking)) {
+        // Bulk create might fail if there are too many, but typically ok for tracking.
+        // Doing it chunked to be safe.
+        const chunkSize = 1000;
+        for (let i = 0; i < tracking.length; i += chunkSize) {
+          const chunk = tracking.slice(i, i + chunkSize);
+          await UrlTrackingModel.bulkCreate(chunk as any[], { ignoreDuplicates: true });
+        }
+      }
+      await fs.rename(trackingFile, trackingFile + '.bak');
+    } catch (e) {
+      // Ignore if file doesn't exist
+    }
+  }
+
 
   private async ensureDbReady() {
     if (!this.dbInitialized) {
