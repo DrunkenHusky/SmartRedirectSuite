@@ -103,9 +103,7 @@ export interface IStorage {
   }>>;
 
   // Import functionality
-  importUrlRules(
-    rules: ImportUrlRule[],
-  ): Promise<{ imported: number; updated: number; errors: string[] }>;
+  importUrlRules(rules: ImportUrlRule[]): Promise<{ imported: number; updated: number; errors: string[] }>;
 
   // Enhanced statistics
   getAllTrackingEntries(): Promise<UrlTracking[]>;
@@ -797,7 +795,7 @@ export class FileStorage implements IStorage {
     const endIndex = Math.min(startIndex + limit, total);
 
     const entriesWithRules = filtered.slice(startIndex, endIndex).map(t => {
-      const enriched = { ...t };
+      const enriched: any = { ...t };
       enriched.rule = t.ruleId ? ruleMap.get(t.ruleId) : undefined;
       enriched.rules = (t.ruleIds || []).map(id => ruleMap.get(id)).filter(Boolean);
       return enriched;
