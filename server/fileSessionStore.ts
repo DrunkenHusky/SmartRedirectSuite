@@ -44,7 +44,21 @@ export class FileSessionStore extends Store {
   }
 
   private getSessionPath(sid: string): string {
-    return path.join(this.sessionsDir, `${sid}.json`);
+    // Basic validation to prevent path traversal characters
+    if (sid.includes('..') || sid.includes('/') || sid.includes('\\')) {
+      throw new Error('Invalid session ID');
+    }
+    const safeSid = sid.replace(/[^a-zA-Z0-9_-]/g, '');
+    const sessionPath = path.join(this.sessionsDir, `${safeSid}.json`);
+
+    // Defense in depth: Verify it resolves within the sessions directory
+    const resolvedPath = path.resolve(sessionPath);
+    const resolvedSessionsDir = path.resolve(this.sessionsDir);
+    if (!resolvedPath.startsWith(resolvedSessionsDir + path.sep)) {
+      throw new Error('Invalid session path');
+    }
+
+    return sessionPath;
   }
 
   override get(sid: string, callback: (err: any, session?: SessionData | null) => void): void {
