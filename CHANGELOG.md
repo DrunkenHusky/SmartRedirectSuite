@@ -1,3 +1,16 @@
+# [2.22.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.21.0...v2.22.0) (2026-04-24)
+
+
+### Bug Fixes
+
+* **admin:** make save button sticky footer ([d326b11](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/d326b1186363db577dabfa0caf70bda3679c7b97))
+* **ui:** remove google favicon fetch from referrer stats ([5bff45b](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/5bff45b1332e68bac33b501f42f63008575f4598))
+
+
+### Features
+
+* make admin settings save buttons sticky ([51dcddf](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/51dcddfcfd3392c21cba9e8c4d1da07aaea0e48e))
+
 # [2.21.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.20.0...v2.21.0) (2026-03-10)
 
 
