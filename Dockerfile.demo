@@ -1,5 +1,3 @@
-# syntax = docker/dockerfile:1
-
 # Demo Dockerfile for SmartRedirect Suite
 # Resets data every 24h via cron (sessions, uploads, tracking, settings, rules) and adds a demo Banner
 
@@ -38,9 +36,6 @@ RUN apt-get update -qq && \
 
 # Copy built application
 COPY --from=build /app /app
-
-# Store default configs for daily reset
-RUN mkdir -p /defaults
 
 # Add reset script
 COPY scripts/demo-reset.sh /usr/local/bin/reset-app.sh

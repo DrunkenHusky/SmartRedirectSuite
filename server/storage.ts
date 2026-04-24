@@ -637,14 +637,19 @@ export class FileStorage implements IStorage {
 
   async getSatisfactionTrend(days: number = 30, aggregation: 'day' | 'week' | 'month' = 'day') {
     await this.ensureDbReady();
-    const rows = await UrlTrackingModel.findAll();
-    const tracking = rows.map(r => r.toJSON() as UrlTracking);
 
     const now = new Date();
     now.setHours(23, 59, 59, 999);
     const startDate = new Date(now);
     startDate.setDate(now.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
+
+    const rows = await UrlTrackingModel.findAll({
+      where: {
+        timestamp: { [Op.gte]: startDate.toISOString() }
+      }
+    });
+    const tracking = rows.map(r => r.toJSON() as UrlTracking);
 
     const periodData = new Map<string, {
       total: number;
