@@ -381,6 +381,13 @@ export class FileStorage implements IStorage {
 
   async createUrlRule(ruleData: InsertUrlRule): Promise<UrlRule> {
     await this.ensureDbReady();
+
+    // Prevent duplicate matchers
+    const existingRule = await UrlRuleModel.findOne({ where: { matcher: ruleData.matcher } });
+    if (existingRule) {
+      throw new Error("Eine Regel für diesen Matcher existiert bereits.");
+    }
+
     const newRule: UrlRule = {
       ...ruleData,
       id: randomUUID(),
@@ -408,6 +415,14 @@ export class FileStorage implements IStorage {
     await this.ensureDbReady();
     const row = await UrlRuleModel.findByPk(id);
     if (!row) return undefined;
+
+    // Check for duplicate matchers if matcher is changing
+    if (updateData.matcher && updateData.matcher !== row.getDataValue('matcher')) {
+      const duplicateRule = await UrlRuleModel.findOne({ where: { matcher: updateData.matcher } });
+      if (duplicateRule && duplicateRule.getDataValue('id') !== id && !force) {
+         throw new Error("Eine Regel für diesen Matcher existiert bereits.");
+      }
+    }
 
     const existingRule = row.toJSON() as UrlRule;
     const updatedRule: UrlRule = { ...existingRule, ...updateData };
@@ -499,29 +514,10 @@ export class FileStorage implements IStorage {
       };
     }
 
-    const rows = await UrlTrackingModel.findAll({ where: whereClause, order: [['timestamp', 'DESC']] });
-    return rows.map(r => r.toJSON() as UrlTracking);
-  }
 
-  async getTopUrls(
-    limit: number = 10,
-    timeRange: "24h" | "7d" | "all" = "all",
-  ) {
-    await this.ensureDbReady();
-
-    let whereClause = {};
-    if (timeRange !== "all") {
-      const now = new Date();
-      const timeLimit = new Date(now);
-      if (timeRange === "24h") {
-        timeLimit.setHours(now.getHours() - 24);
-      } else if (timeRange === "7d") {
-        timeLimit.setDate(now.getDate() - 7);
-      }
-      whereClause = {
-        timestamp: { [Op.gte]: timeLimit.toISOString() }
-      };
-    }
+    whereClause.path = {
+      [Op.notIn]: ['/', '/?admin=true', '/?logout=true']
+    };
 
     const rows = await UrlTrackingModel.findAll({
       attributes: ['path', [sequelize.fn('COUNT', sequelize.col('path')), 'count']],
@@ -750,9 +746,16 @@ export class FileStorage implements IStorage {
     }
 
     if (ruleFilter === 'with_rule') {
-      whereClause.ruleId = { [Op.not]: null };
+      whereClause[Op.or] = [
+         { ruleId: { [Op.not]: null } },
+         { ruleIds: { [Op.not]: null, [Op.not]: '[]' } }
+      ];
     } else if (ruleFilter === 'no_rule') {
       whereClause.ruleId = null;
+      whereClause[Op.or] = [
+         { ruleIds: null },
+         { ruleIds: '[]' }
+      ];
     }
 
     if (minQuality !== undefined || maxQuality !== undefined) {
