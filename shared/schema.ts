@@ -226,7 +226,7 @@ export const globalKeptQueryParamSchema = z.object({
   skipEncoding: z.boolean().default(false),
 });
 
-export const generalSettingsSchema = z.object({
+export const baseGeneralSettingsSchema = z.object({
   id: z.string().uuid("Invalid settings ID"),
   
   // Header section with validation
@@ -489,7 +489,8 @@ export const generalSettingsSchema = z.object({
   globalStaticQueryParams: z.array(globalStaticQueryParamSchema).optional().default([]),
   globalKeptQueryParams: z.array(globalKeptQueryParamSchema).optional().default([]),
 updatedAt: z.string().datetime("Invalid update timestamp"),
-}).strict().refine((data) => {
+}).strict();
+export const generalSettingsSchema = baseGeneralSettingsSchema.refine((data) => {
   if (data.defaultRedirectMode === 'search') {
     return !!data.defaultSearchUrl && data.defaultSearchUrl.trim().length > 0;
   }
@@ -539,7 +540,7 @@ updatedAt: z.string().datetime("Invalid update timestamp"),
   path: ["feedbackButtonNo"],
 }); // Prevent extra properties
 
-export const insertGeneralSettingsSchema = generalSettingsSchema.omit({
+export const insertGeneralSettingsSchema = baseGeneralSettingsSchema.omit({
   id: true,
   updatedAt: true,
 });

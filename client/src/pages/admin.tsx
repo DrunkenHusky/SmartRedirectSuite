@@ -17,8 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+  DialogTitle
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { 
@@ -30,13 +29,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { 
   Shield, 
   X, 
   Plus, 
-  Edit, 
   Trash2, 
   Download, 
   Upload,
@@ -52,7 +49,6 @@ import {
   RefreshCw,
   Trash,
   Search,
-  ArrowUpDown,
   ArrowUp,
   ArrowDown,
   ArrowRightLeft,
@@ -414,7 +410,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
   // Statistics filters and state
   const [statsFilter, setStatsFilter] = useState('all' as '24h' | '7d' | 'all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [statsView, setStatsView] = useState<'top100' | 'browser'>(() => {
@@ -1248,7 +1243,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel erstellt", description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({ 
         title: "Fehler", 
         description: "Die Regel konnte auch mit Force-Option nicht erstellt werden.",
@@ -1270,7 +1265,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (showValidationModal) setShowValidationReloadDialog(true);
       toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({ 
         title: "Fehler", 
         description: "Die Regel konnte auch mit Force-Option nicht aktualisiert werden.",
@@ -1803,16 +1798,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     }
   };
 
-  const getSortIcon = (column: string) => {
-    if (sortBy !== column) return <ArrowUpDown className="h-4 w-4" />;
-    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
-  };
-
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('de-DE');
   };
-
-  const maxCount = statsData?.topUrls?.[0]?.count || 1;
 
   const handlePreview = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1982,7 +1970,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       </header>
 
       {/* Mobile-Optimized Admin Content */}
-      <main className="py-4 sm:py-8 px-3 sm:px-4 overflow-x-hidden">
+      <main className="py-4 sm:py-8 px-3 sm:px-4 ">
         <div className="max-w-6xl mx-auto w-full">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
             {/* Enhanced Tab Navigation */}
@@ -2231,7 +2219,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                               throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                                             }
                                             
-                                            const deleteData = await response.json();
+                                            await response.json();
                                             
                                             // Update local state to immediately remove logo URL
                                             setGeneralSettings(prev => ({
@@ -3536,7 +3524,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       </div>
 
                     {/* Save Button */}
-                    <div className="border-t pt-6 mt-8">
+                    <div className="sticky bottom-0 z-40 bg-card border-t pt-4 pb-4 mt-8 px-4 sm:px-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 rounded-b-xl shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.2)]">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">
@@ -4269,12 +4257,6 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       <td className="p-2 sm:p-3 text-sm font-medium">#{rank}</td>
                                       <td className="p-2 sm:p-3">
                                         <div className="flex items-center gap-2">
-                                          <img
-                                            src={`https://www.google.com/s2/favicons?domain=${ref.domain}&sz=16`}
-                                            alt=""
-                                            className="w-4 h-4 opacity-70"
-                                            onError={(e) => e.currentTarget.style.display = 'none'}
-                                          />
                                           <span className="text-xs sm:text-sm text-foreground truncate max-w-[150px] sm:max-w-[200px]" title={ref.domain}>
                                             {ref.domain}
                                           </span>
