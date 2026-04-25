@@ -1,4 +1,4 @@
-# SmartRedirect Suite - Architektur-Übersicht
+# SmartRedirect Suite - Architektur-Overview
 
 Die Anwendung ist modular aufgebaut und trennt klar zwischen Frontend, Backend und gemeinsam genutzten Typen.
 

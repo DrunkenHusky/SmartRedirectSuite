@@ -7,17 +7,17 @@ Diese Version basiert stets auf dem neuesten Dev-Build, wird alle 24 Stunden zu
 
 ☕️ **Kaffee für den Code?** Wenn dir die SmartRedirect Suite gefällt, spendier mir auf [BuyMeACoffee](https://buymeacoffee.com/drunkenhusky) einen Kaffee und halte die Bits am Koffein!
 
-## Inhaltsverzeichnis
+## Table of Contents
 
 - [Key Features](#key-features)
-- [Dokumentation](#dokumentation)
+- [Documentation](#dokumentation)
 - [Impressions](#impressions)
-- [Funktionsweise](#funktionsweise)
-  - [Regelmodi](#regelmodi)
-  - [Beispiele](#beispiele)
-- [Einsatzszenarien](#einsatzszenarien)
-- [Schnellstart](#schnellstart)
-  - [Voraussetzungen](#voraussetzungen)
+- [How it works](#funktionsweise)
+  - [Rule Modes](#regelmodi)
+  - [Examples](#beispiele)
+- [Use Cases](#einsatzszenarien)
+- [Quick Start](#schnellstart)
+  - [Prerequisites](#voraussetzungen)
   - [1. Repository klonen](#1-repository-klonen)
   - [2. Dependencies installieren](#2-dependencies-installieren)
   - [3. .env-Datei erstellen](#3-env-datei-erstellen)
@@ -47,13 +47,13 @@ Diese Version basiert stets auf dem neuesten Dev-Build, wird alle 24 Stunden zu
 - Skalierbare Architektur: Verarbeitung von über 100'000 Regeln und Logeinträgen ohne Leistungseinbussen
 - Responsives Design für Desktop und Mobilgeräte
 
-## Dokumentation
+## Documentation
 
-- [Benutzerhandbuch](./docs/USER_MANUAL.md)
-- [Admin-Dokumentation](./docs/ADMIN_DOCUMENTATION.md)
+- [User Manual](./docs/USER_MANUAL.md)
+- [Admin-Documentation](./docs/ADMIN_DOCUMENTATION.md)
 - [Docker Deployment](./docs/DOCKER_DEPLOYMENT.md)
-- [Architektur-Übersicht](./docs/ARCHITECTURE_OVERVIEW.md)
-- [Konfigurationsbeispiele](./docs/CONFIGURATION_EXAMPLES.md)
+- [Architektur-Overview](./docs/ARCHITECTURE_OVERVIEW.md)
+- [Configuration Examples](./docs/CONFIGURATION_EXAMPLES.md)
 - [Release Pipeline](./docs/release-pipeline.md)
 
 ## Impressions
@@ -70,7 +70,7 @@ Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
 
 ### Admin-Bereich
 
-3. **Generelle Einstellungen** – Übersicht über globale Optionen und Grundkonfiguration.  
+3. **Generelle Einstellungen** – Overview über globale Optionen und Grundkonfiguration.
    ![Admin Menü – Generelle Einstellungen](Impressions/Admin%20Menu%20Generelle%20Einstellungen.png)
 
 4. **URL-Transformationsregeln** – Verwaltung von Regeln (Typ, Auto-Redirect, Status, Metadaten).  
@@ -82,7 +82,7 @@ Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
 6. **Import/Export** – Export von Statistiken (CSV/JSON) sowie Import/Export der URL-Regeln.  
    ![Admin Menu – Import Export](Impressions/Admin%20Menu%20Import%20Export.png)
 
-## Funktionsweise
+## How it works
 
 Jede Regel definiert:
 
@@ -95,7 +95,7 @@ matcht sowohl `/sites/team/docs` als auch `/archive/sites/team/docs`.
 
 **Fallback ohne Regeln:** Bei fehlenden Regeln erfolgt ein Domainersatz gemäß den allgemeinen Einstellungen; Pfad, Parameter und Anker bleiben erhalten.
 
-### Regelmodi
+### Rule Modes
 
 | Modus           | Verhalten                                                                                                                                           |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -111,7 +111,7 @@ In den allgemeinen Einstellungen kann die Option "Gross/Kleinschreibung beachten
 
 **Best Practice:** Aktivieren Sie diese Option nur, wenn das ursprüngliche System (z. B. ein Linux-Dateisystem oder ein spezifisches CMS) case-sensitive URLs verwendet hat und Sie Kollisionen vermeiden müssen.
 
-### Beispiele
+### Examples
 
 **Ausgangs‑URL**
 
@@ -218,15 +218,15 @@ Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie st
 *   Keep: `old` -> `id`
 *   Ergebnis: `.../ziel?new=A&id=123`
 
-## Einsatzszenarien
+## Use Cases
 
 - Migrationen (z. B. SharePoint On‑Premises → SharePoint Online)
 - Domain‑Rebrands und Konsolidierungen
 - Umstrukturierungen großer Linklandschaften
 
-## Schnellstart
+## Quick Start
 
-### Voraussetzungen
+### Prerequisites
 
 - Node.js >= 22
 
@@ -403,7 +403,7 @@ Dieses Projekt verwendet eine automatisierte CI/CD-Pipeline mit **GitHub Actions
 - Bei einem Push auf `main` wird automatisch getestet, versioniert und veröffentlicht.
 - Docker-Images werden automatisch in die GitHub Container Registry (ghcr.io) gepusht.
 
-Weitere Details finden Sie in der [Release-Dokumentation](./docs/release-pipeline.md).
+Weitere Details finden Sie in der [Release-Documentation](./docs/release-pipeline.md).
 
 ## Validierung & Qualitätssicherung
 
@@ -435,7 +435,7 @@ Standardmäßig werden JSON-Dateien im `data/` Verzeichnis genutzt:
 
 ## Deployment
 
-Die App verwendet standardmäßig SQLite als Datenbank, kann jedoch auch mit PostgreSQL oder MariaDB/MySQL betrieben werden. Weitere Informationen finden Sie in der [Docker Deployment Dokumentation](./docs/DOCKER_DEPLOYMENT.md) und in den mitgelieferten docker-compose Beispielen.
+Die App verwendet standardmäßig SQLite als Datenbank, kann jedoch auch mit PostgreSQL oder MariaDB/MySQL betrieben werden. Weitere Informationen finden Sie in der [Docker Deployment Documentation](./docs/DOCKER_DEPLOYMENT.md) und in den mitgelieferten docker-compose Beispielen.
 
 
 Lokale Produktion:

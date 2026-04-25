@@ -1,5 +1,7 @@
 import { ValidationModal } from "@/components/admin/ValidationModal";
+import { TranslationManager } from "@/components/admin/TranslationManager";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -204,6 +206,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
 }
 
 export default function AdminPage({ onClose }: AdminPageProps) {
+  const { t } = useTranslation();
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showValidationReloadDialog, setShowValidationReloadDialog] = useState(false);
   const [validationReloadTrigger, setValidationReloadTrigger] = useState(0);
@@ -1947,11 +1950,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
                 className="text-muted-foreground hover:text-orange-600"
-                aria-label={logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
+                aria-label={logoutMutation.isPending ? t("logout_in_progress", "Abmelden...") : t("logout", "Abmelden")}
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
-                  {logoutMutation.isPending ? "Abmelden..." : "Abmelden"}
+                  {logoutMutation.isPending ? t("logout_in_progress", "Abmelden...") : t("logout", "Abmelden")}
                 </span>
               </Button>
               <Button
@@ -1975,7 +1978,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
             {/* Enhanced Tab Navigation */}
             <div className="w-full overflow-hidden">
-              <TabsList className="grid w-full grid-cols-5 h-auto">
+              <TabsList className="grid w-full grid-cols-6 h-auto">
                 <TabsTrigger value="general" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="truncate leading-tight text-center">Allgemein</span>
@@ -1995,6 +1998,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <TabsTrigger value="export" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Database className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="truncate leading-tight text-center">System & Daten</span>
+                </TabsTrigger>
+
+                <TabsTrigger value="translations" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
+                  <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate leading-tight text-center">Sprachen</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -4736,6 +4744,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="translations">
+              <TranslationManager />
             </TabsContent>
           </Tabs>
         </div>

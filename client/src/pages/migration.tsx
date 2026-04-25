@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
 import { generateNewUrl, generateUrlWithRule, extractPath, copyToClipboard, extractSearchTerm } from "@/lib/url-utils";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordModal } from "@/components/ui/password-modal";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { QualityGauge } from "@/components/ui/quality-gauge";
 import { useQuery } from "@tanstack/react-query";
 import type { UrlRule, GeneralSettings } from "@shared/schema";
@@ -68,6 +70,7 @@ const getBackgroundColor = (color: string) => {
 };
 
 export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
+  const { t } = useTranslation();
   const [currentUrl, setCurrentUrl] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [matchingRule, setMatchingRule] = useState<UrlRule | null>(null);
@@ -833,15 +836,15 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
             <a href={__APP_REPOSITORY_URL__} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs opacity-50 hover:underline cursor-pointer">v{__APP_VERSION__}</a>
           </div>
           <div className="flex items-center space-x-2">
-
+            <LanguageSwitch />
             <Button
               variant="ghost"
               size="sm"
               onClick={(e) => handleAdminAccess(e)}
               disabled={isCheckingAuth}
               className="text-muted-foreground hover:text-primary"
-              title="Administrator-Bereich"
-              aria-label="Administrator-Bereich öffnen"
+              title={t("admin_area", "Administrator-Bereich")}
+              aria-label={t("admin_area", "Administrator-Bereich öffnen")}
             >
               <Settings className="h-4 w-4" />
             </Button>

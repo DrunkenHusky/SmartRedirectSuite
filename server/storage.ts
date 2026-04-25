@@ -13,7 +13,7 @@ import type {
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
-import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel } from "./db";
+import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel, TranslationModel } from "./db";
 import { Op } from "sequelize";
 
 // Helper to ensure only relevant flags are stored
@@ -151,6 +151,10 @@ export interface IStorage {
 
   // Maintenance
   forceCacheRebuild(): Promise<void>;
+  // Translations
+  getTranslation(lang: string): Promise<Record<string, string>>;
+  updateTranslation(lang: string, data: Record<string, string>): Promise<void>;
+
 }
 
 export class FileStorage implements IStorage {
@@ -193,6 +197,92 @@ export class FileStorage implements IStorage {
     this.initDatabase();
   }
 
+
+  // Translations
+  async getTranslation(lang: string): Promise<Record<string, string>> {
+    const record = await TranslationModel.findByPk(lang);
+    if (!record) {
+      return {};
+    }
+    return record.get('data') as Record<string, string>;
+  }
+
+  async updateTranslation(lang: string, data: Record<string, string>): Promise<void> {
+    await TranslationModel.upsert({ lang, data });
+  }
+
+  private async initTranslations() {
+    const defaultTranslations: Record<string, Record<string, string>> = {
+      en: {
+        loading_app: "Loading application...",
+        admin_area: "Admin Area",
+        logout: "Logout",
+        logout_in_progress: "Logging out...",
+        general_settings: "General",
+        rules: "Rules",
+        global: "Global",
+        stats: "Statistics",
+        system_data: "System & Data",
+        translations: "Translations"
+      },
+      de: {
+        loading_app: "Lade Anwendung...",
+        admin_area: "Administrator-Bereich",
+        logout: "Abmelden",
+        logout_in_progress: "Abmelden...",
+        general_settings: "Allgemein",
+        rules: "Regeln",
+        global: "Global",
+        stats: "Statistiken",
+        system_data: "System & Daten",
+        translations: "Übersetzungen"
+      },
+      it: {
+        loading_app: "Caricamento applicazione...",
+        admin_area: "Area amministratore",
+        logout: "Esci",
+        logout_in_progress: "Uscita...",
+        general_settings: "Generale",
+        rules: "Regole",
+        global: "Globale",
+        stats: "Statistiche",
+        system_data: "Sistema e Dati",
+        translations: "Traduzioni"
+      },
+      es: {
+        loading_app: "Cargando aplicación...",
+        admin_area: "Área de administrador",
+        logout: "Cerrar sesión",
+        logout_in_progress: "Cerrando sesión...",
+        general_settings: "General",
+        rules: "Reglas",
+        global: "Global",
+        stats: "Estadísticas",
+        system_data: "Sistema y Datos",
+        translations: "Traducciones"
+      },
+      fr: {
+        loading_app: "Chargement de l'application...",
+        admin_area: "Espace administrateur",
+        logout: "Déconnexion",
+        logout_in_progress: "Déconnexion...",
+        general_settings: "Général",
+        rules: "Règles",
+        global: "Global",
+        stats: "Statistiques",
+        system_data: "Système et données",
+        translations: "Traductions"
+      }
+    };
+
+    for (const [lang, data] of Object.entries(defaultTranslations)) {
+      const existing = await TranslationModel.findByPk(lang);
+      if (!existing) {
+        await TranslationModel.create({ lang, data });
+      }
+    }
+  }
+
   private async ensureDataDirectory() {
     try {
       await fs.access(DATA_DIR);
@@ -213,6 +303,7 @@ export class FileStorage implements IStorage {
       try {
         await initDb();
         await this.migrateJsonToDb();
+        await this.initTranslations();
         this.dbInitialized = true;
         console.log('Database initialized successfully');
       } catch (err) {

@@ -140,6 +140,24 @@ export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
   }
 });
 
+
+export const TranslationModel = sequelize.define('Translation', {
+  lang: {
+    type: DataTypes.STRING,
+    primaryKey: true,
+  },
+  data: {
+    type: DataTypes.TEXT,
+    get() {
+      const val = this.getDataValue('data');
+      return val ? JSON.parse(val) : {};
+    },
+    set(val) {
+      this.setDataValue('data', JSON.stringify(val));
+    }
+  }
+});
+
 export async function initDb() {
   await sequelize.sync();
 }
