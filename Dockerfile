@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV="production"
+ENV npm_config_build_from_source=sqlite3
 
 # Install packages needed to build node modules
 RUN apt-get update -qq && \
