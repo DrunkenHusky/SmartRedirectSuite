@@ -43,14 +43,21 @@
     "express-session": "^1.18.2",
     "helmet": "^8.1.0",
     "lucide-react": "^0.556.0",
+    "mariadb": "^3.5.2",
     "multer": "^2.0.2",
+    "mysql2": "^3.22.2",
+    "pg": "^8.20.0",
+    "pg-hstore": "^2.3.4",
     "postcss": "^8.5.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.68.0",
+    "sequelize": "^6.37.8",
+    "sqlite3": "^6.0.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
     "wouter": "^3.8.1",
@@ -74,5 +81,21 @@
     "supertest": "^7.1.4",
     "tsx": "^4.21.0",
     "uvu": "^0.5.6"
-  }
+  },
+  "description": "SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain. Typischer Use Case: Migration von SharePoint On-Premises zu SharePoint Online, wenn sich Domain und Pfadstruktur ändern. Die App weist Nutzer auf veraltete Links hin und kann automatisch auf neue Ziele weiterleiten.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DrunkenHusky/SmartRedirectSuite.git"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/DrunkenHusky/SmartRedirectSuite/issues"
+  },
+  "homepage": "https://github.com/DrunkenHusky/SmartRedirectSuite#readme"
 }

@@ -435,6 +435,9 @@ Standardmäßig werden JSON-Dateien im `data/` Verzeichnis genutzt:
 
 ## Deployment
 
+Die App verwendet standardmäßig SQLite als Datenbank, kann jedoch auch mit PostgreSQL oder MariaDB/MySQL betrieben werden. Weitere Informationen finden Sie in der [Docker Deployment Dokumentation](./docs/DOCKER_DEPLOYMENT.md) und in den mitgelieferten docker-compose Beispielen.
+
+
 Lokale Produktion:
 
 ```bash

@@ -56,6 +56,22 @@ Die Anwendung wird über Umgebungsvariablen konfiguriert.
 | `LOGIN_BLOCK_DURATION_MS` | Sperrdauer in ms nach Fehlversuchen. | `86400000` (24h) | Nein |
 | `IMPORT_PREVIEW_LIMIT` | Maximale Anzahl an Regeln für Import-Vorschau. | `1000` | Nein |
 
+
+### Externe Datenbank konfigurieren
+
+SmartRedirect Suite verwendet standardmäßig eine SQLite-Datenbank (`database.sqlite`), die im `/app/data` Volume abgelegt wird. Wenn Sie eine externe Datenbank wie MariaDB/MySQL oder PostgreSQL verwenden möchten, können Sie die entsprechenden Umgebungsvariablen setzen:
+
+| Variable | Beschreibung | Standard |
+|----------|-------------|---------|
+| `DB_DIALECT` | Datenbanktyp: `sqlite`, `postgres`, `mysql` oder `mariadb` | `sqlite` |
+| `DB_HOST` | Hostname der Datenbank. | `localhost` |
+| `DB_PORT` | Port der Datenbank (z.B. 5432 für Postgres, 3306 für MariaDB). | `5432` / `3306` |
+| `DB_NAME` | Name der Datenbank. | `smartredirect` |
+| `DB_USER` | Benutzername für die Datenbank. | `root` |
+| `DB_PASSWORD` | Passwort für die Datenbank. | |
+
+Es stehen `docker-compose.mariadb.yml` und `docker-compose.postgresql.yml` im Repository als Vorlagen zur Verfügung.
+
 ## 💾 Datenpersistenz
 
 Die SmartRedirect Suite nutzt dateibasierten Speicher für Regeln, Einstellungen und Sessions. Um Datenverlust beim Neustart des Containers zu vermeiden, **müssen** Volumes eingebunden werden.

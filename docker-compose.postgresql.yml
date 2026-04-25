@@ -1,0 +1,33 @@
+services:
+  smartredirect:
+    image: ghcr.io/drunkenhusky/smartredirectsuite:latest
+    container_name: smartredirect-suite-pg
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-SicheresPasswort123}
+      - DB_DIALECT=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=smartredirect
+      - DB_USER=redirectuser
+      - DB_PASSWORD=redirectpass
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: smartredirect-pg-db
+    restart: always
+    environment:
+      - POSTGRES_DB=smartredirect
+      - POSTGRES_USER=redirectuser
+      - POSTGRES_PASSWORD=redirectpass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

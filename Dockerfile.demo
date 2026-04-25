@@ -1,10 +1,8 @@
-# syntax = docker/dockerfile:1
-
 # Demo Dockerfile for SmartRedirect Suite
 # Resets data every 24h via cron (sessions, uploads, tracking, settings, rules) and adds a demo Banner
 
 ARG NODE_VERSION=22.18.0
-FROM node:${NODE_VERSION}-slim AS base
+FROM node:${NODE_VERSION}-slim
 
 LABEL fly_launch_runtime="Node.js"
 
@@ -12,13 +10,16 @@ WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV="production"
+ENV npm_config_build_from_source=sqlite3
 
-# Build stage
-FROM base AS build
+# Install dependencies needed to build node modules and cron
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
+    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3 cron && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY package-lock.json package.json ./
 RUN npm ci --include=dev
+
 COPY . .
 
 RUN npm run build \
@@ -27,22 +28,6 @@ RUN npm run build \
     && rm /tmp/banner.html
 
 RUN npm prune --omit=dev
-
-# Final stage
-FROM base
-
-# Install cron for scheduled resets
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y cron && \
-    rm -rf /var/lib/apt/lists/*
-
-# Copy built application
-COPY --from=build /app /app
-
-# Store default configs for daily reset
-RUN mkdir -p /defaults && \
-    cp /app/data/settings.json /defaults/settings.json && \
-    cp /app/data/rules.json /defaults/rules.json
 
 # Add reset script
 COPY scripts/demo-reset.sh /usr/local/bin/reset-app.sh

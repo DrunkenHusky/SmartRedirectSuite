@@ -1,0 +1,34 @@
+services:
+  smartredirect:
+    image: ghcr.io/drunkenhusky/smartredirectsuite:latest
+    container_name: smartredirect-suite-mariadb
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-SicheresPasswort123}
+      - DB_DIALECT=mariadb
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=smartredirect
+      - DB_USER=redirectuser
+      - DB_PASSWORD=redirectpass
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:10
+    container_name: smartredirect-mariadb-db
+    restart: always
+    environment:
+      - MYSQL_DATABASE=smartredirect
+      - MYSQL_USER=redirectuser
+      - MYSQL_PASSWORD=redirectpass
+      - MYSQL_RANDOM_ROOT_PASSWORD=1
+    volumes:
+      - mariadbdata:/var/lib/mysql
+
+volumes:
+  mariadbdata:

@@ -7,12 +7,10 @@ rm -rf /app/data/sessions/* || true
 # Remove upload files
 rm -rf /app/data/uploads/* || true
 
-# Remove tracking data
-rm -f /app/data/tracking.json || true
+# Remove database
+rm -f /app/data/database.sqlite || true
 
-# Restore default configuration
-cp /defaults/settings.json /app/data/settings.json
-cp /defaults/rules.json /app/data/rules.json
+# Start up will regenerate it
 
 # Ensure directories exist after cleanup
 mkdir -p /app/data/sessions /app/data/uploads

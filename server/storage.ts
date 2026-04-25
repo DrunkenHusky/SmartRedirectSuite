@@ -13,6 +13,8 @@ import type {
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
+import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel } from "./db";
+import { Op } from "sequelize";
 
 // Helper to ensure only relevant flags are stored
 function sanitizeRuleFlags(rule: any): any {
@@ -27,9 +29,6 @@ function sanitizeRuleFlags(rule: any): any {
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
-const RULES_FILE = path.join(DATA_DIR, "rules.json");
-const TRACKING_FILE = path.join(DATA_DIR, "tracking.json");
-const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 
 export interface IStorage {
   // URL-Regeln
@@ -53,6 +52,7 @@ export interface IStorage {
   updateUrlRule(
     id: string,
     rule: Partial<InsertUrlRule>,
+    force?: boolean,
   ): Promise<UrlRule | undefined>;
   deleteUrlRule(id: string): Promise<boolean>;
   bulkDeleteUrlRules(
@@ -103,9 +103,7 @@ export interface IStorage {
   }>>;
 
   // Import functionality
-  importUrlRules(
-    rules: ImportUrlRule[],
-  ): Promise<{ imported: number; updated: number; errors: string[] }>;
+  importUrlRules(rules: ImportUrlRule[]): Promise<{ imported: number; updated: number; errors: string[] }>;
 
   // Enhanced statistics
   getAllTrackingEntries(): Promise<UrlTracking[]>;
@@ -148,6 +146,7 @@ export interface IStorage {
   getGeneralSettings(): Promise<GeneralSettings>;
   updateGeneralSettings(
     settings: InsertGeneralSettings,
+    replaceMode?: boolean,
   ): Promise<GeneralSettings>;
 
   // Maintenance
@@ -158,27 +157,40 @@ export class FileStorage implements IStorage {
   private async enforceMaxStatsLimit(limit: number): Promise<void> {
     if (limit <= 0) return;
 
-    const trackingData = await this.ensureTrackingLoaded();
-    if (trackingData.length > limit) {
+    const count = await UrlTrackingModel.count();
+    if (count > limit) {
       console.log(
-        `Pruning tracking data: Limit ${limit}, Current ${trackingData.length}, Removing ${trackingData.length - limit} oldest entries.`,
+        `Pruning tracking data: Limit ${limit}, Current ${count}, Removing ${count - limit} oldest entries.`,
       );
-      // Remove oldest entries (from the beginning of the array)
-      const removeCount = trackingData.length - limit;
-      trackingData.splice(0, removeCount);
-      await this.writeJsonFile(TRACKING_FILE, trackingData);
+      const removeCount = count - limit;
+
+      // Get IDs of oldest entries to remove
+      const oldestEntries = await UrlTrackingModel.findAll({
+        order: [['timestamp', 'ASC']],
+        limit: removeCount,
+        attributes: ['id']
+      });
+
+      const idsToRemove = oldestEntries.map(e => e.getDataValue('id'));
+
+      await UrlTrackingModel.destroy({
+        where: {
+          id: {
+            [Op.in]: idsToRemove
+          }
+        }
+      });
     }
   }
 
-  // Unified cache that holds rules that are processed or will be processed
-  // We type it as ProcessedUrlRule[] because we ensure they are processed when loaded
   private rulesCache: ProcessedUrlRule[] | null = null;
   private lastCacheConfig: RuleMatchingConfig | null = null;
   private settingsCache: GeneralSettings | null = null;
-  private trackingCache: UrlTracking[] | null = null;
+  private dbInitialized = false;
 
   constructor() {
     this.ensureDataDirectory();
+    this.initDatabase();
   }
 
   private async ensureDataDirectory() {
@@ -189,172 +201,141 @@ export class FileStorage implements IStorage {
     }
   }
 
-  private async readJsonFile<T>(
-    filePath: string,
-    defaultValue: T[],
-  ): Promise<T[]> {
-    try {
-      const stats = await fs.stat(filePath);
 
-      if (stats.size > 10 * 1024 * 1024) {
-        const { createReadStream } = await import('fs');
+  private initPromise: Promise<void> | null = null;
 
-        return new Promise<T[]>((resolve, reject) => {
-          let buffer = '';
-          const stream = createReadStream(filePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
+  private async initDatabase() {
+    if (this.initPromise) {
+      return this.initPromise;
+    }
 
-          stream.on('data', (chunk: string | Buffer) => {
-            buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf8');
-          });
-
-          stream.on('end', () => {
-            try {
-              const parsed = JSON.parse(buffer);
-              resolve(parsed);
-            }
-            catch (error) {
-              reject(error);
-            }
-          });
-
-          stream.on('error', reject);
-        });
+    this.initPromise = (async () => {
+      try {
+        await initDb();
+        await this.migrateJsonToDb();
+        this.dbInitialized = true;
+        console.log('Database initialized successfully');
+      } catch (err) {
+        console.error('Failed to initialize database', err);
       }
+    })();
 
-      const data = await fs.readFile(filePath, "utf-8");
-      return JSON.parse(data);
-    } catch {
-      return defaultValue;
+    return this.initPromise;
+  }
+
+  private async migrateJsonToDb() {
+    const rulesFile = path.join(DATA_DIR, "rules.json");
+    const settingsFile = path.join(DATA_DIR, "settings.json");
+    const trackingFile = path.join(DATA_DIR, "tracking.json");
+
+    try {
+      await fs.access(rulesFile);
+      console.log('Migrating rules.json to DB...');
+      const data = await fs.readFile(rulesFile, 'utf8');
+      const rules = JSON.parse(data);
+      if (Array.isArray(rules)) {
+        for (const rule of rules) {
+           const existing = await UrlRuleModel.findByPk(rule.id);
+           if (!existing) {
+              await UrlRuleModel.create(rule as any);
+           }
+        }
+      }
+      await fs.rename(rulesFile, rulesFile + '.bak');
+    } catch (e) {
+      // Ignore if file doesn't exist
+    }
+
+    try {
+      await fs.access(settingsFile);
+      console.log('Migrating settings.json to DB...');
+      const data = await fs.readFile(settingsFile, 'utf8');
+      const settings = JSON.parse(data);
+      if (settings && settings.id) {
+         const existing = await GeneralSettingsModel.findOne();
+         if (!existing) {
+             await GeneralSettingsModel.create({
+                id: settings.id,
+                data: settings
+             } as any);
+         }
+      }
+      await fs.rename(settingsFile, settingsFile + '.bak');
+    } catch (e) {
+      // Ignore if file doesn't exist
+    }
+
+    try {
+      await fs.access(trackingFile);
+      console.log('Migrating tracking.json to DB...');
+      const data = await fs.readFile(trackingFile, 'utf8');
+      const tracking = JSON.parse(data);
+      if (Array.isArray(tracking)) {
+        // Bulk create might fail if there are too many, but typically ok for tracking.
+        // Doing it chunked to be safe.
+        const chunkSize = 1000;
+        for (let i = 0; i < tracking.length; i += chunkSize) {
+          const chunk = tracking.slice(i, i + chunkSize);
+          await UrlTrackingModel.bulkCreate(chunk as any[], { ignoreDuplicates: true });
+        }
+      }
+      await fs.rename(trackingFile, trackingFile + '.bak');
+    } catch (e) {
+      // Ignore if file doesn't exist
     }
   }
 
-  private async writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+
+  private async ensureDbReady() {
+    if (!this.dbInitialized) {
+      await this.initDatabase();
+    }
   }
 
-  // Helper to ensure rules are loaded and processed
   private async ensureRulesLoaded(config?: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
-    // If we have a cache
-    if (this.rulesCache) {
-      // Check if we need to reprocess based on config mismatch or invalidation (lastCacheConfig === null)
-      if (config) {
-        const needsReprocess = !this.lastCacheConfig ||
-          this.lastCacheConfig.CASE_SENSITIVITY_PATH !== config.CASE_SENSITIVITY_PATH ||
-          this.lastCacheConfig.CASE_SENSITIVITY_QUERY !== config.CASE_SENSITIVITY_QUERY ||
-          this.lastCacheConfig.TRAILING_SLASH_POLICY !== config.TRAILING_SLASH_POLICY;
+    await this.ensureDbReady();
 
-        if (needsReprocess) {
-          const BATCH_SIZE = 1000;
-          const newCache = new Array(this.rulesCache.length);
-          const batches = Math.ceil(this.rulesCache.length / BATCH_SIZE);
+    const isConfigChanged = !this.lastCacheConfig || !config ||
+      this.lastCacheConfig.caseSensitive !== config.caseSensitive;
 
-          for (let i = 0; i < batches; i++) {
-            const start = i * BATCH_SIZE;
-            const end = Math.min(start + BATCH_SIZE, this.rulesCache.length);
-            const batch = this.rulesCache.slice(start, end);
-            const processed = batch.map(rule => preprocessRule(rule, config));
-
-            // Fill the new array at the correct positions
-            for (let j = 0; j < processed.length; j++) {
-              newCache[start + j] = processed[j];
-            }
-
-            if (i < batches - 1) {
-              await new Promise(resolve => setImmediate(resolve));
-            }
-          }
-
-          this.rulesCache = newCache;
-          this.lastCacheConfig = config;
-        }
-      }
+    if (this.rulesCache && !isConfigChanged) {
       return this.rulesCache;
     }
 
-    // Cache miss: Load from file
-    const rawRules = await this.readJsonFile<UrlRule>(RULES_FILE, []);
+    try {
+      const rulesRows = await UrlRuleModel.findAll();
+      const rules = rulesRows.map(r => r.toJSON() as UrlRule);
 
-    // Determine config: use provided or fetch settings to build default
-    let effectiveConfig = config;
-    if (!effectiveConfig) {
-       const settings = await this.getGeneralSettings();
-       effectiveConfig = {
-         ...RULE_MATCHING_CONFIG,
-         CASE_SENSITIVITY_PATH: settings.caseSensitiveLinkDetection,
-       };
-    }
-
-    const BATCH_SIZE = 1000;
-    const processed: ProcessedUrlRule[] = [];
-
-    for (let i = 0; i < rawRules.length; i += BATCH_SIZE) {
-      const batch = rawRules.slice(i, i + BATCH_SIZE);
-      const processedBatch = batch.map(rule => preprocessRule(rule, effectiveConfig!));
-      processed.push(...processedBatch);
-
-      if (i + BATCH_SIZE < rawRules.length) {
-        await new Promise(resolve => setImmediate(resolve));
+      if (config) {
+        this.rulesCache = rules.map(rule => preprocessRule(rule, config));
+        this.lastCacheConfig = config;
+      } else {
+        const settings = await this.getGeneralSettings();
+        const fallbackConfig: RuleMatchingConfig = {
+          ...RULE_MATCHING_CONFIG,
+          caseSensitive: settings.caseSensitiveLinkDetection
+        };
+        this.rulesCache = rules.map(rule => preprocessRule(rule, fallbackConfig));
+        this.lastCacheConfig = fallbackConfig;
       }
+      return this.rulesCache;
+    } catch (error) {
+      console.error("Error loading rules:", error);
+      return [];
     }
-
-    // Process rules
-    this.rulesCache = processed;
-    this.lastCacheConfig = effectiveConfig;
-
-    return this.rulesCache;
   }
 
-  // Helper to ensure tracking data is loaded
-  private async ensureTrackingLoaded(): Promise<UrlTracking[]> {
-    const settings = await this.getGeneralSettings();
-    const useCache = settings.enableTrackingCache ?? true;
-
-    if (useCache && this.trackingCache) {
-      return this.trackingCache;
-    }
-
-    const data = await this.readJsonFile<UrlTracking>(TRACKING_FILE, []);
-
-    if (useCache) {
-      this.trackingCache = data;
-    } else {
-      // Clear cache if disabled
-      this.trackingCache = null;
-    }
-
-    return data;
-  }
-
-  // Strip computed properties for saving to disk
-  private cleanRulesForSave(rules: ProcessedUrlRule[]): UrlRule[] {
-    // Also strip internal properties like normalizedPath, queryMap, etc.
-    // We use a destructuring approach to remove known internal properties
-    return rules.map(rule => {
-      // Create a shallow copy to avoid mutation issues if any
-      const {
-        normalizedPath,
-        normalizedQuery,
-        queryMap,
-        normalizedTarget,
-        isRegex,
-        regex,
-        isDomainMatcher,
-        ...cleanRule
-      } = rule as any;
-      return cleanRule as UrlRule;
+  async getCleanUrlRules(): Promise<UrlRule[]> {
+    await this.ensureDbReady();
+    const rows = await UrlRuleModel.findAll();
+    return rows.map(r => {
+      const rule = r.toJSON() as UrlRule;
+      return sanitizeRuleFlags(rule);
     });
   }
 
-  // Public method to get clean rules for export
-  async getCleanUrlRules(): Promise<UrlRule[]> {
-    const rules = await this.ensureRulesLoaded();
-    return this.cleanRulesForSave(rules);
-  }
-
-  // URL-Regeln implementierung
   async getUrlRules(): Promise<UrlRule[]> {
-    // Return the unified cache (it satisfies UrlRule[])
-    return this.ensureRulesLoaded();
+    return this.getCleanUrlRules();
   }
 
   async getProcessedUrlRules(config: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
@@ -362,140 +343,76 @@ export class FileStorage implements IStorage {
   }
 
   async getUrlRulesPaginated(
-    page: number = 1,
-    limit: number = 50,
+    page: number,
+    limit: number,
     search?: string,
     sortBy: string = "createdAt",
     sortOrder: "asc" | "desc" = "desc",
-  ): Promise<{
-    rules: UrlRule[];
-    total: number;
-    totalPages: number;
-    currentPage: number;
-    totalAllRules: number;
-  }> {
-    const allRules = await this.getUrlRules();
-    const totalAllRules = allRules.length;
+  ) {
+    await this.ensureDbReady();
+    const offset = (page - 1) * limit;
 
-    // Filter rules based on search
-    let filteredRules: UrlRule[];
-    if (search && search.trim()) {
+    let whereClause = {};
+    if (search) {
       const searchLower = search.toLowerCase();
-      filteredRules = allRules.filter(
-        (rule) =>
-          rule.matcher.toLowerCase().includes(searchLower) ||
-          (rule.targetUrl &&
-            rule.targetUrl.toLowerCase().includes(searchLower)) ||
-          (rule.infoText && rule.infoText.toLowerCase().includes(searchLower)),
-      );
-    } else {
-      // Create a copy to avoid mutating the cache when sorting
-      filteredRules = [...allRules];
+      whereClause = {
+        [Op.or]: [
+          { targetUrl: { [Op.like]: `%${searchLower}%` } },
+          { matcher: { [Op.like]: `%${searchLower}%` } }
+        ]
+      };
     }
 
-    // Sort rules
-    filteredRules.sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortBy) {
-        case "matcher":
-          comparison = a.matcher.localeCompare(b.matcher);
-          break;
-        case "targetUrl":
-          const aTarget = a.targetUrl || "";
-          const bTarget = b.targetUrl || "";
-          comparison = aTarget.localeCompare(bTarget);
-          break;
-        case "createdAt":
-        default:
-          // Optimized: Use string comparison for ISO dates instead of parsing Date objects
-          const aDate = a.createdAt || "";
-          const bDate = b.createdAt || "";
-          if (aDate < bDate) comparison = -1;
-          else if (aDate > bDate) comparison = 1;
-          else comparison = 0;
-          break;
-      }
-
-      return sortOrder === "asc" ? comparison : -comparison;
+    const { count, rows } = await UrlRuleModel.findAndCountAll({
+      where: whereClause,
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit,
+      offset
     });
 
-    // Calculate pagination
-    const total = filteredRules.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedRules = filteredRules.slice(startIndex, endIndex);
+    const totalAllRules = await UrlRuleModel.count();
 
     return {
-      rules: paginatedRules,
-      total,
-      totalPages,
+      rules: rows.map(r => r.toJSON() as UrlRule),
+      total: count,
+      totalPages: Math.ceil(count / limit),
       currentPage: page,
       totalAllRules,
     };
   }
 
   async getUrlRule(id: string): Promise<UrlRule | undefined> {
-    const rules = await this.getUrlRules();
-    return rules.find((rule) => rule.id === id);
+    await this.ensureDbReady();
+    const row = await UrlRuleModel.findByPk(id);
+    return row ? (row.toJSON() as UrlRule) : undefined;
   }
 
-  async createUrlRule(
-    insertRule: InsertUrlRule,
-    force: boolean = false,
-  ): Promise<UrlRule> {
-    // Ensure loaded so we can check duplicates
-    const rules = await this.ensureRulesLoaded();
+  async createUrlRule(ruleData: InsertUrlRule): Promise<UrlRule> {
+    await this.ensureDbReady();
 
-    // Skip validation if force flag is set
-    if (!force) {
-      // Validate for duplicates and overlaps
-      const validationErrors: string[] = [];
-
-      // Check for exact duplicates
-      const existingRuleWithSameMatcher = rules.find(
-        (r) => r.matcher === insertRule.matcher,
-      );
-      if (existingRuleWithSameMatcher) {
-        validationErrors.push(
-          `URL-Matcher bereits vorhanden: "${insertRule.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
-        );
-      }
-
-      // Check for overlapping patterns
-      // Overlapping matchers are allowed and resolved by specificity (length/specificity of match)
-      // So we don't block them here.
-
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join("; "));
-      }
+    // Prevent duplicate matchers
+    const existingRule = await UrlRuleModel.findOne({ where: { matcher: ruleData.matcher } });
+    if (existingRule) {
+      throw new Error("Eine Regel für diesen Matcher existiert bereits.");
     }
 
-    const rawRule: UrlRule = {
-      ...insertRule,
+    const newRule: UrlRule = {
+      ...ruleData,
       id: randomUUID(),
       createdAt: new Date().toISOString(),
+      infoText: ruleData.infoText ?? "",
+      autoRedirect: ruleData.autoRedirect ?? false,
+      discardQueryParams: ruleData.discardQueryParams ?? false,
+      forwardQueryParams: ruleData.forwardQueryParams ?? false,
+      keptQueryParams: ruleData.keptQueryParams ?? [],
+      searchAndReplace: ruleData.searchAndReplace ?? [],
+      staticQueryParams: ruleData.staticQueryParams ?? [],
     };
 
-    // Sanitize flags based on redirect type
-    sanitizeRuleFlags(rawRule);
-
-    // Process the new rule using current config (or default if not loaded, but ensureRulesLoaded called above ensures we have one)
-    const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
-    const processedRule = preprocessRule(rawRule, config);
-
-    // Create copy for modification
-    const newRules = [...rules, processedRule];
-
-    // Save cleanly to file
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
-
-    // Update cache after successful write
-    this.rulesCache = newRules;
-    // lastCacheConfig remains valid
-
-    return processedRule;
+    sanitizeRuleFlags(newRule);
+    await UrlRuleModel.create(newRule as any);
+    this.rulesCache = null; // Invalidate cache
+    return newRule;
   }
 
   async updateUrlRule(
@@ -503,823 +420,459 @@ export class FileStorage implements IStorage {
     updateData: Partial<InsertUrlRule>,
     force: boolean = false,
   ): Promise<UrlRule | undefined> {
-    const rules = await this.ensureRulesLoaded();
-    const index = rules.findIndex((rule) => rule.id === id);
-    if (index === -1) return undefined;
+    await this.ensureDbReady();
+    const row = await UrlRuleModel.findByPk(id);
+    if (!row) return undefined;
 
-    // Skip validation if force flag is set or if matcher is not being updated
-    if (!force && updateData.matcher) {
-      const validationErrors: string[] = [];
-
-      // Check for exact duplicates (excluding the current rule being updated)
-      const existingRuleWithSameMatcher = rules.find(
-        (r) => r.matcher === updateData.matcher && r.id !== id,
-      );
-      if (existingRuleWithSameMatcher) {
-        validationErrors.push(
-          `URL-Matcher bereits vorhanden: "${updateData.matcher}" (existierende Regel-ID: ${existingRuleWithSameMatcher.id})`,
-        );
-      }
-
-      // Check for overlapping patterns (excluding the current rule being updated)
-      // Overlapping matchers are allowed and resolved by specificity
-      // So we don't block them here.
-
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join("; "));
+    // Check for duplicate matchers if matcher is changing
+    if (updateData.matcher && updateData.matcher !== row.getDataValue('matcher')) {
+      const duplicateRule = await UrlRuleModel.findOne({ where: { matcher: updateData.matcher } });
+      if (duplicateRule && duplicateRule.getDataValue('id') !== id && !force) {
+         throw new Error("Eine Regel für diesen Matcher existiert bereits.");
       }
     }
 
-    // Create shallow copy of rules
-    const newRules = [...rules];
+    const existingRule = row.toJSON() as UrlRule;
+    const updatedRule: UrlRule = { ...existingRule, ...updateData };
 
-    // Create updated rule
-    const updatedRaw = { ...newRules[index], ...updateData };
+    sanitizeRuleFlags(updatedRule);
 
-    // Sanitize flags based on redirect type
-    sanitizeRuleFlags(updatedRaw);
-
-    // Re-process the updated rule
-    const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
-    newRules[index] = preprocessRule(updatedRaw as UrlRule, config);
-
-    // Save cleanly
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
-
-    // Update cache after successful write
-    this.rulesCache = newRules;
-
-    return newRules[index];
+    await row.update(updatedRule as any);
+    this.rulesCache = null;
+    return updatedRule;
   }
 
   async deleteUrlRule(id: string): Promise<boolean> {
-    const rules = await this.ensureRulesLoaded();
-    const index = rules.findIndex((rule) => rule.id === id);
-    if (index === -1) return false;
-
-    // Create shallow copy of rules
-    const newRules = [...rules];
-    newRules.splice(index, 1);
-
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
-
-    // Update cache after successful write
-    this.rulesCache = newRules;
-
-    return true;
+    await this.ensureDbReady();
+    const deletedCount = await UrlRuleModel.destroy({ where: { id } });
+    if (deletedCount > 0) {
+      this.rulesCache = null;
+      return true;
+    }
+    return false;
   }
 
-  // Atomic bulk delete to prevent race conditions
   async bulkDeleteUrlRules(
     ids: string[],
   ): Promise<{ deleted: number; notFound: number }> {
-    const rules = await this.ensureRulesLoaded();
-    const idsToDelete = new Set(ids);
-
-    const originalCount = rules.length;
-    const filteredRules = rules.filter((rule) => !idsToDelete.has(rule.id));
-    const deletedCount = originalCount - filteredRules.length;
-    const notFoundCount = ids.length - deletedCount;
-
-    console.log(
-      `ATOMIC BULK DELETE: Original ${originalCount}, Requested ${ids.length}, Deleted ${deletedCount}, Not found ${notFoundCount}`,
-    );
-
-    // Single atomic write operation
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(filteredRules));
-
-    // Update cache after successful write
-    this.rulesCache = filteredRules;
-
-    return { deleted: deletedCount, notFound: notFoundCount };
+    await this.ensureDbReady();
+    const deletedCount = await UrlRuleModel.destroy({ where: { id: { [Op.in]: ids } } });
+    this.rulesCache = null;
+    return {
+      deleted: deletedCount,
+      notFound: ids.length - deletedCount
+    };
   }
 
   async clearAllRules(): Promise<void> {
-    await this.writeJsonFile(RULES_FILE, []);
-    // Update cache after successful write
-    this.rulesCache = [];
-    // Cache config stays valid for empty array
+    await this.ensureDbReady();
+    await UrlRuleModel.destroy({ where: {} });
+    this.rulesCache = null;
   }
 
-  // URL-Tracking implementierung
   async clearAllTracking(): Promise<void> {
-    await this.writeJsonFile(TRACKING_FILE, []);
-    this.trackingCache = [];
+    await this.ensureDbReady();
+    await UrlTrackingModel.destroy({ where: {} });
   }
 
-  async trackUrlAccess(
-    insertTracking: InsertUrlTracking,
-  ): Promise<UrlTracking> {
-    // Skip tracking for root path "/"
-    if (insertTracking.path === "/") {
-      return {
-        ...insertTracking,
-        id: randomUUID(),
-        ruleIds: insertTracking.ruleIds || [],
-      };
-    }
-
-    const trackingData = await this.ensureTrackingLoaded();
-    const tracking: UrlTracking = {
-      ...insertTracking,
+  async trackUrlAccess(tracking: InsertUrlTracking): Promise<UrlTracking> {
+    await this.ensureDbReady();
+    const newTracking: UrlTracking = {
+      ...tracking,
       id: randomUUID(),
-      ruleIds: insertTracking.ruleIds || [],
+      timestamp: new Date().toISOString(),
+      searchQueryInfo: tracking.searchQueryInfo,
     };
+    await UrlTrackingModel.create(newTracking as any);
 
-    // In strict non-cache mode, ensureTrackingLoaded returns a new array from disk
-    // In cache mode, it returns the cache reference
-
-    // Check for max stats entries limit
+    // Check limit
     const settings = await this.getGeneralSettings();
-    const maxEntries = settings.maxStatsEntries || 0;
-
-    trackingData.push(tracking);
-
-    // Apply limit if configured (and greater than 0)
-    if (maxEntries > 0 && trackingData.length > maxEntries) {
-      // Remove oldest entries to fit the limit
-      // Since new entries are pushed to the end, we remove from the beginning
-      const removeCount = trackingData.length - maxEntries;
-      trackingData.splice(0, removeCount);
+    if (settings.maxStatsEntries && settings.maxStatsEntries > 0) {
+      await this.enforceMaxStatsLimit(settings.maxStatsEntries);
     }
 
-    // If cache is disabled, we need to ensure we don't keep the reference if we obtained it from ensureTrackingLoaded
-    // But ensureTrackingLoaded handles clearing this.trackingCache if disabled.
-    // However, if we just pushed to 'trackingData', and it WAS the cache, we are good.
-    // If it WAS NOT the cache (fresh load), we are also good for the write.
-
-    await this.writeJsonFile(TRACKING_FILE, trackingData);
-    return tracking;
+    return newTracking;
   }
 
   async updateUrlTracking(
     id: string,
     updates: Partial<UrlTracking>,
   ): Promise<boolean> {
-    const trackingData = await this.ensureTrackingLoaded();
-    const index = trackingData.findIndex((t) => t.id === id);
-
-    if (index === -1) {
-      return false;
-    }
-
-    const entry = trackingData[index];
-    const updatedEntry = { ...entry, ...updates };
-
-    // Update the entry in place
-    trackingData[index] = updatedEntry;
-
-    // Persist changes
-    await this.writeJsonFile(TRACKING_FILE, trackingData);
-    return true;
+    await this.ensureDbReady();
+    const [updatedCount] = await UrlTrackingModel.update(updates as any, { where: { id } });
+    return updatedCount > 0;
   }
 
   async getTrackingData(
-    timeRange?: "24h" | "7d" | "all",
+    timeRange: "24h" | "7d" | "all" = "all",
   ): Promise<UrlTracking[]> {
-    const trackingData = await this.ensureTrackingLoaded();
+    await this.ensureDbReady();
 
-    if (!timeRange || timeRange === "all") {
-      return trackingData;
-    }
-
-    const now = new Date();
-    const cutoff = new Date();
-
-    if (timeRange === "24h") {
-      cutoff.setHours(now.getHours() - 24);
-    } else if (timeRange === "7d") {
-      cutoff.setDate(now.getDate() - 7);
-    }
-
-    const cutoffIso = cutoff.toISOString();
-    return trackingData.filter((track) => track.timestamp >= cutoffIso);
-  }
-
-  async getTopUrls(
-    limit = 10,
-    timeRange?: "24h" | "7d" | "all",
-  ): Promise<Array<{ path: string; count: number }>> {
-    const trackingData = await this.getTrackingData(timeRange);
-    const pathCounts = new Map<string, number>();
-
-    // Filter out root path "/" and admin access "/?admin=true" from statistics
-    trackingData.forEach((track) => {
-      if (track.path !== "/" && track.path !== "/?admin=true") {
-        const current = pathCounts.get(track.path) || 0;
-        pathCounts.set(track.path, current + 1);
+    let whereClause = {};
+    if (timeRange !== "all") {
+      const now = new Date();
+      const timeLimit = new Date(now);
+      if (timeRange === "24h") {
+        timeLimit.setHours(now.getHours() - 24);
+      } else if (timeRange === "7d") {
+        timeLimit.setDate(now.getDate() - 7);
       }
+      whereClause = {
+        timestamp: { [Op.gte]: timeLimit.toISOString() }
+      };
+    }
+
+
+    whereClause.path = {
+      [Op.notIn]: ['/', '/?admin=true', '/?logout=true']
+    };
+
+    const rows = await UrlTrackingModel.findAll({
+      attributes: ['path', [sequelize.fn('COUNT', sequelize.col('path')), 'count']],
+      where: whereClause,
+      group: ['path'],
+      order: [[sequelize.col('count'), 'DESC']],
+      limit
     });
 
-    return Array.from(pathCounts.entries())
-      .map(([path, count]) => ({ path, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit);
+    return rows.map(r => ({
+      path: r.getDataValue('path'),
+      count: parseInt(r.getDataValue('count'), 10)
+    }));
   }
 
   async getTopReferrers(
-    limit = 10,
-    timeRange?: "24h" | "7d" | "all",
-  ): Promise<Array<{ domain: string; count: number }>> {
-    const trackingData = await this.getTrackingData(timeRange);
-    const domainCounts = new Map<string, number>();
+    limit: number = 10,
+    timeRange: "24h" | "7d" | "all" = "all",
+  ) {
+    await this.ensureDbReady();
 
-    trackingData.forEach((track) => {
-      if (track.referrer) {
-        // Use robust extraction
-        const hostname = urlUtils.extractHostname(track.referrer);
-        if (hostname) {
-          const current = domainCounts.get(hostname) || 0;
-          domainCounts.set(hostname, current + 1);
-        }
+    let whereClause = {};
+    if (timeRange !== "all") {
+      const now = new Date();
+      const timeLimit = new Date(now);
+      if (timeRange === "24h") {
+        timeLimit.setHours(now.getHours() - 24);
+      } else if (timeRange === "7d") {
+        timeLimit.setDate(now.getDate() - 7);
       }
-    });
+      whereClause = {
+        timestamp: { [Op.gte]: timeLimit.toISOString() }
+      };
+    }
 
-    return Array.from(domainCounts.entries())
+    const trackingData = await UrlTrackingModel.findAll({ where: whereClause });
+    const referrers = trackingData
+      .map(r => r.getDataValue('referrer'))
+      .filter((r) => r && r.length > 0);
+
+    const domains: Record<string, number> = {};
+    for (const ref of referrers) {
+      try {
+        const url = new URL(ref);
+        domains[url.hostname] = (domains[url.hostname] || 0) + 1;
+      } catch {
+        domains[ref] = (domains[ref] || 0) + 1;
+      }
+    }
+
+    return Object.entries(domains)
       .map(([domain, count]) => ({ domain, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
   }
 
-  // Enhanced statistics methods
   async getAllTrackingEntries(): Promise<UrlTracking[]> {
-    const tracking = await this.ensureTrackingLoaded();
-    return [...tracking];
+    return this.getTrackingData("all");
   }
 
   async searchTrackingEntries(
     query: string,
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
-  ): Promise<UrlTracking[]> {
-    const trackingData = await this.getAllTrackingEntries();
+  ) {
+    await this.ensureDbReady();
+    const queryLower = query.toLowerCase();
 
-    // Filter out root path "/" and then apply search query
-    let filteredData = trackingData.filter((entry) => entry.path !== "/");
-
-    if (query.trim()) {
-      const searchTerm = query.toLowerCase();
-      filteredData = filteredData.filter(
-        (entry) =>
-          entry.oldUrl.toLowerCase().includes(searchTerm) ||
-          ((entry as any).newUrl &&
-            (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
-          entry.path.toLowerCase().includes(searchTerm) ||
-          entry.userAgent?.toLowerCase().includes(searchTerm) ||
-          entry.referrer?.toLowerCase().includes(searchTerm),
-      );
-    }
-
-    // Sort data
-    filteredData.sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortBy) {
-        case "timestamp":
-        default:
-           // Optimized: Use string comparison for ISO dates
-           const tA = a.timestamp || "";
-           const tB = b.timestamp || "";
-           if (tA < tB) comparison = -1;
-           else if (tA > tB) comparison = 1;
-           break;
-        case "oldUrl":
-           comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
-           break;
-        case "newUrl":
-           comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
-           break;
-        case "path":
-           comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
-           break;
-        case "userAgent":
-           comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
-           break;
-        case "referrer":
-           comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
-           break;
-        case "matchQuality":
-           comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
-           break;
-      }
-
-      return sortOrder === "asc" ? comparison : -comparison;
+    const rows = await UrlTrackingModel.findAll({
+      where: {
+        [Op.or]: [
+          { oldUrl: { [Op.like]: `%${queryLower}%` } },
+          { newUrl: { [Op.like]: `%${queryLower}%` } },
+          { path: { [Op.like]: `%${queryLower}%` } },
+          { referrer: { [Op.like]: `%${queryLower}%` } }
+        ]
+      },
+      order: [[sortBy, sortOrder.toUpperCase()]]
     });
 
-    return filteredData;
+    return rows.map(r => r.toJSON() as UrlTracking);
   }
 
-  async getTrackingStats(): Promise<{
-    total: number;
-    today: number;
-    week: number;
-    quality: {
-      match100: number;
-      match75: number;
-      match50: number;
-      match0: number;
+  async getTrackingStats() {
+    await this.ensureDbReady();
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastWeek = new Date(today);
+    lastWeek.setDate(today.getDate() - 7);
+
+    const total = await UrlTrackingModel.count();
+    const todayCount = await UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: today.toISOString() } } });
+    const weekCount = await UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: lastWeek.toISOString() } } });
+
+    const match100 = await UrlTrackingModel.count({ where: { matchQuality: 100 } });
+    const match75 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 75, [Op.lt]: 100 } } });
+    const match50 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 50, [Op.lt]: 75 } } });
+    const match0 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.lt]: 50 } } });
+
+    const ok = await UrlTrackingModel.count({ where: { feedback: 'OK' } });
+    const nok = await UrlTrackingModel.count({ where: { feedback: 'NOK' } });
+    const autoRedirect = await UrlTrackingModel.count({ where: { feedback: 'auto-redirect' } });
+
+    // We get missing feedback by taking total and subtracting others.
+    // Not perfect but robust without complex IS NULL queries across dialects
+    const missing = total - ok - nok - autoRedirect;
+
+    return {
+      total,
+      today: todayCount,
+      week: weekCount,
+      quality: { match100, match75, match50, match0 },
+      feedback: { ok, nok, autoRedirect, missing },
     };
-    feedback: {
+  }
+
+  async getSatisfactionTrend(days: number = 30, aggregation: 'day' | 'week' | 'month' = 'day') {
+    await this.ensureDbReady();
+
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const rows = await UrlTrackingModel.findAll({
+      where: {
+        timestamp: { [Op.gte]: startDate.toISOString() }
+      }
+    });
+    const tracking = rows.map(r => r.toJSON() as UrlTracking);
+
+    const periodData = new Map<string, {
+      total: number;
       ok: number;
       nok: number;
-      missing: number;
-    };
-  }> {
-    const trackingData = await this.ensureTrackingLoaded();
-    const now = new Date();
-
-    const todayCutoff = new Date();
-    todayCutoff.setHours(now.getHours() - 24);
-    const todayIso = todayCutoff.toISOString();
-
-    const weekCutoff = new Date();
-    weekCutoff.setDate(now.getDate() - 7);
-    const weekIso = weekCutoff.toISOString();
-
-    let total = 0;
-    let today = 0;
-    let week = 0;
-
-    const quality = {
-      match100: 0,
-      match75: 0,
-      match50: 0,
-      match0: 0,
-    };
-
-    const feedback = {
-      ok: 0,
-      nok: 0,
-      autoRedirect: 0,
-      missing: 0,
-    };
-
-    for (const track of trackingData) {
-      if (track.path === "/") continue;
-
-      total++;
-
-      // Optimization: Use string comparison for ISO dates to avoid Date parsing overhead
-      if (track.timestamp >= todayIso) today++;
-      if (track.timestamp >= weekIso) week++;
-
-      // Quality stats
-      const q = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
-      if (q >= 100) quality.match100++;
-      else if (q >= 75) quality.match75++;
-      else if (q >= 50) quality.match50++;
-      else quality.match0++;
-
-      // Feedback stats
-      if (track.feedback === 'OK') feedback.ok++;
-      else if (track.feedback === 'NOK') feedback.nok++;
-      else if (track.feedback === 'auto-redirect') feedback.autoRedirect++;
-      else feedback.missing++;
-    }
-
-    return { total, today, week, quality, feedback };
-  }
-
-  async getSatisfactionTrend(days: number = 30, aggregation: 'day' | 'week' | 'month' = 'day'): Promise<Array<{
-    date: string;
-    score: number;
-    count: number;
-    okCount: number;
-    autoCount: number;
-    nokCount: number;
-    avgMatchQuality: number;
-    mixedScore: number;
-  }>> {
-    const trackingData = await this.ensureTrackingLoaded();
-    const now = new Date();
-    const cutoffDate = new Date();
-    cutoffDate.setDate(now.getDate() - days);
-    // Reset time part to ensure full day coverage
-    cutoffDate.setHours(0, 0, 0, 0);
-    const cutoffIso = cutoffDate.toISOString();
-
-    // Filter data by time range
-    const filteredData = trackingData.filter(t => t.timestamp >= cutoffIso && t.path !== "/");
-
-    // Group by aggregation key
-    const statsMap = new Map<string, {
-      totalScore: number;
-      count: number;
-      okCount: number;
-    autoCount: number;
-      nokCount: number;
-      totalMatchQuality: number;
-      totalMixedScore: number;
+      auto: number;
+      qualitySum: number;
     }>();
 
-    const getAggregationKey = (date: Date): string => {
-      if (aggregation === 'month') {
-        return date.toISOString().substring(0, 7); // YYYY-MM
-      } else if (aggregation === 'week') {
-        // ISO Week
-        const d = new Date(date);
-        d.setHours(0, 0, 0, 0);
-        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-        const yearStart = new Date(d.getFullYear(), 0, 1);
-        const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-        return `${d.getFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
-      } else {
-        return date.toISOString().substring(0, 10); // YYYY-MM-DD
-      }
-    };
+    for (const t of tracking) {
+      const entryDate = new Date(t.timestamp);
+      if (entryDate >= startDate && entryDate <= now) {
+        let periodKey: string;
 
-    for (const track of filteredData) {
-      const trackDate = new Date(track.timestamp);
-      const key = getAggregationKey(trackDate);
-
-      const matchQuality = typeof track.matchQuality === 'number' ? track.matchQuality : 0;
-      let mixedEntryScore = matchQuality;
-      let ok = 0;
-      let auto = 0;
-      let nok = 0;
-
-      // Feedback overrides quality if present for mixed score
-      if (track.feedback === 'OK') {
-        mixedEntryScore = 100;
-        ok = 1;
-      } else if (track.feedback === 'auto-redirect') {
-        mixedEntryScore = 100;
-        auto = 1;
-      } else if (track.feedback === 'NOK') {
-        mixedEntryScore = 0;
-        nok = 1;
-      }
-
-      const current = statsMap.get(key) || {
-        totalScore: 0,
-        count: 0,
-        okCount: 0,
-      autoCount: 0,
-        nokCount: 0,
-        totalMatchQuality: 0,
-        totalMixedScore: 0
-      };
-
-      statsMap.set(key, {
-        totalScore: current.totalScore + mixedEntryScore, // Legacy score (same as mixed)
-        count: current.count + 1,
-        okCount: current.okCount + ok,
-        autoCount: (current.autoCount || 0) + auto,
-        nokCount: current.nokCount + nok,
-        totalMatchQuality: current.totalMatchQuality + matchQuality,
-        totalMixedScore: current.totalMixedScore + mixedEntryScore
-      });
-    }
-
-    // Convert map to sorted array
-    // Note: For aggregation other than 'day', filling gaps is complex and might not be desired.
-    // For 'day', we usually want to fill gaps. For 'week'/'month', we can just sort existing keys.
-    // To simplify and ensure consistent chart X-axis, we'll sort existing keys.
-
-    const sortedKeys = Array.from(statsMap.keys()).sort();
-
-    // If 'day', we can try to fill gaps if desired, but for flexible aggregation, usually providing existing data points is safer to avoid huge gaps if date range is large.
-    // However, the chart expects continuous data for lines.
-    // Let's stick to returning available buckets for now, frontend chart libraries handle gaps or we accept them.
-    // Re-implementing gap filling for weeks/months is complex logic (determining next week/month).
-    // Given the previous code filled gaps for days, let's keep it simple: if 'day', fill gaps. If others, just sort.
-
-    const result: Array<{
-      date: string;
-      score: number;
-      count: number;
-      okCount: number;
-    autoCount: number;
-      nokCount: number;
-      avgMatchQuality: number;
-      mixedScore: number;
-    }> = [];
-
-    if (aggregation === 'day') {
-       // Fill gaps for days
-       for (let i = 0; i <= days; i++) {
-          const d = new Date(cutoffDate);
-          d.setDate(d.getDate() + i);
-          const dateStr = d.toISOString().substring(0, 10);
-
-          if (d > now && dateStr !== now.toISOString().substring(0, 10)) break;
-
-          const stats = statsMap.get(dateStr);
-          if (stats) {
-              result.push({
-                  date: dateStr,
-                  score: Math.round(stats.totalMixedScore / stats.count),
-                  count: stats.count,
-                  okCount: stats.okCount,
-                  nokCount: stats.nokCount,
-        autoCount: stats.autoCount || 0,
-                  avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
-                  mixedScore: Math.round(stats.totalMixedScore / stats.count)
-              });
-          } else {
-              result.push({
-                  date: dateStr,
-                  score: 0,
-                  count: 0,
-                  okCount: 0,
-      autoCount: 0,
-                  nokCount: 0,
-                  avgMatchQuality: 0,
-                  mixedScore: 0
-              });
+        switch (aggregation) {
+          case 'month':
+            periodKey = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}`;
+            break;
+          case 'week': {
+            const firstDayOfYear = new Date(entryDate.getFullYear(), 0, 1);
+            const pastDaysOfYear = (entryDate.getTime() - firstDayOfYear.getTime()) / 86400000;
+            const weekNumber = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+            periodKey = `${entryDate.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+            break;
           }
-       }
-    } else {
-       // Just use sorted keys for week/month
-       for (const key of sortedKeys) {
-          const stats = statsMap.get(key)!;
-          result.push({
-              date: key,
-              score: Math.round(stats.totalMixedScore / stats.count),
-              count: stats.count,
-              okCount: stats.okCount,
-              nokCount: stats.nokCount,
-        autoCount: stats.autoCount || 0,
-              avgMatchQuality: Math.round(stats.totalMatchQuality / stats.count),
-              mixedScore: Math.round(stats.totalMixedScore / stats.count)
-          });
-       }
+          case 'day':
+          default:
+            periodKey = entryDate.toISOString().split('T')[0];
+            break;
+        }
+
+        const stats = periodData.get(periodKey) || { total: 0, ok: 0, nok: 0, auto: 0, qualitySum: 0 };
+        stats.total++;
+        stats.qualitySum += (t.matchQuality || 0);
+
+        if (t.feedback === 'OK') stats.ok++;
+        else if (t.feedback === 'NOK') stats.nok++;
+        else if (t.feedback === 'auto-redirect') stats.auto++;
+
+        periodData.set(periodKey, stats);
+      }
     }
 
-    return result;
+    return Array.from(periodData.entries())
+      .map(([date, stats]) => {
+        const avgQuality = stats.total > 0 ? stats.qualitySum / stats.total : 0;
+        let score = 0;
+        let mixedScore = 0;
+
+        if (stats.ok > 0 || stats.nok > 0) {
+          score = (stats.ok / (stats.ok + stats.nok)) * 100;
+          mixedScore = score;
+        } else {
+          score = avgQuality;
+          mixedScore = avgQuality;
+        }
+
+        if (stats.ok > 0 || stats.nok > 0) {
+           mixedScore = (score + avgQuality) / 2;
+        }
+
+        return {
+          date,
+          count: stats.total,
+          okCount: stats.ok,
+          nokCount: stats.nok,
+          autoCount: stats.auto,
+          avgMatchQuality: avgQuality,
+          score,
+          mixedScore
+        };
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  // Paginated statistics methods
   async getTrackingEntriesPaginated(
-    page: number = 1,
-    limit: number = 50,
+    page: number,
+    limit: number,
     search?: string,
     sortBy: string = "timestamp",
     sortOrder: "asc" | "desc" = "desc",
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
     minQuality?: number,
     maxQuality?: number,
-    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty',
-  ): Promise<{
-    entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
-    total: number;
-    totalPages: number;
-    currentPage: number;
-    totalAllEntries: number;
-  }> {
-    const allEntries = await this.getAllTrackingEntries();
-    const totalAllEntries = allEntries.length;
+    feedbackFilter: 'all' | 'OK' | 'NOK' | 'API' | 'empty' = 'all'
+  ) {
+    await this.ensureDbReady();
 
-    // Filter entries based on search
-    let filteredEntries =
-      search && search.trim()
-        ? await this.searchTrackingEntries(search, sortBy, sortOrder)
-        : allEntries.filter((entry) => entry.path !== "/"); // Filter root path
+    let whereClause: any = {};
 
-    // Filter based on match quality
-    if (minQuality !== undefined) {
-      filteredEntries = filteredEntries.filter(
-        (entry) => {
-          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
-          return q >= minQuality;
-        }
-      );
-    }
-    if (maxQuality !== undefined) {
-      filteredEntries = filteredEntries.filter(
-        (entry) => {
-          const q = typeof entry.matchQuality === 'number' ? entry.matchQuality : Number(entry.matchQuality || 0);
-          return q <= maxQuality;
-        }
-      );
+    if (search) {
+      const q = search.toLowerCase();
+      whereClause[Op.or] = [
+        sequelize.where(sequelize.fn('lower', sequelize.col('oldUrl')), 'LIKE', `%${q}%`),
+        sequelize.where(sequelize.fn('lower', sequelize.col('newUrl')), 'LIKE', `%${q}%`),
+        sequelize.where(sequelize.fn('lower', sequelize.col('path')), 'LIKE', `%${q}%`),
+        sequelize.where(sequelize.fn('lower', sequelize.col('referrer')), 'LIKE', `%${q}%`)
+      ];
     }
 
-    // Filter based on rule presence
     if (ruleFilter === 'with_rule') {
-      filteredEntries = filteredEntries.filter((entry) => {
-        const hasRuleId = !!entry.ruleId;
-        const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
-        return hasRuleId || hasRuleIds;
-      });
+      whereClause[Op.or] = [
+         { ruleId: { [Op.not]: null } },
+         { ruleIds: { [Op.not]: null, [Op.not]: '[]' } }
+      ];
     } else if (ruleFilter === 'no_rule') {
-      filteredEntries = filteredEntries.filter((entry) => {
-        const hasRuleId = !!entry.ruleId;
-        const hasRuleIds = Array.isArray(entry.ruleIds) && entry.ruleIds.length > 0;
-        return !hasRuleId && !hasRuleIds;
-      });
+      whereClause.ruleId = null;
+      whereClause[Op.or] = [
+         { ruleIds: null },
+         { ruleIds: '[]' }
+      ];
     }
 
-    // Filter based on feedback
+    if (minQuality !== undefined || maxQuality !== undefined) {
+      whereClause.matchQuality = {};
+      if (minQuality !== undefined) whereClause.matchQuality[Op.gte] = minQuality;
+      if (maxQuality !== undefined) whereClause.matchQuality[Op.lte] = maxQuality;
+    }
+
     if (feedbackFilter !== 'all') {
-      filteredEntries = filteredEntries.filter((entry) => {
-        if (feedbackFilter === 'empty') {
-          return !entry.feedback;
-        }
-        return entry.feedback === feedbackFilter;
-      });
+      if (feedbackFilter === 'empty') {
+         whereClause.feedback = null;
+      } else {
+         whereClause.feedback = feedbackFilter;
+      }
     }
 
-    // Optimization: If sorting by timestamp (default), avoid the expensive sort operation
-    // because the data is already in chronological order (ascending)
-    let paginatedEntries: typeof filteredEntries;
-    const total = filteredEntries.length;
-    const totalPages = Math.ceil(total / limit);
+    const offset = (page - 1) * limit;
 
-    if ((!search || !search.trim()) && (sortBy === "timestamp" || !sortBy)) {
-      // Data is already sorted ASC by timestamp
-      if (sortOrder === "desc") {
-        // We want the end of the array (newest items)
-        // For page 1: last 'limit' items
-        // For page 2: items before that
-        const startFromEnd = total - ((page - 1) * limit);
-        const endFromEnd = total - (page * limit);
+    const { count: total, rows } = await UrlTrackingModel.findAndCountAll({
+      where: whereClause,
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit,
+      offset
+    });
 
-        // Ensure indices are within bounds
-        const sliceEnd = Math.max(0, startFromEnd);
-        const sliceStart = Math.max(0, endFromEnd);
+    const filtered = rows.map(r => r.toJSON() as UrlTracking);
 
-        // Slice and reverse to get DESC order
-        paginatedEntries = filteredEntries.slice(sliceStart, sliceEnd).reverse();
-      } else {
-        // ASC order - standard pagination
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-        paginatedEntries = filteredEntries.slice(startIndex, endIndex);
-      }
-    } else if (!search || !search.trim()) {
-      // Only sort if not already sorted by searchTrackingEntries and not handled by optimization above
-      filteredEntries.sort((a, b) => {
-        let comparison = 0;
+    const rulesRows = await UrlRuleModel.findAll();
+    const rules = rulesRows.map(r => r.toJSON() as UrlRule);
+    const ruleMap = new Map<string, UrlRule>();
+    rules.forEach(r => ruleMap.set(r.id, r));
 
-        switch (sortBy) {
-          case "timestamp":
-          default:
-            // Optimized: Use string comparison for ISO dates
-            const tA = a.timestamp || "";
-            const tB = b.timestamp || "";
-            if (tA < tB) comparison = -1;
-            else if (tA > tB) comparison = 1;
-            break;
-          case "oldUrl":
-            comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
-            break;
-          case "newUrl":
-            comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
-            break;
-          case "path":
-            comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
-            break;
-          case "referrer":
-            comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
-            break;
-        }
+    const startIndex = 0;
+    const endIndex = Math.min(startIndex + limit, total);
 
-        return sortOrder === "asc" ? comparison : -comparison;
-      });
-
-      // Calculate pagination for sorted data
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      paginatedEntries = filteredEntries.slice(startIndex, endIndex);
-    } else {
-      // Was already sorted by searchTrackingEntries
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      paginatedEntries = filteredEntries.slice(startIndex, endIndex);
-    }
-
-    // Enrich with rule information
-    const rules = await this.getUrlRules();
-    const rulesMap = new Map(rules.map((r) => [r.id, r]));
-
-    const enrichedEntries = paginatedEntries.map((entry) => {
-      const enriched: UrlTracking & { rule?: UrlRule; rules?: UrlRule[] } = { ...entry };
-
-      // Legacy single rule support
-      if (entry.ruleId && rulesMap.has(entry.ruleId)) {
-        enriched.rule = rulesMap.get(entry.ruleId);
-      }
-
-      // Multiple rules support
-      if (entry.ruleIds && entry.ruleIds.length > 0) {
-        enriched.rules = entry.ruleIds
-          .map(id => rulesMap.get(id))
-          .filter((r): r is UrlRule => r !== undefined);
-      } else if (entry.ruleId && rulesMap.has(entry.ruleId)) {
-        // Fallback: populate rules array from single ruleId for consistent UI handling
-        enriched.rules = [rulesMap.get(entry.ruleId)!];
-      } else {
-        enriched.rules = [];
-      }
-
+    const entriesWithRules = filtered.slice(startIndex, endIndex).map(t => {
+      const enriched: any = { ...t };
+      enriched.rule = t.ruleId ? ruleMap.get(t.ruleId) : undefined;
+      enriched.rules = (t.ruleIds || []).map(id => ruleMap.get(id)).filter(Boolean);
       return enriched;
     });
 
     return {
-      entries: enrichedEntries,
+      entries: entriesWithRules,
       total,
-      totalPages,
+      totalPages: Math.ceil(total / limit),
       currentPage: page,
-      totalAllEntries,
+      totalAllEntries: await UrlTrackingModel.count(),
     };
   }
 
   async getTopUrlsPaginated(
-    page: number = 1,
-    limit: number = 50,
-    timeRange?: "24h" | "7d" | "all",
-  ): Promise<{
-    urls: Array<{ path: string; count: number }>;
-    total: number;
-    totalPages: number;
-    currentPage: number;
-  }> {
-    const allUrls = await this.getTopUrls(10000, timeRange); // Get a large number first
-
-    // Calculate pagination
-    const total = allUrls.length;
-    const totalPages = Math.ceil(total / limit);
+    page: number,
+    limit: number,
+    timeRange: "24h" | "7d" | "all" = "all",
+  ) {
+    const urls = await this.getTopUrls(10000, timeRange);
+    const total = urls.length;
     const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedUrls = allUrls.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + limit, total);
 
     return {
-      urls: paginatedUrls,
+      urls: urls.slice(startIndex, endIndex),
       total,
-      totalPages,
+      totalPages: Math.ceil(total / limit),
       currentPage: page,
     };
   }
 
-  // Import functionality implementierung
   async importUrlRules(
-    importRules: any[],
+    importRules: ImportUrlRule[],
   ): Promise<{ imported: number; updated: number; errors: string[] }> {
-    // Ensure loaded
-    const existingRules = await this.ensureRulesLoaded();
+    await this.ensureDbReady();
 
-    // Create shallow copy to avoid mutating the cache directly
-    const newRules = [...existingRules];
-
-    // Create indices for fast lookup
-    const rulesById = new Map<string, number>();
-    const rulesByMatcher = new Map<string, number>();
-
-    // Initialize indices
-    newRules.forEach((rule, index) => {
-      rulesById.set(rule.id, index);
-      rulesByMatcher.set(rule.matcher, index);
-    });
+    const settings = await this.getGeneralSettings();
+    const config: RuleMatchingConfig = {
+      ...RULE_MATCHING_CONFIG,
+      caseSensitive: settings.caseSensitiveLinkDetection
+    };
 
     let imported = 0;
     let updated = 0;
 
-    // Config for processing imported rules
-    const config = this.lastCacheConfig || { ...RULE_MATCHING_CONFIG, CASE_SENSITIVITY_PATH: false };
+    // We can do this in memory then bulk create/update,
+    // or just one by one. For simplicity and robustness, one by one.
 
-    // Skip all validation - import rules as provided
+    for (const importRule of importRules) {
+      const existingById = importRule.id ? await UrlRuleModel.findByPk(importRule.id) : null;
+      const existingByMatcher = await UrlRuleModel.findOne({ where: { matcher: importRule.matcher } });
 
-    for (const rawRule of importRules) {
-      // Skip invalid rules
-      if (!rawRule.matcher || !rawRule.targetUrl) {
-        continue;
+      const isEncoded = /%[0-9A-F]{2}/i.test(importRule.matcher);
+      if (isEncoded) {
+        importRule.matcher = decodeURI(importRule.matcher);
       }
 
-      // Handle field mapping for different import formats
-      const importRule = {
-        id: rawRule.id,
-        matcher: rawRule.matcher,
-        targetUrl: rawRule.targetUrl,
-        redirectType:
-          rawRule.redirectType ||
-          (rawRule.type === "redirect" ? "partial" : rawRule.type) ||
-          "partial", // Handle both field names
-        infoText: rawRule.infoText || "",
-        autoRedirect: rawRule.autoRedirect ?? false,
-        discardQueryParams: rawRule.discardQueryParams ?? false,
-        keptQueryParams: rawRule.keptQueryParams || [],
-        forwardQueryParams: rawRule.forwardQueryParams ?? false,
-        searchAndReplace: rawRule.searchAndReplace || [],
-        staticQueryParams: rawRule.staticQueryParams || [],
-      };
-
-      if (importRule.id && rulesById.has(importRule.id)) {
-        // Update existing rule by ID
-        const index = rulesById.get(importRule.id)!;
-        const existingRule = newRules[index];
-
-        // Remove old matcher from index if it changed
-        if (existingRule.matcher !== importRule.matcher) {
-          rulesByMatcher.delete(existingRule.matcher);
-        }
-
-        const updatedRule: UrlRule = {
-          id: importRule.id,
+      if (existingById && existingById.getDataValue('matcher') !== importRule.matcher && existingByMatcher) {
+        // ID exists but matcher overlaps
+        const updatedRule = {
+          ...existingByMatcher.toJSON(),
+          id: existingByMatcher.getDataValue('id'),
           matcher: importRule.matcher,
           targetUrl: importRule.targetUrl,
           redirectType: importRule.redirectType,
           infoText: importRule.infoText || "",
-          createdAt: existingRule.createdAt,
           autoRedirect: importRule.autoRedirect,
           discardQueryParams: importRule.discardQueryParams,
           keptQueryParams: importRule.keptQueryParams,
@@ -1327,17 +880,29 @@ export class FileStorage implements IStorage {
           searchAndReplace: importRule.searchAndReplace,
           staticQueryParams: importRule.staticQueryParams,
         };
-
-        // Sanitize flags
         sanitizeRuleFlags(updatedRule);
-
-        newRules[index] = preprocessRule(updatedRule, config);
-        // Update matcher index
-        rulesByMatcher.set(importRule.matcher, index);
+        await existingByMatcher.update(updatedRule as any);
+        updated++;
+      } else if (existingById) {
+        const updatedRule = {
+          ...existingById.toJSON(),
+          id: existingById.getDataValue('id'),
+          matcher: importRule.matcher,
+          targetUrl: importRule.targetUrl,
+          redirectType: importRule.redirectType,
+          infoText: importRule.infoText || "",
+          autoRedirect: importRule.autoRedirect,
+          discardQueryParams: importRule.discardQueryParams,
+          keptQueryParams: importRule.keptQueryParams,
+          forwardQueryParams: importRule.forwardQueryParams,
+          searchAndReplace: importRule.searchAndReplace,
+          staticQueryParams: importRule.staticQueryParams,
+        };
+        sanitizeRuleFlags(updatedRule);
+        await existingById.update(updatedRule as any);
         updated++;
       } else if (importRule.id) {
-         // ID provided but not found - create new
-         const newRule: UrlRule = {
+        const newRule = {
           id: importRule.id,
           matcher: importRule.matcher,
           targetUrl: importRule.targetUrl,
@@ -1351,42 +916,29 @@ export class FileStorage implements IStorage {
           staticQueryParams: importRule.staticQueryParams,
           createdAt: new Date().toISOString(),
         };
-        // Sanitize flags
         sanitizeRuleFlags(newRule);
-
-        const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
-        rulesById.set(newRule.id, newIndex);
-        rulesByMatcher.set(newRule.matcher, newIndex);
+        await UrlRuleModel.create(newRule as any);
         imported++;
-      } else if (rulesByMatcher.has(importRule.matcher)) {
-         // No ID, but matcher exists - update
-         const index = rulesByMatcher.get(importRule.matcher)!;
-         const existingRule = newRules[index];
-
-         const updatedRule: UrlRule = {
-           id: existingRule.id,
+      } else if (existingByMatcher) {
+         const updatedRule = {
+           ...existingByMatcher.toJSON(),
+           id: existingByMatcher.getDataValue('id'),
            matcher: importRule.matcher,
            targetUrl: importRule.targetUrl,
            redirectType: importRule.redirectType,
            infoText: importRule.infoText || "",
-           createdAt: existingRule.createdAt,
            autoRedirect: importRule.autoRedirect,
            discardQueryParams: importRule.discardQueryParams,
            keptQueryParams: importRule.keptQueryParams,
            forwardQueryParams: importRule.forwardQueryParams,
-          searchAndReplace: importRule.searchAndReplace,
-          staticQueryParams: importRule.staticQueryParams,
+           searchAndReplace: importRule.searchAndReplace,
+           staticQueryParams: importRule.staticQueryParams,
          };
-
-         // Sanitize flags
          sanitizeRuleFlags(updatedRule);
-
-         newRules[index] = preprocessRule(updatedRule, config);
-         // Matcher index is already correct
+         await existingByMatcher.update(updatedRule as any);
          updated++;
       } else {
-        // Create new rule with generated ID
-        const newRule: UrlRule = {
+        const newRule = {
           id: randomUUID(),
           matcher: importRule.matcher,
           targetUrl: importRule.targetUrl,
@@ -1400,63 +952,22 @@ export class FileStorage implements IStorage {
           staticQueryParams: importRule.staticQueryParams,
           createdAt: new Date().toISOString(),
         };
-        // Sanitize flags
         sanitizeRuleFlags(newRule);
-
-        const newIndex = newRules.push(preprocessRule(newRule, config)) - 1;
-        rulesById.set(newRule.id, newIndex);
-        rulesByMatcher.set(newRule.matcher, newIndex);
+        await UrlRuleModel.create(newRule as any);
         imported++;
       }
     }
 
-    // Save all rules back to file
-    await this.writeJsonFile(RULES_FILE, this.cleanRulesForSave(newRules));
-
-    // Update cache after successful write
-    this.rulesCache = newRules;
+    this.rulesCache = null; // Invalidate cache
 
     return { imported, updated, errors: [] };
   }
 
-  // Helper method to check if two URL matchers are overlapping
-  // General Settings implementierung
   async getGeneralSettings(): Promise<GeneralSettings> {
+    await this.ensureDbReady();
     if (this.settingsCache) return this.settingsCache;
 
-    try {
-      const data = await fs.readFile(SETTINGS_FILE, "utf-8");
-      const settings = JSON.parse(data);
-      if (!settings.popupMode) {
-        settings.popupMode = "active";
-      }
-      if (typeof settings.enableCopyButton !== "boolean") {
-        settings.enableCopyButton = true;
-      }
-      if (typeof settings.enableOpenButton !== "boolean") {
-        settings.enableOpenButton = true;
-      }
-      if (!settings.newUrlClickBehavior) {
-        settings.newUrlClickBehavior = "copy";
-      }
-      if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
-        settings.caseSensitiveLinkDetection = false;
-      }
-      // Migration: Convert old smartSearchRegex to new smartSearchRules
-      if (!settings.smartSearchRules && settings.smartSearchRegex) {
-        settings.smartSearchRules = [
-          { pattern: settings.smartSearchRegex, order: 0 }
-        ];
-      }
-      // Ensure smartSearchRules is initialized
-      if (!settings.smartSearchRules) {
-        settings.smartSearchRules = [];
-      }
-      this.settingsCache = settings;
-      return settings;
-    } catch {
-      // Return default settings if file doesn't exist
-      const defaultSettings: GeneralSettings = {
+    const defaultSettings: GeneralSettings = {
         id: randomUUID(),
         headerTitle: "URL Migration Tool",
         headerIcon: "ArrowRightLeft",
@@ -1512,12 +1023,51 @@ export class FileStorage implements IStorage {
         feedbackCommentButton: "Absenden",
       };
 
-      // Save default settings directly to avoid infinite loop
-      await fs.writeFile(
-        SETTINGS_FILE,
-        JSON.stringify(defaultSettings, null, 2),
-      );
-      this.settingsCache = defaultSettings;
+    try {
+      const row = await GeneralSettingsModel.findOne();
+      if (!row) {
+        await GeneralSettingsModel.create({
+          id: defaultSettings.id,
+          data: defaultSettings
+        } as any);
+        this.settingsCache = defaultSettings;
+        return defaultSettings;
+      }
+
+      let settings = row.getDataValue('data');
+      if (typeof settings === 'string') {
+        try {
+          settings = JSON.parse(settings);
+        } catch(e) {}
+      }
+      if (!settings.popupMode) {
+        settings.popupMode = "active";
+      }
+      if (typeof settings.enableCopyButton !== "boolean") {
+        settings.enableCopyButton = true;
+      }
+      if (typeof settings.enableOpenButton !== "boolean") {
+        settings.enableOpenButton = true;
+      }
+      if (!settings.newUrlClickBehavior) {
+        settings.newUrlClickBehavior = "copy";
+      }
+      if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
+        settings.caseSensitiveLinkDetection = false;
+      }
+      if (!settings.smartSearchRules && settings.smartSearchRegex) {
+        settings.smartSearchRules = [
+          { pattern: settings.smartSearchRegex, order: 0 }
+        ];
+      }
+      if (!settings.smartSearchRules) {
+        settings.smartSearchRules = [];
+      }
+
+      this.settingsCache = { ...defaultSettings, ...settings, id: row.getDataValue('id') };
+      return this.settingsCache as GeneralSettings;
+    } catch (e) {
+      console.error('Error fetching settings, returning defaults', e);
       return defaultSettings;
     }
   }
@@ -1526,29 +1076,26 @@ export class FileStorage implements IStorage {
     insertSettings: InsertGeneralSettings,
     replaceMode: boolean = false,
   ): Promise<GeneralSettings> {
-    // Get existing settings to preserve ID and any fields not being updated
+    await this.ensureDbReady();
     const existingSettings = await this.getGeneralSettings();
     const oldSettings = { ...existingSettings };
 
     let settings: GeneralSettings;
 
     if (replaceMode) {
-      // In replace mode, use only the provided settings plus required fields
       settings = {
         ...insertSettings,
-        id: existingSettings.id, // Always keep the existing ID
+        id: existingSettings.id,
         updatedAt: new Date().toISOString(),
       } as GeneralSettings;
     } else {
-      // In merge mode (default), merge with existing settings
       settings = {
         ...existingSettings,
         ...insertSettings,
-        id: existingSettings.id, // Keep the existing ID
+        id: existingSettings.id,
         updatedAt: new Date().toISOString(),
       };
 
-      // Remove any undefined or null properties when explicitly set to null
       Object.keys(settings).forEach((key) => {
         if (
           insertSettings.hasOwnProperty(key) &&
@@ -1559,21 +1106,27 @@ export class FileStorage implements IStorage {
       });
     }
 
-    await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    const row = await GeneralSettingsModel.findOne();
+    if (row) {
+      await row.update({ data: settings } as any);
+    } else {
+      await GeneralSettingsModel.create({
+        id: settings.id,
+        data: settings
+      } as any);
+    }
+
     this.settingsCache = settings;
 
-    // Check if maxStatsEntries changed and needs enforcement
     if (settings.maxStatsEntries && settings.maxStatsEntries > 0) {
       await this.enforceMaxStatsLimit(settings.maxStatsEntries);
     }
 
-    // Check if relevant settings changed
-    // Invalidate config so cache is reprocessed on next access
     if (
       oldSettings.caseSensitiveLinkDetection !==
       settings.caseSensitiveLinkDetection
     ) {
-      this.lastCacheConfig = null; // Forces re-evaluation in ensureRulesLoaded
+      this.lastCacheConfig = null;
     }
 
     return settings;
@@ -1583,7 +1136,7 @@ export class FileStorage implements IStorage {
     console.log("Forcing cache rebuild...");
     this.rulesCache = null;
     this.lastCacheConfig = null;
-    this.trackingCache = null;
+    this.settingsCache = null;
     await this.ensureRulesLoaded();
     console.log("Cache rebuild complete.");
   }
