@@ -15,7 +15,7 @@ export function LanguageSwitch() {
       <Globe className="h-4 w-4 text-muted-foreground" />
       <Select value={currentLang} onValueChange={(val) => i18n.changeLanguage(val)}>
         <SelectTrigger className="w-[80px] h-8 text-xs bg-transparent border-0 ring-offset-0 focus:ring-0 shadow-none hover:bg-accent/50 transition-colors">
-          <SelectValue placeholder={t('lang', `Lang`)} />
+          <SelectValue placeholder="Lang" />
         </SelectTrigger>
         <SelectContent align="end">
           {supportedLngs.map((lng: string) => (

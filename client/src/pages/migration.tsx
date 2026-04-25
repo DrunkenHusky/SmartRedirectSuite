@@ -423,8 +423,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
       }, 3000);
     } catch (error) {
       toast({
-        title: t('kopieren_fehlgeschlagen', `Kopieren fehlgeschlagen`),
-        description: t('bitte_kopieren_sie_die_url_man', `Bitte kopieren Sie die URL manuell.`),
+        title: "Kopieren fehlgeschlagen",
+        description: "Bitte kopieren Sie die URL manuell.",
         variant: "destructive",
       });
     }
@@ -602,7 +602,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">{t('url_wird_analysiert', `URL wird analysiert...`)}</p>
+                    <p className="text-muted-foreground">URL wird analysiert...</p>
                   </div>
                 </div>
               </CardContent>
@@ -698,7 +698,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                                 </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                <p>{t('klicken_zum_kopieren', `Klicken zum Kopieren`)}</p>
+                                <p>Klicken zum Kopieren</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -729,7 +729,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                           variant="secondary"
                           onClick={handleOpenNewTab}
                           className="flex items-center space-x-2"
-                          aria-label={t('neue_url_in_neuem_tab_ffnen', `Neue URL in neuem Tab öffnen`)}
+                          aria-label="Neue URL in neuem Tab öffnen"
                         >
                           <ExternalLink className="h-4 w-4" />
                           <span>{settings?.openButtonText || "In neuem Tab öffnen"}</span>
@@ -742,9 +742,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                       <Alert className="border-green-200 bg-green-50">
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertDescription className="text-green-800">
-
-                                                                            {t('url_erfolgreich_in_die_zwische', `URL erfolgreich in die Zwischenablage kopiert!`)}
-                                                                          </AlertDescription>
+                          URL erfolgreich in die Zwischenablage kopiert!
+                        </AlertDescription>
                       </Alert>
                     )}
 
@@ -834,7 +833,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             {settings?.footerCopyright || `© ${currentYear} ${fallbackAppName}. Alle Rechte vorbehalten.`}
-            <a href={__APP_REPOSITORY_URL__} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs opacity-50 hover:underline cursor-pointer">{t('v', `v`)}{__APP_VERSION__}</a>
+            <a href={__APP_REPOSITORY_URL__} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs opacity-50 hover:underline cursor-pointer">v{__APP_VERSION__}</a>
           </div>
           <div className="flex items-center space-x-2">
             <LanguageSwitch />
@@ -844,7 +843,7 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
               onClick={(e) => handleAdminAccess(e)}
               disabled={isCheckingAuth}
               className="text-muted-foreground hover:text-primary"
-              title={t("admin_area", "Administrator-Bereich")}
+              title={t('administrator_bereich', "Administrator-Bereich")}
               aria-label={t("admin_area", "Administrator-Bereich öffnen")}
             >
               <Settings className="h-4 w-4" />
@@ -952,9 +951,8 @@ export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
                  />
                  <div className="flex justify-end gap-2">
                     <Button variant="ghost" onClick={() => submitFeedback('NOK')}>
-
-                                                                {t('berspringen', `Überspringen`)}
-                                                              </Button>
+                      Überspringen
+                    </Button>
                     <Button onClick={handleCommentSubmit}>
                       {settings?.feedbackCommentButton || "Absenden"}
                     </Button>

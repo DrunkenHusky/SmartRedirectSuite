@@ -24,7 +24,6 @@ import {
 import type { UrlRule } from "@shared/schema";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
 import { ResizeHandle } from "@/components/ui/resize-handle";
-import { useTranslation } from "react-i18next";
 
 const STORAGE_KEY = 'stats-table-visible-columns';
 
@@ -120,49 +119,48 @@ const StatsTable = memo(({
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="ml-auto">
               <Settings className="h-4 w-4 mr-2" />
-
-                                        {t('spalten_anpassen', `Spalten anpassen`)}
-                                      </Button>
+              Spalten anpassen
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>{t('spalten_auswhlen', `Spalten auswählen`)}</DialogTitle>
+              <DialogTitle>Spalten auswählen</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-timestamp" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('zeitstempel', `Zeitstempel`)}</label>
+                <label htmlFor="col-timestamp" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Zeitstempel</label>
                 <Switch id="col-timestamp" checked={visibleColumns.timestamp} onCheckedChange={() => toggleColumn('timestamp')} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-oldUrl" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('alte_url', `Alte URL`)}</label>
+                <label htmlFor="col-oldUrl" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Alte URL</label>
                 <Switch id="col-oldUrl" checked={visibleColumns.oldUrl} onCheckedChange={() => toggleColumn('oldUrl')} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-newUrl" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('neue_url', `Neue URL`)}</label>
+                <label htmlFor="col-newUrl" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Neue URL</label>
                 <Switch id="col-newUrl" checked={visibleColumns.newUrl} onCheckedChange={() => toggleColumn('newUrl')} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-path" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('pfad', `Pfad`)}</label>
+                <label htmlFor="col-path" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Pfad</label>
                 <Switch id="col-path" checked={visibleColumns.path} onCheckedChange={() => toggleColumn('path')} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-referrer" className={`text-sm font-medium leading-none ${!showReferrer ? 'opacity-50' : ''}`}>{t('referrer', `Referrer`)} {!showReferrer && '(Deaktiviert)'}</label>
+                <label htmlFor="col-referrer" className={`text-sm font-medium leading-none ${!showReferrer ? 'opacity-50' : ''}`}>Referrer {!showReferrer && '(Deaktiviert)'}</label>
                 <Switch id="col-referrer" checked={visibleColumns.referrer && showReferrer} onCheckedChange={() => toggleColumn('referrer')} disabled={!showReferrer} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-rule" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('regel', `Regel`)}</label>
+                <label htmlFor="col-rule" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Regel</label>
                 <Switch id="col-rule" checked={visibleColumns.rule} onCheckedChange={() => toggleColumn('rule')} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-matchQuality" className={`text-sm font-medium leading-none ${!enableLinkQuality ? 'opacity-50' : ''}`}>{t('qualitt', `Qualität`)} {!enableLinkQuality && '(Deaktiviert)'}</label>
+                <label htmlFor="col-matchQuality" className={`text-sm font-medium leading-none ${!enableLinkQuality ? 'opacity-50' : ''}`}>Qualität {!enableLinkQuality && '(Deaktiviert)'}</label>
                 <Switch id="col-matchQuality" checked={visibleColumns.matchQuality && enableLinkQuality} onCheckedChange={() => toggleColumn('matchQuality')} disabled={!enableLinkQuality} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-feedback" className={`text-sm font-medium leading-none ${!enableUserFeedback ? 'opacity-50' : ''}`}>{t('feedback', `Feedback`)} {!enableUserFeedback && '(Deaktiviert)'}</label>
+                <label htmlFor="col-feedback" className={`text-sm font-medium leading-none ${!enableUserFeedback ? 'opacity-50' : ''}`}>Feedback {!enableUserFeedback && '(Deaktiviert)'}</label>
                 <Switch id="col-feedback" checked={visibleColumns.feedback && enableUserFeedback} onCheckedChange={() => toggleColumn('feedback')} disabled={!enableUserFeedback} />
               </div>
               <div className="flex items-center justify-between space-x-2">
-                <label htmlFor="col-globalRules" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{t('globale_regeln', `Globale Regeln`)}</label>
+                <label htmlFor="col-globalRules" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Globale Regeln</label>
                 <Switch id="col-globalRules" checked={visibleColumns.globalRules} onCheckedChange={() => toggleColumn('globalRules')} />
               </div>
             </div>
@@ -183,9 +181,8 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-
-                                                            {t('zeitstempel', `Zeitstempel`)}
-                                                            {getSortIcon('timestamp')}
+                  Zeitstempel
+                  {getSortIcon('timestamp')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('timestamp', e)} />
@@ -200,9 +197,8 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-
-                                                            {t('alte_url', `Alte URL`)}
-                                                            {getSortIcon('oldUrl')}
+                  Alte URL
+                  {getSortIcon('oldUrl')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('oldUrl', e)} />
@@ -217,9 +213,8 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-
-                                                            {t('neue_url', `Neue URL`)}
-                                                            {getSortIcon('newUrl')}
+                  Neue URL
+                  {getSortIcon('newUrl')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('newUrl', e)} />
@@ -234,9 +229,8 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-
-                                                            {t('pfad', `Pfad`)}
-                                                            {getSortIcon('path')}
+                  Pfad
+                  {getSortIcon('path')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('path', e)} />
@@ -251,9 +245,8 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-
-                                                            {t('referrer', `Referrer`)}
-                                                            {getSortIcon('referrer')}
+                  Referrer
+                  {getSortIcon('referrer')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('referrer', e)} />
@@ -261,9 +254,8 @@ const StatsTable = memo(({
             )}
             {visibleColumns.rule && (
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.rule }}>
-
-                                                {t('regel', `Regel`)}
-                                                <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
+              Regel
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('rule', e)} />
             </th>
             )}
             {visibleColumns.matchQuality && enableLinkQuality && (
@@ -275,9 +267,8 @@ const StatsTable = memo(({
                 className="h-auto p-0 font-medium hover:bg-transparent w-full justify-start"
               >
                 <span className="flex items-center gap-1 truncate text-xs sm:text-sm">
-
-                                                            {t('qualitt', `Qualität`)}
-                                                            {getSortIcon('matchQuality')}
+                  Qualität
+                  {getSortIcon('matchQuality')}
                 </span>
               </Button>
               <ResizeHandle onMouseDown={(e) => handleResizeStart('matchQuality', e)} />
@@ -285,16 +276,14 @@ const StatsTable = memo(({
             )}
             {visibleColumns.globalRules && (
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.globalRules }}>
-
-                                                {t('globale_regeln', `Globale Regeln`)}
-                                                <ResizeHandle onMouseDown={(e) => handleResizeStart('globalRules', e)} />
+              Globale Regeln
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('globalRules', e)} />
             </th>
             )}
 {visibleColumns.feedback && enableUserFeedback && (
             <th className="text-left p-2 sm:p-3 font-medium text-xs sm:text-sm relative" style={{ width: columnWidths.feedback }}>
-
-                                                {t('feedback', `Feedback`)}
-                                                <ResizeHandle onMouseDown={(e) => handleResizeStart('feedback', e)} />
+              Feedback
+              <ResizeHandle onMouseDown={(e) => handleResizeStart('feedback', e)} />
             </th>
             )}
           </tr>
@@ -335,9 +324,8 @@ const StatsTable = memo(({
                     </a>
                   ) : (
                     <code className="text-[10px] sm:text-xs text-foreground break-all inline-block max-w-full truncate align-middle">
-
-                                                                {t('na', `N/A`)}
-                                                              </code>
+                      N/A
+                    </code>
                   )}
                 </div>
               </td>
@@ -370,24 +358,22 @@ const StatsTable = memo(({
                         size="sm"
                         className="h-auto p-1 text-[10px] sm:text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400"
                         onClick={() => onNavigateToTab?.('general')}
-                        title={t('intelligente_suche_fallback', `Intelligente Suche (Fallback)`)}
+                        title="Intelligente Suche (Fallback)"
                     >
                         <Settings className="h-3 w-3 mr-1" />
-
-                                                                      {t('smart_search', `Smart Search`)}
-                                                                  </Button>
+                        Smart Search
+                    </Button>
                   ) : entry.redirectStrategy === 'domain-fallback' ? (
                     <Button
                         variant="ghost"
                         size="sm"
                         className="h-auto p-1 text-[10px] sm:text-xs bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
                         onClick={() => onNavigateToTab?.('general')}
-                        title={t('standard_domainweiterleitung_f', `Standard Domain-Weiterleitung (Fallback)`)}
+                        title="Standard Domain-Weiterleitung (Fallback)"
                     >
                         <Settings className="h-3 w-3 mr-1" />
-
-                                                                          {t('domain_redirect', `Domain Redirect`)}
-                                                                      </Button>
+                        Domain Redirect
+                    </Button>
                   ) : (
                     <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
                   )
@@ -422,7 +408,7 @@ const StatsTable = memo(({
                     size="sm"
                     className="h-auto p-1 text-[10px] sm:text-xs bg-muted hover:bg-muted/80"
                     onClick={() => onEditRule(entry.rule)}
-                    title={t('regel_bearbeiten', `Regel bearbeiten`)}
+                    title="Regel bearbeiten"
                   >
                     <Edit className="h-3 w-3 mr-1" />
                     <span className="truncate max-w-[80px] sm:max-w-[100px] inline-block align-bottom">{entry.rule.matcher}</span>
@@ -430,8 +416,8 @@ const StatsTable = memo(({
                 ) : (entry.ruleId || (entry.ruleIds && entry.ruleIds.length > 0)) ? (
                   <span className="text-[10px] sm:text-xs text-muted-foreground italic flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
-                    <span className="hidden sm:inline">{t('regel_nicht_mehr_vorhanden', `Regel nicht mehr vorhanden`)}</span>
-                    <span className="sm:hidden">{t('gelscht', `Gelöscht`)}</span>
+                    <span className="hidden sm:inline">Regel nicht mehr vorhanden</span>
+                    <span className="sm:hidden">Gelöscht</span>
                   </span>
                 ) : (
                   <span className="text-[10px] sm:text-xs text-muted-foreground">-</span>
@@ -488,21 +474,21 @@ const StatsTable = memo(({
                 {entry.feedback === 'OK' ? (
                   <ThumbsUp className="h-4 w-4 text-green-600 dark:text-green-400" />
                 ) : entry.feedback === 'API' ? (
-                  <div className="flex items-center gap-1" title={t('api_call', `API Call`)}>
+                  <div className="flex items-center gap-1" title="API Call">
                     <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    <span className="text-[10px] text-muted-foreground hidden lg:inline">{t('api', `API`)}</span>
+                    <span className="text-[10px] text-muted-foreground hidden lg:inline">API</span>
                   </div>
                 ) : entry.feedback === 'auto-redirect' ? (
-                  <div className="flex items-center gap-1" title={t('automatische_weiterleitung', `Automatische Weiterleitung`)}>
+                  <div className="flex items-center gap-1" title="Automatische Weiterleitung">
                      <Zap className="h-4 w-4 text-blue-500" />
-                     <span className="text-[10px] text-muted-foreground hidden lg:inline">{t('auto', `Auto`)}</span>
+                     <span className="text-[10px] text-muted-foreground hidden lg:inline">Auto</span>
                   </div>
                 ) : entry.feedback === 'NOK' ? (
                   <div className="flex flex-col gap-1">
                     <ThumbsDown className="h-4 w-4 text-red-600 dark:text-red-400" />
                     {entry.userProposedUrl && (
                       <div className="mt-1 p-1.5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 rounded text-[10px] text-red-800 dark:text-red-300 max-w-[200px] break-all">
-                        <span className="font-semibold block mb-0.5">{t('vorschlag', `Vorschlag:`)}</span>
+                        <span className="font-semibold block mb-0.5">Vorschlag:</span>
                         <a
                           href={entry.userProposedUrl}
                           target="_blank"

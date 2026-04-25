@@ -21,7 +21,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { UrlRule } from "@shared/schema";
-import { useTranslation } from "react-i18next";
 
 interface RulesCardListProps {
   rules: UrlRule[];
@@ -52,9 +51,8 @@ const RulesCardList = memo(({
           onClick={() => onSort('matcher')}
           className="text-xs"
         >
-
-                            {t('urlpfad', `URL-Pfad`)}
-                            {sortConfig.by === 'matcher' && (
+          URL-Pfad
+          {sortConfig.by === 'matcher' && (
             sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
           )}
         </Button>
@@ -64,9 +62,8 @@ const RulesCardList = memo(({
           onClick={() => onSort('targetUrl')}
           className="text-xs"
         >
-
-                            {t('zielurl', `Ziel-URL`)}
-                            {sortConfig.by === 'targetUrl' && (
+          Ziel-URL
+          {sortConfig.by === 'targetUrl' && (
             sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
           )}
         </Button>
@@ -76,9 +73,8 @@ const RulesCardList = memo(({
           onClick={() => onSort('createdAt')}
           className="text-xs"
         >
-
-                            {t('erstellt_am', `Erstellt am`)}
-                            {sortConfig.by === 'createdAt' && (
+          Erstellt am
+          {sortConfig.by === 'createdAt' && (
             sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />
           )}
         </Button>
@@ -90,8 +86,8 @@ const RulesCardList = memo(({
           <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
             <Info className="h-4 w-4 flex-shrink-0" />
             <span>
-              <strong>{t('hinweis', `Hinweis:`)}</strong>  {t('das_auswhlen_und_lschen_mehrer', `Das Auswählen und Löschen mehrerer Regeln ist nur auf Desktop-Geräten verfügbar.`)}
-                                      </span>
+              <strong>Hinweis:</strong> Das Auswählen und Löschen mehrerer Regeln ist nur auf Desktop-Geräten verfügbar.
+            </span>
           </div>
         </div>
       )}
@@ -113,14 +109,12 @@ const RulesCardList = memo(({
                 </Badge>
                 {rule.discardQueryParams ? (
                   <Badge variant="outline" className="text-[10px] h-5 px-1 bg-orange-50 text-orange-700 border-orange-200">
-
-                                                      {t('params_entfernen', `Params Entfernen`)}
-                                                    </Badge>
+                    Params Entfernen
+                  </Badge>
                 ) : rule.forwardQueryParams ? (
                   <Badge variant="outline" className="text-[10px] h-5 px-1 bg-blue-50 text-blue-700 border-blue-200">
-
-                                                          {t('params_behalten', `Params Behalten`)}
-                                                        </Badge>
+                    Params Behalten
+                  </Badge>
                 ) : null}
               </div>
             </div>
@@ -129,9 +123,9 @@ const RulesCardList = memo(({
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditRule(rule)}
-                title={t('bearbeiten', `Bearbeiten`)}
+                title="Bearbeiten"
                 className="h-8 w-8 p-0"
-                aria-label={t('regel_bearbeiten', `Regel bearbeiten`)}
+                aria-label="Regel bearbeiten"
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -141,30 +135,28 @@ const RulesCardList = memo(({
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive h-8 w-8 p-0"
-                    title={t('lschen', `Löschen`)}
-                    aria-label={t('regel_lschen', `Regel löschen`)}
+                    title="Löschen"
+                    aria-label="Regel löschen"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>{t('regel_lschen', `Regel löschen`)}</AlertDialogTitle>
+                    <AlertDialogTitle>Regel löschen</AlertDialogTitle>
                     <AlertDialogDescription>
-
-                                                            {t('sind_sie_sicher_dass_sie_diese', `Sind Sie sicher, dass Sie diese Regel löschen möchten?
-                      Diese Aktion kann nicht rückgängig gemacht werden.`)}
-                                                          </AlertDialogDescription>
+                      Sind Sie sicher, dass Sie diese Regel löschen möchten?
+                      Diese Aktion kann nicht rückgängig gemacht werden.
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>{t('abbrechen', `Abbrechen`)}</AlertDialogCancel>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => onDeleteRule(rule.id)}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-
-                                                            {t('lschen', `Löschen`)}
-                                                          </AlertDialogAction>
+                      Löschen
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -173,23 +165,22 @@ const RulesCardList = memo(({
 
           {/* Target URL */}
           <div className="mb-3">
-            <div className="text-xs text-muted-foreground mb-1">{t('zielurl', `Ziel-URL:`)}</div>
+            <div className="text-xs text-muted-foreground mb-1">Ziel-URL:</div>
             {rule.targetUrl ? (
               <code className="text-xs bg-muted px-2 py-1 rounded block break-all">
                 {rule.targetUrl}
               </code>
             ) : (
               <span className="text-xs italic text-muted-foreground">
-
-                                              {t('automatisch_generiert', `Automatisch generiert`)}
-                                            </span>
+                Automatisch generiert
+              </span>
             )}
           </div>
 
           {/* Info Text */}
           {rule.infoText && (
             <div className="mb-3">
-              <div className="text-xs text-muted-foreground mb-1">{t('infotext', `Info-Text:`)}</div>
+              <div className="text-xs text-muted-foreground mb-1">Info-Text:</div>
               <p className="text-xs text-foreground break-words">
                 {rule.infoText.length > 100 ? rule.infoText.substring(0, 100) + "..." : rule.infoText}
               </p>
@@ -198,8 +189,7 @@ const RulesCardList = memo(({
 
           {/* Created Date */}
           <div className="text-xs text-muted-foreground">
-
-                              {t('erstellt', `Erstellt:`)} {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
+            Erstellt: {rule.createdAt ? new Date(rule.createdAt).toLocaleDateString('de-DE') : '-'}
           </div>
         </div>
       ))}

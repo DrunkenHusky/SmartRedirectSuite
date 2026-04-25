@@ -47,13 +47,13 @@ export function TranslationManager() {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: t('erfolg', `Erfolg`), description: t('bersetzungen_gespeichert', `Übersetzungen gespeichert.`) });
+      toast({ title: "Erfolg", description: "Übersetzungen gespeichert." });
       queryClient.invalidateQueries({ queryKey: ['/api/translations', selectedLang] });
       // Reload i18n resources
       i18n.reloadResources([selectedLang]);
     },
     onError: () => {
-      toast({ title: t('fehler', `Fehler`), description: t('konnte_bersetzungen_nicht_spei', `Konnte Übersetzungen nicht speichern.`), variant: "destructive" });
+      toast({ title: "Fehler", description: "Konnte Übersetzungen nicht speichern.", variant: "destructive" });
     }
   });
 
@@ -88,16 +88,15 @@ export function TranslationManager() {
           <span>{t('translations', 'Übersetzungen')}</span>
         </CardTitle>
         <CardDescription>
-
-                            {t('bersetzungen_fr_die_anwendung_', `Übersetzungen für die Anwendung anpassen und neue Sprachen verwalten.`)}
-                          </CardDescription>
+          Übersetzungen für die Anwendung anpassen und neue Sprachen verwalten.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center space-x-4">
           <div className="w-48">
             <Select value={selectedLang} onValueChange={setSelectedLang}>
               <SelectTrigger>
-                <SelectValue placeholder={t('sprache_auswhlen', `Sprache auswählen`)} />
+                <SelectValue placeholder="Sprache auswählen" />
               </SelectTrigger>
               <SelectContent>
                 {supportedLngs.map((lng: string) => (
@@ -110,17 +109,16 @@ export function TranslationManager() {
           </div>
           <Button onClick={handleSave} disabled={updateMutation.isPending}>
             <Save className="h-4 w-4 mr-2" />
-
-                                  {t('speichern', `Speichern`)}
-                                </Button>
+            Speichern
+          </Button>
         </div>
 
         <div className="border rounded-md">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('schlssel_key', `Schlüssel (Key)`)}</TableHead>
-                <TableHead>{t('wert_value', `Wert (Value)`)}</TableHead>
+                <TableHead>Schlüssel (Key)</TableHead>
+                <TableHead>Wert (Value)</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -144,14 +142,14 @@ export function TranslationManager() {
               <TableRow>
                 <TableCell>
                   <Input
-                    placeholder={t('neuer_schlssel', `Neuer Schlüssel...`)}
+                    placeholder="Neuer Schlüssel..."
                     value={newKey}
                     onChange={e => setNewKey(e.target.value)}
                   />
                 </TableCell>
                 <TableCell>
                   <Input
-                    placeholder={t('wert', `Wert...`)}
+                    placeholder="Wert..."
                     value={newVal}
                     onChange={e => setNewVal(e.target.value)}
                     onKeyDown={e => {

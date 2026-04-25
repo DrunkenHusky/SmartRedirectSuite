@@ -1,7 +1,6 @@
 import React from 'react';
 import { Gauge } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useTranslation } from "react-i18next";
 
 interface QualityGaugeProps {
   score: number; // 0-100
@@ -10,7 +9,6 @@ interface QualityGaugeProps {
 }
 
 export function QualityGauge({ score, level, explanation }: QualityGaugeProps) {
-    const { t } = useTranslation();
   // Determine color classes
   let colorClass = "text-green-600 bg-green-50";
   if (level === 'red') {
@@ -34,7 +32,7 @@ export function QualityGauge({ score, level, explanation }: QualityGaugeProps) {
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
         <div className="space-y-1">
-          <p className="font-semibold">{t('linkqualitt', `Link-Qualität:`)} {score}%</p>
+          <p className="font-semibold">Link-Qualität: {score}%</p>
           <p className="text-xs text-muted-foreground">{explanation || "Einschätzung der Qualität dieses Links."}</p>
         </div>
       </TooltipContent>

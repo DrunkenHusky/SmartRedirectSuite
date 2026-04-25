@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 interface PasswordModalProps {
   isOpen: boolean;
@@ -13,7 +12,6 @@ interface PasswordModalProps {
 }
 
 export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps) {
-    const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -71,19 +69,17 @@ export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-
-                                  {t('administratoranmeldung', `Administrator-Anmeldung`)}
-                                </DialogTitle>
+            Administrator-Anmeldung
+          </DialogTitle>
           <DialogDescription className="text-gray-600">
-
-                                  {t('bitte_geben_sie_das_administra', `Bitte geben Sie das Administrator-Passwort ein:`)}
-                                </DialogDescription>
+            Bitte geben Sie das Administrator-Passwort ein:
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             type="password"
-            placeholder={t('passwort_eingeben', `Passwort eingeben`)}
+            placeholder="Passwort eingeben"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
@@ -112,9 +108,8 @@ export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps
               onClick={handleClose}
               disabled={isLoading}
             >
-
-                                        {t('abbrechen', `Abbrechen`)}
-                                      </Button>
+              Abbrechen
+            </Button>
           </div>
         </form>
       </DialogContent>

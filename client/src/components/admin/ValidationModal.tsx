@@ -9,7 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, AlertTriangle, Play, RefreshCw, Download, ChevronDown, ChevronRight, ExternalLink, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslation } from "react-i18next";
 
 interface ValidationModalProps {
     open: boolean;
@@ -22,7 +21,6 @@ interface ValidationModalProps {
 }
 
 function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, isExpanded: boolean, onToggle: () => void, onEditRule: (id: number) => void }) {
-    const { t } = useTranslation();
     // Helper to get step styles
     const getStepStyle = (step: any) => {
         if (!step.changed) {
@@ -81,11 +79,11 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
                 <td className="p-3 text-sm max-w-[400px]">
                     <div className="flex flex-col gap-1">
                          <div className="font-mono text-xs text-muted-foreground truncate flex items-center gap-2" title={result.url}>
-                            <span className="select-none opacity-50 w-6">{t('old', `Old:`)}</span>
+                            <span className="select-none opacity-50 w-6">Old:</span>
                             <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="truncate text-blue-600 hover:underline">{result.url}</a>
                          </div>
                          <div className="font-mono text-sm truncate flex items-center gap-2" title={result.traceResult.finalUrl}>
-                             <span className="select-none opacity-50 w-6">{t('new', `New:`)}</span>
+                             <span className="select-none opacity-50 w-6">New:</span>
                              <a href={result.traceResult.finalUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="truncate text-green-600 hover:underline">{result.traceResult.finalUrl}</a>
                          </div>
                     </div>
@@ -103,7 +101,7 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
                                  e.stopPropagation();
                                  onEditRule(rule.id);
                              }}
-                             title={t('regel_bearbeiten', `Regel bearbeiten`)}
+                             title="Regel bearbeiten"
                          >
                              {rule.infoText ? rule.infoText : (rule.matcher || `Rule #${rule.id}`)}
                          </div>
@@ -117,16 +115,16 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
                     <td colSpan={4} className="p-4 space-y-4">
                         {/* Result Analysis - Full Width */}
                         <div className="border rounded-md p-4 bg-background shadow-sm">
-                            <h4 className="font-semibold text-sm mb-3 border-b pb-2">{t('ergebnisanalyse', `Ergebnis-Analyse`)}</h4>
+                            <h4 className="font-semibold text-sm mb-3 border-b pb-2">Ergebnis-Analyse</h4>
                             <div className="space-y-2 text-sm">
                                 <div className="grid grid-cols-3 gap-1">
-                                    <span className="text-muted-foreground">{t('original', `Original:`)}</span>
+                                    <span className="text-muted-foreground">Original:</span>
                                     <a href={result.url} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-blue-600 hover:underline flex items-center gap-1">
                                         {result.url} <ExternalLink className="h-3 w-3" />
                                     </a>
                                 </div>
                                 <div className="grid grid-cols-3 gap-1">
-                                    <span className="text-muted-foreground">{t('neu', `Neu:`)}</span>
+                                    <span className="text-muted-foreground">Neu:</span>
                                     <a href={result.traceResult.finalUrl} target="_blank" rel="noopener noreferrer" className="col-span-2 font-mono break-all text-green-600 hover:underline flex items-center gap-1">
                                         {result.traceResult.finalUrl} <ExternalLink className="h-3 w-3" />
                                     </a>
@@ -134,8 +132,8 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
 
                                 {result.traceResult.searchFallback && (
                                     <div className="mt-2 p-2 bg-blue-50 text-blue-800 rounded text-xs">
-                                        <strong>{t('smart_search_fallback', `Smart Search Fallback:`)}</strong>  {t('weiterleitung_zur_suche_da_kei', `Weiterleitung zur Suche, da keine Regel passte.`)}
-                                                                            </div>
+                                        <strong>Smart Search Fallback:</strong> Weiterleitung zur Suche, da keine Regel passte.
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -144,46 +142,45 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
                             {/* Rule Config */}
                             <div className="border rounded-md p-4 bg-background shadow-sm">
                                 <h4 className="font-semibold text-sm mb-3 flex justify-between items-center border-b pb-2">
-
-                                                                        {t('angewandte_regel', `Angewandte Regel`)}
-                                                                        {rule && (
+                                    Angewandte Regel
+                                    {rule && (
                                         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onEditRule(rule.id); }}>
-                                            <ExternalLink className="h-3 w-3 mr-1" />  {t('bearbeiten', `Bearbeiten`)}
-                                                                                    </Button>
+                                            <ExternalLink className="h-3 w-3 mr-1" /> Bearbeiten
+                                        </Button>
                                     )}
                                 </h4>
                                 {rule ? (
                                     <div className="space-y-2 text-sm">
                                         <div className="grid grid-cols-3 gap-1">
-                                            <span className="text-muted-foreground">{t('id', `ID:`)}</span>
+                                            <span className="text-muted-foreground">ID:</span>
                                             <span className="col-span-2 font-mono">{rule.id}</span>
                                         </div>
                                         <div className="grid grid-cols-3 gap-1">
-                                            <span className="text-muted-foreground">{t('matcher', `Matcher:`)}</span>
+                                            <span className="text-muted-foreground">Matcher:</span>
                                             <span className="col-span-2 font-mono break-all bg-muted/50 p-1 rounded">{rule.matcher}</span>
                                         </div>
                                         <div className="grid grid-cols-3 gap-1">
-                                            <span className="text-muted-foreground">{t('ziel', `Ziel:`)}</span>
+                                            <span className="text-muted-foreground">Ziel:</span>
                                             <span className="col-span-2 font-mono break-all bg-muted/50 p-1 rounded">{rule.targetUrl || '-'}</span>
                                         </div>
                                         <div className="grid grid-cols-3 gap-1">
-                                            <span className="text-muted-foreground">{t('typ', `Typ:`)}</span>
+                                            <span className="text-muted-foreground">Typ:</span>
                                             <span className="col-span-2">{rule.redirectType}</span>
                                         </div>
                                         {rule.discardQueryParams && (
                                              <div className="grid grid-cols-3 gap-1 text-orange-600">
-                                                 <span className="col-span-3 text-xs italic">{t('parameter_werden_verworfen', `Parameter werden verworfen`)}</span>
+                                                 <span className="col-span-3 text-xs italic">Parameter werden verworfen</span>
                                              </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground italic">{t('keine_spezifische_regel_gefund', `Keine spezifische Regel gefunden (Fallback).`)}</p>
+                                    <p className="text-sm text-muted-foreground italic">Keine spezifische Regel gefunden (Fallback).</p>
                                 )}
                             </div>
 
                             {/* Global Rules */}
                             <div className="border rounded-md p-4 bg-background shadow-sm flex flex-col">
-                                <h4 className="font-semibold text-sm mb-3 border-b pb-2">{t('angewandte_globale_regeln', `Angewandte Globale Regeln`)}</h4>
+                                <h4 className="font-semibold text-sm mb-3 border-b pb-2">Angewandte Globale Regeln</h4>
                                 {result.traceResult.appliedGlobalRules && result.traceResult.appliedGlobalRules.length > 0 ? (
                                     <div className="bg-blue-50/50 rounded-md p-2 flex-1">
                                         <div className="space-y-2">
@@ -197,9 +194,8 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-muted-foreground text-sm italic">
-
-                                                                                    {t('keine_globalen_regeln_angewend', `Keine globalen Regeln angewendet`)}
-                                                                                </div>
+                                        Keine globalen Regeln angewendet
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -208,9 +204,8 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
                         {result.traceResult.steps && result.traceResult.steps.length > 0 && (
                             <div className="border rounded-md overflow-hidden">
                                 <div className="bg-muted px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-
-                                                                        {t('verarbeitungsschritte', `Verarbeitungsschritte`)}
-                                                                    </div>
+                                    Verarbeitungsschritte
+                                </div>
                                 <div className="divide-y">
                                     {result.traceResult.steps.map((step: any, idx: number) => {
                                         const style = getStepStyle(step);
@@ -243,7 +238,6 @@ function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, 
 }
 
 export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger, isLoadingRules = false }: ValidationModalProps) {
-    const { t } = useTranslation();
     const [pastedText, setPastedText] = useState("");
     const [activeTab, setActiveTab] = useState("paste");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -422,7 +416,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
         } else if (pastedText && activeTab === 'paste') {
              handleStart();
         } else {
-             toast({ title: t('keine_daten_zum_aktualisieren', `Keine Daten zum Aktualisieren`), description: t('bitte_starten_sie_den_prozess_', `Bitte starten Sie den Prozess neu.`) });
+             toast({ title: "Keine Daten zum Aktualisieren", description: "Bitte starten Sie den Prozess neu." });
         }
     };
 
@@ -444,36 +438,33 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <RefreshCw className="h-5 w-5" />
-
-                                                {t('konfigurationsvalidierung', `Konfigurationsvalidierung`)}
-                                            </DialogTitle>
+                        Konfigurationsvalidierung
+                    </DialogTitle>
                     <DialogDescription>
-
-                                                {t('testen_sie_ihre_regeln_mit_ein', `Testen Sie Ihre Regeln mit einer Liste von URLs. Importieren Sie eine CSV/Excel-Datei oder fügen Sie URLs ein.`)}
-                                            </DialogDescription>
+                        Testen Sie Ihre Regeln mit einer Liste von URLs. Importieren Sie eine CSV/Excel-Datei oder fügen Sie URLs ein.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto py-4 px-1">
                     {!results && !processing && (
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="paste">{t('text_einfgen', `Text einfügen`)}</TabsTrigger>
-                                <TabsTrigger value="upload">{t('datei_hochladen', `Datei hochladen`)}</TabsTrigger>
+                                <TabsTrigger value="paste">Text einfügen</TabsTrigger>
+                                <TabsTrigger value="upload">Datei hochladen</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="paste" className="space-y-4 mt-4">
                                 <div className="space-y-2">
-                                    <Label>{t('urls_einfgen_durch_komma_semik', `URLs einfügen (durch Komma, Semikolon oder neue Zeile getrennt)`)}</Label>
+                                    <Label>URLs einfügen (durch Komma, Semikolon oder neue Zeile getrennt)</Label>
                                     <Textarea
-                                        placeholder={t('httpsexamplecoma10httpsexample', `https://example.com/a&#10;https://example.com/b`)}
+                                        placeholder="https://example.com/a&#10;https://example.com/b"
                                         className="min-h-[200px] font-mono text-sm"
                                         value={pastedText}
                                         onChange={(e) => setPastedText(e.target.value)}
                                     />
                                     <p className="text-xs text-muted-foreground">
-
-                                                                                {t('leerzeichen_nach_trennzeichen_', `Leerzeichen nach Trennzeichen werden automatisch entfernt.`)}
-                                                                            </p>
+                                        Leerzeichen nach Trennzeichen werden automatisch entfernt.
+                                    </p>
                                 </div>
                             </TabsContent>
 
@@ -491,9 +482,8 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                                         {selectedFile ? selectedFile.name : "Datei hierher ziehen oder klicken"}
                                     </p>
                                     <p className="text-xs text-muted-foreground mb-4">
-
-                                                                                {t('untersttzt_csv_xlsx_xls_nur_er', `Unterstützt CSV, XLSX, XLS (nur erste Spalte wird verwendet)`)}
-                                                                            </p>
+                                        Unterstützt CSV, XLSX, XLS (nur erste Spalte wird verwendet)
+                                    </p>
                                     <Input
                                         id="file-upload"
                                         type="file"
@@ -506,9 +496,8 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                                     {selectedFile && (
                                         <div className="mt-2 flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
                                             <FileText className="h-4 w-4" />
-
-                                                                                        {t('ausgewhlt', `Ausgewählt`)}
-                                                                                    </div>
+                                            Ausgewählt
+                                        </div>
                                     )}
                                 </div>
                             </TabsContent>
@@ -518,7 +507,7 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                     {error && (
                         <Alert variant="destructive" className="mt-4">
                             <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>{t('fehler', `Fehler`)}</AlertTitle>
+                            <AlertTitle>Fehler</AlertTitle>
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     )}
@@ -526,14 +515,14 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                     {warning && (
                         <Alert className="mt-4 bg-yellow-50 text-yellow-800 border-yellow-200">
                             <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                            <AlertTitle>{t('hinweis', `Hinweis`)}</AlertTitle>
+                            <AlertTitle>Hinweis</AlertTitle>
                             <AlertDescription>{warning}</AlertDescription>
                         </Alert>
                     )}
 
                     {processing && (
                         <div className="py-10 space-y-4">
-                            <Label>{t('verarbeite_urls', `Verarbeite URLs...`)} {progress}%</Label>
+                            <Label>Verarbeite URLs... {progress}%</Label>
                             <Progress value={progress} className="w-full" />
                         </div>
                     )}
@@ -542,26 +531,25 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                         <div className="space-y-4">
                             <div className="flex justify-between items-center mb-2">
                                 <div className="text-sm text-muted-foreground">
-                                    {results.length}  {t('ergebnisse', `Ergebnisse`)}
-                                                                    </div>
+                                    {results.length} Ergebnisse
+                                </div>
                                 <div className="flex gap-2">
-                                    <Button variant="ghost" size="sm" onClick={expandAll} disabled={processing} title={t('alle_ausklappen', `Alle ausklappen`)}>
+                                    <Button variant="ghost" size="sm" onClick={expandAll} disabled={processing} title="Alle ausklappen">
                                         <ChevronsDown className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="sm" onClick={collapseAll} disabled={processing} title={t('alle_einklappen', `Alle einklappen`)}>
+                                    <Button variant="ghost" size="sm" onClick={collapseAll} disabled={processing} title="Alle einklappen">
                                         <ChevronsUp className="h-4 w-4" />
                                     </Button>
                                     <div className="w-px h-6 bg-border mx-1" />
                                     <Button variant="outline" size="sm" onClick={handleReload} disabled={processing}>
-                                        <RefreshCw className="h-3 w-3 mr-2" />  {t('neu_berechnen', `Neu berechnen`)}
-                                                                            </Button>
+                                        <RefreshCw className="h-3 w-3 mr-2" /> Neu berechnen
+                                    </Button>
                                     <Button variant="outline" size="sm" onClick={handleExport}>
-                                        <Download className="h-3 w-3 mr-2" />  {t('csv_export', `CSV Export`)}
-                                                                            </Button>
+                                        <Download className="h-3 w-3 mr-2" /> CSV Export
+                                    </Button>
                                     <Button variant="ghost" size="sm" onClick={() => setResults(null)}>
-
-                                                                                {t('neue_suche', `Neue Suche`)}
-                                                                            </Button>
+                                        Neue Suche
+                                    </Button>
                                 </div>
                             </div>
 
@@ -571,9 +559,9 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                                         <thead className="bg-muted sticky top-0 z-10">
                                             <tr>
                                                 <th className="p-3 text-xs font-medium text-muted-foreground w-10"></th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground">{t('url_transformation', `URL Transformation`)}</th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground">{t('match_quality', `Match Quality`)}</th>
-                                                <th className="p-3 text-xs font-medium text-muted-foreground text-right">{t('rule_tag', `Rule Tag`)}</th>
+                                                <th className="p-3 text-xs font-medium text-muted-foreground">URL Transformation</th>
+                                                <th className="p-3 text-xs font-medium text-muted-foreground">Match Quality</th>
+                                                <th className="p-3 text-xs font-medium text-muted-foreground text-right">Rule Tag</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -595,10 +583,10 @@ export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger,
                 </div>
 
                 <DialogFooter className="gap-2 sm:gap-0">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>{t('schlieen', `Schließen`)}</Button>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Schließen</Button>
                     {!results && !processing && (
                         <Button onClick={handleStart} disabled={extracting || processing || isLoadingRules} className="gap-2">
-                            {isLoadingRules ? "Lade Regeln..." : (extracting ? "Lade..." : <><Play className="h-4 w-4" />  {t('validierung_starten', `Validierung starten`)}</>)}
+                            {isLoadingRules ? "Lade Regeln..." : (extracting ? "Lade..." : <><Play className="h-4 w-4" /> Validierung starten</>)}
                         </Button>
                     )}
                 </DialogFooter>
