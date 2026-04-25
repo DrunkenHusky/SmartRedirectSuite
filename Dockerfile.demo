@@ -37,6 +37,11 @@ RUN apt-get update -qq && \
 # Copy built application
 COPY --from=build /app /app
 
+# Store default configs for daily reset
+RUN mkdir -p /defaults && \
+    cp /app/data/settings.json /defaults/settings.json && \
+    cp /app/data/rules.json /defaults/rules.json
+
 # Add reset script
 COPY scripts/demo-reset.sh /usr/local/bin/reset-app.sh
 RUN chmod +x /usr/local/bin/reset-app.sh
