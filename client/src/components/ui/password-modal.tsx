@@ -69,17 +69,17 @@ export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Administrator-Anmeldung
-          </DialogTitle>
+            {t('administrator_login', 'Administrator-Anmeldung')}
+                                </DialogTitle>
           <DialogDescription className="text-gray-600">
-            Bitte geben Sie das Administrator-Passwort ein:
-          </DialogDescription>
+            Bitte geben Sie das Administrator-{t('password', 'Passwort')} ein:
+                                </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             type="password"
-            placeholder="Passwort eingeben"
+            placeholder={t('enter_password', 'Passwort eingeben')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}

@@ -160,23 +160,23 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
           <div className="flex justify-center mb-4">
             <Shield className="text-primary text-4xl" />
           </div>
-          <CardTitle className="text-2xl">Administrator-Anmeldung</CardTitle>
+          <CardTitle className="text-2xl">{t('administrator_login', 'Administrator-Anmeldung')}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Bitte geben Sie das Administrator-Passwort ein.
-          </p>
+            {t('please_enter_the_administrator', 'Bitte geben Sie das Administrator-Passwort ein.')}
+                                </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Passwort
-              </label>
+                {t('password', 'Passwort')}
+                                            </label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Administrator-Passwort eingeben"
+                placeholder={t('enter_administrator_password', 'Administrator-Passwort eingeben')}
                 required
                 disabled={authMutation.isPending}
               />

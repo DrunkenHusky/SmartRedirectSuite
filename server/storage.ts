@@ -214,6 +214,15 @@ export class FileStorage implements IStorage {
   private async initTranslations() {
     const defaultTranslations: Record<string, Record<string, string>> = {
       "en": {
+            "incorrect_password_please_try_": "Incorrect password. Please try again.",
+            "please_enter_the_administrator": "Please enter the administrator password.",
+            "enter_password": "Enter password",
+            "incorrect_password": "Incorrect password",
+            "password": "password",
+            "enter_administrator_password": "Enter administrator password",
+            "administrator_login": "Administrator login",
+            "welcome_to_the_admin_area": "Welcome to the admin area.",
+            "open_administrator_area": "Open administrator area",
             "loading_app": "Loading application...",
             "admin_area": "Admin Area",
             "lang": "Lang",
@@ -902,6 +911,15 @@ export class FileStorage implements IStorage {
             "link_qualität": "Link-Qualität:"
       },
       "de": {
+            "incorrect_password_please_try_": "Falsches Passwort. Bitte versuchen Sie es erneut.",
+            "please_enter_the_administrator": "Bitte geben Sie das Administrator-Passwort ein.",
+            "enter_password": "Passwort eingeben",
+            "incorrect_password": "Falsches Passwort",
+            "password": "Passwort",
+            "enter_administrator_password": "Administrator-Passwort eingeben",
+            "administrator_login": "Administrator-Anmeldung",
+            "welcome_to_the_admin_area": "Willkommen im Administrator-Bereich.",
+            "open_administrator_area": "Administrator-Bereich öffnen",
             "lang": "Lang",
             "showing": "Showing",
             "of": "of",
@@ -1588,6 +1606,15 @@ export class FileStorage implements IStorage {
             "link_qualität": "Link-Qualität:"
       },
       "it": {
+            "incorrect_password_please_try_": "Password errata. Per favore riprova.",
+            "please_enter_the_administrator": "Inserisci la password dell'amministratore.",
+            "enter_password": "Inserisci la password",
+            "incorrect_password": "Password errata",
+            "password": "password",
+            "enter_administrator_password": "Inserisci la password dell'amministratore",
+            "administrator_login": "Accesso amministratore",
+            "welcome_to_the_admin_area": "Benvenuto nell'area amministrativa.",
+            "open_administrator_area": "Apri l'area amministratore",
             "lang": "Lang",
             "showing": "Showing",
             "of": "of",
@@ -2274,6 +2301,15 @@ export class FileStorage implements IStorage {
             "link_qualität": "Link-Qualität:"
       },
       "es": {
+            "incorrect_password_please_try_": "Contraseña incorrecta. Por favor inténtalo de nuevo.",
+            "please_enter_the_administrator": "Por favor ingrese la contraseña de administrador.",
+            "enter_password": "Introduce la contraseña",
+            "incorrect_password": "Contraseña incorrecta",
+            "password": "contraseña",
+            "enter_administrator_password": "Introduzca la contraseña de administrador",
+            "administrator_login": "Inicio de sesión de administrador",
+            "welcome_to_the_admin_area": "Bienvenido al área de administración.",
+            "open_administrator_area": "Abrir área de administrador",
             "lang": "Lang",
             "showing": "Showing",
             "of": "of",
@@ -2960,6 +2996,15 @@ export class FileStorage implements IStorage {
             "link_qualität": "Link-Qualität:"
       },
       "fr": {
+            "incorrect_password_please_try_": "Mot de passe incorrect. Veuillez réessayer.",
+            "please_enter_the_administrator": "Veuillez saisir le mot de passe administrateur.",
+            "enter_password": "Entrez le mot de passe",
+            "incorrect_password": "Mot de passe incorrect",
+            "password": "mot de passe",
+            "enter_administrator_password": "Entrez le mot de passe administrateur",
+            "administrator_login": "Connexion administrateur",
+            "welcome_to_the_admin_area": "Bienvenue dans la zone d'administration.",
+            "open_administrator_area": "Ouvrir la zone administrateur",
             "lang": "Lang",
             "showing": "Showing",
             "of": "of",
