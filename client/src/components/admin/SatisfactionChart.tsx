@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 export function SatisfactionChart({
   data,
@@ -20,10 +21,11 @@ export function SatisfactionChart({
   aggregation?: 'day' | 'week' | 'month',
   showQualityLine?: boolean
 }) {
+    const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">Nicht genügend Daten für Trendanzeige</div>;
+  if (!data || data.length < 2) return <div className="text-center text-muted-foreground py-8">{t('nicht_gengend_daten_fr_trendan', `Nicht genügend Daten für Trendanzeige`)}</div>;
 
   // Process data based on feedbackOnly mode
   const chartData = data.map(d => {
@@ -121,7 +123,7 @@ export function SatisfactionChart({
             {showQualityLine && (
               <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  <span>Match Quality</span>
+                  <span>{t('match_quality', `Match Quality`)}</span>
               </div>
             )}
             <div className="flex items-center gap-1">
@@ -130,7 +132,7 @@ export function SatisfactionChart({
             </div>
             <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <span>Feedback (inkl. Auto)</span>
+                <span>{t('feedback_inkl_auto', `Feedback (inkl. Auto)`)}</span>
             </div>
         </div>
 
@@ -148,19 +150,19 @@ export function SatisfactionChart({
             {showQualityLine && (
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                <span>Match: {chartData[activeIndex].matchQualityScore}%</span>
+                <span>{t('match', `Match:`)} {chartData[activeIndex].matchQualityScore}%</span>
               </div>
             )}
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-              <span>Score: {chartData[activeIndex].satisfactionScore !== null ? `${chartData[activeIndex].satisfactionScore}%` : '-'}</span>
+              <span>{t('score', `Score:`)} {chartData[activeIndex].satisfactionScore !== null ? `${chartData[activeIndex].satisfactionScore}%` : '-'}</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-              <span>Total: {chartData[activeIndex].feedbackCount}</span>
+              <span>{t('total', `Total:`)} {chartData[activeIndex].feedbackCount}</span>
             </div>
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-                <span>(OK: {chartData[activeIndex].okCount}, Auto: {chartData[activeIndex].autoCount}, NOK: {chartData[activeIndex].nokCount})</span>
+                <span>{t('ok', `(OK:`)} {chartData[activeIndex].okCount}{t('_auto', `, Auto:`)} {chartData[activeIndex].autoCount}{t('_nok', `, NOK:`)} {chartData[activeIndex].nokCount})</span>
             </div>
           </div>
         )}

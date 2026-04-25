@@ -18,6 +18,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useLoadingPerformance, useMemoryMonitoring } from '@/hooks/usePerformance';
+import { useTranslation } from "react-i18next";
 
 interface PerformanceMonitorProps {
   show?: boolean;
@@ -33,6 +34,7 @@ export function PerformanceMonitor({
   position = 'bottom-right',
   className 
 }: PerformanceMonitorProps) {
+    const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [performanceAlerts, setPerformanceAlerts] = useState<string[]>([]);
   
@@ -119,7 +121,7 @@ export function PerformanceMonitor({
           <CardContent className="p-3">
             <div className="flex items-center space-x-2">
               <Activity className="h-4 w-4" />
-              <span className="text-sm font-medium">Performance</span>
+              <span className="text-sm font-medium">{t('performance', `Performance`)}</span>
               <Badge 
                 variant={status === 'good' ? 'default' : status === 'warning' ? 'secondary' : 'destructive'}
                 className="ml-auto"
@@ -132,7 +134,8 @@ export function PerformanceMonitor({
             
             {memoryData && (
               <div className="mt-2 text-xs text-muted-foreground">
-                Memory: {memoryData.usagePercentage.toFixed(1)}%
+
+                                              {t('memory', `Memory:`)} {memoryData.usagePercentage.toFixed(1)}%
               </div>
             )}
           </CardContent>
@@ -144,7 +147,7 @@ export function PerformanceMonitor({
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center space-x-2">
                 <Activity className="h-4 w-4" />
-                <span>Performance Monitor</span>
+                <span>{t('performance_monitor', `Performance Monitor`)}</span>
               </CardTitle>
               <Button 
                 variant="ghost" 
@@ -160,16 +163,16 @@ export function PerformanceMonitor({
           <CardContent className="p-3">
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-3">
-                <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-                <TabsTrigger value="loading" className="text-xs">Loading</TabsTrigger>
-                <TabsTrigger value="memory" className="text-xs">Memory</TabsTrigger>
+                <TabsTrigger value="overview" className="text-xs">{t('overview', `Overview`)}</TabsTrigger>
+                <TabsTrigger value="loading" className="text-xs">{t('loading', `Loading`)}</TabsTrigger>
+                <TabsTrigger value="memory" className="text-xs">{t('memory', `Memory`)}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-2">
                 {/* Performance alerts */}
                 {performanceAlerts.length > 0 && (
                   <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-destructive">Issues Detected:</h4>
+                    <h4 className="text-xs font-medium text-destructive">{t('issues_detected', `Issues Detected:`)}</h4>
                     {performanceAlerts.map((alert, index) => (
                       <div key={index} className="flex items-center space-x-1 text-xs">
                         <AlertTriangle className="h-3 w-3 text-destructive" />
@@ -185,11 +188,11 @@ export function PerformanceMonitor({
                     <>
                       <div className="flex items-center space-x-1">
                         <Clock className="h-3 w-3" />
-                        <span>DOM: {formatDuration(loadingPerformance.domContentLoaded)}</span>
+                        <span>{t('dom', `DOM:`)} {formatDuration(loadingPerformance.domContentLoaded)}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Zap className="h-3 w-3" />
-                        <span>Load: {formatDuration(loadingPerformance.loadComplete)}</span>
+                        <span>{t('load', `Load:`)} {formatDuration(loadingPerformance.loadComplete)}</span>
                       </div>
                     </>
                   )}
@@ -198,11 +201,11 @@ export function PerformanceMonitor({
                     <>
                       <div className="flex items-center space-x-1">
                         <MemoryStick className="h-3 w-3" />
-                        <span>Memory: {memoryData.usagePercentage.toFixed(1)}%</span>
+                        <span>{t('memory', `Memory:`)} {memoryData.usagePercentage.toFixed(1)}%</span>
                       </div>
                       <div className="flex items-center space-x-1">
                       <HardDrive className="h-3 w-3" />
-                        <span>Heap: {formatBytes(memoryData.usedJSHeapSize)}</span>
+                        <span>{t('heap', `Heap:`)} {formatBytes(memoryData.usedJSHeapSize)}</span>
                       </div>
                     </>
                   )}
@@ -213,13 +216,13 @@ export function PerformanceMonitor({
                 {loadingPerformance ? (
                   <div className="space-y-2 text-xs">
                     <div className="grid grid-cols-2 gap-2">
-                      <div>DOM Ready:</div>
+                      <div>{t('dom_ready', `DOM Ready:`)}</div>
                       <div className="font-mono">{formatDuration(loadingPerformance.domContentLoaded)}</div>
                       
-                      <div>Load Complete:</div>
+                      <div>{t('load_complete', `Load Complete:`)}</div>
                       <div className="font-mono">{formatDuration(loadingPerformance.loadComplete)}</div>
                       
-                      <div>First Paint:</div>
+                      <div>{t('first_paint', `First Paint:`)}</div>
                       <div className="font-mono">
                         {loadingPerformance.firstContentfulPaint > 0 
                           ? formatDuration(loadingPerformance.firstContentfulPaint)
@@ -227,34 +230,34 @@ export function PerformanceMonitor({
                         }
                       </div>
                       
-                      <div>DNS Lookup:</div>
+                      <div>{t('dns_lookup', `DNS Lookup:`)}</div>
                       <div className="font-mono">{formatDuration(loadingPerformance.dnsLookup)}</div>
                       
-                      <div>TCP Connect:</div>
+                      <div>{t('tcp_connect', `TCP Connect:`)}</div>
                       <div className="font-mono">{formatDuration(loadingPerformance.tcpConnection)}</div>
                       
-                      <div>Server Response:</div>
+                      <div>{t('server_response', `Server Response:`)}</div>
                       <div className="font-mono">{formatDuration(loadingPerformance.serverResponse)}</div>
                     </div>
                     
                     <div className="pt-2 border-t">
                       <div className="grid grid-cols-2 gap-2">
-                        <div>Resources:</div>
+                        <div>{t('resources', `Resources:`)}</div>
                         <div className="font-mono">{loadingPerformance.totalResources}</div>
                         
-                        <div>Slow Resources:</div>
+                        <div>{t('slow_resources', `Slow Resources:`)}</div>
                         <div className="font-mono text-destructive">{loadingPerformance.slowResources}</div>
                         
-                        <div>JS Size:</div>
+                        <div>{t('js_size', `JS Size:`)}</div>
                         <div className="font-mono">{formatBytes(loadingPerformance.jsSize)}</div>
                         
-                        <div>CSS Size:</div>
+                        <div>{t('css_size', `CSS Size:`)}</div>
                         <div className="font-mono">{formatBytes(loadingPerformance.cssSize)}</div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground">Loading performance data...</div>
+                  <div className="text-xs text-muted-foreground">{t('loading_performance_data', `Loading performance data...`)}</div>
                 )}
               </TabsContent>
 
@@ -262,16 +265,16 @@ export function PerformanceMonitor({
                 {memoryData ? (
                   <div className="space-y-2 text-xs">
                     <div className="grid grid-cols-2 gap-2">
-                      <div>Used Heap:</div>
+                      <div>{t('used_heap', `Used Heap:`)}</div>
                       <div className="font-mono">{formatBytes(memoryData.usedJSHeapSize)}</div>
                       
-                      <div>Total Heap:</div>
+                      <div>{t('total_heap', `Total Heap:`)}</div>
                       <div className="font-mono">{formatBytes(memoryData.totalJSHeapSize)}</div>
                       
-                      <div>Heap Limit:</div>
+                      <div>{t('heap_limit', `Heap Limit:`)}</div>
                       <div className="font-mono">{formatBytes(memoryData.jsHeapSizeLimit)}</div>
                       
-                      <div>Usage:</div>
+                      <div>{t('usage', `Usage:`)}</div>
                       <div className={`font-mono ${memoryData.usagePercentage > 80 ? 'text-destructive' : ''}`}>
                         {memoryData.usagePercentage.toFixed(1)}%
                       </div>
@@ -294,7 +297,7 @@ export function PerformanceMonitor({
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground">Memory data not available</div>
+                  <div className="text-xs text-muted-foreground">{t('memory_data_not_available', `Memory data not available`)}</div>
                 )}
               </TabsContent>
             </Tabs>

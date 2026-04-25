@@ -118,6 +118,7 @@ interface AdminAuthFormProps {
 }
 
 function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
+    const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const { toast } = useToast();
 
@@ -127,8 +128,8 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
     },
     onSuccess: async () => {
       toast({
-        title: "Erfolgreich angemeldet",
-        description: "Willkommen im Administrator-Bereich.",
+        title: t('erfolgreich_angemeldet', `Erfolgreich angemeldet`),
+        description: t('willkommen_im_administratorber', `Willkommen im Administrator-Bereich.`),
       });
       
       // Immediately call onAuthenticated to update parent state
@@ -139,7 +140,7 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Anmeldung fehlgeschlagen",
+        title: t('anmeldung_fehlgeschlagen', `Anmeldung fehlgeschlagen`),
         description: error.message || "Falsches Passwort",
         variant: "destructive",
       });
@@ -160,23 +161,25 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
           <div className="flex justify-center mb-4">
             <Shield className="text-primary text-4xl" />
           </div>
-          <CardTitle className="text-2xl">Administrator-Anmeldung</CardTitle>
+          <CardTitle className="text-2xl">{t('administratoranmeldung', `Administrator-Anmeldung`)}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Bitte geben Sie das Administrator-Passwort ein.
-          </p>
+
+                                  {t('bitte_geben_sie_das_administra', `Bitte geben Sie das Administrator-Passwort ein.`)}
+                                </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Passwort
-              </label>
+
+                                              {t('passwort', `Passwort`)}
+                                            </label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Administrator-Passwort eingeben"
+                placeholder={t('administratorpasswort_eingeben', `Administrator-Passwort eingeben`)}
                 required
                 disabled={authMutation.isPending}
               />
@@ -195,8 +198,9 @@ function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
                 onClick={onClose}
                 disabled={authMutation.isPending}
               >
-                Abbrechen
-              </Button>
+
+                                              {t('abbrechen', `Abbrechen`)}
+                                            </Button>
             </div>
           </form>
         </CardContent>
@@ -788,7 +792,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setShowValidationDialog(false);
       resetRuleForm();
       if (showValidationModal) setShowValidationReloadDialog(true);
-      toast({ title: "Regel erstellt", description: "Die URL-Regel wurde erfolgreich erstellt." });
+      toast({ title: t('regel_erstellt', `Regel erstellt`), description: t('die_urlregel_wurde_erfolgreich', `Die URL-Regel wurde erfolgreich erstellt.`) });
     },
     onError: (error: any) => {
       console.error('Create rule error:', error);
@@ -798,8 +802,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive" 
         });
         window.location.reload();
@@ -852,7 +856,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setShowValidationDialog(false);
       resetRuleForm();
       if (showValidationModal) setShowValidationReloadDialog(true);
-      toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde erfolgreich aktualisiert." });
+      toast({ title: t('regel_aktualisiert', `Regel aktualisiert`), description: t('die_urlregel_wurde_erfolgreich', `Die URL-Regel wurde erfolgreich aktualisiert.`) });
     },
     onError: (error: any) => {
       console.error('Update rule error:', error);
@@ -862,8 +866,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       // Handle authentication errors specifically
       if (error?.status === 403 || error?.status === 401) {
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive" 
         });
         window.location.reload();
@@ -911,8 +915,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules/paginated"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rules"] });
       toast({
-        title: "Regel gelöscht",
-        description: "1 Regel wurde erfolgreich gelöscht.",
+        title: t('regel_gelscht', `Regel gelöscht`),
+        description: t('1_regel_wurde_erfolgreich_gels', `1 Regel wurde erfolgreich gelöscht.`),
       });
     },
     onError: (error: any) => {
@@ -920,8 +924,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive" 
         });
         window.location.reload();
@@ -929,8 +933,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       
       toast({ 
-        title: "Fehler", 
-        description: "Die Regel konnte nicht gelöscht werden.",
+        title: t('fehler', `Fehler`),
+        description: t('die_regel_konnte_nicht_gelscht', `Die Regel konnte nicht gelöscht werden.`),
         variant: "destructive" 
       });
     },
@@ -949,13 +953,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setShowDeleteAllStatsDialog(false);
       setDeleteAllStatsConfirmationText("");
       toast({
-        title: "Alle Statistiken gelöscht",
-        description: "Alle Tracking-Daten wurden erfolgreich gelöscht.",
+        title: t('alle_statistiken_gelscht', `Alle Statistiken gelöscht`),
+        description: t('alle_trackingdaten_wurden_erfo', `Alle Tracking-Daten wurden erfolgreich gelöscht.`),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
+        title: t('fehler', `Fehler`),
         description: error.message || "Fehler beim Löschen aller Statistiken.",
         variant: "destructive",
       });
@@ -972,13 +976,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setShowClearBlockedIpsDialog(false);
       setClearBlockedIpsConfirmationText("");
       toast({
-        title: "Blockierte IPs gelöscht",
-        description: "Alle blockierten IP-Adressen wurden erfolgreich gelöscht.",
+        title: t('blockierte_ips_gelscht', `Blockierte IPs gelöscht`),
+        description: t('alle_blockierten_ipadressen_wu', `Alle blockierten IP-Adressen wurden erfolgreich gelöscht.`),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
+        title: t('fehler', `Fehler`),
         description: error.message || "Fehler beim Löschen der blockierten IPs.",
         variant: "destructive",
       });
@@ -1005,10 +1009,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     onSuccess: () => {
       setNewBlockedIp("");
       refetchBlockedIps();
-      toast({ title: "IP blockiert", description: "Die IP-Adresse wurde erfolgreich blockiert." });
+      toast({ title: t('ip_blockiert', `IP blockiert`), description: t('die_ipadresse_wurde_erfolgreic', `Die IP-Adresse wurde erfolgreich blockiert.`) });
     },
     onError: (error: any) => {
-       toast({ title: "Fehler", description: error.message || "IP konnte nicht blockiert werden.", variant: "destructive" });
+       toast({ title: t('fehler', `Fehler`), description: error.message || "IP konnte nicht blockiert werden.", variant: "destructive" });
     }
   });
 
@@ -1019,10 +1023,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: () => {
       refetchBlockedIps();
-      toast({ title: "IP entsperrt", description: "Die IP-Adresse wurde erfolgreich entsperrt." });
+      toast({ title: t('ip_entsperrt', `IP entsperrt`), description: t('die_ipadresse_wurde_erfolgreic', `Die IP-Adresse wurde erfolgreich entsperrt.`) });
     },
     onError: (error: any) => {
-       toast({ title: "Fehler", description: error.message || "IP konnte nicht entsperrt werden.", variant: "destructive" });
+       toast({ title: t('fehler', `Fehler`), description: error.message || "IP konnte nicht entsperrt werden.", variant: "destructive" });
     }
   });
 
@@ -1060,13 +1064,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
       if (failedCount > 0) {
         toast({
-          title: "Teilweise gelöscht",
+          title: t('teilweise_gelscht', `Teilweise gelöscht`),
           description: `${deletedCount} von ${totalRequested} ${totalRequested === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht. ${failedCount} konnten nicht gelöscht werden.`,
           variant: "destructive"
         });
       } else {
         toast({
-          title: "Regeln gelöscht",
+          title: t('regeln_gelscht', `Regeln gelöscht`),
           description: `${deletedCount} ${deletedCount === 1 ? 'Regel wurde' : 'Regeln wurden'} erfolgreich gelöscht.`
         });
       }
@@ -1080,15 +1084,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({
-          title: "Authentifizierung erforderlich",
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive",
         });
         window.location.reload();
         return;
       }
       toast({ 
-        title: "Fehler beim Löschen", 
+        title: t('fehler_beim_lschen', `Fehler beim Löschen`),
         description: error.message || "Die Regeln konnten nicht gelöscht werden.",
         variant: "destructive" 
       });
@@ -1110,8 +1114,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive" 
         });
         window.location.reload();
@@ -1172,7 +1176,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       } else {
         // Fallback to toast for non-validation errors or if no details found
         toast({
-          title: "Fehler beim Speichern",
+          title: t('fehler_beim_speichern', `Fehler beim Speichern`),
           description: errorMessage,
           variant: "destructive"
         });
@@ -1187,8 +1191,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({ 
-        title: "Import erfolgreich", 
-        description: "Die Einstellungen wurden erfolgreich importiert." 
+        title: t('import_erfolgreich', `Import erfolgreich`),
+        description: t('die_einstellungen_wurden_erfol', `Die Einstellungen wurden erfolgreich importiert.`)
       });
     },
     onError: (error: any) => {
@@ -1196,8 +1200,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({ 
-          title: "Authentifizierung erforderlich", 
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive" 
         });
         window.location.reload();
@@ -1205,8 +1209,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
       
       toast({ 
-        title: "Import fehlgeschlagen", 
-        description: "Die Einstellungen konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
+        title: t('import_fehlgeschlagen', `Import fehlgeschlagen`),
+        description: t('die_einstellungen_konnten_nich', `Die Einstellungen konnten nicht importiert werden. Überprüfen Sie das Dateiformat.`),
         variant: "destructive" 
       });
     },
@@ -1244,12 +1248,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setShowValidationDialog(false);
       resetRuleForm();
       if (showValidationModal) setShowValidationReloadDialog(true);
-      toast({ title: "Regel erstellt", description: "Die URL-Regel wurde trotz Warnung erfolgreich erstellt." });
+      toast({ title: t('regel_erstellt', `Regel erstellt`), description: t('die_urlregel_wurde_trotz_warnu', `Die URL-Regel wurde trotz Warnung erfolgreich erstellt.`) });
     },
     onError: () => {
       toast({ 
-        title: "Fehler", 
-        description: "Die Regel konnte auch mit Force-Option nicht erstellt werden.",
+        title: t('fehler', `Fehler`),
+        description: t('die_regel_konnte_auch_mit_forc', `Die Regel konnte auch mit Force-Option nicht erstellt werden.`),
         variant: "destructive" 
       });
     },
@@ -1266,12 +1270,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setShowValidationDialog(false);
       resetRuleForm();
       if (showValidationModal) setShowValidationReloadDialog(true);
-      toast({ title: "Regel aktualisiert", description: "Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert." });
+      toast({ title: t('regel_aktualisiert', `Regel aktualisiert`), description: t('die_urlregel_wurde_trotz_warnu', `Die URL-Regel wurde trotz Warnung erfolgreich aktualisiert.`) });
     },
     onError: () => {
       toast({ 
-        title: "Fehler", 
-        description: "Die Regel konnte auch mit Force-Option nicht aktualisiert werden.",
+        title: t('fehler', `Fehler`),
+        description: t('die_regel_konnte_auch_mit_forc', `Die Regel konnte auch mit Force-Option nicht aktualisiert werden.`),
         variant: "destructive" 
       });
     },
@@ -1425,8 +1429,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     
     if (validSelectedIds.length === 0) {
       toast({
-        title: "Keine gültigen Regeln ausgewählt",
-        description: "Keine der ausgewählten Regeln befinden sich auf der aktuellen Seite.",
+        title: t('keine_gltigen_regeln_ausgewhlt', `Keine gültigen Regeln ausgewählt`),
+        description: t('keine_der_ausgewhlten_regeln_b', `Keine der ausgewählten Regeln befinden sich auf der aktuellen Seite.`),
         variant: "destructive"
       });
       return;
@@ -1435,7 +1439,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     if (validSelectedIds.length !== selectedRuleIds.length) {
       const invalidCount = selectedRuleIds.length - validSelectedIds.length;
       toast({
-        title: "Warnung: Ungültige Auswahl erkannt",
+        title: t('warnung_ungltige_auswahl_erkan', `Warnung: Ungültige Auswahl erkannt`),
         description: `${invalidCount} ausgewählte Regeln sind nicht auf der aktuellen Seite. Nur ${validSelectedIds.length} Regeln werden gelöscht.`,
         variant: "destructive"
       });
@@ -1446,7 +1450,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     // Additional safety: Never allow deleting more than what's on page
     if (validSelectedIds.length > paginatedRules.length) {
       toast({
-        title: "Sicherheitsfehler",
+        title: t('sicherheitsfehler', `Sicherheitsfehler`),
         description: `Fehler: Versuch ${validSelectedIds.length} Regeln zu löschen, aber nur ${paginatedRules.length} auf der Seite sichtbar.`,
         variant: "destructive"
       });
@@ -1468,8 +1472,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (response.status === 401 || response.status === 403) {
         setIsAuthenticated(false);
         toast({
-          title: "Authentifizierung erforderlich",
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive",
         });
         window.location.reload();
@@ -1490,7 +1494,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         
         const typeText = type === 'statistics' ? 'Statistiken' : type === 'rules' ? 'Regeln' : 'Einstellungen';
         toast({ 
-          title: "Export erfolgreich", 
+          title: t('export_erfolgreich', `Export erfolgreich`),
           description: `${typeText} wurden heruntergeladen.` 
         });
       } else {
@@ -1498,8 +1502,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
     } catch (error) {
       toast({ 
-        title: "Export fehlgeschlagen", 
-        description: "Die Daten konnten nicht exportiert werden.",
+        title: t('export_fehlgeschlagen', `Export fehlgeschlagen`),
+        description: t('die_daten_konnten_nicht_export', `Die Daten konnten nicht exportiert werden.`),
         variant: "destructive" 
       });
     }
@@ -1520,9 +1524,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     updateSettingsMutation.mutate(generalSettings, {
       onSuccess: () => {
         toast({
-          title: "Einstellungen gespeichert",
+          title: t('einstellungen_gespeichert', `Einstellungen gespeichert`),
           description:
-            "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert.",
+            t('die_allgemeinen_einstellungen_', `Die allgemeinen Einstellungen wurden erfolgreich aktualisiert.`),
         });
       },
     });
@@ -1533,9 +1537,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     updateSettingsMutation.mutate(generalSettings, {
       onSuccess: () => {
         toast({
-          title: "Einstellungen gespeichert",
+          title: t('einstellungen_gespeichert', `Einstellungen gespeichert`),
           description:
-            "Die allgemeinen Einstellungen wurden erfolgreich aktualisiert.",
+            t('die_allgemeinen_einstellungen_', `Die allgemeinen Einstellungen wurden erfolgreich aktualisiert.`),
         });
       },
     });
@@ -1558,14 +1562,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       localStorage.removeItem('adminActiveTab'); // Clear saved tab on logout
       localStorage.removeItem('adminStatsView'); // Clear saved stats view on logout
       toast({
-        title: "Erfolgreich abgemeldet",
-        description: "Sie wurden erfolgreich abgemeldet.",
+        title: t('erfolgreich_abgemeldet', `Erfolgreich abgemeldet`),
+        description: t('sie_wurden_erfolgreich_abgemel', `Sie wurden erfolgreich abgemeldet.`),
       });
       onClose();
     },
     onError: (error: any) => {
       toast({
-        title: "Abmeldung fehlgeschlagen",
+        title: t('abmeldung_fehlgeschlagen', `Abmeldung fehlgeschlagen`),
         description: error.message || "Ein Fehler ist aufgetreten",
         variant: "destructive",
       });
@@ -1596,7 +1600,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Vorschau fehlgeschlagen",
+        title: t('vorschau_fehlgeschlagen', `Vorschau fehlgeschlagen`),
         description: error.message || "Die Datei konnte nicht gelesen werden.",
         variant: "destructive",
       });
@@ -1616,7 +1620,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
       if (data.errors && data.errors.length > 0) {
         toast({
-          title: "Import mit Validierungsfehlern",
+          title: t('import_mit_validierungsfehlern', `Import mit Validierungsfehlern`),
           description: `${data.errors.length} Validierungsfehler: ${data.errors.slice(0, 2).join('; ')}${data.errors.length > 2 ? '...' : ''}`,
           variant: "destructive"
         });
@@ -1624,7 +1628,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
         const imported = data.imported || 0;
         const updated = data.updated || 0;
         toast({
-          title: "Import erfolgreich",
+          title: t('import_erfolgreich', `Import erfolgreich`),
           description: `${imported} neue Regeln importiert, ${updated} Regeln aktualisiert.`
         });
       }
@@ -1634,8 +1638,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       if (error?.status === 403 || error?.status === 401) {
         setIsAuthenticated(false);
         toast({
-          title: "Authentifizierung erforderlich",
-          description: "Bitte melden Sie sich erneut an.",
+          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
           variant: "destructive"
         });
         window.location.reload();
@@ -1645,8 +1649,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       // Handle PayloadTooLargeError (413) specifically
       if (error?.status === 413 || error?.message?.includes('too large')) {
         toast({
-          title: "Datei zu groß",
-          description: "Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).",
+          title: t('datei_zu_gro', `Datei zu groß`),
+          description: t('die_importdatei_ist_zu_gro_bit', `Die Import-Datei ist zu groß. Bitte teilen Sie die Datei in kleinere Dateien auf (z.B. max 50.000 Regeln pro Datei).`),
           variant: "destructive",
           duration: 10000
         });
@@ -1654,7 +1658,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       }
 
       toast({
-        title: "Import fehlgeschlagen",
+        title: t('import_fehlgeschlagen', `Import fehlgeschlagen`),
         description: error?.message || "Die Regeln konnten nicht importiert werden. Überprüfen Sie das Dateiformat.",
         variant: "destructive"
       });
@@ -1669,13 +1673,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
     },
     onSuccess: () => {
       toast({
-        title: "Cache neu aufgebaut",
-        description: "Der Regel-Cache wurde erfolgreich neu erstellt.",
+        title: t('cache_neu_aufgebaut', `Cache neu aufgebaut`),
+        description: t('der_regelcache_wurde_erfolgrei', `Der Regel-Cache wurde erfolgreich neu erstellt.`),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler beim Cache-Neuaufbau",
+        title: t('fehler_beim_cacheneuaufbau', `Fehler beim Cache-Neuaufbau`),
         description: error.message || "Der Cache konnte nicht neu erstellt werden.",
         variant: "destructive",
       });
@@ -1694,13 +1698,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       setShowDeleteAllDialog(false);
       setDeleteAllConfirmationText("");
       toast({
-        title: "Alle Regeln gelöscht",
-        description: "Alle URL-Regeln wurden erfolgreich gelöscht.",
+        title: t('alle_regeln_gelscht', `Alle Regeln gelöscht`),
+        description: t('alle_urlregeln_wurden_erfolgre', `Alle URL-Regeln wurden erfolgreich gelöscht.`),
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Fehler",
+        title: t('fehler', `Fehler`),
         description: error.message || "Fehler beim Löschen aller Regeln.",
         variant: "destructive",
       });
@@ -1717,7 +1721,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Überprüfe Authentifizierung...</p>
+          <p className="text-muted-foreground">{t('berprfe_authentifizierung', `Überprüfe Authentifizierung...`)}</p>
         </div>
       </div>
     );
@@ -1848,8 +1852,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
     if (!allRules) {
       toast({
-        title: "Import Fehler",
-        description: "Konnte die vollständigen Daten für den Import nicht laden.",
+        title: t('import_fehler', `Import Fehler`),
+        description: t('konnte_die_vollstndigen_daten_', `Konnte die vollständigen Daten für den Import nicht laden.`),
         variant: "destructive"
       });
       return;
@@ -1889,8 +1893,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       event.target.value = '';
     } catch (error) {
       toast({ 
-        title: "Dateifehler", 
-        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
+        title: t('dateifehler', `Dateifehler`),
+        description: t('die_importdatei_konnte_nicht_g', `Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.`),
         variant: "destructive" 
       });
       // Reset file input
@@ -1921,8 +1925,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       event.target.value = '';
     } catch (error) {
       toast({ 
-        title: "Dateifehler", 
-        description: "Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.",
+        title: t('dateifehler', `Dateifehler`),
+        description: t('die_importdatei_konnte_nicht_g', `Die Import-Datei konnte nicht gelesen werden. Überprüfen Sie das JSON-Format.`),
         variant: "destructive" 
       });
       // Reset file input
@@ -1939,8 +1943,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             <div className="flex items-center space-x-2 sm:space-x-3">
               <Shield className="text-primary text-xl sm:text-2xl" />
               <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">
-                <span className="hidden sm:inline">Administrator-Bereich</span>
-                <span className="sm:hidden">Admin</span>
+                <span className="hidden sm:inline">{t('administratorbereich', `Administrator-Bereich`)}</span>
+                <span className="sm:hidden">{t('admin', `Admin`)}</span>
               </h1>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2">
@@ -1962,10 +1966,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 size="sm"
                 onClick={onClose}
                 className="text-muted-foreground hover:text-destructive"
-                aria-label="Schließen"
+                aria-label={t('schlieen', `Schließen`)}
               >
                 <X className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Schließen</span>
+                <span className="hidden sm:inline">{t('schlieen', `Schließen`)}</span>
               </Button>
             </div>
           </div>
@@ -1981,28 +1985,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               <TabsList className="grid w-full grid-cols-6 h-auto">
                 <TabsTrigger value="general" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Allgemein</span>
+                  <span className="truncate leading-tight text-center">{t('allgemein', `Allgemein`)}</span>
                 </TabsTrigger>
                 <TabsTrigger value="rules" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Regeln</span>
+                  <span className="truncate leading-tight text-center">{t('regeln', `Regeln`)}</span>
                 </TabsTrigger>
                 <TabsTrigger value="global-rules" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Global</span>
+                  <span className="truncate leading-tight text-center">{t('global', `Global`)}</span>
                 </TabsTrigger>
                 <TabsTrigger value="stats" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Statistiken</span>
+                  <span className="truncate leading-tight text-center">{t('statistiken', `Statistiken`)}</span>
                 </TabsTrigger>
                 <TabsTrigger value="export" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Database className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">System & Daten</span>
+                  <span className="truncate leading-tight text-center">{t('system_daten', `System & Daten`)}</span>
                 </TabsTrigger>
 
                 <TabsTrigger value="translations" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="truncate leading-tight text-center">Sprachen</span>
+                  <span className="truncate leading-tight text-center">{t('sprachen', `Sprachen`)}</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -2011,16 +2015,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             <TabsContent value="general">
               <Card>
                 <CardHeader>
-                  <CardTitle>Allgemeine Einstellungen</CardTitle>
+                  <CardTitle>{t('allgemeine_einstellungen', `Allgemeine Einstellungen`)}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Hier können Sie alle Texte der Anwendung anpassen.
-                  </p>
+
+                                                          {t('hier_knnen_sie_alle_texte_der_', `Hier können Sie alle Texte der Anwendung anpassen.`)}
+                                                        </p>
                 </CardHeader>
                 <CardContent>
                   {!isAuthenticated ? (
-                    <div className="text-center py-8">Bitte melden Sie sich an... (Auth: {String(isAuthenticated)})</div>
+                    <div className="text-center py-8">{t('bitte_melden_sie_sich_an_auth', `Bitte melden Sie sich an... (Auth:`)} {String(isAuthenticated)})</div>
                   ) : settingsLoading ? (
-                    <div className="text-center py-8">Lade Einstellungen... (Auth: {String(isAuthenticated)}, Loading: {String(settingsLoading)})</div>
+                    <div className="text-center py-8">{t('lade_einstellungen_auth', `Lade Einstellungen... (Auth:`)} {String(isAuthenticated)}{t('_loading', `, Loading:`)} {String(settingsLoading)})</div>
                   ) : (
                     <form onSubmit={handleSettingsSubmit} className="space-y-8">
                       {/* 1. Header Settings */}
@@ -2028,8 +2033,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-semibold">1</div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground">Header-Einstellungen</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Anpassung des oberen Bereichs der Anwendung - wird auf jeder Seite angezeigt</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('headereinstellungen', `Header-Einstellungen`)}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('anpassung_des_oberen_bereichs_', `Anpassung des oberen Bereichs der Anwendung - wird auf jeder Seite angezeigt`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -2037,25 +2042,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             {/* Title */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel <span className="text-red-500">*</span>
+
+                                                                                                      {t('titel', `Titel`)} <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
                                 id="headerTitle"
                                 value={generalSettings.headerTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, headerTitle: val as string })}
-                                placeholder="Smart Redirect Service"
+                                placeholder={t('smart_redirect_service', `Smart Redirect Service`)}
                                 className={`bg-white dark:bg-gray-700 ${!generalSettings.headerTitle?.trim() || validationFieldErrors.headerTitle ? 'border-red-500 focus:border-red-500' : ''}`}
                               />
                               {validationFieldErrors.headerTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.headerTitle}</p>}
                               <p className="text-xs text-gray-500 mt-1">
-                                Wird als Haupttitel im Header der Anwendung angezeigt
-                              </p>
+
+                                                                                                      {t('wird_als_haupttitel_im_header_', `Wird als Haupttitel im Header der Anwendung angezeigt`)}
+                                                                                                    </p>
                             </div>
                             
                             {/* Icon */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${generalSettings.headerLogoUrl ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                Icon {generalSettings.headerLogoUrl && '(deaktiviert - Logo wird verwendet)'}
+
+                                                                                                      {t('icon', `Icon`)} {generalSettings.headerLogoUrl && '(deaktiviert - Logo wird verwendet)'}
                               </label>
                               <Select 
                                 value={generalSettings.headerIcon} 
@@ -2068,19 +2076,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                  <SelectItem value="Star">⭐ Stern</SelectItem>
-                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                  <SelectItem value="none">{t('_kein_icon', `🚫 Kein Icon`)}</SelectItem>
+                                  <SelectItem value="ArrowRightLeft">{t('_pfeil_wechsel', `🔄 Pfeil Wechsel`)}</SelectItem>
+                                  <SelectItem value="AlertTriangle">{t('_warnung', `⚠️ Warnung`)}</SelectItem>
+                                  <SelectItem value="XCircle">{t('_fehler', `❌ Fehler`)}</SelectItem>
+                                  <SelectItem value="AlertCircle">{t('_alert', `⭕ Alert`)}</SelectItem>
+                                  <SelectItem value="Info">{t('_info', `ℹ️ Info`)}</SelectItem>
+                                  <SelectItem value="Bookmark">{t('_lesezeichen', `🔖 Lesezeichen`)}</SelectItem>
+                                  <SelectItem value="Share2">{t('_teilen', `📤 Teilen`)}</SelectItem>
+                                  <SelectItem value="Clock">{t('_zeit', `⏰ Zeit`)}</SelectItem>
+                                  <SelectItem value="CheckCircle">{t('_hkchen', `✅ Häkchen`)}</SelectItem>
+                                  <SelectItem value="Star">{t('_stern', `⭐ Stern`)}</SelectItem>
+                                  <SelectItem value="Heart">{t('_herz', `❤️ Herz`)}</SelectItem>
+                                  <SelectItem value="Bell">{t('_glocke', `🔔 Glocke`)}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -2088,8 +2096,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             {/* Background Color */}
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Hintergrundfarbe
-                              </label>
+
+                                                                                                      {t('hintergrundfarbe', `Hintergrundfarbe`)}
+                                                                                                    </label>
                               <div className="flex items-center gap-3">
                                 <input
                                   type="color"
@@ -2100,7 +2109,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <DebouncedInput
                                   value={generalSettings.headerBackgroundColor}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, headerBackgroundColor: val as string })}
-                                  placeholder="#ffffff"
+                                  placeholder={t('ffffff', `#ffffff`)}
                                   className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
                                 />
                               </div>
@@ -2111,8 +2120,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <div className="pt-4">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Logo hochladen
-                              </label>
+
+                                                                                                      {t('logo_hochladen', `Logo hochladen`)}
+                                                                                                    </label>
                               <div className="space-y-2">
                                 <input
                                   type="file"
@@ -2124,8 +2134,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     // Validate file size (5MB)
                                     if (file.size > 5242880) {
                                       toast({
-                                        title: "Datei zu groß",
-                                        description: "Die Datei darf maximal 5MB groß sein.",
+                                        title: t('datei_zu_gro', `Datei zu groß`),
+                                        description: t('die_datei_darf_maximal_5mb_gro', `Die Datei darf maximal 5MB groß sein.`),
                                         variant: "destructive",
                                       });
                                       return;
@@ -2144,8 +2154,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       if (response.status === 401 || response.status === 403) {
                                         setIsAuthenticated(false);
                                         toast({
-                                          title: "Authentifizierung erforderlich",
-                                          description: "Bitte melden Sie sich erneut an.",
+                                          title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+                                          description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
                                           variant: "destructive",
                                         });
                                         window.location.reload();
@@ -2174,8 +2184,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                       }
                                       
                                       toast({
-                                        title: "Logo hochgeladen",
-                                        description: "Das Header-Logo wurde erfolgreich aktualisiert.",
+                                        title: t('logo_hochgeladen', `Logo hochgeladen`),
+                                        description: t('das_headerlogo_wurde_erfolgrei', `Das Header-Logo wurde erfolgreich aktualisiert.`),
                                       });
                                       
                                       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
@@ -2185,8 +2195,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     } catch (error) {
                                       console.error("Logo upload error:", error);
                                       toast({
-                                        title: "Fehler beim Hochladen",
-                                        description: "Das Logo konnte nicht hochgeladen werden.",
+                                        title: t('fehler_beim_hochladen', `Fehler beim Hochladen`),
+                                        description: t('das_logo_konnte_nicht_hochgela', `Das Logo konnte nicht hochgeladen werden.`),
                                         variant: "destructive",
                                       });
                                       e.target.value = '';
@@ -2195,19 +2205,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer cursor-pointer"
                                 />
                                 <div className="text-xs text-muted-foreground">
-                                  <strong>Empfehlung:</strong> PNG mit transparentem Hintergrund, 200x50 Pixel (max. 5MB)
-                                </div>
+                                  <strong>{t('empfehlung', `Empfehlung:`)}</strong>  {t('png_mit_transparentem_hintergr', `PNG mit transparentem Hintergrund, 200x50 Pixel (max. 5MB)`)}
+                                                                                                          </div>
                                 <div className="text-xs text-gray-500 mt-2">
-                                  <strong>Funktion:</strong> Wenn ein Logo hochgeladen wird, ersetzt es das gewählte Icon links neben dem Header-Titel. Ohne Logo wird das gewählte Icon angezeigt.
-                                </div>
+                                  <strong>{t('funktion', `Funktion:`)}</strong>  {t('wenn_ein_logo_hochgeladen_wird', `Wenn ein Logo hochgeladen wird, ersetzt es das gewählte Icon links neben dem Header-Titel. Ohne Logo wird das gewählte Icon angezeigt.`)}
+                                                                                                          </div>
                                 
                                 {/* Logo Preview and Delete */}
                                 {generalSettings.headerLogoUrl && generalSettings.headerLogoUrl.trim() !== "" && (
                                   <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-800 border rounded-lg">
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Aktuelles Logo:
-                                      </span>
+
+                                                                                                                              {t('aktuelles_logo', `Aktuelles Logo:`)}
+                                                                                                                            </span>
                                       <Button 
                                         variant="outline" 
                                         size="sm" 
@@ -2236,8 +2247,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             }));
                                             
                                             toast({
-                                              title: "Logo entfernt",
-                                              description: "Das Header-Logo wurde erfolgreich entfernt.",
+                                              title: t('logo_entfernt', `Logo entfernt`),
+                                              description: t('das_headerlogo_wurde_erfolgrei', `Das Header-Logo wurde erfolgreich entfernt.`),
                                             });
                                             
                                             // Invalidate settings to ensure UI reflects the change
@@ -2253,8 +2264,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             if (error?.status === 403 || error?.status === 401) {
                                               setIsAuthenticated(false);
                                               toast({
-                                                title: "Authentifizierung erforderlich",
-                                                description: "Bitte melden Sie sich erneut an.",
+                                                title: t('authentifizierung_erforderlich', `Authentifizierung erforderlich`),
+                                                description: t('bitte_melden_sie_sich_erneut_a', `Bitte melden Sie sich erneut an.`),
                                                 variant: "destructive",
                                               });
                                               window.location.reload();
@@ -2262,8 +2273,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             }
                                             
                                             toast({
-                                              title: "Fehler",
-                                              description: "Das Logo konnte nicht entfernt werden.",
+                                              title: t('fehler', `Fehler`),
+                                              description: t('das_logo_konnte_nicht_entfernt', `Das Logo konnte nicht entfernt werden.`),
                                               variant: "destructive",
                                             });
                                           }
@@ -2271,8 +2282,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
                                       >
                                         <Trash2 className="h-3 w-3 mr-1" />
-                                        Löschen
-                                      </Button>
+
+                                                                                                                              {t('lschen', `Löschen`)}
+                                                                                                                            </Button>
                                     </div>
                                     <div className="flex justify-center p-4 bg-white dark:bg-gray-700 border rounded">
                                       <img 
@@ -2287,8 +2299,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <div className="flex items-center gap-2 justify-center">
                                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                       <span className="text-xs text-green-700 dark:text-green-300">
-                                        Logo aktiv - wird anstelle des Icons angezeigt
-                                      </span>
+
+                                                                                                                              {t('logo_aktiv_wird_anstelle_des_i', `Logo aktiv - wird anstelle des Icons angezeigt`)}
+                                                                                                                            </span>
                                     </div>
                                   </div>
                                 )}
@@ -2303,8 +2316,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs sm:text-sm font-semibold">1.5</div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground">Interaktionen</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Steuern Sie die Interaktionsmöglichkeiten auf der Migrationsseite</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('interaktionen', `Interaktionen`)}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('steuern_sie_die_interaktionsmg', `Steuern Sie die Interaktionsmöglichkeiten auf der Migrationsseite`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -2312,8 +2325,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="space-y-4">
                               <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                  <label className="text-sm font-medium text-foreground">Kopier-Button anzeigen</label>
-                                  <p className="text-xs text-muted-foreground">Blendet den Button zum Kopieren der URL ein/aus</p>
+                                  <label className="text-sm font-medium text-foreground">{t('kopierbutton_anzeigen', `Kopier-Button anzeigen`)}</label>
+                                  <p className="text-xs text-muted-foreground">{t('blendet_den_button_zum_kopiere', `Blendet den Button zum Kopieren der URL ein/aus`)}</p>
                                 </div>
                                 <Switch
                                   checked={generalSettings.enableCopyButton ?? true}
@@ -2322,8 +2335,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
                               <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                  <label className="text-sm font-medium text-foreground">Öffnen-Button anzeigen</label>
-                                  <p className="text-xs text-muted-foreground">Blendet den Button zum Öffnen im neuen Tab ein/aus</p>
+                                  <label className="text-sm font-medium text-foreground">{t('ffnenbutton_anzeigen', `Öffnen-Button anzeigen`)}</label>
+                                  <p className="text-xs text-muted-foreground">{t('blendet_den_button_zum_ffnen_i', `Blendet den Button zum Öffnen im neuen Tab ein/aus`)}</p>
                                 </div>
                                 <Switch
                                   checked={generalSettings.enableOpenButton ?? true}
@@ -2332,7 +2345,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2 text-foreground">Verhalten bei Klick auf URL-Feld</label>
+                              <label className="block text-sm font-medium mb-2 text-foreground">{t('verhalten_bei_klick_auf_urlfel', `Verhalten bei Klick auf URL-Feld`)}</label>
                               <Select
                                 value={generalSettings.newUrlClickBehavior || 'copy'}
                                 onValueChange={(value) => setGeneralSettings({ ...generalSettings, newUrlClickBehavior: value as any })}
@@ -2341,14 +2354,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="copy">Kopieren (Standard)</SelectItem>
-                                  <SelectItem value="open">In neuem Tab öffnen</SelectItem>
-                                  <SelectItem value="none">Keine Aktion</SelectItem>
+                                  <SelectItem value="copy">{t('kopieren_standard', `Kopieren (Standard)`)}</SelectItem>
+                                  <SelectItem value="open">{t('in_neuem_tab_ffnen', `In neuem Tab öffnen`)}</SelectItem>
+                                  <SelectItem value="none">{t('keine_aktion', `Keine Aktion`)}</SelectItem>
                                 </SelectContent>
                               </Select>
                               <p className="text-xs text-muted-foreground mt-1">
-                                Definiert was passiert, wenn der Nutzer direkt auf das Feld mit der neuen URL klickt.
-                              </p>
+
+                                                                                                      {t('definiert_was_passiert_wenn_de', `Definiert was passiert, wenn der Nutzer direkt auf das Feld mit der neuen URL klickt.`)}
+                                                                                                    </p>
                             </div>
                           </div>
 
@@ -2356,12 +2370,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                  <label className="block text-sm font-medium mb-2">Button-Text "URL kopieren"</label>
+                                  <label className="block text-sm font-medium mb-2">{t('buttontext_url_kopieren', `Button-Text "URL kopieren"`)}</label>
                                   <DebouncedInput id="copyButtonText" value={generalSettings.copyButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, copyButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.copyButtonText ? 'border-red-500' : ''}`} />
                                   {validationFieldErrors.copyButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.copyButtonText}</p>}
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium mb-2">Button-Text "In neuem Tab öffnen"</label>
+                                  <label className="block text-sm font-medium mb-2">{t('buttontext_in_neuem_tab_ffnen', `Button-Text "In neuem Tab öffnen"`)}</label>
                                   <DebouncedInput id="openButtonText" value={generalSettings.openButtonText} onChange={(val) => setGeneralSettings({ ...generalSettings, openButtonText: val as string })} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.openButtonText ? 'border-red-500' : ''}`} />
                                   {validationFieldErrors.openButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.openButtonText}</p>}
                                 </div>
@@ -2375,15 +2389,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-xs sm:text-sm font-semibold">2</div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground">PopUp-Einstellungen</h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">Dialog-Fenster das automatisch erscheint, wenn ein Nutzer eine veraltete URL aufruft</p>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('popupeinstellungen', `PopUp-Einstellungen`)}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{t('dialogfenster_das_automatisch_', `Dialog-Fenster das automatisch erscheint, wenn ein Nutzer eine veraltete URL aufruft`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              PopUp-Anzeige
-                            </label>
+
+                                                                                                {t('popupanzeige', `PopUp-Anzeige`)}
+                                                                                              </label>
                             <Select value={generalSettings.popupMode} onValueChange={(value) =>
                               setGeneralSettings({ ...generalSettings, popupMode: value as any })
                             }>
@@ -2391,9 +2406,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="active">Aktiv</SelectItem>
-                                <SelectItem value="inline">Inline</SelectItem>
-                                <SelectItem value="disabled">Deaktiviert</SelectItem>
+                                <SelectItem value="active">{t('aktiv', `Aktiv`)}</SelectItem>
+                                <SelectItem value="inline">{t('inline', `Inline`)}</SelectItem>
+                                <SelectItem value="disabled">{t('deaktiviert', `Deaktiviert`)}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -2401,13 +2416,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel <span className="text-red-500">*</span>
+
+                                                                                                          {t('titel', `Titel`)} <span className="text-red-500">*</span>
                               </label>
                               <DebouncedInput
                                 id="mainTitle"
                                 value={generalSettings.mainTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, mainTitle: val as string })}
-                                placeholder="URL veraltet - Aktualisierung erforderlich"
+                                placeholder={t('url_veraltet_aktualisierung_er', `URL veraltet - Aktualisierung erforderlich`)}
                                 className={`bg-white dark:bg-gray-700 ${!generalSettings.mainTitle?.trim() || validationFieldErrors.mainTitle ? 'border-red-500 focus:border-red-500' : ''}`}
                                 disabled={generalSettings.popupMode === 'disabled'}
                               />
@@ -2415,8 +2431,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon
-                              </label>
+
+                                                                                                          {t('icon', `Icon`)}
+                                                                                                        </label>
                               <Select value={generalSettings.alertIcon} onValueChange={(value) =>
                                 setGeneralSettings({ ...generalSettings, alertIcon: value as any })
                               } disabled={generalSettings.popupMode === 'disabled'}>
@@ -2424,54 +2441,59 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
+                                  <SelectItem value="AlertTriangle">{t('_warnung', `⚠️ Warnung`)}</SelectItem>
+                                  <SelectItem value="XCircle">{t('_fehler', `❌ Fehler`)}</SelectItem>
+                                  <SelectItem value="AlertCircle">{t('_alert', `⭕ Alert`)}</SelectItem>
+                                  <SelectItem value="Info">{t('_info', `ℹ️ Info`)}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                           </div>
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Beschreibung <span className="text-red-500">*</span>
+
+                                                                                                    {t('beschreibung', `Beschreibung`)} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedTextarea
                               id="mainDescription"
                               value={generalSettings.mainDescription}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, mainDescription: val as string })}
-                              placeholder="Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen."
+                              placeholder={t('du_verwendest_einen_alten_link', `Du verwendest einen alten Link. Dieser Link ist nicht mehr aktuell und wird bald nicht mehr funktionieren. Bitte verwende die neue URL und aktualisiere deine Verknüpfungen.`)}
                               rows={3}
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.mainDescription?.trim() || validationFieldErrors.mainDescription ? 'border-red-500 focus:border-red-500' : ''}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
                             {validationFieldErrors.mainDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.mainDescription}</p>}
                             <p className="text-xs text-gray-500 mt-1">
-                              Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte
-                            </p>
+
+                                                                                                    {t('erklrt_dem_nutzer_die_situatio', `Erklärt dem Nutzer die Situation und warum die neue URL verwendet werden sollte`)}
+                                                                                                  </p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              PopUp Button-Text
-                            </label>
+
+                                                                                                    {t('popup_buttontext', `PopUp Button-Text`)}
+                                                                                                  </label>
                             <DebouncedInput
                               id="popupButtonText"
                               value={generalSettings.popupButtonText}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, popupButtonText: val as string })}
-                              placeholder="Zeige mir die neue URL"
+                              placeholder={t('zeige_mir_die_neue_url', `Zeige mir die neue URL`)}
                               className={`bg-white dark:bg-gray-700 ${validationFieldErrors.popupButtonText ? 'border-red-500 focus:border-red-500' : ''}`}
                               disabled={generalSettings.popupMode === 'disabled'}
                             />
                             {validationFieldErrors.popupButtonText && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.popupButtonText}</p>}
                             <p className="text-xs text-gray-500 mt-1">
-                              Text für den Button der das PopUp-Fenster öffnet
-                            </p>
+
+                                                                                                    {t('text_fr_den_button_der_das_pop', `Text für den Button der das PopUp-Fenster öffnet`)}
+                                                                                                  </p>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Alert-Hintergrundfarbe
-                              </label>
+
+                                                                                                          {t('alerthintergrundfarbe', `Alert-Hintergrundfarbe`)}
+                                                                                                        </label>
                               <Select value={generalSettings.alertBackgroundColor} onValueChange={(value) =>
                                 setGeneralSettings({ ...generalSettings, alertBackgroundColor: value as any })
                               } disabled={generalSettings.popupMode === 'disabled'}>
@@ -2479,18 +2501,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="yellow">🟡 Gelb</SelectItem>
-                                  <SelectItem value="red">🔴 Rot</SelectItem>
-                                  <SelectItem value="orange">🟠 Orange</SelectItem>
-                                  <SelectItem value="blue">🔵 Blau</SelectItem>
-                                  <SelectItem value="gray">⚫ Grau</SelectItem>
+                                  <SelectItem value="yellow">{t('_gelb', `🟡 Gelb`)}</SelectItem>
+                                  <SelectItem value="red">{t('_rot', `🔴 Rot`)}</SelectItem>
+                                  <SelectItem value="orange">{t('_orange', `🟠 Orange`)}</SelectItem>
+                                  <SelectItem value="blue">{t('_blau', `🔵 Blau`)}</SelectItem>
+                                  <SelectItem value="gray">{t('_grau', `⚫ Grau`)}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Hauptinhalt-Hintergrundfarbe
-                              </label>
+
+                                                                                                          {t('hauptinhalthintergrundfarbe', `Hauptinhalt-Hintergrundfarbe`)}
+                                                                                                        </label>
                               <div className="flex items-center gap-3">
                                 <input
                                   type="color"
@@ -2502,7 +2525,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <DebouncedInput
                                   value={generalSettings.mainBackgroundColor}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, mainBackgroundColor: val as string })}
-                                  placeholder="#ffffff"
+                                  placeholder={t('ffffff', `#ffffff`)}
                                   className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"
                                   disabled={generalSettings.popupMode === 'disabled'}
                                 />
@@ -2518,8 +2541,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 text-sm font-semibold">3</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Routing & Fallback-Verhalten</h3>
-                            <p className="text-sm text-muted-foreground">Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('routing_fallbackverhalten', `Routing & Fallback-Verhalten`)}</h3>
+                            <p className="text-sm text-muted-foreground">{t('konfiguration_des_verhaltens_b', `Konfiguration des Verhaltens bei fehlender exakter Übereinstimmung`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -2527,26 +2550,29 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           {/* Field 1: Target Domain */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Ziel-Domain (Standard neue Domain) <span className="text-red-500">*</span>
+
+                                                                                                {t('zieldomain_standard_neue_domai', `Ziel-Domain (Standard neue Domain)`)} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               id="defaultNewDomain"
                               value={generalSettings.defaultNewDomain}
                               onChange={(value) => setGeneralSettings({ ...generalSettings, defaultNewDomain: value as string })}
-                              placeholder="https://thisisthenewurl.com/"
+                              placeholder={t('httpsthisisthenewurlcom', `https://thisisthenewurl.com/`)}
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultNewDomain || validationFieldErrors.defaultNewDomain ? 'border-red-500' : ''}`}
                             />
                             {validationFieldErrors.defaultNewDomain && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultNewDomain}</p>}
                             <p className="text-xs text-gray-500 mt-1">
-                              Verwendet für Partial Matches und spezifische Regeln.
-                            </p>
+
+                                                                                                {t('verwendet_fr_partial_matches_u', `Verwendet für Partial Matches und spezifische Regeln.`)}
+                                                                                              </p>
                           </div>
 
                           {/* Field 2: Fallback Strategy */}
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Fallback-Strategie
-                            </label>
+
+                                                                                                  {t('fallbackstrategie', `Fallback-Strategie`)}
+                                                                                              </label>
                             <Select
                                 value={generalSettings.defaultRedirectMode}
                                 onValueChange={(value) =>
@@ -2562,25 +2588,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <SelectContent className="w-[calc(100vw-2rem)] sm:w-[var(--radix-select-trigger-width)]">
                                     <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Einfacher Domain-Austausch</span>
+                                            <span className="font-medium text-sm">{t('einfacher_domainaustausch', `Einfacher Domain-Austausch`)}</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
-                                                Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.
-                                            </span>
+
+                                                                                                                                  {t('standardverhalten_ersetzt_die_', `Standard-Verhalten: Ersetzt die alte Domain durch die neue "Target Domain". Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Ideal wenn die Struktur der Seite gleich bleibt.`)}
+                                                                                                                              </span>
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="search" className="pl-8 pr-3 py-3 items-start">
                                         <div className="flex flex-col space-y-1">
-                                            <span className="font-medium text-sm">Intelligente Such-Weiterleitung</span>
+                                            <span className="font-medium text-sm">{t('intelligente_suchweiterleitung', `Intelligente Such-Weiterleitung`)}</span>
                                             <span className="text-xs text-muted-foreground leading-relaxed">
-                                                Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.
-                                            </span>
+
+                                                                                                                                  {t('intelligenter_fallback_leitet_', `Intelligenter Fallback: Leitet auf eine interne Suchseite weiter, wenn keine Regel greift. Verwendet das letzte Pfadsegment der alten URL automatisch als Suchbegriff für die neue Seite.`)}
+                                                                                                                              </span>
                                         </div>
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500 mt-1">
-                                Definiert was passiert, wenn KEINE Regel (Exakt oder Partial) greift.
-                            </p>
+
+                                                                                                  {t('definiert_was_passiert_wenn_ke', `Definiert was passiert, wenn KEINE Regel (Exakt oder Partial) greift.`)}
+                                                                                              </p>
                           </div>
 
                           {/* Field 3: Search Base URL (Conditional) */}
@@ -2588,7 +2617,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <div className="space-y-4">
                                 <div>
                                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                    Such-Basis-URL <span className="text-red-500">*</span>
+
+                                                                                                              {t('suchbasisurl', `Such-Basis-URL`)} <span className="text-red-500">*</span>
                                   </label>
                                   <div className="flex gap-4 items-start">
                                       <div className="flex-1">
@@ -2596,13 +2626,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             id="defaultSearchUrl"
                                             value={generalSettings.defaultSearchUrl || ''}
                                             onChange={(value) => setGeneralSettings({ ...generalSettings, defaultSearchUrl: value as string })}
-                                            placeholder="https://newapp.com/?q="
+                                            placeholder={t('httpsnewappcomq', `https://newapp.com/?q=`)}
                                             className={`bg-white dark:bg-gray-700 ${!generalSettings.defaultSearchUrl || validationFieldErrors.defaultSearchUrl ? 'border-red-500' : ''}`}
                                           />
                                           {validationFieldErrors.defaultSearchUrl && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchUrl}</p>}
                                           <p className="text-xs text-gray-500 mt-1">
-                                            Beispiel: https://newapp.com/?q=
-                                          </p>
+
+                                                                                                                              {t('beispiel_httpsnewappcomq', `Beispiel: https://newapp.com/?q=`)}
+                                                                                                                            </p>
                                       </div>
                                       <div className="flex flex-col items-center gap-2 pt-2">
                                           <Switch
@@ -2611,23 +2642,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                               onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, defaultSearchSkipEncoding: checked })}
                                           />
                                           <label htmlFor="defaultSearchSkipEncoding" className="text-[10px] text-gray-500 max-w-[80px] text-center leading-tight">
-                                              Nicht kodieren
-                                          </label>
+
+                                                                                                                                {t('nicht_kodieren', `Nicht kodieren`)}
+                                                                                                                            </label>
                                       </div>
                                   </div>
                                 </div>
 
                                 <div>
                                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                    Extraktions-Regeln (Regex)
-                                  </label>
+
+                                                                                                              {t('extraktionsregeln_regex', `Extraktions-Regeln (Regex)`)}
+                                                                                                            </label>
                                   <div className="space-y-2">
                                     {(generalSettings.smartSearchRules || []).map((rule, index) => (
                                       <div key={index} className="flex flex-col gap-3 p-3 border rounded-lg bg-white dark:bg-gray-700 mb-2">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Regex Pattern (Extraction - optional)</label>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">{t('regex_pattern_extraction_optio', `Regex Pattern (Extraction - optional)`)}</label>
                                                     <DebouncedInput
                                                         value={rule.pattern ?? ''}
                                                         onChange={(value) => {
@@ -2635,12 +2668,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                             newRules[index] = { ...newRules[index], pattern: value as string };
                                                             setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
                                                         }}
-                                                        placeholder="[?&]file=([^&]+)"
+                                                        placeholder={t('file', `[?&]file=([^&]+)`)}
                                                         className="w-full bg-background"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Path Matcher (Prefix)</label>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">{t('path_matcher_prefix', `Path Matcher (Prefix)`)}</label>
                                                     <DebouncedInput
                                                         value={rule.pathPattern || ''}
                                                         onChange={(value) => {
@@ -2648,12 +2681,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                             newRules[index] = { ...newRules[index], pathPattern: value as string };
                                                             setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
                                                         }}
-                                                        placeholder="/teams (Regex)"
+                                                        placeholder={t('teams_regex', `/teams (Regex)`)}
                                                         className="w-full bg-background"
                                                     />
                                                 </div>
                                                 <div className="md:col-span-2">
-                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Custom Search Base URL (Optional)</label>
+                                                    <label className="text-xs font-medium text-gray-500 mb-1 block">{t('custom_search_base_url_optiona', `Custom Search Base URL (Optional)`)}</label>
                                                     <DebouncedInput
                                                         value={rule.searchUrl || ''}
                                                         onChange={(value) => {
@@ -2661,7 +2694,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                             newRules[index] = { ...newRules[index], searchUrl: value as string };
                                                             setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
                                                         }}
-                                                        placeholder="https://newapp.com/?q="
+                                                        placeholder={t('httpsnewappcomq', `https://newapp.com/?q=`)}
                                                         className="w-full bg-background"
                                                     />
                                                 </div>
@@ -2680,8 +2713,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                                             htmlFor={`skip-encoding-${index}`}
                                                             className="text-xs font-medium text-gray-500"
                                                         >
-                                                            Suchbegriff nicht kodieren (No URL Encoding)
-                                                        </label>
+
+                                                                                                                            {t('suchbegriff_nicht_kodieren_no_', `Suchbegriff nicht kodieren (No URL Encoding)`)}
+                                                                                                                        </label>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2757,8 +2791,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         className="flex items-center gap-2"
                                       >
                                         <Plus className="h-3 w-3" />
-                                        Regel hinzufügen
-                                      </Button>
+
+                                                                                                                          {t('regel_hinzufgen', `Regel hinzufügen`)}
+                                                                                                                        </Button>
                                       <Button
                                         type="button"
                                         variant="outline"
@@ -2767,50 +2802,53 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                           const newRules = [...(generalSettings.smartSearchRules || []), { pattern: '[?&]file=([^&]+)', order: (generalSettings.smartSearchRules || []).length }];
                                           setGeneralSettings({ ...generalSettings, smartSearchRules: newRules });
                                         }}
-                                        title="Fügt eine Beispiel-Regex hinzu"
+                                        title={t('fgt_eine_beispielregex_hinzu', `Fügt eine Beispiel-Regex hinzu`)}
                                       >
-                                        Beispiel hinzufügen
-                                      </Button>
+
+                                                                                                                          {t('beispiel_hinzufgen', `Beispiel hinzufügen`)}
+                                                                                                                        </Button>
                                     </div>
                                   </div>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    Definieren Sie eine Liste von Regeln. Die Regeln werden von oben nach unten geprüft.
-                                    Wenn Sie ein Regex-Pattern definieren, muss es eine Capture Group () enthalten.
-                                    <b>Lassen Sie das Feld "Regex Pattern" leer, um automatisch das letzte Pfadsegment zu verwenden.</b>
-                                    Wenn keine Regel greift, wird als Fallback ebenfalls das letzte Pfadsegment verwendet.
-                                  </p>
+
+                                                                                                              {t('definieren_sie_eine_liste_von_', `Definieren Sie eine Liste von Regeln. Die Regeln werden von oben nach unten geprüft.
+                                    Wenn Sie ein Regex-Pattern definieren, muss es eine Capture Group () enthalten.`)}
+                                                                                                              <b>{t('lassen_sie_das_feld_regex_patt', `Lassen Sie das Feld "Regex Pattern" leer, um automatisch das letzte Pfadsegment zu verwenden.`)}</b>
+
+                                                                                                              {t('wenn_keine_regel_greift_wird_a', `Wenn keine Regel greift, wird als Fallback ebenfalls das letzte Pfadsegment verwendet.`)}
+                                                                                                            </p>
                                 </div>
                               </div>
                           )}
 
                            {/* Field 4: Fallback Info Messages (Grouped) */}
                            <div className="border-t pt-4 mt-4">
-                                <h4 className="text-sm font-medium mb-4">Fallback-Info-Nachrichten</h4>
+                                <h4 className="text-sm font-medium mb-4">{t('fallbackinfonachrichten', `Fallback-Info-Nachrichten`)}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Special Hints Title & Icon (Moved from Visualization) */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Titel</label>
+                                        <label className="block text-sm font-medium mb-2">{t('spezielle_hinweise_titel', `Spezielle Hinweise - Titel`)}</label>
                                         <DebouncedInput id="specialHintsTitle" value={generalSettings.specialHintsTitle} onChange={(val) => setGeneralSettings({...generalSettings, specialHintsTitle: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.specialHintsTitle ? 'border-red-500' : ''}`}/>
                                         {validationFieldErrors.specialHintsTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.specialHintsTitle}</p>}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Spezielle Hinweise - Icon</label>
+                                        <label className="block text-sm font-medium mb-2">{t('spezielle_hinweise_icon', `Spezielle Hinweise - Icon`)}</label>
                                          <Select value={generalSettings.specialHintsIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, specialHintsIcon: val as any})}>
                                             <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                                <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                                <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                                <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                                <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                                <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                                <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                                <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                                <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                                <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                                <SelectItem value="Star">⭐ Stern</SelectItem>
-                                                <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                                <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                                <SelectItem value="none">{t('_kein_icon', `🚫 Kein Icon`)}</SelectItem>
+                                                <SelectItem value="ArrowRightLeft">{t('_pfeil_wechsel', `🔄 Pfeil Wechsel`)}</SelectItem>
+                                                <SelectItem value="AlertTriangle">{t('_warnung', `⚠️ Warnung`)}</SelectItem>
+                                                <SelectItem value="XCircle">{t('_fehler', `❌ Fehler`)}</SelectItem>
+                                                <SelectItem value="AlertCircle">{t('_alert', `⭕ Alert`)}</SelectItem>
+                                                <SelectItem value="Info">{t('_info', `ℹ️ Info`)}</SelectItem>
+                                                <SelectItem value="Bookmark">{t('_lesezeichen', `🔖 Lesezeichen`)}</SelectItem>
+                                                <SelectItem value="Share2">{t('_teilen', `📤 Teilen`)}</SelectItem>
+                                                <SelectItem value="Clock">{t('_zeit', `⏰ Zeit`)}</SelectItem>
+                                                <SelectItem value="CheckCircle">{t('_hkchen', `✅ Häkchen`)}</SelectItem>
+                                                <SelectItem value="Star">{t('_stern', `⭐ Stern`)}</SelectItem>
+                                                <SelectItem value="Heart">{t('_herz', `❤️ Herz`)}</SelectItem>
+                                                <SelectItem value="Bell">{t('_glocke', `🔔 Glocke`)}</SelectItem>
                                             </SelectContent>
                                          </Select>
                                      </div>
@@ -2818,8 +2856,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {/* Standard Info Text */}
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Standard Info Text (Beschreibung)
-                                        </label>
+
+                                                                                                                      {t('standard_info_text_beschreibun', `Standard Info Text (Beschreibung)`)}
+                                                                                                                  </label>
                                         <DebouncedTextarea
                                             id="specialHintsDescription"
                                             value={generalSettings.specialHintsDescription}
@@ -2829,16 +2868,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         />
                                         {validationFieldErrors.specialHintsDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.specialHintsDescription}</p>}
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.
-                                        </p>
+
+                                                                                                                      {t('angezeigt_wenn_eine_regel_matc', `Angezeigt wenn eine Regel matched aber keinen spezifischen Text hat.`)}
+                                                                                                                  </p>
                                     </div>
 
                                     {/* Smart Search Message */}
                                     {generalSettings.defaultRedirectMode === 'search' && (
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                            Smart Search Nachricht
-                                        </label>
+
+                                                                                                                          {t('smart_search_nachricht', `Smart Search Nachricht`)}
+                                                                                                                      </label>
                                         <DebouncedTextarea
                                             id="defaultSearchMessage"
                                             value={generalSettings.defaultSearchMessage}
@@ -2848,8 +2889,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         />
                                         {validationFieldErrors.defaultSearchMessage && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.defaultSearchMessage}</p>}
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).
-                                        </p>
+
+                                                                                                                          {t('angezeigt_nur_wenn_intelligent', `Angezeigt NUR wenn "Intelligente Such-Weiterleitung" ausgelöst wird (keine Regel matched).`)}
+                                                                                                                      </p>
                                     </div>
                                     )}
                                 </div>
@@ -2857,37 +2899,37 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                            {/* Visualization Settings */}
                            <div className="mt-6 pt-6 border-t border-dashed">
-                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">Visualisierung</h4>
+                               <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4">{t('visualisierung', `Visualisierung`)}</h4>
                                <div className="space-y-6">
                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Titel</label>
+                                           <label className="block text-sm font-medium mb-2">{t('titel', `Titel`)}</label>
                                            <DebouncedInput id="urlComparisonTitle" value={generalSettings.urlComparisonTitle} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonTitle: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.urlComparisonTitle ? 'border-red-500' : ''}`}/>
                                            {validationFieldErrors.urlComparisonTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.urlComparisonTitle}</p>}
                                        </div>
                                        <div>
-                                         <label className="block text-sm font-medium mb-2">Icon</label>
+                                         <label className="block text-sm font-medium mb-2">{t('icon', `Icon`)}</label>
                                          <Select value={generalSettings.urlComparisonIcon} onValueChange={(val) => setGeneralSettings({...generalSettings, urlComparisonIcon: val as any})}>
                                             <SelectTrigger className="bg-white dark:bg-gray-700"><SelectValue /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                                <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                                <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                                <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                                <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                                <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                                <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                                <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                                <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                                <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                                <SelectItem value="Star">⭐ Stern</SelectItem>
-                                                <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                                <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                                <SelectItem value="none">{t('_kein_icon', `🚫 Kein Icon`)}</SelectItem>
+                                                <SelectItem value="ArrowRightLeft">{t('_pfeil_wechsel', `🔄 Pfeil Wechsel`)}</SelectItem>
+                                                <SelectItem value="AlertTriangle">{t('_warnung', `⚠️ Warnung`)}</SelectItem>
+                                                <SelectItem value="XCircle">{t('_fehler', `❌ Fehler`)}</SelectItem>
+                                                <SelectItem value="AlertCircle">{t('_alert', `⭕ Alert`)}</SelectItem>
+                                                <SelectItem value="Info">{t('_info', `ℹ️ Info`)}</SelectItem>
+                                                <SelectItem value="Bookmark">{t('_lesezeichen', `🔖 Lesezeichen`)}</SelectItem>
+                                                <SelectItem value="Share2">{t('_teilen', `📤 Teilen`)}</SelectItem>
+                                                <SelectItem value="Clock">{t('_zeit', `⏰ Zeit`)}</SelectItem>
+                                                <SelectItem value="CheckCircle">{t('_hkchen', `✅ Häkchen`)}</SelectItem>
+                                                <SelectItem value="Star">{t('_stern', `⭐ Stern`)}</SelectItem>
+                                                <SelectItem value="Heart">{t('_herz', `❤️ Herz`)}</SelectItem>
+                                                <SelectItem value="Bell">{t('_glocke', `🔔 Glocke`)}</SelectItem>
                                             </SelectContent>
                                          </Select>
                                        </div>
                                        <div>
-                                          <label className="block text-sm font-medium mb-2">Hintergrundfarbe</label>
+                                          <label className="block text-sm font-medium mb-2">{t('hintergrundfarbe', `Hintergrundfarbe`)}</label>
                                           <div className="flex items-center gap-3">
                                               <input type="color" value={generalSettings.urlComparisonBackgroundColor} onChange={(e) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: e.target.value})} className="w-20 h-10 p-1 rounded-md border cursor-pointer"/>
                                               <DebouncedInput value={generalSettings.urlComparisonBackgroundColor} onChange={(val) => setGeneralSettings({...generalSettings, urlComparisonBackgroundColor: val as string})} className="flex-1 bg-white dark:bg-gray-700 font-mono text-sm"/>
@@ -2897,12 +2939,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Label für alte URL</label>
+                                           <label className="block text-sm font-medium mb-2">{t('label_fr_alte_url', `Label für alte URL`)}</label>
                                            <DebouncedInput id="oldUrlLabel" value={generalSettings.oldUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, oldUrlLabel: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.oldUrlLabel ? 'border-red-500' : ''}`}/>
                                            {validationFieldErrors.oldUrlLabel && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.oldUrlLabel}</p>}
                                        </div>
                                        <div>
-                                           <label className="block text-sm font-medium mb-2">Label für neue URL</label>
+                                           <label className="block text-sm font-medium mb-2">{t('label_fr_neue_url', `Label für neue URL`)}</label>
                                            <DebouncedInput id="newUrlLabel" value={generalSettings.newUrlLabel} onChange={(val) => setGeneralSettings({...generalSettings, newUrlLabel: val as string})} className={`bg-white dark:bg-gray-700 ${validationFieldErrors.newUrlLabel ? 'border-red-500' : ''}`}/>
                                            {validationFieldErrors.newUrlLabel && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.newUrlLabel}</p>}
                                        </div>
@@ -2915,7 +2957,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                    <div className="flex items-center gap-3">
                                      <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
                                      <div>
-                                       <p className="text-sm font-medium text-green-800 dark:text-green-200">Link-Qualitätstacho anzeigen</p>
+                                       <p className="text-sm font-medium text-green-800 dark:text-green-200">{t('linkqualittstacho_anzeigen', `Link-Qualitätstacho anzeigen`)}</p>
                                      </div>
                                    </div>
                                    <Switch
@@ -2930,27 +2972,27 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                  {generalSettings.showLinkQualityGauge && (
                                    <div className="pt-4 mt-4 border-t border-green-200 dark:border-green-800 space-y-4">
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für hohe Übereinstimmung (100%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('text_fr_hohe_bereinstimmung_10', `Text für hohe Übereinstimmung (100%)`)}</label>
                                        <DebouncedInput id="matchHighExplanation" value={generalSettings.matchHighExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchHighExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchHighExplanation ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.matchHighExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchHighExplanation}</p>}
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für mittlere Übereinstimmung (75%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('text_fr_mittlere_bereinstimmun', `Text für mittlere Übereinstimmung (75%)`)}</label>
                                        <DebouncedInput id="matchMediumExplanation" value={generalSettings.matchMediumExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchMediumExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchMediumExplanation ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.matchMediumExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchMediumExplanation}</p>}
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für geringe Übereinstimmung (50%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('text_fr_geringe_bereinstimmung', `Text für geringe Übereinstimmung (50%)`)}</label>
                                        <DebouncedInput id="matchLowExplanation" value={generalSettings.matchLowExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchLowExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchLowExplanation ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.matchLowExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchLowExplanation}</p>}
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für Startseiten-Treffer (100%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('text_fr_startseitentreffer_100', `Text für Startseiten-Treffer (100%)`)}</label>
                                        <DebouncedInput id="matchRootExplanation" value={generalSettings.matchRootExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchRootExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchRootExplanation ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.matchRootExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchRootExplanation}</p>}
                                      </div>
                                      <div>
-                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">Text für keine Übereinstimmung (0%)</label>
+                                       <label className="block text-sm font-medium mb-1 text-green-800 dark:text-green-200">{t('text_fr_keine_bereinstimmung_0', `Text für keine Übereinstimmung (0%)`)}</label>
                                        <DebouncedInput id="matchNoneExplanation" value={generalSettings.matchNoneExplanation} onChange={(val) => setGeneralSettings({ ...generalSettings, matchNoneExplanation: val as string })} className={`bg-white dark:bg-gray-800 ${validationFieldErrors.matchNoneExplanation ? 'border-red-500' : ''}`} />
                                        {validationFieldErrors.matchNoneExplanation && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.matchNoneExplanation}</p>}
                                      </div>
@@ -2968,32 +3010,35 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-semibold">4</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Zusätzliche Informationen</h3>
-                            <p className="text-sm text-muted-foreground">Wird nur angezeigt wenn mindestens ein Info-Punkt konfiguriert ist</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('zustzliche_informationen', `Zusätzliche Informationen`)}</h3>
+                            <p className="text-sm text-muted-foreground">{t('wird_nur_angezeigt_wenn_mindes', `Wird nur angezeigt wenn mindestens ein Info-Punkt konfiguriert ist`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Titel der Sektion
-                              </label>
+
+                                                                                                      {t('titel_der_sektion', `Titel der Sektion`)}
+                                                                                                    </label>
                               <DebouncedInput
                                 id="infoTitle"
                                 value={generalSettings.infoTitle}
                                 onChange={(val) => setGeneralSettings({ ...generalSettings, infoTitle: val as string })}
-                                placeholder="Zusätzliche Informationen"
+                                placeholder={t('zustzliche_informationen', `Zusätzliche Informationen`)}
                                 className={`bg-white dark:bg-gray-700 ${validationFieldErrors.infoTitle ? 'border-red-500' : ''}`}
                               />
                               {validationFieldErrors.infoTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.infoTitle}</p>}
                               <p className="text-xs text-gray-500 mt-1">
-                                Überschrift für den Bereich mit zusätzlichen Informationen
-                              </p>
+
+                                                                                                      {t('berschrift_fr_den_bereich_mit_', `Überschrift für den Bereich mit zusätzlichen Informationen`)}
+                                                                                                    </p>
                             </div>
                             <div>
                               <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                Icon für den Titel
-                              </label>
+
+                                                                                                      {t('icon_fr_den_titel', `Icon für den Titel`)}
+                                                                                                    </label>
                               <Select value={generalSettings.infoTitleIcon} onValueChange={(value) => 
                                 setGeneralSettings({ ...generalSettings, infoTitleIcon: value as any })
                               }>
@@ -3001,19 +3046,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">🚫 Kein Icon</SelectItem>
-                                  <SelectItem value="ArrowRightLeft">🔄 Pfeil Wechsel</SelectItem>
-                                  <SelectItem value="AlertTriangle">⚠️ Warnung</SelectItem>
-                                  <SelectItem value="XCircle">❌ Fehler</SelectItem>
-                                  <SelectItem value="AlertCircle">⭕ Alert</SelectItem>
-                                  <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                  <SelectItem value="Bookmark">🔖 Lesezeichen</SelectItem>
-                                  <SelectItem value="Share2">📤 Teilen</SelectItem>
-                                  <SelectItem value="Clock">⏰ Zeit</SelectItem>
-                                  <SelectItem value="CheckCircle">✅ Häkchen</SelectItem>
-                                  <SelectItem value="Star">⭐ Stern</SelectItem>
-                                  <SelectItem value="Heart">❤️ Herz</SelectItem>
-                                  <SelectItem value="Bell">🔔 Glocke</SelectItem>
+                                  <SelectItem value="none">{t('_kein_icon', `🚫 Kein Icon`)}</SelectItem>
+                                  <SelectItem value="ArrowRightLeft">{t('_pfeil_wechsel', `🔄 Pfeil Wechsel`)}</SelectItem>
+                                  <SelectItem value="AlertTriangle">{t('_warnung', `⚠️ Warnung`)}</SelectItem>
+                                  <SelectItem value="XCircle">{t('_fehler', `❌ Fehler`)}</SelectItem>
+                                  <SelectItem value="AlertCircle">{t('_alert', `⭕ Alert`)}</SelectItem>
+                                  <SelectItem value="Info">{t('_info', `ℹ️ Info`)}</SelectItem>
+                                  <SelectItem value="Bookmark">{t('_lesezeichen', `🔖 Lesezeichen`)}</SelectItem>
+                                  <SelectItem value="Share2">{t('_teilen', `📤 Teilen`)}</SelectItem>
+                                  <SelectItem value="Clock">{t('_zeit', `⏰ Zeit`)}</SelectItem>
+                                  <SelectItem value="CheckCircle">{t('_hkchen', `✅ Häkchen`)}</SelectItem>
+                                  <SelectItem value="Star">{t('_stern', `⭐ Stern`)}</SelectItem>
+                                  <SelectItem value="Heart">{t('_herz', `❤️ Herz`)}</SelectItem>
+                                  <SelectItem value="Bell">{t('_glocke', `🔔 Glocke`)}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -3021,11 +3066,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           <div>
                             <div className="flex items-center justify-between mb-4">
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Informations-Punkte
-                              </label>
+
+                                                                                                      {t('informationspunkte', `Informations-Punkte`)}
+                                                                                                    </label>
                               <p className="text-xs text-gray-500 mb-2">
-                                Liste von Stichpunkten die unter dem Info-Text angezeigt werden
-                              </p>
+
+                                                                                                      {t('liste_von_stichpunkten_die_unt', `Liste von Stichpunkten die unter dem Info-Text angezeigt werden`)}
+                                                                                                    </p>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -3034,7 +3081,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 className="flex items-center gap-2 bg-white dark:bg-gray-700"
                               >
                                 <Plus className="h-4 w-4" />
-                                <span>Hinzufügen</span>
+                                <span>{t('hinzufgen', `Hinzufügen`)}</span>
                               </Button>
                             </div>
                             <div className="space-y-3">
@@ -3057,14 +3104,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="Bookmark">🔖 Bookmark</SelectItem>
-                                        <SelectItem value="Share2">📤 Share</SelectItem>
-                                        <SelectItem value="Clock">⏰ Clock</SelectItem>
-                                        <SelectItem value="Info">ℹ️ Info</SelectItem>
-                                        <SelectItem value="CheckCircle">✅ Check</SelectItem>
-                                        <SelectItem value="Star">⭐ Star</SelectItem>
-                                        <SelectItem value="Heart">❤️ Heart</SelectItem>
-                                        <SelectItem value="Bell">🔔 Bell</SelectItem>
+                                        <SelectItem value="Bookmark">{t('_bookmark', `🔖 Bookmark`)}</SelectItem>
+                                        <SelectItem value="Share2">{t('_share', `📤 Share`)}</SelectItem>
+                                        <SelectItem value="Clock">{t('_clock', `⏰ Clock`)}</SelectItem>
+                                        <SelectItem value="Info">{t('_info', `ℹ️ Info`)}</SelectItem>
+                                        <SelectItem value="CheckCircle">{t('_check', `✅ Check`)}</SelectItem>
+                                        <SelectItem value="Star">{t('_star', `⭐ Star`)}</SelectItem>
+                                        <SelectItem value="Heart">{t('_heart', `❤️ Heart`)}</SelectItem>
+                                        <SelectItem value="Bell">{t('_bell', `🔔 Bell`)}</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
@@ -3083,8 +3130,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               {generalSettings.infoItems.length === 0 && (
                                 <div className="text-center p-8 bg-white dark:bg-gray-700 rounded-lg border border-dashed">
                                   <p className="text-sm text-muted-foreground">
-                                    Keine Info-Punkte vorhanden. Klicken Sie "Hinzufügen" um welche zu erstellen.
-                                  </p>
+
+                                                                                                                  {t('keine_infopunkte_vorhanden_kli', `Keine Info-Punkte vorhanden. Klicken Sie "Hinzufügen" um welche zu erstellen.`)}
+                                                                                                                </p>
                                 </div>
                               )}
                             </div>
@@ -3097,20 +3145,21 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-gray-100 dark:bg-gray-900/30 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 text-sm font-semibold">5</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Footer</h3>
-                            <p className="text-sm text-muted-foreground">Copyright und Fußzeile der Anwendung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('footer', `Footer`)}</h3>
+                            <p className="text-sm text-muted-foreground">{t('copyright_und_fuzeile_der_anwe', `Copyright und Fußzeile der Anwendung`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
                           <div>
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                              Copyright-Text <span className="text-red-500">*</span>
+
+                                                                                                {t('copyrighttext', `Copyright-Text`)} <span className="text-red-500">*</span>
                             </label>
                             <DebouncedInput
                               id="footerCopyright"
                               value={generalSettings.footerCopyright}
                               onChange={(val) => setGeneralSettings({ ...generalSettings, footerCopyright: val as string })}
-                              placeholder="Proudly brewed with Generative AI."
+                              placeholder={t('proudly_brewed_with_generative', `Proudly brewed with Generative AI.`)}
                               className={`bg-white dark:bg-gray-700 ${!generalSettings.footerCopyright?.trim() || validationFieldErrors.footerCopyright ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
                             {validationFieldErrors.footerCopyright && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.footerCopyright}</p>}
@@ -3125,8 +3174,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 text-sm font-semibold">6</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Link-Erkennung & Leistung</h3>
-                            <p className="text-sm text-muted-foreground">Einstellungen zur Erkennungslogik und Systemleistung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('linkerkennung_leistung', `Link-Erkennung & Leistung`)}</h3>
+                            <p className="text-sm text-muted-foreground">{t('einstellungen_zur_erkennungslo', `Einstellungen zur Erkennungslogik und Systemleistung`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -3135,10 +3184,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-center gap-3">
                               <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
                               <div>
-                                <p className="text-sm font-medium text-green-800 dark:text-green-200">Groß-/Kleinschreibung beachten</p>
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">{t('grokleinschreibung_beachten', `Groß-/Kleinschreibung beachten`)}</p>
                                 <p className="text-xs text-green-700 dark:text-green-300">
-                                  Wenn aktiviert, werden Regeln nur bei exakt gleicher Schreibweise erkannt. Standard ist deaktiviert.
-                                </p>
+
+                                                                                                            {t('wenn_aktiviert_werden_regeln_n', `Wenn aktiviert, werden Regeln nur bei exakt gleicher Schreibweise erkannt. Standard ist deaktiviert.`)}
+                                                                                                          </p>
                               </div>
                             </div>
                             <Switch
@@ -3155,10 +3205,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-center gap-3">
                               <Share2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Referrer Tracking aktivieren</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('referrer_tracking_aktivieren', `Referrer Tracking aktivieren`)}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Erfasst die Herkunfts-URL (Referrer) der Besucher für statistische Auswertungen.
-                                </p>
+
+                                                                                                            {t('erfasst_die_herkunftsurl_refer', `Erfasst die Herkunfts-URL (Referrer) der Besucher für statistische Auswertungen.`)}
+                                                                                                          </p>
                               </div>
                             </div>
                             <Switch
@@ -3175,10 +3226,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-center gap-3">
                               <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Tracking-Cache aktivieren (RAM)</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('trackingcache_aktivieren_ram', `Tracking-Cache aktivieren (RAM)`)}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Speichert Statistik-Daten im Arbeitsspeicher für schnellen Zugriff. Erhöht die Systemgeschwindigkeit massiv, benötigt aber mehr RAM bei vielen Daten.
-                                </p>
+
+                                                                                                            {t('speichert_statistikdaten_im_ar', `Speichert Statistik-Daten im Arbeitsspeicher für schnellen Zugriff. Erhöht die Systemgeschwindigkeit massiv, benötigt aber mehr RAM bei vielen Daten.`)}
+                                                                                                          </p>
                               </div>
                             </div>
                             <Switch
@@ -3195,10 +3247,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-center gap-3 flex-1 mr-4">
                               <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                               <div>
-                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Max. Statistik-Einträge</p>
+                                <p className="text-sm font-medium text-purple-800 dark:text-purple-200">{t('max_statistikeintrge', `Max. Statistik-Einträge`)}</p>
                                 <p className="text-xs text-purple-700 dark:text-purple-300">
-                                  Begrenzt die Anzahl der gespeicherten Statistik-Einträge in der tracking.json. Älteste Einträge werden bei Überschreitung gelöscht. (0 = Unbegrenzt)
-                                </p>
+
+                                                                                                            {t('begrenzt_die_anzahl_der_gespei', `Begrenzt die Anzahl der gespeicherten Statistik-Einträge in der tracking.json. Älteste Einträge werden bei Überschreitung gelöscht. (0 = Unbegrenzt)`)}
+                                                                                                          </p>
                               </div>
                             </div>
                             <Input
@@ -3214,8 +3267,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Empfehlung:</p>
-                                <p>Lassen Sie den Tracking-Cache aktiviert (Standard), es sei denn, Ihr Server hat sehr wenig Arbeitsspeicher (&lt; 512MB) oder Sie haben extrem viele Tracking-Daten (&gt; 1 Mio. Einträge).</p>
+                                <p className="font-medium">{t('empfehlung', `Empfehlung:`)}</p>
+                                <p>{t('lassen_sie_den_trackingcache_a', `Lassen Sie den Tracking-Cache aktiviert (Standard), es sei denn, Ihr Server hat sehr wenig Arbeitsspeicher (&lt; 512MB) oder Sie haben extrem viele Tracking-Daten (&gt; 1 Mio. Einträge).`)}</p>
                               </div>
                             </div>
                           </div>
@@ -3227,8 +3280,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400 text-sm font-semibold">7</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Automatische Weiterleitung</h3>
-                            <p className="text-sm text-muted-foreground">Globale Einstellungen für automatische Weiterleitungen</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('automatische_weiterleitung', `Automatische Weiterleitung`)}</h3>
+                            <p className="text-sm text-muted-foreground">{t('globale_einstellungen_fr_autom', `Globale Einstellungen für automatische Weiterleitungen`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -3236,14 +3289,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-center gap-3">
                               <ArrowRightLeft className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                               <div>
-                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Automatische Weiterleitung aktivieren</p>
+                                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{t('automatische_weiterleitung_akt', `Automatische Weiterleitung aktivieren`)}</p>
                                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                                  Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.
-                                </p>
+
+                                                                                                            {t('wenn_aktiviert_werden_alle_ben', `Wenn aktiviert, werden alle Benutzer automatisch zur neuen URL weitergeleitet, ohne die Hinweisseite zu sehen.`)}
+                                                                                                          </p>
                                   {generalSettings.autoRedirect && generalSettings.enableFeedbackSurvey && (
                                     <div className="flex items-center gap-2 mt-2 text-xs text-yellow-600 font-medium">
                                         <AlertTriangle className="h-3 w-3" />
-                                        <span>Hinweis: Feedback-Umfrage wird deaktiviert, da keine Interaktion stattfindet (Auto-Redirect wird als Feedback geloggt).</span>
+                                        <span>{t('hinweis_feedbackumfrage_wird_d', `Hinweis: Feedback-Umfrage wird deaktiviert, da keine Interaktion stattfindet (Auto-Redirect wird als Feedback geloggt).`)}</span>
                                     </div>
                                   )}
                               </div>
@@ -3266,8 +3320,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-start gap-3">
                               <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                               <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                <p className="font-medium">Admin-Zugriff:</p>
-                                <p>Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">?admin=true</code> erreichen.</p>
+                                <p className="font-medium">{t('adminzugriff', `Admin-Zugriff:`)}</p>
+                                <p>{t('bei_aktivierter_automatischer_', `Bei aktivierter automatischer Weiterleitung können Sie die Admin-Einstellungen nur noch über den Parameter`)} <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded">{t('admintrue', `?admin=true`)}</code>  {t('erreichen', `erreichen.`)}</p>
                               </div>
                             </div>
                           </div>
@@ -3279,8 +3333,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         <div className="flex items-center gap-3 border-b pb-3">
                           <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center text-pink-600 dark:text-pink-400 text-sm font-semibold">8</div>
                           <div>
-                            <h3 className="text-lg font-semibold text-foreground">Benutzer-Feedback-Umfrage</h3>
-                            <p className="text-sm text-muted-foreground">Erfassen Sie Feedback von Nutzern zur Qualität der Weiterleitung</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t('benutzerfeedbackumfrage', `Benutzer-Feedback-Umfrage`)}</h3>
+                            <p className="text-sm text-muted-foreground">{t('erfassen_sie_feedback_von_nutz', `Erfassen Sie Feedback von Nutzern zur Qualität der Weiterleitung`)}</p>
                           </div>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-6 space-y-6">
@@ -3288,10 +3342,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="flex items-center gap-3">
                               <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                               <div>
-                                <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Feedback-Umfrage aktivieren</p>
+                                <p className="text-sm font-medium text-pink-800 dark:text-pink-200">{t('feedbackumfrage_aktivieren', `Feedback-Umfrage aktivieren`)}</p>
                                 <p className="text-xs text-pink-700 dark:text-pink-300">
-                                  Zeigt ein Popup an, wenn Nutzer auf "Kopieren" oder "Öffnen" klicken, um zu fragen, ob der Link funktioniert hat.
-                                </p>
+
+                                                                                                            {t('zeigt_ein_popup_an_wenn_nutzer', `Zeigt ein Popup an, wenn Nutzer auf "Kopieren" oder "Öffnen" klicken, um zu fragen, ob der Link funktioniert hat.`)}
+                                                                                                          </p>
                               </div>
                             </div>
                             <Switch
@@ -3309,8 +3364,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <div className="md:col-span-2 p-4 border rounded-lg bg-muted/20 mb-4">
                                   <div className="flex items-center justify-between mb-4">
                                       <div className="space-y-0.5">
-                                          <label className="text-base font-medium">Trend-Anzeige</label>
-                                          <p className="text-xs text-muted-foreground">Konfiguration für den "Redirect Satisfaction Trend"</p>
+                                          <label className="text-base font-medium">{t('trendanzeige', `Trend-Anzeige`)}</label>
+                                          <p className="text-xs text-muted-foreground">{t('konfiguration_fr_den_redirect_', `Konfiguration für den "Redirect Satisfaction Trend"`)}</p>
                                       </div>
                                       <Switch
                                           checked={generalSettings.showSatisfactionTrend}
@@ -3320,7 +3375,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   {generalSettings.showSatisfactionTrend && generalSettings.enableFeedbackSurvey && (
                                       <div className="space-y-4">
                                           <div>
-                                              <label className="block text-sm font-medium mb-2">Zeitraum (Tage)</label>
+                                              <label className="block text-sm font-medium mb-2">{t('zeitraum_tage', `Zeitraum (Tage)`)}</label>
                                               <Input
                                                   type="number"
                                                   min="7"
@@ -3332,8 +3387,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                           </div>
                                           <div className="flex items-center justify-between">
                                               <div className="space-y-0.5">
-                                                  <label className="text-sm font-medium">Nur Feedback (OK/NOK) anzeigen</label>
-                                                  <p className="text-xs text-muted-foreground">Berechnet den Score ausschließlich basierend auf Benutzer-Feedback, ignoriert automatische Match-Qualität.</p>
+                                                  <label className="text-sm font-medium">{t('nur_feedback_oknok_anzeigen', `Nur Feedback (OK/NOK) anzeigen`)}</label>
+                                                  <p className="text-xs text-muted-foreground">{t('berechnet_den_score_ausschliel', `Berechnet den Score ausschließlich basierend auf Benutzer-Feedback, ignoriert automatische Match-Qualität.`)}</p>
                                               </div>
                                               <Switch
                                                   checked={generalSettings.satisfactionTrendFeedbackOnly}
@@ -3345,61 +3400,61 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               </div>
 
                               <div className="md:col-span-2">
-                                <label className="block text-sm font-medium mb-2">Umfrage Titel <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('umfrage_titel', `Umfrage Titel`)} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   id="feedbackSurveyTitle"
                                   value={generalSettings.feedbackSurveyTitle}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyTitle: val as string })}
                                   className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSurveyTitle ? 'border-red-500' : ''}`}
-                                  placeholder="War die neue URL korrekt?"
+                                  placeholder={t('war_die_neue_url_korrekt', `War die neue URL korrekt?`)}
                                 />
                                 {validationFieldErrors.feedbackSurveyTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSurveyTitle}</p>}
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Umfrage Frage <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('umfrage_frage', `Umfrage Frage`)} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   id="feedbackSurveyQuestion"
                                   value={generalSettings.feedbackSurveyQuestion}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSurveyQuestion: val as string })}
                                   className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSurveyQuestion ? 'border-red-500' : ''}`}
-                                  placeholder="Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern."
+                                  placeholder={t('dein_feedback_hilft_uns_die_we', `Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern.`)}
                                 />
                                 {validationFieldErrors.feedbackSurveyQuestion && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSurveyQuestion}</p>}
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Erfolgsmeldung <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('erfolgsmeldung', `Erfolgsmeldung`)} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   id="feedbackSuccessMessage"
                                   value={generalSettings.feedbackSuccessMessage}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackSuccessMessage: val as string })}
                                   className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackSuccessMessage ? 'border-red-500' : ''}`}
-                                  placeholder="Vielen Dank für deine Rückmeldung."
+                                  placeholder={t('vielen_dank_fr_deine_rckmeldun', `Vielen Dank für deine Rückmeldung.`)}
                                 />
                                 {validationFieldErrors.feedbackSuccessMessage && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackSuccessMessage}</p>}
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Button Ja (OK) <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('button_ja_ok', `Button Ja (OK)`)} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   id="feedbackButtonYes"
                                   value={generalSettings.feedbackButtonYes}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonYes: val as string })}
                                   className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackButtonYes ? 'border-red-500' : ''}`}
-                                  placeholder="Ja, OK"
+                                  placeholder={t('ja_ok', `Ja, OK`)}
                                 />
                                 {validationFieldErrors.feedbackButtonYes && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonYes}</p>}
-                                <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)</p>
+                                <p className="text-xs text-muted-foreground mt-1">{t('text_auf_dem_button_fr_positiv', `Text auf dem Button für positive Rückmeldung (Standard: Ja, OK)`)}</p>
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">Button Nein (NOK) <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-medium mb-2">{t('button_nein_nok', `Button Nein (NOK)`)} <span className="text-red-500">*</span></label>
                                 <DebouncedInput
                                   id="feedbackButtonNo"
                                   value={generalSettings.feedbackButtonNo}
                                   onChange={(val) => setGeneralSettings({ ...generalSettings, feedbackButtonNo: val as string })}
                                   className={`bg-white dark:bg-gray-700 ${validationFieldErrors.feedbackButtonNo ? 'border-red-500' : ''}`}
-                                  placeholder="Nein"
+                                  placeholder={t('nein', `Nein`)}
                                 />
                                 {validationFieldErrors.feedbackButtonNo && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackButtonNo}</p>}
-                                <p className="text-xs text-muted-foreground mt-1">Text auf dem Button für negative Rückmeldung (Standard: Nein)</p>
+                                <p className="text-xs text-muted-foreground mt-1">{t('text_auf_dem_button_fr_negativ', `Text auf dem Button für negative Rückmeldung (Standard: Nein)`)}</p>
                               </div>
 
                               <div className="md:col-span-2 pt-4 border-t">
@@ -3407,10 +3462,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <div className="flex items-center gap-3">
                                         <Search className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                                         <div>
-                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Such-Vorschlag bei "Nein" aktivieren</p>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">{t('suchvorschlag_bei_nein_aktivie', `Such-Vorschlag bei "Nein" aktivieren`)}</p>
                                             <p className="text-xs text-pink-700 dark:text-pink-300">
-                                                Zeigt dem Nutzer einen Link zur intelligenten Suche an, wenn die Bewertung negativ ausfällt. (Erfordert aktive "Intelligente Such-Weiterleitung")
-                                            </p>
+
+                                                                                                                                      {t('zeigt_dem_nutzer_einen_link_zu', `Zeigt dem Nutzer einen Link zur intelligenten Suche an, wenn die Bewertung negativ ausfällt. (Erfordert aktive "Intelligente Such-Weiterleitung")`)}
+                                                                                                                                  </p>
                                         </div>
                                     </div>
                                     <Switch
@@ -3424,15 +3480,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 </div>
                                 {generalSettings.defaultRedirectMode !== 'search' && (
                                     <p className="text-xs text-muted-foreground mt-1 mb-4">
-                                        * Nur verfügbar wenn "Intelligente Such-Weiterleitung" als Fallback-Strategie gewählt ist.
-                                    </p>
+
+                                                                                                                      {t('_nur_verfgbar_wenn_intelligent', `* Nur verfügbar wenn "Intelligente Such-Weiterleitung" als Fallback-Strategie gewählt ist.`)}
+                                                                                                                  </p>
                                 )}
                               </div>
 
                               {generalSettings.enableFeedbackSmartSearchFallback && (
                                 <>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium mb-2">Vorschlag Titel</label>
+                                        <label className="block text-sm font-medium mb-2">{t('vorschlag_titel', `Vorschlag Titel`)}</label>
                                         <DebouncedInput
                                             id="feedbackSmartSearchFallbackTitle"
                                             value={generalSettings.feedbackSmartSearchFallbackTitle}
@@ -3441,7 +3498,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         />
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium mb-2">Vorschlag Beschreibung</label>
+                                        <label className="block text-sm font-medium mb-2">{t('vorschlag_beschreibung', `Vorschlag Beschreibung`)}</label>
                                         <DebouncedInput
                                             id="feedbackSmartSearchFallbackDescription"
                                             value={generalSettings.feedbackSmartSearchFallbackDescription}
@@ -3450,7 +3507,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         />
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium mb-2">Vorschlag Frage</label>
+                                        <label className="block text-sm font-medium mb-2">{t('vorschlag_frage', `Vorschlag Frage`)}</label>
                                         <DebouncedInput
                                             id="feedbackSmartSearchFallbackQuestion"
                                             value={generalSettings.feedbackSmartSearchFallbackQuestion}
@@ -3466,10 +3523,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     <div className="flex items-center gap-3">
                                         <CheckCircle className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                                         <div>
-                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">Kommentar-Funktion bei "Nein" aktivieren</p>
+                                            <p className="text-sm font-medium text-pink-800 dark:text-pink-200">{t('kommentarfunktion_bei_nein_akt', `Kommentar-Funktion bei "Nein" aktivieren`)}</p>
                                             <p className="text-xs text-pink-700 dark:text-pink-300">
-                                                Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt (oder nachdem die Suche erfolglos war).
-                                            </p>
+
+                                                                                                                                      {t('fragt_den_nutzer_nach_der_korr', `Fragt den Nutzer nach der korrekten URL, wenn die Bewertung negativ ausfällt (oder nachdem die Suche erfolglos war).`)}
+                                                                                                                                  </p>
                                         </div>
                                     </div>
                                     <Switch
@@ -3485,7 +3543,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               {generalSettings.enableFeedbackComment && (
                                 <>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium mb-2">Kommentar Titel</label>
+                                        <label className="block text-sm font-medium mb-2">{t('kommentar_titel', `Kommentar Titel`)}</label>
                                         <DebouncedInput
                                             id="feedbackCommentTitle"
                                             value={generalSettings.feedbackCommentTitle}
@@ -3495,7 +3553,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         {validationFieldErrors.feedbackCommentTitle && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentTitle}</p>}
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium mb-2">Kommentar Beschreibung</label>
+                                        <label className="block text-sm font-medium mb-2">{t('kommentar_beschreibung', `Kommentar Beschreibung`)}</label>
                                         <DebouncedInput
                                             id="feedbackCommentDescription"
                                             value={generalSettings.feedbackCommentDescription}
@@ -3505,7 +3563,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         {validationFieldErrors.feedbackCommentDescription && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentDescription}</p>}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Platzhalter</label>
+                                        <label className="block text-sm font-medium mb-2">{t('platzhalter', `Platzhalter`)}</label>
                                         <DebouncedInput
                                             id="feedbackCommentPlaceholder"
                                             value={generalSettings.feedbackCommentPlaceholder}
@@ -3515,7 +3573,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         {validationFieldErrors.feedbackCommentPlaceholder && <p className="text-xs text-red-500 mt-1">{validationFieldErrors.feedbackCommentPlaceholder}</p>}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Button Text</label>
+                                        <label className="block text-sm font-medium mb-2">{t('button_text', `Button Text`)}</label>
                                         <DebouncedInput
                                             id="feedbackCommentButton"
                                             value={generalSettings.feedbackCommentButton}
@@ -3536,8 +3594,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">
-                            Speichern Sie Ihre Änderungen um sie auf der Website anzuwenden.
-                          </p>
+
+                                                                                              {t('speichern_sie_ihre_nderungen_u', `Speichern Sie Ihre Änderungen um sie auf der Website anzuwenden.`)}
+                                                                                            </p>
                         </div>
                         <Button
                           type="submit"
@@ -3561,10 +3620,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                     <div className="flex-1">
-                      <CardTitle className="text-lg sm:text-xl">URL-Transformationsregeln</CardTitle>
+                      <CardTitle className="text-lg sm:text-xl">{t('urltransformationsregeln', `URL-Transformationsregeln`)}</CardTitle>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                        Verwalten Sie URL-Transformations-Regeln für die Migration.
-                      </p>
+
+                                                                      {t('verwalten_sie_urltransformatio', `Verwalten Sie URL-Transformations-Regeln für die Migration.`)}
+                                                                    </p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
                       {/* Bulk Delete Button */}
@@ -3576,8 +3636,8 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           className="flex-1 sm:flex-initial"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          {selectedRuleIds.length} löschen
-                        </Button>
+                          {selectedRuleIds.length}  {t('lschen', `löschen`)}
+                                                                          </Button>
                       )}
                       
                                             {/* Validation Button */}
@@ -3588,8 +3648,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         onClick={() => setShowValidationModal(true)}
                       >
                          <RefreshCw className="h-4 w-4 mr-2" />
-                         Konfigurationsvalidierung
-                      </Button>
+
+                                                                       {t('konfigurationsvalidierung', `Konfigurationsvalidierung`)}
+                                                                    </Button>
 
 {/* Create New Rule Button */}
                       <Button
@@ -3602,8 +3663,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         className="flex-1 sm:flex-initial sm:w-auto"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Neue Regel
-                      </Button>
+
+                                                                      {t('neue_regel', `Neue Regel`)}
+                                                                    </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -3614,11 +3676,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         ref={rulesSearchInputRef}
-                        placeholder="Regeln durchsuchen..."
+                        placeholder={t('regeln_durchsuchen', `Regeln durchsuchen...`)}
                         value={rulesSearchQuery}
                         onChange={(e) => setRulesSearchQuery(e.target.value)}
                         className="pl-10"
-                        aria-label="Regeln durchsuchen"
+                        aria-label={t('regeln_durchsuchen', `Regeln durchsuchen`)}
                       />
                     </div>
                     
@@ -3633,26 +3695,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           `${paginatedRulesData?.totalAllRules || totalRules} Regel${(paginatedRulesData?.totalAllRules || totalRules) !== 1 ? 'n' : ''} insgesamt`
                         )}
                         {rulesSearchQuery !== debouncedRulesSearchQuery && (
-                          <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">Suche...</span>
+                          <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">{t('suche', `Suche...`)}</span>
                         )}
                       </div>
                       {!rulesLoading && totalFilteredRules > 0 && (
                         <div>
-                          Seite {rulesPage} von {totalPages}
+
+                                                                            {t('seite', `Seite`)} {rulesPage}  {t('von', `von`)} {totalPages}
                         </div>
                       )}
                     </div>
 
                     {/* Content Area */}
                     {rulesLoading ? (
-                      <div className="text-center py-8">Lade Regeln...</div>
+                      <div className="text-center py-8">{t('lade_regeln', `Lade Regeln...`)}</div>
                     ) : rules.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         {debouncedRulesSearchQuery ? (
                           <>
-                            Keine Regeln für "{debouncedRulesSearchQuery}" gefunden.
-                            <br />
-                            <span className="text-xs mt-1 block">Versuchen Sie einen anderen Suchbegriff oder erstellen Sie eine neue Regel.</span>
+
+                                                                                      {t('keine_regeln_fr_', `Keine Regeln für "`)}{debouncedRulesSearchQuery}{t('_gefunden', `" gefunden.`)}
+                                                                                      <br />
+                            <span className="text-xs mt-1 block">{t('versuchen_sie_einen_anderen_su', `Versuchen Sie einen anderen Suchbegriff oder erstellen Sie eine neue Regel.`)}</span>
                           </>
                         ) : (
                           "Keine Regeln vorhanden. Erstellen Sie eine neue Regel."
@@ -3691,20 +3755,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               onClick={() => setRulesPage(1)}
                               disabled={rulesPage === 1}
                             >
-                              Erste
-                            </Button>
+
+                                                                                                    {t('erste', `Erste`)}
+                                                                                                  </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setRulesPage(rulesPage - 1)}
                               disabled={rulesPage === 1}
                             >
-                              Vorherige
-                            </Button>
+
+                                                                                                    {t('vorherige', `Vorherige`)}
+                                                                                                  </Button>
                           </div>
                           
                           <div className="text-sm text-muted-foreground">
-                            Zeige {startIndex + 1}-{Math.min(endIndex, totalFilteredRules)} von {totalFilteredRules}
+
+                                                                                              {t('zeige', `Zeige`)} {startIndex + 1}-{Math.min(endIndex, totalFilteredRules)}  {t('von', `von`)} {totalFilteredRules}
                           </div>
                           
                           <div className="flex items-center gap-2">
@@ -3714,16 +3781,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               onClick={() => setRulesPage(rulesPage + 1)}
                               disabled={rulesPage === totalPages}
                             >
-                              Nächste
-                            </Button>
+
+                                                                                                    {t('nchste', `Nächste`)}
+                                                                                                  </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setRulesPage(totalPages)}
                               disabled={rulesPage === totalPages}
                             >
-                              Letzte
-                            </Button>
+
+                                                                                                    {t('letzte', `Letzte`)}
+                                                                                                  </Button>
                           </div>
                         </div>
                       )}
@@ -3739,7 +3808,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               <GlobalRulesSettings
                 settings={generalSettings as any}
                 onUpdate={(updates) => setGeneralSettings({ ...generalSettings, ...updates })}
-                onSave={() => updateSettingsMutation.mutate(generalSettings, { onSuccess: () => { toast({ title: "Einstellungen gespeichert", description: "Die globalen Regeln wurden erfolgreich aktualisiert.", }); } })}
+                onSave={() => updateSettingsMutation.mutate(generalSettings, { onSuccess: () => { toast({ title: t('einstellungen_gespeichert', `Einstellungen gespeichert`), description: t('die_globalen_regeln_wurden_erf', `Die globalen Regeln wurden erfolgreich aktualisiert.`), }); } })}
                 isSaving={updateSettingsMutation.isPending}
                 onOpenValidation={() => setShowValidationModal(true)}
               />
@@ -3754,16 +3823,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     onClick={() => handleStatsViewChange('top100')}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Overall
-                  </Button>
+
+                                                          {t('overall', `Overall`)}
+                                                        </Button>
                   <Button
                     variant={statsView === 'browser' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handleStatsViewChange('browser')}
                   >
                     <List className="h-4 w-4 mr-2" />
-                    Alle Einträge
-                  </Button>
+
+                                                          {t('alle_eintrge', `Alle Einträge`)}
+                                                        </Button>
                 </div>
                 {/* Time filter for top100 */}
                 {statsView === 'top100' && (
@@ -3772,9 +3843,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="24h">Letzte 24h</SelectItem>
-                      <SelectItem value="7d">Letzte 7 Tage</SelectItem>
-                      <SelectItem value="all">Alle Zeit</SelectItem>
+                      <SelectItem value="24h">{t('letzte_24h', `Letzte 24h`)}</SelectItem>
+                      <SelectItem value="7d">{t('letzte_7_tage', `Letzte 7 Tage`)}</SelectItem>
+                      <SelectItem value="all">{t('alle_zeit', `Alle Zeit`)}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -3787,11 +3858,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <input
                         ref={statsSearchInputRef}
                         type="text"
-                        placeholder="Einträge suchen..."
+                        placeholder={t('eintrge_suchen', `Einträge suchen...`)}
                         value={statsSearchQuery}
                         onChange={(e) => setStatsSearchQuery(e.target.value)}
                         className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background text-sm"
-                        aria-label="Statistiken durchsuchen"
+                        aria-label={t('statistiken_durchsuchen', `Statistiken durchsuchen`)}
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -3800,12 +3871,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         onValueChange={(value) => setStatsRuleFilter(value as 'all' | 'with_rule' | 'no_rule')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Regel-Filter" />
+                          <SelectValue placeholder={t('regelfilter', `Regel-Filter`)} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Alle Einträge</SelectItem>
-                          <SelectItem value="with_rule">Nur mit Regeln</SelectItem>
-                          <SelectItem value="no_rule">Nur ohne Regeln</SelectItem>
+                          <SelectItem value="all">{t('alle_eintrge', `Alle Einträge`)}</SelectItem>
+                          <SelectItem value="with_rule">{t('nur_mit_regeln', `Nur mit Regeln`)}</SelectItem>
+                          <SelectItem value="no_rule">{t('nur_ohne_regeln', `Nur ohne Regeln`)}</SelectItem>
                         </SelectContent>
                       </Select>
 
@@ -3814,14 +3885,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         onValueChange={(value) => setStatsQualityFilter(value)}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Qualität" />
+                          <SelectValue placeholder={t('qualitt', `Qualität`)} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Alle Qualitäten</SelectItem>
-                          <SelectItem value="100">100% (Exakt)</SelectItem>
-                          <SelectItem value="75">75% (Fast exakt)</SelectItem>
-                          <SelectItem value="50">50% (Teilweise)</SelectItem>
-                          <SelectItem value="0">0% (Kein Treffer)</SelectItem>
+                          <SelectItem value="all">{t('alle_qualitten', `Alle Qualitäten`)}</SelectItem>
+                          <SelectItem value="100">{t('100_exakt', `100% (Exakt)`)}</SelectItem>
+                          <SelectItem value="75">{t('75_fast_exakt', `75% (Fast exakt)`)}</SelectItem>
+                          <SelectItem value="50">{t('50_teilweise', `50% (Teilweise)`)}</SelectItem>
+                          <SelectItem value="0">{t('0_kein_treffer', `0% (Kein Treffer)`)}</SelectItem>
                         </SelectContent>
                       </Select>
 
@@ -3830,15 +3901,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         onValueChange={(value) => setStatsFeedbackFilter(value as 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty')}
                       >
                         <SelectTrigger className="w-auto h-9 text-xs">
-                          <SelectValue placeholder="Feedback" />
+                          <SelectValue placeholder={t('feedback', `Feedback`)} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Alle Feedbacks</SelectItem>
-                          <SelectItem value="OK">👍 OK</SelectItem>
-                          <SelectItem value="NOK">👎 NOK</SelectItem>
-                          <SelectItem value="auto-redirect">⚡ Auto</SelectItem>
-                          <SelectItem value="API">🤖 API</SelectItem>
-                          <SelectItem value="empty">Kein Feedback</SelectItem>
+                          <SelectItem value="all">{t('alle_feedbacks', `Alle Feedbacks`)}</SelectItem>
+                          <SelectItem value="OK">{t('_ok', `👍 OK`)}</SelectItem>
+                          <SelectItem value="NOK">{t('_nok', `👎 NOK`)}</SelectItem>
+                          <SelectItem value="auto-redirect">{t('_auto', `⚡ Auto`)}</SelectItem>
+                          <SelectItem value="API">{t('_api', `🤖 API`)}</SelectItem>
+                          <SelectItem value="empty">{t('kein_feedback', `Kein Feedback`)}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -3866,7 +3937,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         )
                       )}
                       {statsView === 'browser' && statsSearchQuery !== debouncedStatsSearchQuery && (
-                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">Suche...</span>
+                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">{t('suche', `Suche...`)}</span>
                       )}
                     </div>
                     {!entriesLoading && !top100Loading && (
@@ -3889,19 +3960,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-2xl font-bold">{statsData?.stats?.total?.toLocaleString('de-DE') || 0}</div>
-                            <p className="text-xs text-muted-foreground">Gesamte Weiterleitungen</p>
+                            <p className="text-xs text-muted-foreground">{t('gesamte_weiterleitungen', `Gesamte Weiterleitungen`)}</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-2xl font-bold">{statsData?.stats?.today?.toLocaleString('de-DE') || 0}</div>
-                            <p className="text-xs text-muted-foreground">Heute</p>
+                            <p className="text-xs text-muted-foreground">{t('heute', `Heute`)}</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-2xl font-bold">{statsData?.stats?.week?.toLocaleString('de-DE') || 0}</div>
-                            <p className="text-xs text-muted-foreground">Letzte 7 Tage</p>
+                            <p className="text-xs text-muted-foreground">{t('letzte_7_tage', `Letzte 7 Tage`)}</p>
                         </CardContent>
                     </Card>
                     {generalSettings.showLinkQualityGauge && (
@@ -3910,7 +3981,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             <div className="text-2xl font-bold">
                                 {statsData?.stats?.total ? Math.round(((statsData.stats.quality?.match100 || 0) / statsData.stats.total) * 100) : 0}%
                             </div>
-                            <p className="text-xs text-muted-foreground">Exakte Trefferquote</p>
+                            <p className="text-xs text-muted-foreground">{t('exakte_trefferquote', `Exakte Trefferquote`)}</p>
                         </CardContent>
                     </Card>
                     )}
@@ -3924,27 +3995,28 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                         <TrendingUp className="h-5 w-5 text-primary" />
-                                        <CardTitle>Redirect Satisfaction Trend</CardTitle>
+                                        <CardTitle>{t('redirect_satisfaction_trend', `Redirect Satisfaction Trend`)}</CardTitle>
                                     </div>
                                     <CardDescription>
-                                        Entwicklung der Qualität und Nutzerzufriedenheit über die letzten {generalSettings.satisfactionTrendDays} Tage.
-                                    </CardDescription>
+
+                                                                                                  {t('entwicklung_der_qualitt_und_nu', `Entwicklung der Qualität und Nutzerzufriedenheit über die letzten`)} {generalSettings.satisfactionTrendDays}  {t('tage', `Tage.`)}
+                                                                                              </CardDescription>
                                 </div>
                                 <Select value={trendAggregation} onValueChange={(v) => setTrendAggregation(v as any)}>
                                     <SelectTrigger className="w-[120px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="day">Täglich</SelectItem>
-                                        <SelectItem value="week">Wöchentlich</SelectItem>
-                                        <SelectItem value="month">Monatlich</SelectItem>
+                                        <SelectItem value="day">{t('tglich', `Täglich`)}</SelectItem>
+                                        <SelectItem value="week">{t('wchentlich', `Wöchentlich`)}</SelectItem>
+                                        <SelectItem value="month">{t('monatlich', `Monatlich`)}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </CardHeader>
                         <CardContent>
                             {trendLoading ? (
-                                <div className="h-[200px] flex items-center justify-center text-muted-foreground">Lade Trend...</div>
+                                <div className="h-[200px] flex items-center justify-center text-muted-foreground">{t('lade_trend', `Lade Trend...`)}</div>
                             ) : (
                                 <SatisfactionChart
                                     data={trendData as any}
@@ -3965,13 +4037,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <CardHeader>
                         <div className="flex items-center gap-2">
                             <Activity className="h-5 w-5 text-primary" />
-                            <CardTitle>Link Quality</CardTitle>
+                            <CardTitle>{t('link_quality', `Link Quality`)}</CardTitle>
                         </div>
-                        <CardDescription>Qualitätsverteilung der Link-Matches</CardDescription>
+                        <CardDescription>{t('qualittsverteilung_der_linkmat', `Qualitätsverteilung der Link-Matches`)}</CardDescription>
                       </CardHeader>
                       <CardContent>
                         {statsLoading ? (
-                          <div className="text-center py-8">Lade Statistiken...</div>
+                          <div className="text-center py-8">{t('lade_statistiken', `Lade Statistiken...`)}</div>
                         ) : (
                           <div className="space-y-4">
                             {/* Exact Match */}
@@ -3983,7 +4055,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               }}
                             >
                               <div className="flex justify-between text-sm">
-                                <span>Exakter Treffer (100%)</span>
+                                <span>{t('exakter_treffer_100', `Exakter Treffer (100%)`)}</span>
                                 <span className="font-medium">
                                   {statsData?.stats?.quality?.match100 || 0}
                                   <span className="text-muted-foreground ml-1">
@@ -4003,7 +4075,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               }}
                             >
                               <div className="flex justify-between text-sm">
-                                <span>Hoher Treffer (75%)</span>
+                                <span>{t('hoher_treffer_75', `Hoher Treffer (75%)`)}</span>
                                 <span className="font-medium">
                                   {statsData?.stats?.quality?.match75 || 0}
                                   <span className="text-muted-foreground ml-1">
@@ -4023,7 +4095,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               }}
                             >
                               <div className="flex justify-between text-sm">
-                                <span>Mittlerer Treffer (50%)</span>
+                                <span>{t('mittlerer_treffer_50', `Mittlerer Treffer (50%)`)}</span>
                                 <span className="font-medium">
                                   {statsData?.stats?.quality?.match50 || 0}
                                   <span className="text-muted-foreground ml-1">
@@ -4043,7 +4115,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               }}
                             >
                               <div className="flex justify-between text-sm">
-                                <span>Kein Treffer (0%)</span>
+                                <span>{t('kein_treffer_0', `Kein Treffer (0%)`)}</span>
                                 <span className="font-medium">
                                   {statsData?.stats?.quality?.match0 || 0}
                                   <span className="text-muted-foreground ml-1">
@@ -4063,12 +4135,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     {generalSettings.enableFeedbackSurvey && (
                     <Card>
                       <CardHeader>
-                        <CardTitle>Nutzer-Feedback</CardTitle>
-                        <CardDescription>Rückmeldungen zu Weiterleitungen</CardDescription>
+                        <CardTitle>{t('nutzerfeedback', `Nutzer-Feedback`)}</CardTitle>
+                        <CardDescription>{t('rckmeldungen_zu_weiterleitunge', `Rückmeldungen zu Weiterleitungen`)}</CardDescription>
                       </CardHeader>
                       <CardContent>
                         {statsLoading ? (
-                          <div className="text-center py-8">Lade Statistiken...</div>
+                          <div className="text-center py-8">{t('lade_statistiken', `Lade Statistiken...`)}</div>
                         ) : (
                           <div className="space-y-4">
                             {(() => {
@@ -4133,7 +4205,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     >
                                     <div className="flex justify-between text-sm">
                                         <div className="flex items-center gap-1">
-                                            <span>Auto-Redirect</span>
+                                            <span>{t('autoredirect', `Auto-Redirect`)}</span>
                                         </div>
                                         <span className="font-medium">
                                         {auto}
@@ -4154,7 +4226,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         }}
                                         >
                                         <div className="flex justify-between text-sm">
-                                            <span>Kein Feedback</span>
+                                            <span>{t('kein_feedback', `Kein Feedback`)}</span>
                                             <span className="font-medium">
                                             {missing}
                                             <span className="text-muted-foreground ml-1">
@@ -4178,15 +4250,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <div className={`grid grid-cols-1 ${generalSettings.enableReferrerTracking ? 'lg:grid-cols-2' : ''} gap-6`}>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Top URLs</CardTitle>
+                      <CardTitle>{t('top_urls', `Top URLs`)}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {top100Loading ? (
-                        <div className="text-center py-8">Lade URLs...</div>
+                        <div className="text-center py-8">{t('lade_urls', `Lade URLs...`)}</div>
                       ) : !topUrlsData?.length ? (
                         <div className="text-center py-8 text-muted-foreground">
-                          Keine URL-Aufrufe vorhanden.
-                        </div>
+
+                                                                                    {t('keine_urlaufrufe_vorhanden', `Keine URL-Aufrufe vorhanden.`)}
+                                                                                  </div>
                       ) : (
                         <>
                           <div className="overflow-x-auto">
@@ -4194,9 +4267,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <thead className="bg-muted/50 border-b">
                                 <tr>
                                   <th className="text-left p-2 sm:p-3 font-medium w-12">#</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium">URL-Pfad</th>
-                                  <th className="text-right p-2 sm:p-3 font-medium w-20">Aufrufe</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium w-24">Anteil</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium">{t('urlpfad', `URL-Pfad`)}</th>
+                                  <th className="text-right p-2 sm:p-3 font-medium w-20">{t('aufrufe', `Aufrufe`)}</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-24">{t('anteil', `Anteil`)}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -4235,15 +4308,16 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   {generalSettings.enableReferrerTracking && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Top Referrer</CardTitle>
+                      <CardTitle>{t('top_referrer', `Top Referrer`)}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {topReferrersLoading ? (
-                        <div className="text-center py-8">Lade Referrer...</div>
+                        <div className="text-center py-8">{t('lade_referrer', `Lade Referrer...`)}</div>
                       ) : !topReferrersData?.length ? (
                         <div className="text-center py-8 text-muted-foreground">
-                          Keine Referrer-Daten vorhanden.
-                        </div>
+
+                                                                                        {t('keine_referrerdaten_vorhanden', `Keine Referrer-Daten vorhanden.`)}
+                                                                                      </div>
                       ) : (
                         <>
                           <div className="overflow-x-auto">
@@ -4251,9 +4325,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               <thead className="bg-muted/50 border-b">
                                 <tr>
                                   <th className="text-left p-2 sm:p-3 font-medium w-12">#</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium">Domain</th>
-                                  <th className="text-right p-2 sm:p-3 font-medium w-20">Anzahl</th>
-                                  <th className="text-left p-2 sm:p-3 font-medium w-24">Anteil</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium">{t('domain', `Domain`)}</th>
+                                  <th className="text-right p-2 sm:p-3 font-medium w-20">{t('anzahl', `Anzahl`)}</th>
+                                  <th className="text-left p-2 sm:p-3 font-medium w-24">{t('anteil', `Anteil`)}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -4300,11 +4374,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               {statsView === 'browser' && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Alle Tracking-Einträge</CardTitle>
+                    <CardTitle>{t('alle_trackingeintrge', `Alle Tracking-Einträge`)}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {entriesLoading ? (
-                      <div className="text-center py-8">Lade Einträge...</div>
+                      <div className="text-center py-8">{t('lade_eintrge', `Lade Einträge...`)}</div>
                     ) : !trackingEntries?.length ? (
                       <div className="text-center py-8 text-muted-foreground">
                         {statsSearchQuery ? `Keine Einträge für "${statsSearchQuery}" gefunden.` : 'Keine Tracking-Einträge vorhanden.'}
@@ -4334,20 +4408,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 onClick={() => setStatsPage(1)}
                                 disabled={statsPage === 1}
                               >
-                                Erste
-                              </Button>
+
+                                                                                                      {t('erste', `Erste`)}
+                                                                                                    </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setStatsPage(statsPage - 1)}
                                 disabled={statsPage === 1}
                               >
-                                Vorherige
-                              </Button>
+
+                                                                                                      {t('vorherige', `Vorherige`)}
+                                                                                                    </Button>
                             </div>
                             
                             <div className="text-sm text-muted-foreground">
-                              Zeige {statsStartIndex + 1}-{Math.min(statsEndIndex, totalStatsEntries)} von {debouncedStatsSearchQuery ? totalStatsEntries : totalAllStatsEntries}
+
+                                                                                                {t('zeige', `Zeige`)} {statsStartIndex + 1}-{Math.min(statsEndIndex, totalStatsEntries)}  {t('von', `von`)} {debouncedStatsSearchQuery ? totalStatsEntries : totalAllStatsEntries}
                             </div>
                             
                             <div className="flex items-center gap-2">
@@ -4357,16 +4434,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 onClick={() => setStatsPage(statsPage + 1)}
                                 disabled={statsPage === totalStatsPages}
                               >
-                                Nächste
-                              </Button>
+
+                                                                                                      {t('nchste', `Nächste`)}
+                                                                                                    </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setStatsPage(totalStatsPages)}
                                 disabled={statsPage === totalStatsPages}
                               >
-                                Letzte
-                              </Button>
+
+                                                                                                      {t('letzte', `Letzte`)}
+                                                                                                    </Button>
                             </div>
                           </div>
                         )}
@@ -4386,42 +4465,45 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileSpreadsheet className="h-6 w-6 text-primary" />
-                        <CardTitle>Standard Import / Export (Excel, CSV)</CardTitle>
+                        <CardTitle>{t('standard_import_export_excel_c', `Standard Import / Export (Excel, CSV)`)}</CardTitle>
                     </div>
                     <CardDescription>
-                        Benutzerfreundlicher Import und Export für Redirect Rules. Unterstützt Excel (.xlsx) und CSV.
-                        Mit Vorschau-Funktion vor dem Import.
-                    </CardDescription>
+
+                                                                  {t('benutzerfreundlicher_import_un', `Benutzerfreundlicher Import und Export für Redirect Rules. Unterstützt Excel (.xlsx) und CSV.
+                        Mit Vorschau-Funktion vor dem Import.`)}
+                                                              </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Import Section */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Importieren</h3>
+                            <h3 className="font-medium text-foreground">{t('regeln_importieren', `Regeln Importieren`)}</h3>
                             <div className="text-sm text-muted-foreground space-y-2">
-                                <p>Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:</p>
+                                <p>{t('laden_sie_eine_excel_oder_csvd', `Laden Sie eine Excel- oder CSV-Datei hoch. Erwartete Spalten:`)}</p>
                                 <ul className="list-disc list-inside text-xs">
-                                        <li><strong>Matcher</strong> (Pflicht) - z.B. /alte-seite</li>
-                                        <li><strong>Target URL</strong> (Pflicht) - z.B. https://neue-seite.de</li>
-                                        <li><strong>Type</strong> (Pflicht) - 'partial', 'wildcard' oder 'domain'</li>
-                                        <li><strong>Info</strong> (Optional) - Beschreibung</li>
-                                        <li><strong>Auto Redirect</strong> (Optional) - 'true'/'false'</li>
-                                        <li><strong>Discard Query Params</strong> (Optional) - 'true'/'false'</li>
-                                        <li><strong>Keep Query Params</strong> (Optional) - 'true'/'false'</li>
-                                        <li><strong>Static Query Params</strong> (Optional) - JSON Array</li>
-                                        <li><strong>Search Replace</strong> (Optional) - JSON Array</li>
-                                        <li><strong>ID</strong> (Optional) - Nur für Updates bestehender Regeln</li>
+                                        <li><strong>{t('matcher', `Matcher`)}</strong>  {t('pflicht_zb_alteseite', `(Pflicht) - z.B. /alte-seite`)}</li>
+                                        <li><strong>{t('target_url', `Target URL`)}</strong>  {t('pflicht_zb_httpsneueseitede', `(Pflicht) - z.B. https://neue-seite.de`)}</li>
+                                        <li><strong>{t('type', `Type`)}</strong>  {t('pflicht_partial_wildcard_oder_', `(Pflicht) - 'partial', 'wildcard' oder 'domain'`)}</li>
+                                        <li><strong>{t('info', `Info`)}</strong>  {t('optional_beschreibung', `(Optional) - Beschreibung`)}</li>
+                                        <li><strong>{t('auto_redirect', `Auto Redirect`)}</strong>  {t('optional_truefalse', `(Optional) - 'true'/'false'`)}</li>
+                                        <li><strong>{t('discard_query_params', `Discard Query Params`)}</strong>  {t('optional_truefalse', `(Optional) - 'true'/'false'`)}</li>
+                                        <li><strong>{t('keep_query_params', `Keep Query Params`)}</strong>  {t('optional_truefalse', `(Optional) - 'true'/'false'`)}</li>
+                                        <li><strong>{t('static_query_params', `Static Query Params`)}</strong>  {t('optional_json_array', `(Optional) - JSON Array`)}</li>
+                                        <li><strong>{t('search_replace', `Search Replace`)}</strong>  {t('optional_json_array', `(Optional) - JSON Array`)}</li>
+                                        <li><strong>{t('id', `ID`)}</strong>  {t('optional_nur_fr_updates_besteh', `(Optional) - Nur für Updates bestehender Regeln`)}</li>
                                 </ul>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.xlsx" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (Excel)
-                                  </a>
+
+                                                                                              {t('musterdatei_excel', `Musterdatei (Excel)`)}
+                                                                                            </a>
                                   <span className="text-muted-foreground">|</span>
                                   <a href="/sample-rules-import.csv" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (CSV)
-                                  </a>
+
+                                                                                              {t('musterdatei_csv', `Musterdatei (CSV)`)}
+                                                                                            </a>
                                 </div>
                             </div>
                             <div className="flex gap-2 items-center">
@@ -4446,18 +4528,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             {previewMutation.isPending ? (
                                                 <div className="animate-pulse flex flex-col items-center">
                                                     <div className="h-8 w-8 mb-3 rounded-full bg-muted"></div>
-                                                    <div className="text-sm text-muted-foreground">Analysiere Datei...</div>
+                                                    <div className="text-sm text-muted-foreground">{t('analysiere_datei', `Analysiere Datei...`)}</div>
                                                 </div>
                                             ) : (
                                                 <>
                                                     <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
                                                     <p className="mb-1 text-sm text-foreground font-medium">
-                                                        Klicken zum Auswählen
-                                                        <span className="text-muted-foreground font-normal"> oder Datei hierher ziehen</span>
+
+                                                                                                                                      {t('klicken_zum_auswhlen', `Klicken zum Auswählen`)}
+                                                                                                                                      <span className="text-muted-foreground font-normal">  {t('oder_datei_hierher_ziehen', `oder Datei hierher ziehen`)}</span>
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">
-                                                        Excel (.xlsx) oder CSV
-                                                    </p>
+
+                                                                                                                                      {t('excel_xlsx_oder_csv', `Excel (.xlsx) oder CSV`)}
+                                                                                                                                  </p>
                                                 </>
                                             )}
                                         </div>
@@ -4469,10 +4553,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 <div className="flex items-start gap-3 flex-1">
                                     <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
                                     <div>
-                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">URLs automatisch kodieren</p>
+                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">{t('urls_automatisch_kodieren', `URLs automatisch kodieren`)}</p>
                                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                                            Sonderzeichen in URLs automatisch konvertieren (encodeURI)
-                                        </p>
+
+                                                                                                          {t('sonderzeichen_in_urls_automati', `Sonderzeichen in URLs automatisch konvertieren (encodeURI)`)}
+                                                                                                      </p>
                                     </div>
                                 </div>
                                 <Switch
@@ -4490,20 +4575,23 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
                         {/* Export Section */}
                         <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
-                            <h3 className="font-medium text-foreground">Regeln Exportieren</h3>
+                            <h3 className="font-medium text-foreground">{t('regeln_exportieren', `Regeln Exportieren`)}</h3>
                             <p className="text-sm text-muted-foreground">
-                                Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
-                                Die Dateien können später wieder importiert werden.
-                            </p>
+
+                                                                                  {t('exportieren_sie_alle_regeln_zu', `Exportieren Sie alle Regeln zur Bearbeitung in Excel oder als Backup.
+                                Die Dateien können später wieder importiert werden.`)}
+                                                                              </p>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'xlsx')}>
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (Excel)
-                                </Button>
+
+                                                                                          {t('herunterladen_excel', `Herunterladen (Excel)`)}
+                                                                                      </Button>
                                 <Button className="flex-1" variant="outline" onClick={() => handleExport('rules', 'csv')}>
                                     <FileText className="h-4 w-4 mr-2" />
-                                    Herunterladen (CSV)
-                                </Button>
+
+                                                                                          {t('herunterladen_csv', `Herunterladen (CSV)`)}
+                                                                                      </Button>
                             </div>
                         </div>
                     </div>
@@ -4515,11 +4603,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <FileJson className="h-6 w-6 text-orange-600" />
-                        <CardTitle>Erweiterter Regel-Import/Export</CardTitle>
+                        <CardTitle>{t('erweiterter_regelimportexport', `Erweiterter Regel-Import/Export`)}</CardTitle>
                     </div>
                     <CardDescription>
-                        Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.
-                    </CardDescription>
+
+                                                                  {t('fr_fortgeschrittene_benutzer_u', `Für fortgeschrittene Benutzer und System-Backups. Importiert Rohdaten ohne Vorschau.`)}
+                                                              </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -4527,8 +4616,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                          <div className="space-y-4 border rounded-lg p-4 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                Regel-Rohdaten (JSON)
-                            </h3>
+
+                                                                                  {t('regelrohdaten_json', `Regel-Rohdaten (JSON)`)}
+                                                                              </h3>
                             <div className="space-y-2">
                                 <Button
                                     className="w-full"
@@ -4536,8 +4626,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('rules', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (JSON)
-                                </Button>
+
+                                                                                          {t('herunterladen_json', `Herunterladen (JSON)`)}
+                                                                                      </Button>
                                 <div className="relative">
                                     <input
                                         type="file"
@@ -4551,18 +4642,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         disabled={importMutation.isPending}
                                     >
                                         <Upload className="h-4 w-4 mr-2" />
-                                        Importieren (JSON)
-                                    </Button>
+
+                                                                                                  {t('importieren_json', `Importieren (JSON)`)}
+                                                                                              </Button>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   <a href="/sample-rules-import.json" download className="text-xs text-primary hover:underline flex items-center">
                                     <Download className="h-3 w-3 mr-1" />
-                                    Musterdatei (JSON)
-                                  </a>
+
+                                                                                              {t('musterdatei_json', `Musterdatei (JSON)`)}
+                                                                                            </a>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-2">
-                                    <strong>Warnung:</strong> Keine Vorschau. Überschreibt bestehende Regeln bei ID-Konflikt sofort.
-                                </p>
+                                    <strong>{t('warnung', `Warnung:`)}</strong>  {t('keine_vorschau_berschreibt_bes', `Keine Vorschau. Überschreibt bestehende Regeln bei ID-Konflikt sofort.`)}
+                                                                                      </p>
                             </div>
                          </div>
                     </div>
@@ -4574,11 +4667,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <Settings className="h-6 w-6 text-blue-600" />
-                        <CardTitle>System & Statistiken</CardTitle>
+                        <CardTitle>{t('system_statistiken', `System & Statistiken`)}</CardTitle>
                     </div>
                     <CardDescription>
-                        Verwaltung von Systemeinstellungen und Statistiken.
-                    </CardDescription>
+
+                                                                  {t('verwaltung_von_systemeinstellu', `Verwaltung von Systemeinstellungen und Statistiken.`)}
+                                                              </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -4586,11 +4680,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                System-Einstellungen
-                            </h3>
+
+                                                                                  {t('systemeinstellungen', `System-Einstellungen`)}
+                                                                              </h3>
                             <p className="text-xs text-muted-foreground">
-                                Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.
-                            </p>
+
+                                                                                  {t('exportieren_sie_die_komplette_', `Exportieren Sie die komplette Konfiguration (Titel, Texte, Farben) als Backup oder um sie auf eine andere Instanz zu übertragen.`)}
+                                                                              </p>
                             <div className="space-y-2">
                                 <Button
                                     className="w-full"
@@ -4598,8 +4694,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('settings', 'json')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (JSON)
-                                </Button>
+
+                                                                                          {t('herunterladen_json', `Herunterladen (JSON)`)}
+                                                                                      </Button>
                                 <div className="relative">
                                   <input
                                     type="file"
@@ -4613,8 +4710,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     disabled={importSettingsMutation.isPending}
                                   >
                                     <Upload className="h-4 w-4 mr-2" />
-                                    Importieren (JSON)
-                                  </Button>
+
+                                                                                              {t('importieren_json', `Importieren (JSON)`)}
+                                                                                            </Button>
                                 </div>
                             </div>
                          </div>
@@ -4623,11 +4721,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                          <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
                             <h3 className="font-medium text-foreground flex items-center gap-2">
                                 <BarChart3 className="h-4 w-4" />
-                                Statistiken
-                            </h3>
+
+                                                                                  {t('statistiken', `Statistiken`)}
+                                                                              </h3>
                             <p className="text-xs text-muted-foreground">
-                                Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.
-                            </p>
+
+                                                                                  {t('exportieren_sie_die_trackinglo', `Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen zur externen Analyse.`)}
+                                                                              </p>
                             <div className="space-y-2">
                                 <Button
                                     className="w-full"
@@ -4635,8 +4735,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     onClick={() => handleExport('statistics', 'csv')}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Herunterladen (CSV)
-                                </Button>
+
+                                                                                          {t('herunterladen_csv', `Herunterladen (CSV)`)}
+                                                                                      </Button>
                             </div>
                          </div>
                     </div>
@@ -4648,13 +4749,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5 text-red-500" />
-                        <CardTitle className="text-red-500">Gefahrenzone!</CardTitle>
+                        <CardTitle className="text-red-500">{t('gefahrenzone', `Gefahrenzone!`)}</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent>
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
-                            <h4 className="font-medium text-sm">Cache Wartung</h4>
+                            <h4 className="font-medium text-sm">{t('cache_wartung', `Cache Wartung`)}</h4>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <Button
                                     variant="outline"
@@ -4665,13 +4766,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     {rebuildCacheMutation.isPending ? "Erstelle neu..." : "Cache neu aufbauen"}
                                 </Button>
                                 <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                    Nur bei Problemen mit der Regelerkennung notwendig.
-                                </p>
+
+                                                                                          {t('nur_bei_problemen_mit_der_rege', `Nur bei Problemen mit der Regelerkennung notwendig.`)}
+                                                                                      </p>
                             </div>
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
-                            <h4 className="font-medium text-sm">Sicherheit</h4>
+                            <h4 className="font-medium text-sm">{t('sicherheit', `Sicherheit`)}</h4>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <Button
                                     variant="outline"
@@ -4679,16 +4781,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     className="w-full sm:w-auto"
                                 >
                                     <Shield className="h-4 w-4 mr-2" />
-                                    Blockierte IPs anzeigen und verwalten
-                                </Button>
+
+                                                                                          {t('blockierte_ips_anzeigen_und_ve', `Blockierte IPs anzeigen und verwalten`)}
+                                                                                      </Button>
                                 <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                    Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.
-                                </p>
+
+                                                                                          {t('liste_der_blockierten_ips_eins', `Liste der blockierten IPs einsehen, neue IPs blockieren oder einzelne entsperren.`)}
+                                                                                      </p>
                             </div>
                         </div>
 
                         <div className="border-t pt-4 flex flex-col gap-2">
-                            <h4 className="font-medium text-sm text-red-600">Destruktive Aktionen</h4>
+                            <h4 className="font-medium text-sm text-red-600">{t('destruktive_aktionen', `Destruktive Aktionen`)}</h4>
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
@@ -4700,11 +4804,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Alle Regeln löschen
-                                    </Button>
+
+                                                                                                  {t('alle_regeln_lschen', `Alle Regeln löschen`)}
+                                                                                              </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.
-                                    </p>
+
+                                                                                                  {t('lscht_alle_vorhandenen_weiterl', `Löscht alle vorhandenen Weiterleitungs-Regeln unwiderruflich.`)}
+                                                                                              </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
@@ -4716,11 +4822,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         className="w-full sm:w-auto"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Alle Statistiken löschen
-                                    </Button>
+
+                                                                                                  {t('alle_statistiken_lschen', `Alle Statistiken löschen`)}
+                                                                                              </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle erfassten Tracking-Daten unwiderruflich.
-                                    </p>
+
+                                                                                                  {t('lscht_alle_erfassten_trackingd', `Löscht alle erfassten Tracking-Daten unwiderruflich.`)}
+                                                                                              </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                     <Button
@@ -4732,11 +4840,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         className="w-full sm:w-auto"
                                     >
                                         <Shield className="h-4 w-4 mr-2" />
-                                        Blockierte IPs löschen
-                                    </Button>
+
+                                                                                                  {t('blockierte_ips_lschen', `Blockierte IPs löschen`)}
+                                                                                              </Button>
                                     <p className="text-xs text-muted-foreground text-center sm:text-left">
-                                        Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.
-                                    </p>
+
+                                                                                                  {t('lscht_alle_blockierten_ipadres', `Löscht alle blockierten IP-Adressen. Blockierte Nutzer erhalten sofort wieder Zugriff.`)}
+                                                                                              </p>
                                 </div>
                             </div>
                         </div>
@@ -4757,9 +4867,10 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
             <DialogHeader>
-                <DialogTitle>Import Vorschau</DialogTitle>
+                <DialogTitle>{t('import_vorschau', `Import Vorschau`)}</DialogTitle>
                 <DialogDescription>
-                    Überprüfen Sie die zu importierenden Regeln. {importPreviewData?.isLimited && `(Vorschau auf ${importPreviewData.limit} Einträge begrenzt)`}
+
+                                              {t('berprfen_sie_die_zu_importiere', `Überprüfen Sie die zu importierenden Regeln.`)} {importPreviewData?.isLimited && `(Vorschau auf ${importPreviewData.limit} Einträge begrenzt)`}
                 </DialogDescription>
             </DialogHeader>
 
@@ -4773,21 +4884,24 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                   className={`cursor-pointer ${previewStatusFilter === 'new' ? 'bg-green-600 hover:bg-green-700' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
                                   onClick={() => setPreviewStatusFilter(previewStatusFilter === 'new' ? 'all' : 'new')}
                               >
-                                  Neu: {importPreviewData.counts.new}
+
+                                                                            {t('neu', `Neu:`)} {importPreviewData.counts.new}
                               </Badge>
                               <Badge
                                   variant={previewStatusFilter === 'update' ? "default" : "outline"}
                                   className={`cursor-pointer ${previewStatusFilter === 'update' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'}`}
                                   onClick={() => setPreviewStatusFilter(previewStatusFilter === 'update' ? 'all' : 'update')}
                               >
-                                  Update: {importPreviewData.counts.update}
+
+                                                                            {t('update', `Update:`)} {importPreviewData.counts.update}
                               </Badge>
                               <Badge
                                   variant={previewStatusFilter === 'invalid' ? "default" : "outline"}
                                   className={`cursor-pointer ${previewStatusFilter === 'invalid' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
                                   onClick={() => setPreviewStatusFilter(previewStatusFilter === 'invalid' ? 'all' : 'invalid')}
                               >
-                                  Ungültig: {importPreviewData.counts.invalid}
+
+                                                                            {t('ungltig', `Ungültig:`)} {importPreviewData.counts.invalid}
                               </Badge>
                               {previewStatusFilter !== 'all' && (
                                    <Button
@@ -4797,13 +4911,15 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                      onClick={() => setPreviewStatusFilter('all')}
                                    >
                                      <Filter className="h-3 w-3 mr-1" />
-                                     Filter löschen
-                                   </Button>
+
+                                                                                   {t('filter_lschen', `Filter löschen`)}
+                                                                                 </Button>
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-muted-foreground">
-                                  Zeige {Math.min(previewLimit, filteredPreviewData.length)} von {filteredPreviewData.length} (Gesamt: {importPreviewData.total})
+
+                                                                            {t('zeige', `Zeige`)} {Math.min(previewLimit, filteredPreviewData.length)}  {t('von', `von`)} {filteredPreviewData.length}  {t('gesamt', `(Gesamt:`)} {importPreviewData.total})
                               </span>
                               {filteredPreviewData.length > 50 && !showAllPreview && (
                                 <Button
@@ -4842,8 +4958,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                               size="sm"
                               onClick={() => setPreviewLimit(prev => Math.min(prev + 100, importPreviewData.total))}
                             >
-                              Mehr laden (+100)
-                            </Button>
+
+                                                                        {t('mehr_laden_100', `Mehr laden (+100)`)}
+                                                                      </Button>
                           </div>
                         )}
                     </div>
@@ -4851,7 +4968,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             </div>
 
             <DialogFooter>
-                <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Abbrechen</Button>
+                <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>{t('abbrechen', `Abbrechen`)}</Button>
                 <Button
                     onClick={handleExecuteImport}
                     disabled={importMutation.isPending || previewMutation.isPending || (importPreviewData?.all ? !importPreviewData.all.some(r => r.isValid) : !importPreviewData?.preview.some(r => r.isValid))}
@@ -4879,10 +4996,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <form onSubmit={handleSubmitRule} className="space-y-4 sm:space-y-6">
             <div>
               <label className="block text-sm font-medium mb-2">
-                URL-Pfad Matcher
-              </label>
+
+                                              {t('urlpfad_matcher', `URL-Pfad Matcher`)}
+                                            </label>
               <Input
-                placeholder="/news-beitrag"
+                placeholder={t('newsbeitrag', `/news-beitrag`)}
                 value={ruleForm.matcher}
                 onChange={(e) => setRuleForm(prev => ({ ...prev, matcher: e.target.value }))}
                 required
@@ -4890,8 +5008,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
-                Ziel-URL (optional)
-              </label>
+
+                                              {t('zielurl_optional', `Ziel-URL (optional)`)}
+                                            </label>
               <Input
                 placeholder={targetUrlPlaceholder}
                 value={ruleForm.targetUrl}
@@ -4900,8 +5019,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
-                Redirect-Typ
-              </label>
+
+                                              {t('redirecttyp', `Redirect-Typ`)}
+                                            </label>
               <Select
                 value={ruleForm.redirectType}
                 onValueChange={(value: "wildcard" | "partial" | "domain") =>
@@ -4918,27 +5038,31 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <SelectContent className="w-[calc(100vw-2rem)] sm:min-w-[480px] sm:max-w-[600px]">
                   <SelectItem value="partial" className="pl-8 pr-3 py-3 items-start">
                     <div className="flex flex-col space-y-1">
-                      <span className="font-medium text-sm">Teilweise</span>
+                      <span className="font-medium text-sm">{t('teilweise', `Teilweise`)}</span>
                       <span className="text-xs text-muted-foreground leading-relaxed">
-                        Nur die Pfadsegmente ab dem Matcher werden ersetzt. Base URL aus den generellen Einstellungen wird verwendet. Zusätzliche Pfadsegmente, Parameter und Anker bleiben erhalten.
-                      </span>
+
+                                                                      {t('nur_die_pfadsegmente_ab_dem_ma', `Nur die Pfadsegmente ab dem Matcher werden ersetzt. Base URL aus den generellen Einstellungen wird verwendet. Zusätzliche Pfadsegmente, Parameter und Anker bleiben erhalten.`)}
+                                                                    </span>
                     </div>
                   </SelectItem>
                   <SelectItem value="wildcard" className="pl-8 pr-3 py-3 items-start">
                     <div className="flex flex-col space-y-1">
-                      <span className="font-medium text-sm">Vollständig</span>
+                      <span className="font-medium text-sm">{t('vollstndig', `Vollständig`)}</span>
                       <span className="text-xs text-muted-foreground leading-relaxed">
-                        Alte Links werden komplett auf die neue Ziel-URL umgeleitet. Keine Bestandteile der alten URL werden übernommen – weder Pfadsegmente noch Parameter oder Anker.
-                      </span>
+
+                                                                      {t('alte_links_werden_komplett_auf', `Alte Links werden komplett auf die neue Ziel-URL umgeleitet. Keine Bestandteile der alten URL werden übernommen – weder Pfadsegmente noch Parameter oder Anker.`)}
+                                                                    </span>
                     </div>
                   </SelectItem>
                   <SelectItem value="domain" className="pl-8 pr-3 py-3 items-start">
                     <div className="flex flex-col space-y-1">
-                      <span className="font-medium text-sm">Domain-Ersatz</span>
+                      <span className="font-medium text-sm">{t('domainersatz', `Domain-Ersatz`)}</span>
                       <span className="text-xs text-muted-foreground leading-relaxed whitespace-normal">
-                        Ersetzt nur die Domain (Host) der URL. Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Wenn eine Ziel-URL angegeben ist, wird deren Domain verwendet.<br/><br/>
-                        Der Matcher kann hier auch eine Domain sein (z.B. "www.alteseite.ch"). Bei Verwendung eines Pfad-Matchers ("/news") mit diesem Typ wird nur die Domain ersetzt, während der Pfad erhalten bleibt.
-                      </span>
+
+                                                                      {t('ersetzt_nur_die_domain_host_de', `Ersetzt nur die Domain (Host) der URL. Der gesamte Pfad und alle Parameter bleiben exakt erhalten. Wenn eine Ziel-URL angegeben ist, wird deren Domain verwendet.`)}<br/><br/>
+
+                                                                      {t('der_matcher_kann_hier_auch_ein', `Der Matcher kann hier auch eine Domain sein (z.B. "www.alteseite.ch"). Bei Verwendung eines Pfad-Matchers ("/news") mit diesem Typ wird nur die Domain ersetzt, während der Pfad erhalten bleibt.`)}
+                                                                    </span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -4946,10 +5070,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
-                Info-Text (Markdown)
-              </label>
+
+                                              {t('infotext_markdown', `Info-Text (Markdown)`)}
+                                            </label>
               <Textarea
-                placeholder="Nachrichtenbeiträge wurden migriert..."
+                placeholder={t('nachrichtenbeitrge_wurden_migr', `Nachrichtenbeiträge wurden migriert...`)}
                 value={ruleForm.infoText}
                 onChange={(e) => setRuleForm(prev => ({ ...prev, infoText: e.target.value }))}
                 rows={3}
@@ -4959,17 +5084,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
             {/* Search and Replace */}
             <div className="border-t pt-4">
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  Suchen & Ersetzen
-                </label>
+
+                                                {t('suchen_ersetzen', `Suchen & Ersetzen`)}
+                                              </label>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Ersetzen Sie Teile der URL (Pfad oder Parameter) vor der Weiterleitung.
-                </p>
+
+                                                {t('ersetzen_sie_teile_der_url_pfa', `Ersetzen Sie Teile der URL (Pfad oder Parameter) vor der Weiterleitung.`)}
+                                              </p>
                 <div className="space-y-3">
                   {ruleForm.searchAndReplace.map((item, index) => (
                     <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 space-y-1">
-                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Suchen</label>
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">{t('suchen', `Suchen`)}</label>
                             <Input
                               value={item.search}
                               onChange={(e) => {
@@ -4977,12 +5104,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 newItems[index] = { ...item, search: e.target.value };
                                 setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
                               }}
-                              placeholder="/alte-seite"
+                              placeholder={t('alteseite', `/alte-seite`)}
                               className="h-8 text-sm"
                             />
                         </div>
                         <div className="flex-1 space-y-1">
-                            <label className="text-xs font-medium block h-8 flex items-end pb-1">Ersetzen</label>
+                            <label className="text-xs font-medium block h-8 flex items-end pb-1">{t('ersetzen', `Ersetzen`)}</label>
                             <Input
                               value={item.replace || ''}
                               onChange={(e) => {
@@ -4990,12 +5117,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 newItems[index] = { ...item, replace: e.target.value };
                                 setRuleForm(prev => ({ ...prev, searchAndReplace: newItems }));
                               }}
-                              placeholder="/neue-seite (leer = löschen)"
+                              placeholder={t('neueseite_leer_lschen', `/neue-seite (leer = löschen)`)}
                               className="h-8 text-sm"
                             />
                         </div>
                         <div className="flex items-center h-8 pb-1">
-                             <div className="flex items-center space-x-2" title="Groß-/Kleinschreibung beachten">
+                             <div className="flex items-center space-x-2" title={t('grokleinschreibung_beachten', `Groß-/Kleinschreibung beachten`)}>
                                 <Switch
                                     checked={item.caseSensitive}
                                     onCheckedChange={(checked) => {
@@ -5005,7 +5132,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     }}
                                     className="scale-75"
                                 />
-                                <span className="text-xs">Aa</span>
+                                <span className="text-xs">{t('aa', `Aa`)}</span>
                              </div>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -5078,8 +5205,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         className="flex items-center gap-2"
                     >
                         <Plus className="h-3 w-3" />
-                        Ersetzung hinzufügen
-                    </Button>
+
+                                                              {t('ersetzung_hinzufgen', `Ersetzung hinzufügen`)}
+                                                          </Button>
                   </div>
                 </div>
             </div>
@@ -5090,17 +5218,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 {/* Static Query Params */}
                 <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      Statische Parameter hinzufügen
-                    </label>
+
+                                                            {t('statische_parameter_hinzufgen', `Statische Parameter hinzufügen`)}
+                                                          </label>
                     <p className="text-xs text-muted-foreground mb-3">
-                      Definieren Sie Parameter, die immer an die Ziel-URL angehängt werden (z.B. ?source=migration).
-                    </p>
+
+                                                            {t('definieren_sie_parameter_die_i', `Definieren Sie Parameter, die immer an die Ziel-URL angehängt werden (z.B. ?source=migration).`)}
+                                                          </p>
                     <div className="space-y-3">
                       {ruleForm.staticQueryParams.map((item, index) => (
                         <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
                           <div className="flex gap-2 items-end">
                             <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Key</label>
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">{t('key', `Key`)}</label>
                                 <Input
                                   value={item.key}
                                   onChange={(e) => {
@@ -5108,12 +5238,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     newParams[index] = { ...item, key: e.target.value };
                                     setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
                                   }}
-                                  placeholder="source"
+                                  placeholder={t('source', `source`)}
                                   className="h-8 text-sm"
                                 />
                             </div>
                             <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Value</label>
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">{t('value', `Value`)}</label>
                                 <Input
                                   value={item.value || ''}
                                   onChange={(e) => {
@@ -5121,12 +5251,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     newParams[index] = { ...item, value: e.target.value };
                                     setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
                                   }}
-                                  placeholder="migration"
+                                  placeholder={t('migration', `migration`)}
                                   className="h-8 text-sm"
                                 />
                             </div>
                             <div className="flex flex-col gap-1 items-center justify-end pb-1">
-                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                <div className="flex items-center space-x-1" title={t('nicht_kodieren_no_url_encoding', `Nicht kodieren (No URL Encoding)`)}>
                                     <Switch
                                         checked={item.skipEncoding}
                                         onCheckedChange={(checked) => {
@@ -5136,7 +5266,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         }}
                                         className="scale-75"
                                     />
-                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">{t('raw', `Raw`)}</span>
                                 </div>
                                 <div className="flex gap-1">
                                     <Button
@@ -5154,7 +5284,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             }
                                         }}
                                         disabled={index === 0}
-                                        title="Nach oben"
+                                        title={t('nach_oben', `Nach oben`)}
                                     >
                                         <ArrowUp className="h-4 w-4" />
                                     </Button>
@@ -5173,7 +5303,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             }
                                         }}
                                         disabled={index === ruleForm.staticQueryParams.length - 1}
-                                        title="Nach unten"
+                                        title={t('nach_unten', `Nach unten`)}
                                     >
                                         <ArrowDown className="h-4 w-4" />
                                     </Button>
@@ -5188,7 +5318,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     const newParams = ruleForm.staticQueryParams.filter((_, i) => i !== index);
                                     setRuleForm(prev => ({ ...prev, staticQueryParams: newParams }));
                                 }}
-                                title="Löschen"
+                                title={t('lschen', `Löschen`)}
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
@@ -5210,8 +5340,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             className="flex items-center gap-2"
                         >
                             <Plus className="h-3 w-3" />
-                            Parameter hinzufügen
-                        </Button>
+
+                                                                          {t('parameter_hinzufgen', `Parameter hinzufügen`)}
+                                                                      </Button>
                       </div>
                     </div>
                 </div>
@@ -5224,11 +5355,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   />
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Alle Link-Parameter entfernen
-                    </label>
+
+                                                                    {t('alle_linkparameter_entfernen', `Alle Link-Parameter entfernen`)}
+                                                                  </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Wenn aktiviert, werden alle Query-Parameter (z.B. ?id=123) aus der URL entfernt. Standard ist deaktiviert (Parameter werden beibehalten).
-                    </p>
+
+                                                                    {t('wenn_aktiviert_werden_alle_que', `Wenn aktiviert, werden alle Query-Parameter (z.B. ?id=123) aus der URL entfernt. Standard ist deaktiviert (Parameter werden beibehalten).`)}
+                                                                  </p>
                   </div>
                 </div>
                 )}
@@ -5248,12 +5381,14 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   />
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Alle Link-Parameter beibehalten
-                    </label>
+
+                                                                        {t('alle_linkparameter_beibehalten', `Alle Link-Parameter beibehalten`)}
+                                                                      </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Wenn aktiviert, werden die ursprünglichen Query-Parameter 1:1 an die Ziel-URL angehängt.
-                      Deaktivieren Sie dies, um spezifische Parameter auszuwählen oder umzubenennen.
-                    </p>
+
+                                                                        {t('wenn_aktiviert_werden_die_ursp', `Wenn aktiviert, werden die ursprünglichen Query-Parameter 1:1 an die Ziel-URL angehängt.
+                      Deaktivieren Sie dies, um spezifische Parameter auszuwählen oder umzubenennen.`)}
+                                                                      </p>
                   </div>
                 </div>
               </div>
@@ -5262,17 +5397,19 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 {((ruleForm.redirectType !== 'wildcard' && ruleForm.discardQueryParams) || (ruleForm.redirectType === 'wildcard' && !ruleForm.forwardQueryParams)) && (
                   <div className="mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700 ml-4">
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      Parameter beibehalten / umbenennen (Regex)
-                    </label>
+
+                                                                {t('parameter_beibehalten_umbenenn', `Parameter beibehalten / umbenennen (Regex)`)}
+                                                              </label>
                     <p className="text-xs text-muted-foreground mb-3">
-                      Definieren Sie Ausnahmen für Parameter, die trotz Aktivierung erhalten bleiben sollen. Die Reihenfolge bestimmt die Position im neuen Query-String.
-                    </p>
+
+                                                                {t('definieren_sie_ausnahmen_fr_pa', `Definieren Sie Ausnahmen für Parameter, die trotz Aktivierung erhalten bleiben sollen. Die Reihenfolge bestimmt die Position im neuen Query-String.`)}
+                                                              </p>
                     <div className="space-y-3">
                       {ruleForm.keptQueryParams.map((item, index) => (
                         <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
                           <div className="flex gap-2 items-end">
                             <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Parameter Key (Regex)</label>
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">{t('parameter_key_regex', `Parameter Key (Regex)`)}</label>
                                 <Input
                                   value={item.keyPattern}
                                   onChange={(e) => {
@@ -5280,12 +5417,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     newParams[index] = { ...item, keyPattern: e.target.value };
                                     setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
                                   }}
-                                  placeholder="file"
+                                  placeholder={t('file', `file`)}
                                   className="h-8 text-sm"
                                 />
                             </div>
                             <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Value Matcher (Optional Regex)</label>
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">{t('value_matcher_optional_regex', `Value Matcher (Optional Regex)`)}</label>
                                 <Input
                                   value={item.valuePattern || ''}
                                   onChange={(e) => {
@@ -5298,7 +5435,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                 />
                             </div>
                              <div className="flex-1 space-y-1">
-                                <label className="text-xs font-medium block h-8 flex items-end pb-1">Neuer Name (Optional)</label>
+                                <label className="text-xs font-medium block h-8 flex items-end pb-1">{t('neuer_name_optional', `Neuer Name (Optional)`)}</label>
                                 <Input
                                   value={item.targetKey || ''}
                                   onChange={(e) => {
@@ -5306,12 +5443,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     newParams[index] = { ...item, targetKey: e.target.value };
                                     setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
                                   }}
-                                  placeholder="f"
+                                  placeholder={t('f', `f`)}
                                   className="h-8 text-sm"
                                 />
                             </div>
                             <div className="flex flex-col gap-1 items-center justify-end pb-1">
-                                <div className="flex items-center space-x-1" title="Nicht kodieren (No URL Encoding)">
+                                <div className="flex items-center space-x-1" title={t('nicht_kodieren_no_url_encoding', `Nicht kodieren (No URL Encoding)`)}>
                                     <Switch
                                         checked={item.skipEncoding}
                                         onCheckedChange={(checked) => {
@@ -5321,7 +5458,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                         }}
                                         className="scale-75"
                                     />
-                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">Raw</span>
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">{t('raw', `Raw`)}</span>
                                 </div>
                                 <div className="flex gap-1">
                                     <Button
@@ -5339,7 +5476,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             }
                                         }}
                                         disabled={index === 0}
-                                        title="Nach oben"
+                                        title={t('nach_oben', `Nach oben`)}
                                     >
                                         <ArrowUp className="h-4 w-4" />
                                     </Button>
@@ -5358,7 +5495,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                             }
                                         }}
                                         disabled={index === ruleForm.keptQueryParams.length - 1}
-                                        title="Nach unten"
+                                        title={t('nach_unten', `Nach unten`)}
                                     >
                                         <ArrowDown className="h-4 w-4" />
                                     </Button>
@@ -5373,7 +5510,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     const newParams = ruleForm.keptQueryParams.filter((_, i) => i !== index);
                                     setRuleForm(prev => ({ ...prev, keptQueryParams: newParams }));
                                 }}
-                                title="Löschen"
+                                title={t('lschen', `Löschen`)}
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
@@ -5395,8 +5532,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                             className="flex items-center gap-2"
                         >
                             <Plus className="h-3 w-3" />
-                            Parameter hinzufügen
-                        </Button>
+
+                                                                              {t('parameter_hinzufgen', `Parameter hinzufügen`)}
+                                                                          </Button>
                         <Button
                             type="button"
                             variant="outline"
@@ -5407,10 +5545,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                                     keptQueryParams: [...prev.keptQueryParams, { keyPattern: "file" }]
                                 }));
                             }}
-                            title="Fügt eine Beispiel-Regex hinzu"
+                            title={t('fgt_eine_beispielregex_hinzu', `Fügt eine Beispiel-Regex hinzu`)}
                         >
-                            Beispiel (File) hinzufügen
-                        </Button>
+
+                                                                              {t('beispiel_file_hinzufgen', `Beispiel (File) hinzufügen`)}
+                                                                          </Button>
                       </div>
                     </div>
                   </div>
@@ -5427,17 +5566,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 />
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Automatische Weiterleitung für diese Regel
-                  </label>
+
+                                                          {t('automatische_weiterleitung_fr_', `Automatische Weiterleitung für diese Regel`)}
+                                                        </label>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.
-                  </p>
+
+                                                          {t('wenn_aktiviert_werden_benutzer', `Wenn aktiviert, werden Benutzer für URLs, die dieser Regel entsprechen, automatisch weitergeleitet.`)}
+                                                        </p>
                   {ruleForm.autoRedirect && generalSettings.enableFeedbackSurvey && (
                     <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-yellow-600" />
                         <span className="text-xs text-yellow-700">
-                            Warnung: Da die Feedback-Umfrage global aktiviert ist, erhält der Nutzer bei diesem Auto-Redirect keine Möglichkeit Feedback zu geben.
-                        </span>
+
+                                                                          {t('warnung_da_die_feedbackumfrage', `Warnung: Da die Feedback-Umfrage global aktiviert ist, erhält der Nutzer bei diesem Auto-Redirect keine Möglichkeit Feedback zu geben.`)}
+                                                                      </span>
                     </div>
                   )}
                 </div>
@@ -5459,8 +5601,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 className="flex-1"
                 onClick={() => setIsRuleDialogOpen(false)}
               >
-                Abbrechen
-              </Button>
+
+                                              {t('abbrechen', `Abbrechen`)}
+                                            </Button>
             </div>
           </form>
         </DialogContent>
@@ -5472,23 +5615,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-yellow-600">
               <AlertTriangle className="h-5 w-5" />
-              Wichtiger Hinweis
-            </DialogTitle>
+
+                                        {t('wichtiger_hinweis', `Wichtiger Hinweis`)}
+                                      </DialogTitle>
             <DialogDescription className="sr-only">
-              Bestätigung für die Aktivierung der automatischen Weiterleitung
-            </DialogDescription>
+
+                                        {t('besttigung_fr_die_aktivierung_', `Bestätigung für die Aktivierung der automatischen Weiterleitung`)}
+                                      </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Sie sind dabei, die automatische sofortige Weiterleitung für alle Besucher und alle URLs zu aktivieren. Besucher werden so automatisch sofort zur neuen URL ohne Anzeige der Seite weitergeleitet.
-            </p>
+
+                                        {t('sie_sind_dabei_die_automatisch', `Sie sind dabei, die automatische sofortige Weiterleitung für alle Besucher und alle URLs zu aktivieren. Besucher werden so automatisch sofort zur neuen URL ohne Anzeige der Seite weitergeleitet.`)}
+                                      </p>
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                  <p className="font-medium">Wichtiger Hinweis:</p>
-                  <p>Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">?admin=true</code> erreichen.</p>
-                  <p><strong>Beispiel:</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}?admin=true</code></p>
+                  <p className="font-medium">{t('wichtiger_hinweis', `Wichtiger Hinweis:`)}</p>
+                  <p>{t('bei_aktivierter_automatischer_', `Bei aktivierter automatischer Weiterleitung können Benutzer die Admin-Einstellungen nur noch über den URL-Parameter`)} <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{t('admintrue', `?admin=true`)}</code>  {t('erreichen', `erreichen.`)}</p>
+                  <p><strong>{t('beispiel', `Beispiel:`)}</strong> <code className="bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-xs">{getCurrentBaseUrl()}{t('admintrue', `?admin=true`)}</code></p>
                 </div>
               </div>
             </div>
@@ -5502,8 +5648,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               }}
               className="w-full sm:w-auto"
             >
-              Abbrechen
-            </Button>
+
+                                        {t('abbrechen', `Abbrechen`)}
+                                      </Button>
             <Button 
               onClick={() => {
                 setGeneralSettings({ ...generalSettings, autoRedirect: pendingAutoRedirectValue });
@@ -5512,8 +5659,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               }}
               className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700"
             >
-              Ich habe verstanden
-            </Button>
+
+                                        {t('ich_habe_verstanden', `Ich habe verstanden`)}
+                                      </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -5524,17 +5672,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <Shield className="h-5 w-5" />
-              Blockierte IPs löschen?
-            </DialogTitle>
+
+                                        {t('blockierte_ips_lschen', `Blockierte IPs löschen?`)}
+                                      </DialogTitle>
             <DialogDescription>
-              Dies löscht alle derzeit blockierten IP-Adressen. Nutzer können sich sofort wieder anmelden.
-            </DialogDescription>
+
+                                        {t('dies_lscht_alle_derzeit_blocki', `Dies löscht alle derzeit blockierten IP-Adressen. Nutzer können sich sofort wieder anmelden.`)}
+                                      </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-               Diese Aktion hebt den Brute-Force-Schutz für alle aktuell gesperrten Nutzer auf.
-            </div>
+
+                                         {t('diese_aktion_hebt_den_brutefor', `Diese Aktion hebt den Brute-Force-Schutz für alle aktuell gesperrten Nutzer auf.`)}
+                                      </div>
 
             <Button
                 variant="outline"
@@ -5544,24 +5695,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 className="w-full"
             >
                 <Download className="h-4 w-4 mr-2" />
-                Backup herunterladen (Excel)
-            </Button>
+
+                                          {t('backup_herunterladen_excel', `Backup herunterladen (Excel)`)}
+                                      </Button>
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">
-                    Bestätigung erforderlich
-                </label>
+
+                                                  {t('besttigung_erforderlich', `Bestätigung erforderlich`)}
+                                              </label>
                 <Input
                     value={clearBlockedIpsConfirmationText}
                     onChange={(e) => setClearBlockedIpsConfirmationText(e.target.value)}
-                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    placeholder={t('tippen_sie_delete_zur_besttigu', `Tippen Sie "DELETE" zur Bestätigung`)}
                     className={clearBlockedIpsConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
                 />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowClearBlockedIpsDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowClearBlockedIpsDialog(false)}>{t('abbrechen', `Abbrechen`)}</Button>
             <Button
               variant="destructive"
               onClick={() => clearBlockedIpsMutation.mutate()}
@@ -5577,16 +5730,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       <Dialog open={showManageBlockedIpsDialog} onOpenChange={setShowManageBlockedIpsDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Blockierte IPs verwalten</DialogTitle>
+            <DialogTitle>{t('blockierte_ips_verwalten', `Blockierte IPs verwalten`)}</DialogTitle>
             <DialogDescription>
-              Hier können Sie aktuell blockierte IP-Adressen einsehen und verwalten.
-            </DialogDescription>
+
+                                        {t('hier_knnen_sie_aktuell_blockie', `Hier können Sie aktuell blockierte IP-Adressen einsehen und verwalten.`)}
+                                      </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 my-4">
             <div className="flex gap-2">
                <Input
-                 placeholder="IP-Adresse (z.B. 192.168.1.1)"
+                 placeholder={t('ipadresse_zb_19216811', `IP-Adresse (z.B. 192.168.1.1)`)}
                  value={newBlockedIp}
                  onChange={(e) => setNewBlockedIp(e.target.value)}
                />
@@ -5596,24 +5750,25 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                  }}
                  disabled={!newBlockedIp || blockIpMutation.isPending}
                >
-                 Blockieren
-               </Button>
+
+                                               {t('blockieren', `Blockieren`)}
+                                             </Button>
             </div>
 
             <div className="border rounded-md max-h-[400px] overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>IP-Adresse</TableHead>
-                    <TableHead>Fehlversuche</TableHead>
-                    <TableHead>Blockiert bis</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
+                    <TableHead>{t('ipadresse', `IP-Adresse`)}</TableHead>
+                    <TableHead>{t('fehlversuche', `Fehlversuche`)}</TableHead>
+                    <TableHead>{t('blockiert_bis', `Blockiert bis`)}</TableHead>
+                    <TableHead className="text-right">{t('aktionen', `Aktionen`)}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {blockedIpsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">Lade...</TableCell>
+                      <TableCell colSpan={4} className="text-center">{t('lade', `Lade...`)}</TableCell>
                     </TableRow>
                   ) : blockedIps && blockedIps.length > 0 ? (
                     blockedIps.map((entry) => (
@@ -5638,8 +5793,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        Keine blockierten IP-Adressen.
-                      </TableCell>
+
+                                                                              {t('keine_blockierten_ipadressen', `Keine blockierten IP-Adressen.`)}
+                                                                            </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -5648,7 +5804,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           </div>
 
           <DialogFooter>
-             <Button variant="outline" onClick={() => setShowManageBlockedIpsDialog(false)}>Schließen</Button>
+             <Button variant="outline" onClick={() => setShowManageBlockedIpsDialog(false)}>{t('schlieen', `Schließen`)}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -5659,17 +5815,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Alle Statistiken löschen?
-            </DialogTitle>
+
+                                        {t('alle_statistiken_lschen', `Alle Statistiken löschen?`)}
+                                      </DialogTitle>
             <DialogDescription>
-              Dies löscht alle erfassten Tracking-Daten unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
-            </DialogDescription>
+
+                                        {t('dies_lscht_alle_erfassten_trac', `Dies löscht alle erfassten Tracking-Daten unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.`)}
+                                      </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-               Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.
-            </div>
+
+                                         {t('wir_empfehlen_dringend_vor_dem', `Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.`)}
+                                      </div>
 
             <Button
                 variant="outline"
@@ -5677,24 +5836,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 className="w-full"
             >
                 <Download className="h-4 w-4 mr-2" />
-                Backup herunterladen (CSV)
-            </Button>
+
+                                          {t('backup_herunterladen_csv', `Backup herunterladen (CSV)`)}
+                                      </Button>
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">
-                    Bestätigung erforderlich
-                </label>
+
+                                                  {t('besttigung_erforderlich', `Bestätigung erforderlich`)}
+                                              </label>
                 <Input
                     value={deleteAllStatsConfirmationText}
                     onChange={(e) => setDeleteAllStatsConfirmationText(e.target.value)}
-                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    placeholder={t('tippen_sie_delete_zur_besttigu', `Tippen Sie "DELETE" zur Bestätigung`)}
                     className={deleteAllStatsConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
                 />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowDeleteAllStatsDialog(false)}>{t('abbrechen', `Abbrechen`)}</Button>
             <Button
               variant="destructive"
               onClick={() => deleteAllStatsMutation.mutate()}
@@ -5712,11 +5873,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <AlertDialogHeader className="flex-shrink-0">
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Validierungswarnung
-            </AlertDialogTitle>
+
+                                        {t('validierungswarnung', `Validierungswarnung`)}
+                                      </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground text-sm">
-              Möchten Sie die Regel trotz der folgenden Warnung(en) speichern?
-            </AlertDialogDescription>
+
+                                        {t('mchten_sie_die_regel_trotz_der', `Möchten Sie die Regel trotz der folgenden Warnung(en) speichern?`)}
+                                      </AlertDialogDescription>
           </AlertDialogHeader>
           
           <div className="flex-1 min-h-0 my-4">
@@ -5728,7 +5891,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           </div>
           
           <AlertDialogFooter className="flex-shrink-0">
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('abbrechen', `Abbrechen`)}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleForceSave}
               disabled={forceCreateRuleMutation.isPending || forceUpdateRuleMutation.isPending}
@@ -5746,16 +5909,17 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Regeln löschen</AlertDialogTitle>
+            <AlertDialogTitle>{t('regeln_lschen', `Regeln löschen`)}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie die ausgewählten {selectedRuleIds.length} {selectedRuleIds.length === 1 ? 'Regel' : 'Regeln'} löschen möchten?
-              Diese Aktion kann nicht rückgängig gemacht werden.
-              <br /><br />
-              <strong>Hinweis:</strong> Es werden nur die auf der aktuellen Seite ausgewählten Regeln gelöscht.
-            </AlertDialogDescription>
+
+                                        {t('sind_sie_sicher_dass_sie_die_a', `Sind Sie sicher, dass Sie die ausgewählten`)} {selectedRuleIds.length} {selectedRuleIds.length === 1 ? 'Regel' : 'Regeln'}  {t('lschen_mchten_diese_aktion_kan', `löschen möchten?
+              Diese Aktion kann nicht rückgängig gemacht werden.`)}
+                                        <br /><br />
+              <strong>{t('hinweis', `Hinweis:`)}</strong>  {t('es_werden_nur_die_auf_der_aktu', `Es werden nur die auf der aktuellen Seite ausgewählten Regeln gelöscht.`)}
+                                      </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('abbrechen', `Abbrechen`)}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 // Critical fix: Only delete rules that are on current page
@@ -5783,11 +5947,13 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <AlertDialogHeader className="flex-shrink-0">
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <XCircle className="h-5 w-5" />
-              Validierungsfehler
-            </AlertDialogTitle>
+
+                                        {t('validierungsfehler', `Validierungsfehler`)}
+                                      </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground text-sm">
-              Die Einstellungen konnten aufgrund folgender Fehler nicht gespeichert werden:
-            </AlertDialogDescription>
+
+                                        {t('die_einstellungen_konnten_aufg', `Die Einstellungen konnten aufgrund folgender Fehler nicht gespeichert werden:`)}
+                                      </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="flex-1 min-h-0 my-4">
@@ -5802,8 +5968,9 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
           <AlertDialogFooter className="flex-shrink-0">
             <AlertDialogAction onClick={() => setShowSettingsErrorDialog(false)}>
-              Verstanden
-            </AlertDialogAction>
+
+                                        {t('verstanden', `Verstanden`)}
+                                      </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -5817,27 +5984,30 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-yellow-600">
               <AlertTriangle className="h-5 w-5" />
-              Statistik-Limitierung ändern?
-            </AlertDialogTitle>
+
+                                        {t('statistiklimitierung_ndern', `Statistik-Limitierung ändern?`)}
+                                      </AlertDialogTitle>
             <AlertDialogDescription>
-              Sie ändern das Limit für Statistik-Einträge von {(settingsData?.maxStatsEntries || 0) === 0 ? '"Unbegrenzt"' : settingsData?.maxStatsEntries} auf{" "}
+
+                                        {t('sie_ndern_das_limit_fr_statist', `Sie ändern das Limit für Statistik-Einträge von`)} {(settingsData?.maxStatsEntries || 0) === 0 ? '"Unbegrenzt"' : settingsData?.maxStatsEntries}  {t('auf', `auf`)}{" "}
               {generalSettings.maxStatsEntries}.
               <br />
               <br />
-              <strong>Warnung:</strong> Wenn aktuell mehr als{" "}
-              {generalSettings.maxStatsEntries} Einträge vorhanden sind (aktuell:{" "}
-              {statsData?.stats?.total || 0}), werden die ältesten Einträge beim
-              Speichern <strong>unwiderruflich gelöscht</strong>.
+              <strong>{t('warnung', `Warnung:`)}</strong>  {t('wenn_aktuell_mehr_als', `Wenn aktuell mehr als`)}{" "}
+              {generalSettings.maxStatsEntries}  {t('eintrge_vorhanden_sind_aktuell', `Einträge vorhanden sind (aktuell:`)}{" "}
+              {statsData?.stats?.total || 0}{t('_werden_die_ltesten_eintrge_be', `), werden die ältesten Einträge beim
+              Speichern`)} <strong>{t('unwiderruflich_gelscht', `unwiderruflich gelöscht`)}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t('abbrechen', `Abbrechen`)}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStatsLimitChange}
               className="bg-yellow-600 hover:bg-yellow-700"
             >
-              Verstanden & Speichern
-            </AlertDialogAction>
+
+                                        {t('verstanden_speichern', `Verstanden & Speichern`)}
+                                      </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -5862,17 +6032,18 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       <AlertDialog open={showValidationReloadDialog} onOpenChange={setShowValidationReloadDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Validierung neu laden?</AlertDialogTitle>
+            <AlertDialogTitle>{t('validierung_neu_laden', `Validierung neu laden?`)}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sie haben eine Regel geändert. Möchten Sie die Konfigurationsvalidierung mit den neuen Einstellungen neu laden?
-            </AlertDialogDescription>
+
+                                        {t('sie_haben_eine_regel_gendert_m', `Sie haben eine Regel geändert. Möchten Sie die Konfigurationsvalidierung mit den neuen Einstellungen neu laden?`)}
+                                      </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowValidationReloadDialog(false)}>Nein</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setShowValidationReloadDialog(false)}>{t('nein', `Nein`)}</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
                 setShowValidationReloadDialog(false);
                 setValidationReloadTrigger(prev => prev + 1);
-            }}>Ja, neu laden</AlertDialogAction>
+            }}>{t('ja_neu_laden', `Ja, neu laden`)}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -5883,17 +6054,20 @@ export default function AdminPage({ onClose }: AdminPageProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Alle Regeln löschen?
-            </DialogTitle>
+
+                                        {t('alle_regeln_lschen', `Alle Regeln löschen?`)}
+                                      </DialogTitle>
             <DialogDescription>
-              Dies löscht alle vorhandenen Regeln unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.
-            </DialogDescription>
+
+                                        {t('dies_lscht_alle_vorhandenen_re', `Dies löscht alle vorhandenen Regeln unwiderruflich. Diese Aktion kann nicht rückgängig gemacht werden.`)}
+                                      </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-               Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.
-            </div>
+
+                                         {t('wir_empfehlen_dringend_vor_dem', `Wir empfehlen dringend, vor dem Löschen ein Backup zu erstellen.`)}
+                                      </div>
             
             <Button 
                 variant="outline" 
@@ -5901,24 +6075,26 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 className="w-full"
             >
                 <Download className="h-4 w-4 mr-2" />
-                Backup herunterladen (JSON)
-            </Button>
+
+                                          {t('backup_herunterladen_json', `Backup herunterladen (JSON)`)}
+                                      </Button>
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">
-                    Bestätigung erforderlich
-                </label>
+
+                                                  {t('besttigung_erforderlich', `Bestätigung erforderlich`)}
+                                              </label>
                 <Input 
                     value={deleteAllConfirmationText}
                     onChange={(e) => setDeleteAllConfirmationText(e.target.value)}
-                    placeholder='Tippen Sie "DELETE" zur Bestätigung'
+                    placeholder={t('tippen_sie_delete_zur_besttigu', `Tippen Sie "DELETE" zur Bestätigung`)}
                     className={deleteAllConfirmationText === "DELETE" ? "border-green-500 focus-visible:ring-green-500" : ""}
                 />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)}>{t('abbrechen', `Abbrechen`)}</Button>
             <Button
               variant="destructive"
               onClick={() => deleteAllRulesMutation.mutate()}

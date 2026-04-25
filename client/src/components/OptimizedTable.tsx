@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { useRenderPerformance, useDebounce } from '@/hooks/usePerformance';
+import { useTranslation } from "react-i18next";
 
 interface Column<T> {
   key: keyof T;
@@ -52,6 +53,7 @@ export function OptimizedTable<T extends Record<string, any>>({
   searchPlaceholder = 'Search...',
   className,
 }: OptimizedTableProps<T>) {
+    const { t } = useTranslation();
   const { measureRender } = useRenderPerformance('OptimizedTable');
   
   // State management
@@ -220,8 +222,9 @@ export function OptimizedTable<T extends Record<string, any>>({
 
       {/* Results count */}
       <div className="text-sm text-muted-foreground">
-        Showing {visibleData.length} of {processedData.length} entries
-        {processedData.length !== data.length && ` (filtered from ${data.length})`}
+
+                      {t('showing', `Showing`)} {visibleData.length}  {t('of', `of`)} {processedData.length}  {t('entries', `entries`)}
+                      {processedData.length !== data.length && ` (filtered from ${data.length})`}
       </div>
 
       {/* Table container with virtual scrolling */}

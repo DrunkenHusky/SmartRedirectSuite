@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useResizableColumns } from "@/hooks/useResizableColumns";
 import { ResizeHandle } from "@/components/ui/resize-handle";
+import { useTranslation } from "react-i18next";
 
 interface ImportPreviewTableProps {
   data: any[];
@@ -29,6 +30,7 @@ interface ImportPreviewTableProps {
 }
 
 const PreviewRow = ({ item }: { item: any }) => {
+    const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const rule = item.rule;
 
@@ -93,22 +95,22 @@ const PreviewRow = ({ item }: { item: any }) => {
            <TableCell colSpan={5} className="p-0">
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                  <div className="space-y-2">
-                    <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Query Parameters</h4>
+                    <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">{t('query_parameters', `Query Parameters`)}</h4>
                     <div className="space-y-1 pl-2 border-l-2 border-muted">
                         <div className="flex gap-2 text-xs py-1 border-b border-muted/50">
-                            <span>Mode:</span>
+                            <span>{t('mode', `Mode:`)}</span>
                             <span className="font-medium">
                                 {rule.discardQueryParams ? 'Discard All' : rule.forwardQueryParams ? 'Keep All' : 'Default (Keep)'}
                             </span>
                         </div>
                         {rule.keptQueryParams && rule.keptQueryParams.length > 0 && (
                             <div className="pt-1">
-                                <span className="text-xs font-medium block mb-1">Kept Params (Exceptions):</span>
+                                <span className="text-xs font-medium block mb-1">{t('kept_params_exceptions', `Kept Params (Exceptions):`)}</span>
                                 <ul className="list-disc list-inside text-xs space-y-0.5 text-muted-foreground">
                                     {rule.keptQueryParams.map((p: any, i: number) => (
                                         <li key={i}>
                                             <code className="bg-muted px-1 rounded">{p.keyPattern}</code>
-                                            {p.targetKey && <span> &rarr; {p.targetKey}</span>}
+                                            {p.targetKey && <span>  {t('rarr', `&rarr;`)} {p.targetKey}</span>}
                                         </li>
                                     ))}
                                 </ul>
@@ -116,7 +118,7 @@ const PreviewRow = ({ item }: { item: any }) => {
                         )}
                         {rule.staticQueryParams && rule.staticQueryParams.length > 0 && (
                             <div className="pt-1">
-                                <span className="text-xs font-medium block mb-1">Static Params (Appended):</span>
+                                <span className="text-xs font-medium block mb-1">{t('static_params_appended', `Static Params (Appended):`)}</span>
                                 <ul className="list-disc list-inside text-xs space-y-0.5 text-muted-foreground">
                                     {rule.staticQueryParams.map((p: any, i: number) => (
                                         <li key={i}>
@@ -130,7 +132,7 @@ const PreviewRow = ({ item }: { item: any }) => {
                  </div>
 
                  <div className="space-y-2">
-                    <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Search & Replace</h4>
+                    <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">{t('search_replace', `Search & Replace`)}</h4>
                     {rule.searchAndReplace && rule.searchAndReplace.length > 0 ? (
                         <div className="space-y-1 pl-2 border-l-2 border-muted">
                             <ul className="space-y-1 text-xs">
@@ -138,22 +140,22 @@ const PreviewRow = ({ item }: { item: any }) => {
                                     <li key={i} className="flex flex-col bg-background p-1.5 rounded border">
                                         <div className="flex items-center gap-1">
                                             <span className="text-red-500 font-mono">"{sr.search}"</span>
-                                            <span>&rarr;</span>
+                                            <span>{t('rarr', `&rarr;`)}</span>
                                             <span className="text-green-600 font-mono">"{sr.replace || '"" (REMOVE)'}"</span>
                                         </div>
-                                        {sr.caseSensitive && <Badge variant="outline" className="w-fit text-[10px] h-4 mt-1">Case Sensitive</Badge>}
+                                        {sr.caseSensitive && <Badge variant="outline" className="w-fit text-[10px] h-4 mt-1">{t('case_sensitive', `Case Sensitive`)}</Badge>}
                                     </li>
                                 ))}
                             </ul>
                         </div>
                     ) : (
-                        <p className="text-xs text-muted-foreground italic pl-2">Keine Suchen & Ersetzen Regeln.</p>
+                        <p className="text-xs text-muted-foreground italic pl-2">{t('keine_suchen_ersetzen_regeln', `Keine Suchen & Ersetzen Regeln.`)}</p>
                     )}
                  </div>
 
                  {rule.infoText && (
                     <div className="md:col-span-2 space-y-1">
-                         <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Info / Beschreibung</h4>
+                         <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">{t('info_beschreibung', `Info / Beschreibung`)}</h4>
                          <p className="text-xs pl-2 border-l-2 border-muted">{rule.infoText}</p>
                     </div>
                  )}
@@ -190,7 +192,8 @@ const ImportPreviewTable = memo(({
                   <TableHead className="relative" style={{ width: columnWidths.status }}>
                       <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium w-full justify-start" onClick={() => onSort('status')}>
                         <span className="flex items-center gap-1 truncate">
-                          Status {sortConfig.by === 'status' && (sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />)}
+
+                                                            {t('status', `Status`)} {sortConfig.by === 'status' && (sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />)}
                         </span>
                       </Button>
                       <ResizeHandle onMouseDown={(e) => handleResizeStart('status', e)} />
@@ -198,7 +201,8 @@ const ImportPreviewTable = memo(({
                   <TableHead className="relative" style={{ width: columnWidths.matcher }}>
                       <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium w-full justify-start" onClick={() => onSort('matcher')}>
                         <span className="flex items-center gap-1 truncate">
-                          URL-Pfad Matcher {sortConfig.by === 'matcher' && (sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />)}
+
+                                                            {t('urlpfad_matcher', `URL-Pfad Matcher`)} {sortConfig.by === 'matcher' && (sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />)}
                         </span>
                       </Button>
                       <ResizeHandle onMouseDown={(e) => handleResizeStart('matcher', e)} />
@@ -206,18 +210,21 @@ const ImportPreviewTable = memo(({
                   <TableHead className="relative" style={{ width: columnWidths.targetUrl }}>
                       <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent font-medium w-full justify-start" onClick={() => onSort('targetUrl')}>
                         <span className="flex items-center gap-1 truncate">
-                          Ziel-URL {sortConfig.by === 'targetUrl' && (sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />)}
+
+                                                            {t('zielurl', `Ziel-URL`)} {sortConfig.by === 'targetUrl' && (sortConfig.order === 'asc' ? <ArrowUp className="h-3 w-3 flex-shrink-0" /> : <ArrowDown className="h-3 w-3 flex-shrink-0" />)}
                         </span>
                       </Button>
                       <ResizeHandle onMouseDown={(e) => handleResizeStart('targetUrl', e)} />
                   </TableHead>
                   <TableHead className="relative" style={{ width: columnWidths.type }}>
-                    Typ
-                    <ResizeHandle onMouseDown={(e) => handleResizeStart('type', e)} />
+
+                                              {t('typ', `Typ`)}
+                                              <ResizeHandle onMouseDown={(e) => handleResizeStart('type', e)} />
                   </TableHead>
                   <TableHead className="relative" style={{ width: columnWidths.auto }}>
-                    Auto
-                    <ResizeHandle onMouseDown={(e) => handleResizeStart('auto', e)} />
+
+                                              {t('auto', `Auto`)}
+                                              <ResizeHandle onMouseDown={(e) => handleResizeStart('auto', e)} />
                   </TableHead>
               </TableRow>
           </TableHeader>
