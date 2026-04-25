@@ -1,5 +1,5 @@
 import { traceUrlGeneration } from "@shared/url-trace";
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { createHash, timingSafeEqual } from "crypto";
 import { storage } from "./storage";
@@ -422,6 +422,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check admin authentication status
+
+  // Translations
+  app.get("/api/translations/:lang", async (req, res) => {
+    try {
+      const data = await storage.getTranslation(req.params.lang);
+      res.json(data);
+    } catch (error) {
+      console.error('Error fetching translations:', error);
+      res.status(500).json({ error: 'Failed to fetch translations' });
+    }
+  });
+
+  app.put("/api/admin/translations/:lang", requireAuth, express.json(), async (req, res) => {
+    try {
+      await storage.updateTranslation(req.params.lang, req.body);
+      res.json({ message: 'Translations updated successfully' });
+    } catch (error) {
+      console.error('Error updating translations:', error);
+      res.status(500).json({ error: 'Failed to update translations' });
+    }
+  });
+
   app.get("/api/admin/status", (req, res) => {
     res.json({ 
       isAuthenticated: !!req.session?.isAdminAuthenticated,
