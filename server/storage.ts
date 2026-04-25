@@ -202,15 +202,25 @@ export class FileStorage implements IStorage {
   }
 
 
+  private initPromise: Promise<void> | null = null;
+
   private async initDatabase() {
-    try {
-      await initDb();
-      await this.migrateJsonToDb();
-      this.dbInitialized = true;
-      console.log('Database initialized successfully');
-    } catch (err) {
-      console.error('Failed to initialize database', err);
+    if (this.initPromise) {
+      return this.initPromise;
     }
+
+    this.initPromise = (async () => {
+      try {
+        await initDb();
+        await this.migrateJsonToDb();
+        this.dbInitialized = true;
+        console.log('Database initialized successfully');
+      } catch (err) {
+        console.error('Failed to initialize database', err);
+      }
+    })();
+
+    return this.initPromise;
   }
 
   private async migrateJsonToDb() {
