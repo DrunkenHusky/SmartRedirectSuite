@@ -17,6 +17,8 @@ export function TranslationManager() {
   const [editData, setEditData] = useState<Record<string, string>>({});
   const [newKey, setNewKey] = useState("");
   const [newVal, setNewVal] = useState("");
+  const [originalData, setOriginalData] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Available languages can be fetched or hardcoded based on i18n
   const supportedLngs = (i18n.options.supportedLngs || []).filter((l: string) => l !== 'cimode');
@@ -33,6 +35,7 @@ export function TranslationManager() {
   useEffect(() => {
     if (translationData) {
       setEditData(translationData);
+      setOriginalData(translationData);
     }
   }, [translationData, selectedLang]);
 
@@ -80,6 +83,13 @@ export function TranslationManager() {
     });
   };
 
+
+  const filteredKeys = Object.keys(editData).filter((key) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return key.toLowerCase().includes(query) || (editData[key] || "").toLowerCase().includes(query);
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -113,6 +123,20 @@ export function TranslationManager() {
           </Button>
         </div>
 
+
+        <div className="flex items-center space-x-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder={t('suche_nach_schl_ssel_oder_we', `Suche nach Schlüssel oder Wert...`)}
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="border rounded-md">
           <Table>
             <TableHeader>
@@ -123,9 +147,12 @@ export function TranslationManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Object.entries(editData).map(([key, val]) => (
-                <TableRow key={key}>
-                  <TableCell className="font-mono text-sm">{key}</TableCell>
+              {filteredKeys.map((key) => {
+                const val = editData[key];
+                const isChanged = originalData[key] !== val;
+                return (
+                <TableRow key={key} className={isChanged ? "bg-muted/50" : ""}>
+                  <TableCell className="font-mono text-sm">{key} {isChanged && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-yellow-500" title="Unsaved changes" />}</TableCell>
                   <TableCell>
                     <Input
                       value={val}
@@ -138,7 +165,7 @@ export function TranslationManager() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
               <TableRow>
                 <TableCell>
                   <Input
