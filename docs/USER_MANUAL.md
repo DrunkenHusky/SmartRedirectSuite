@@ -1,75 +1,75 @@
-# SmartRedirect Suite - Benutzerhandbuch
+# SmartRedirect Suite - User Guide
 
-Dieses Handbuch beschreibt die tägliche Nutzung der SmartRedirect Suite. Die Anwendung verwaltet mehr als 100.000 URL-Transformationsregeln und unterstützt Migrationen zwischen Domains.
+This manual describes the daily use of the SmartRedirect Suite. The application manages more than 100,000 URL transformation rules and supports migrations between domains.
 
-Den Admin-Bereich öffnen Sie über das Zahnrad-Symbol in der Kopfzeile oder indem Sie `?admin=true` an die URL anhängen.
+You can open the admin area using the gear symbol in the header or by appending `?admin=true` to the URL.
 
 ## General Settings
-Nach der Anmeldung im Admin Area steht ein Menü mit vier Reitern zur Verfügung: **Allgemein**, **Regeln**, **Statistik** und **System & Daten**. Über die Schaltflächen im Kopfbereich können Sie sich abmelden oder den Admin-Bereich schließen.
+After logging into the admin area, a menu with four tabs is available: **General**, **Rules**, **Statistics** and **System & Data**. You can log out or close the admin area using the buttons in the header area.
 
-Im Reiter **Allgemein** lassen sich alle Texte, Farben und Icons der Migration-Anwendung anpassen:
+In the **General** tab, all texts, colors and icons of the migration application can be adjusted:
 
-- **Header**: Titel, Icon oder Logo sowie die Hintergrundfarbe des oberen Bereichs.
-- **Hauptbereich und Hinweis**: Überschrift, Beschreibung, Warn-Icon und Farben für die Hinweismeldung.
-- **Routing & Fallback Behavior (ehemals URL-Vergleich)**:
-  - **Target Domain**: Die Basis-Domain für alle Weiterleitungen (Standard). WICHTIG: Wird auch als Basis für Partial Matches verwendet.
-  - **Fallback Strategy**: Definiert das Verhalten, wenn keine spezifische Regel passt.
-    - *Simple Domain Replacement*: Standardverhalten. Ersetzt nur die Domain, behält den gesamten Pfad bei.
-    - *Smart Search Redirect*: Extrahiert das letzte Pfadsegment und leitet auf eine konfigurierbare Suchseite weiter (z.B. `?q=dateiname.pdf`).
-      - **Regex-Extraktion**: Optional kann ein regulärer Ausdruck definiert werden, um den Suchbegriff flexibel aus der URL zu extrahieren (z.B. aus Query-Parametern mit `[?&]file=([^&]+)`).
-      - **Fallback**: Greift der Regex nicht oder ist keiner definiert, wird automatisch das letzte Pfadsegment verwendet.
-  - **Fallback Info Messages**: Konfigurierbare Texte für den Fall, dass keine Regel greift (Smart Search Message) oder kein spezifischer Regeltext vorhanden ist (Standard Info Text).
-  - **Visualisierung**: Titel, Icon, Hintergrundfarbe und Bezeichnungen für alte und neue URL sowie Button-Texte. Zusätzlich können die Interaktionsmöglichkeiten auf der Migrationsseite gesteuert werden (Ein-/Ausblenden der Buttons zum Kopieren oder Öffnen der URL und Konfiguration des Klickverhaltens der angezeigten URL).
-- **Spezielle Hinweise**: Überschrift und Icon für den Hinweisbereich.
-- **Zusätzliche Informationen**: Titel, Icon und bis zu drei Stichpunkte.
-- **Footer**: Copyright-Hinweis.
-- **Automatische Weiterleitung**: Globale Aktivierung einer sofortigen Weiterleitung für alle Regeln.
+- **Header**: Title, icon or logo as well as the background color of the top area.
+- **Main area and notice**: Heading, description, warning icon and colors for the warning message.
+- **Routing & Fallback Behavior (formerly URL comparison)**:
+  - **Target Domain**: The base domain for all redirects (default). IMPORTANT: Also used as a basis for partial matches.
+  - **Fallback Strategy**: Defines the behavior when no specific rule matches.
+    - *Simple Domain Replacement*: Default behavior. Replaces only the domain, keeps the entire path.
+    - *Smart Search Redirect*: Extracts the last path segment and redirects to a configurable search page (e.g. `?q=filename.pdf`).
+      - **Regex extraction**: Optionally, a regular expression can be defined to flexibly extract the search term from the URL (e.g. from query parameters with `[?&]file=([^&]+)`).
+      - **Fallback**: If the regex does not work or is not defined, the last path segment is automatically used.
+  - **Fallback Info Messages**: Configurable texts in the event that no rule applies (Smart Search Message) or no specific rule text is available (Standard Info Text).
+  - **Visualization**: Title, icon, background color and names for old and new URL as well as button texts. In addition, the interaction options on the migration page can be controlled (showing/hiding the buttons for copying or opening the URL and configuring the click behavior of the displayed URL).
+- **Special Notes**: Heading and icon for the information area.
+- **Additional information**: title, icon and up to three bullet points.
+- **Footer**: Copyright notice.
+- **Automatic forwarding**: Globally enable instant forwarding for all rules.
 
-## Regeln verwalten
-1. **Neue Regel** anlegen: URL-Matcher, Ziel-URL, Redirect-Typ (*Teilweise* - ersetzt nur den Anfang, *Vollständig* - ersetzt den gesamten Pfad, oder *Domain*), optionaler Info-Text und automatische Weiterleitung konfigurieren.
-   - **Parameter-Behandlung**:
-     - Bei *Teilweise/Domain*: Option "Alle Link-Parameter entfernen" (Standard: Aus/Parameter behalten).
-     - Bei *Vollständig*: Option "Link-Parameter beibehalten" (Standard: Aus/Parameter entfernen).
-2. **Regeln suchen, sortieren und paginieren**: Eingabe im Suchfeld, Sortierung nach Quelle, Ziel oder Erstellungsdatum.
-3. **Regeln bearbeiten oder löschen**: Einzelne Einträge per Aktionen oder mehrere markierte Regeln gesammelt entfernen.
-4. **Bulk-Löschung**: Mehrere Regeln auf der aktuellen Seite markieren und gemeinsam löschen.
+## Manage rules
+1. **Create a new rule**: URL matcher, target URL, redirect type (*Partial* - replaces only the beginning, *Full* - replaces the entire path, or *Domain*), optional info text and configure automatic redirection.
+   - **Parameter Handling**:
+     - For *Partial/Domain*: Option "Remove all link parameters" (default: Off/Keep parameters).
+     - For *Complete*: "Keep link parameters" option (default: Off/Remove parameters).
+2. **Search, sort and paginate rules**: Enter in the search field, sort by source, target or creation date.
+3. **Edit or delete rules**: Remove individual entries using actions or collectively remove several marked rules.
+4. **Bulk Deletion**: Mark multiple rules on the current page and delete them together.
 
-## Statistik
-- **Top 100**: Häufigste aufgerufene Pfade, filterbar nach Zeitraum (24h, 7 Tage, alle Zeit).
-- **Alle Einträge**: Vollständige Liste der Tracking-Daten mit Such- und Sortierfunktion.
-- **Pagination**: Anzeige der Gesamtanzahl und Navigation zwischen Seiten.
+## Statistics
+- **Top 100**: Most frequently accessed paths, filterable by time period (24h, 7 days, all time).
+- **All Entries**: Complete list of tracking data with search and sorting functionality.
+- **Pagination**: Display the total number and navigate between pages.
 
-## System & Daten
-Der Bereich "System & Daten" ist in drei Bereiche unterteilt, um verschiedene Anwendungsfälle abzudecken.
+## System & Data
+The System & Data section is divided into three sections to cover different use cases.
 
-### 1. Standard Import / Export (Excel, CSV)
-Dieser Bereich ist für die tägliche Pflege von Weiterleitungen optimiert.
-- **Export**: Laden Sie alle Regeln als Excel- (.xlsx) oder CSV-Datei herunter.
-- **Import**: Unterstützt Excel und CSV.
-  - **Vorschau**: Vor dem eigentlichen Import wird eine Vorschau angezeigt, die neue, zu aktualisierende und ungültige Regeln auflistet.
-  - **Spalten**: Die Import-Datei sollte folgende Spalten enthalten (Groß-/Kleinschreibung der Header ist egal, Deutsch/Englisch unterstützt):
-    - `Matcher` / `Quelle` (Pflicht): Der Quell-Pfad oder die Domain.
-    - `Target URL` / `Ziel` (Pflicht): Das Ziel der Weiterleitung.
-    - `Type` / `Typ` (Pflicht): 'partial' (Teilweise), 'wildcard' (Vollständig) oder 'domain'.
-    - `Info` / `Beschreibung` (Optional): Interner Notiztext.
-    - `Auto Redirect` (Optional): 'true'/'false' oder '1'/'0'.
-    - `Discard Query Params` / `Parameter entfernen` (Optional): 'true'/'false'. Entfernt alle Parameter bei Partial/Domain-Regeln.
-    - `Keep Query Params` / `Parameter behalten` (Optional): 'true'/'false'. Behält Parameter bei Wildcard-Regeln.
-    - `ID` (Optional): Wird nur benötigt, um explizit bestehende Regeln zu aktualisieren.
-  - **Option: URLs automatisch kodieren**: Wenn aktiviert (Standard), werden Sonderzeichen in URLs beim Import automatisch kodiert (z.B. Leerzeichen zu `%20`).
-  - **Musterdateien**: Im UI können Vorlagen für Excel und CSV heruntergeladen werden.
+### 1. Standard import/export (Excel, CSV)
+This area is optimized for daily maintenance of redirects.
+- **Export**: Download all rules as an Excel (.xlsx) or CSV file.
+- **Import**: Supports Excel and CSV.
+  - **Preview**: Before the actual import, a preview is displayed that lists new, updated and invalid rules.
+  - **Columns**: The import file should contain the following columns (headers are case sensitive, German/English supported):
+    - `Matcher` / `Source` (mandatory): The source path or domain.
+    - `Target URL` / `Target` (mandatory): The target of the redirect.
+    - `Type` / `Typ` (Mandatory): 'partial' (Partial), 'wildcard' (Full) or 'domain'.
+    - `Info` / `Description` (Optional): Internal note text.
+    - `Auto Redirect` (Optional): 'true'/'false' or '1'/'0'.
+    - `Discard Query Params` / `Remove Parameters` (Optional): 'true'/'false'. Removes all parameters from partial/domain rules.
+    - `Keep Query Params` / `Keep Parameters` (Optional): 'true'/'false'. Retains parameters in wildcard rules.
+    - `ID` (Optional): Only needed to explicitly update existing rules.
+  - **Option: Automatically encode URLs**: If activated (default), special characters in URLs are automatically encoded during import (e.g. spaces to `%20`).
+  - **Sample files**: Templates for Excel and CSV can be downloaded in the UI.
 
-### 2. Erweiterter Regel-Import/Export (JSON)
-Für System-Backups und Experten.
-- Arbeitet mit dem rohen JSON-Format der Datenbank.
-- **Keine Vorschau**: Daten werden direkt importiert.
-- **Warnung**: Regeln mit identischer ID werden sofort überschrieben.
+### 2. Advanced rule import/export (JSON)
+For system backups and experts.
+- Works with the raw JSON format of the database.
+- **No preview**: Data is imported directly.
+- **Warning**: Rules with identical IDs will be overwritten immediately.
 
-### 3. System & Statistiken
-- **System-Einstellungen**: Exportieren/Importieren Sie die gesamte Konfiguration (Texte, Farben, Icons) als JSON-Backup.
-- **Statistiken**: Exportieren Sie die Tracking-Logs aller erfolgten Weiterleitungen als CSV zur externen Analyse.
+### 3. System & Statistics
+- **System Settings**: Export/import the entire configuration (texts, colors, icons) as a JSON backup.
+- **Statistics**: Export the tracking logs of all redirects made as CSV for external analysis.
 
-### 4. Wartung
-- **Cache neu aufbauen**: Erzwingt ein Neuladen aller Regeln in den Arbeitsspeicher. Nur bei Anzeigeproblemen notwendig.
+### 4. Maintenance
+- **Rebuild Cache**: Forces all rules to be reloaded into memory. Only necessary if there are display problems.
 
-Weiterführende Setup-Hinweise finden sich in [INSTALLATION.md](./INSTALLATION.md).
+Further setup instructions can be found in [INSTALLATION.md](./INSTALLATION.md).

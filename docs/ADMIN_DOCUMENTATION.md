@@ -1,66 +1,66 @@
 # SmartRedirect Suite - Admin-Dokumentation
 
-Diese Dokumentation richtet sich an Administratoren und DevOps-Teams. Sie bündelt Ressourcen für Installation, Deployment und den laufenden Betrieb.
+This documentation is intended for administrators and DevOps teams. It bundles resources for installation, deployment and ongoing operations.
 
-Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhängen von `?admin=true` an die Basis-URL erreichbar.
+The admin area is accessible via the application's gear icon or by appending `?admin=true` to the base URL.
 
-## Installations- und Deployment-Ressourcen
-- [INSTALLATION.md](./INSTALLATION.md): Schnellstart für lokale Entwicklung.
-- [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md): Leitfaden für Produktionsumgebungen.
-- [OPENSHIFT_DEPLOYMENT.md](./OPENSHIFT_DEPLOYMENT.md): Beispielkonfiguration für OpenShift.
-- [API_DOCUMENTATION.md](./API_DOCUMENTATION.md): REST-API für Automatisierung und Monitoring.
-- `Dockerfile.demo`: Demo-Container mit automatischem 24h-Reset für Tests.
+## Installation and deployment resources
+- [INSTALLATION.md](./INSTALLATION.md): Quick start for local development.
+- [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md): Guide for production environments.
+- [OPENSHIFT_DEPLOYMENT.md](./OPENSHIFT_DEPLOYMENT.md): Example configuration for OpenShift.
+- [API_DOCUMENTATION.md](./API_DOCUMENTATION.md): REST API for automation and monitoring.
+- `Dockerfile.demo`: Demo container with automatic 24h reset for tests.
 
-## Benutzeroberfläche
-- **Tabellen-Resizing**: In der "Regeln"-Ansicht und der "Import-Vorschau" können Spaltenbreiten individuell angepasst werden. Bewegen Sie dazu die Maus an den rechten Rand einer Spaltenüberschrift, bis der Cursor sich ändert, und ziehen Sie die Spalte auf die gewünschte Breite.
+## User Interface
+- **Table resizing**: Column widths can be adjusted individually in the "Rules" view and the "Import preview". To do this, move the mouse to the right edge of a column heading until the cursor changes and drag the column to the desired width.
 
-## Wartung
-- Regelmäßige Backups der `data/`-Verzeichnisse.
-- Abgelaufene Sessions unter `data/sessions/` bereinigen.
-- Logs und Performance-Metriken gemäß Deployment-Guides überwachen.
-- **Cache neu aufbauen**: Im Admin-Bereich unter "System & Daten" > "Wartung" kann der Regel-Cache manuell neu aufgebaut werden. Dies ist normalerweise nicht erforderlich, kann aber helfen, wenn nach umfangreichen Importen oder Updates Probleme mit Weiterleitungen auftreten.
+## Maintenance
+- Regular backups of the `data/` directories.
+- Clean up expired sessions under `data/sessions/`.
+- Monitor logs and performance metrics according to deployment guides.
+- **Rebuild cache**: The rule cache can be rebuilt manually in the admin area under "System & Data" > "Maintenance". This isn't usually necessary, but can help if you're having redirect issues after large imports or updates.
 
 ## Referrer Tracking & Analytics
-- Das System erfasst automatisch den HTTP Referrer (Herkunftsseite) für jeden Zugriff.
-- **Top 10 Referrer**: Ein Dashboard-Widget zeigt die häufigsten Herkunfts-Domains an.
-- **Direct Access**: Wenn kein Referrer vorhanden ist (z.B. direkter Aufruf oder Lesezeichen), wird dies als "-" oder "Direct" angezeigt.
-- **Datenexport**: Der CSV-Export der Statistiken enthält nun eine "Referrer"-Spalte mit der vollständigen URL.
+- The system automatically records the HTTP referrer (source page) for each access.
+- **Top 10 Referrers**: A dashboard widget displays the most common source domains.
+- **Direct Access**: If there is no referrer (e.g. direct access or bookmark), this is displayed as "-" or "Direct".
+- **Data export**: The CSV export of statistics now contains a "Referrer" column with the full URL.
 
-## Login-Schutz
-- Fehlgeschlagene Anmeldungen werden IP-basiert gezählt.
-- Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen (Standard: 5) wird die IP für `LOGIN_BLOCK_DURATION_MS` Millisekunden (Standard: 24h) gesperrt.
-- Werte können über Umgebungsvariablen in der `.env` angepasst werden.
-- **Sperren aufheben**: Im Admin-Bereich unter "System & Daten" > "Danger-Zone" können alle aktuell blockierten IP-Adressen über den Button "Blockierte IPs löschen" manuell entsperrt werden. Dies ermöglicht den Nutzern sofortigen erneuten Zugriff.
+## Login protection
+- Failed logins are counted based on IP.
+- After `LOGIN_MAX_ATTEMPTS` failed attempts (default: 5), the IP is blocked for `LOGIN_BLOCK_DURATION_MS` milliseconds (default: 24h).
+- Values ​​can be adjusted via environment variables in the `.env`.
+- **Unblock**: In the admin area under "System & Data" > "Danger Zone", all currently blocked IP addresses can be manually unblocked using the "Delete blocked IPs" button. This allows users immediate re-access.
 
-## Regelpriorisierung & Debugging
-- Gewichtungen und Normalisierung befinden sich in `shared/constants.ts` (`RULE_MATCHING_CONFIG`).
-- Aktivieren Sie `DEBUG` in dieser Konfiguration, um pro Anfrage Score, angewandte Tie‑Breaker und die gewählte Regel zu protokollieren.
-- Die Groß-/Kleinschreibung der Link-Erkennung lässt sich im Admin-Tab „Einstellungen → Link-Erkennung“ über den Schalter "Groß-/Kleinschreibung beachten" steuern (Standard: aus).
+## Rule prioritization & debugging
+- Weights and normalization are in `shared/constants.ts` (`RULE_MATCHING_CONFIG`).
+- Enable `DEBUG` in this configuration to log score, applied tie-breakers and the chosen rule per request.
+- The case sensitivity of link detection can be controlled in the admin tab “Settings → Link detection” using the “Case sensitive” switch (default: off).
 
-## Domain-Regeln
-Neben den klassischen Pfad-Regeln werden auch Domain-Regeln unterstützt.
+## Domain Rules
+In addition to the classic path rules, domain rules are also supported.
 
 ### Matcher
-Der Matcher kann nun entweder ein Pfad (beginnend mit `/`) oder eine Domain sein (z.B. `www.google.ch`).
-- **Pfad-Matcher**: `/news` matcht auf `http://anydomain.com/news`.
-- **Domain-Matcher**: `www.google.ch` matcht auf `http://www.google.ch/any/path`.
+The matcher can now be either a path (starting with `/`) or a domain (e.g. `www.google.ch`).
+- **Path Matcher**: `/news` matches `http://anydomain.com/news`.
+- **Domain Matcher**: `www.google.ch` matches `http://www.google.ch/any/path`.
 
-### Redirect Typ: Domain-Ersatz
-Der Typ "Domain-Ersatz" (`domain`) ermöglicht flexible Weiterleitungen:
-1. **Pfad-Erhalt**: Der ursprüngliche Pfad und alle Query-Parameter bleiben erhalten. Es wird lediglich die Domain ausgetauscht.
-2. **Kombination mit Pfad-Matchern**: Wenn ein Pfad-Matcher (z.B. `/altes-verzeichnis`) verwendet wird, aber der Typ `domain` gewählt ist, wird der Matcher im Pfad ignoriert und der gesamte ursprüngliche Pfad an die neue Domain angehängt (analog zu einer Wildcard-Domain-Weiterleitung für diesen speziellen Pfad).
-3. **Domain-Matcher**: Wenn der Matcher eine Domain ist (z.B. `old-site.com`), werden alle Anfragen an diese Domain auf die `Target URL` umgeleitet, wobei der Pfad erhalten bleibt.
+### Redirect Type: Domain replacement
+The “domain replacement” type (`domain`) allows flexible redirects:
+1. **Path Preservation**: The original path and all query parameters are preserved. Only the domain is exchanged.
+2. **Combination with path matchers**: If a path matcher (e.g. `/old-directory`) is used but the `domain` type is selected, the matcher in the path is ignored and the entire original path is appended to the new domain (analogous to a wildcard domain redirect for that specific path).
+3. **Domain Matcher**: If the matcher is a domain (e.g. `old-site.com`), all requests to that domain will be redirected to the `Target URL`, preserving the path.
 
-Dies ermöglicht komplexe Migrationsszenarien, bei denen ganze Domains oder Subdomains umgezogen werden, ohne für jeden Pfad eine eigene Regel erstellen zu müssen.
+This enables complex migration scenarios where entire domains or subdomains are moved without having to create a separate rule for each path.
 
-## Konfigurationsvalidierung
-Ein Werkzeug zum Testen von Weiterleitungsregeln, ohne sie live auszuführen.
+## Configuration validation
+A tool for testing redirect rules without running them live.
 
-### Funktionen
-- **Bulk-Validierung**: Testen Sie bis zu 1000 URLs auf einmal durch Einfügen (Copy & Paste) oder Datei-Import (CSV, Excel).
-- **Trace-View**: Detaillierte Nachverfolgung jedes Verarbeitungsschritts (Regel-Anwendung, Globale Suchen & Ersetzen, Query-Parameter-Logik).
-- **Änderungsverfolgung**: Visualisierung von Änderungen mit Farbcodierung (Regeln vs. Globale Einstellungen) und Durchstreichung alter Werte.
-- **CSV-Export**: Exportieren Sie die Ergebnisse inklusive aller Trace-Details für die Dokumentation oder Analyse.
-- **Workflow**: Direkter Link zum Bearbeiten von Regeln aus der Ergebnisliste heraus. Nach dem Speichern von Änderungen kann die Validierung mit einem Klick aktualisiert werden.
+### Features
+- **Bulk Validation**: Test up to 1000 URLs at once by pasting (copy & paste) or file import (CSV, Excel).
+- **Trace View**: Detailed tracking of each processing step (rule application, global search & replace, query parameter logic).
+- **Change Tracking**: Visualize changes with color coding (Rules vs. Global Settings) and crossing out old values.
+- **CSV export**: Export the results including all trace details for documentation or analysis.
+- **Workflow**: Direct link to edit rules from the results list. After saving changes, the validation can be updated with one click.
 
-Zu finden im Tab "Regeln" über den Button "Konfigurationsvalidierung" (Nur für authentifizierte Administratoren verfügbar).
+Can be found in the “Rules” tab via the “Configuration Validation” button (only available for authenticated administrators).

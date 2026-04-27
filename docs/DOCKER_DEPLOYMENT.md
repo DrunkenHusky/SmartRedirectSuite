@@ -1,16 +1,16 @@
 # Docker Deployment Guide - SmartRedirect Suite
 
-Diese Anleitung erklärt, wie die SmartRedirect Suite mittels Docker bereitgestellt wird. Sie deckt das Beziehen des Images, das Bauen aus dem Quellcode, die Konfiguration, Datenpersistenz und die Verwendung von Docker Compose für Produktionsumgebungen ab.
+This guide explains how to deploy the SmartRedirect Suite using Docker. It covers obtaining the image, building from source, configuration, data persistence, and using Docker Compose for production environments.
 
-## 🚀 Schnellstart (Image beziehen)
+## 🚀 Quick start (get image)
 
-Das Docker Image kann direkt aus der GitHub Container Registry bezogen werden. Um die aktuellste Version zu erhalten:
+The Docker image can be obtained directly from the GitHub Container Registry. To get the latest version:
 
 ```bash
 docker pull ghcr.io/drunkenhusky/smartredirectsuite:latest
 ```
 
-Starten Sie einen Container (Demo-Modus):
+Start a container (demo mode):
 
 ```bash
 docker run -d \
@@ -21,11 +21,11 @@ docker run -d \
   ghcr.io/drunkenhusky/smartredirectsuite:latest
 ```
 
-Die Anwendung ist anschließend unter `http://localhost:5000` erreichbar.
+The application can then be accessed at `http://localhost:5000`.
 
-## 🏗️ Image bauen (Aus Quellcode)
+## 🏗️ Build Image (From Source Code)
 
-Wenn Sie das Image selbst bauen möchten, müssen Sie zuerst das Repository klonen:
+If you want to build the image yourself, you must first clone the repository:
 
 ```bash
 # Repository klonen
@@ -36,58 +36,58 @@ cd smartredirectsuite
 docker build -t smartredirect-suite .
 ```
 
-Anschließend können Sie das selbst gebaute Image starten:
+You can then start the self-built image:
 
 ```bash
 docker run -d -p 5000:5000 smartredirect-suite
 ```
 
-## ⚙️ Konfiguration
+## ⚙️ Configuration
 
-Die Anwendung wird über Umgebungsvariablen konfiguriert.
+The application is configured via environment variables.
 
-| Variable | Beschreibung | Standard | Erforderlich |
+| Variable | Description | Standard | Necessary |
 |----------|-------------|---------|----------|
-| `PORT` | Der Port, auf dem die App im Container lauscht. | `5000` | Nein |
-| `NODE_ENV` | Umgebungsmodus (`production` oder `development`). | `production` | Nein |
-| `ADMIN_PASSWORD` | Passwort für das Admin-Panel. **Dringend empfohlen.** | `Password1` | **Ja (Prod)** |
-| `SESSION_SECRET` | Schlüssel für Session-Cookies. Wenn nicht gesetzt, wird bei jedem Start ein zufälliger Schlüssel generiert (Sessions laufen ab). | (Zufällig) | Nein |
-| `LOGIN_MAX_ATTEMPTS` | Max. Login-Versuche vor temporärer Sperre. | `5` | Nein |
-| `LOGIN_BLOCK_DURATION_MS` | Sperrdauer in ms nach Fehlversuchen. | `86400000` (24h) | Nein |
-| `IMPORT_PREVIEW_LIMIT` | Maximale Anzahl an Regeln für Import-Vorschau. | `1000` | Nein |
+| `PORT` | The port on which the app listens in the container. | `5000` | No |
+| `NODE_ENV` | Environment mode (`production` or `development`). | `production` | No |
+| `ADMIN_PASSWORD` | Admin panel password. **Strongly recommended.** | `Password1` | **Me (Prod)** |
+| `SESSION_SECRET` | Key for session cookies. If not set, a random key will be generated at every start (sessions expire). | (Randomly) | No |
+| `LOGIN_MAX_ATTEMPTS` | Max login attempts before temporary ban. | `5` | No |
+| `LOGIN_BLOCK_DURATION_MS` | Blocking duration in ms after failed attempts. | `86400000` (24h) | No |
+| `IMPORT_PREVIEW_LIMIT` | Maximum number of import preview rules. | `1000` | No |
 
 
-### Externe Datenbank konfigurieren
+### Configure external database
 
-SmartRedirect Suite verwendet standardmäßig eine SQLite-Datenbank (`database.sqlite`), die im `/app/data` Volume abgelegt wird. Wenn Sie eine externe Datenbank wie MariaDB/MySQL oder PostgreSQL verwenden möchten, können Sie die entsprechenden Umgebungsvariablen setzen:
+By default, SmartRedirect Suite uses an SQLite database (`database.sqlite`) located in the `/app/data` volume. If you want to use an external database such as MariaDB/MySQL or PostgreSQL, you can set the appropriate environment variables:
 
-| Variable | Beschreibung | Standard |
+| Variable | Description | Standard |
 |----------|-------------|---------|
-| `DB_DIALECT` | Datenbanktyp: `sqlite`, `postgres`, `mysql` oder `mariadb` | `sqlite` |
-| `DB_HOST` | Hostname der Datenbank. | `localhost` |
-| `DB_PORT` | Port der Datenbank (z.B. 5432 für Postgres, 3306 für MariaDB). | `5432` / `3306` |
-| `DB_NAME` | Name der Datenbank. | `smartredirect` |
-| `DB_USER` | Benutzername für die Datenbank. | `root` |
-| `DB_PASSWORD` | Passwort für die Datenbank. | |
+| `DB_DIALECT` | Database type: `sqlite`, `postgres`, `mysql` or `mariadb` | `sqlite` |
+| `DB_HOST` | Database hostname. | `localhost` |
+| `DB_PORT` | Port of the database (e.g. 5432 for Postgres, 3306 for MariaDB). | `5432` / `3306` |
+| `DB_NAME` | Name of the database. | `smartredirect` |
+| `DB_USER` | Username for the database. | `root` |
+| `DB_PASSWORD` | Password for the database. | |
 
-Es stehen `docker-compose.mariadb.yml` und `docker-compose.postgresql.yml` im Repository als Vorlagen zur Verfügung.
+There are `docker-compose.mariadb.yml` and `docker-compose.postgresql.yml` available as templates in the repository.
 
-## 💾 Datenpersistenz
+## 💾 Data persistence
 
-Die SmartRedirect Suite nutzt dateibasierten Speicher für Regeln, Einstellungen und Sessions. Um Datenverlust beim Neustart des Containers zu vermeiden, **müssen** Volumes eingebunden werden.
+The SmartRedirect Suite uses file-based storage for rules, settings and sessions. To avoid data loss when restarting the container, volumes **must** be mounted.
 
-| Pfad im Container | Beschreibung |
+| Path in the container | Description |
 |-------------------|-------------|
-| `/app/data` | Speichert `rules.json`, `settings.json` und Admin-Sessions. |
+| `/app/data` | Stores `rules.json`, `settings.json` and admin sessions. |
 
-**Hinweis zu Berechtigungen:**
-Stellen Sie sicher, dass die eingebundenen Verzeichnisse auf dem Host beschreibbar sind. Da das Dockerfile standardmäßig als `root` läuft, funktionieren Standardberechtigungen in der Regel problemlos.
+**Note about permissions:**
+Make sure the mounted directories on the host are writable. Since the Dockerfile runs as `root` by default, standard permissions usually work without any problems.
 
-## 🐳 Docker Compose (Empfohlen)
+## 🐳 Docker Compose (Recommended)
 
-Für Produktionsumgebungen ist `docker-compose` die einfachste Art der Verwaltung.
+For production environments, `docker-compose` is the easiest way to manage.
 
-Erstellen Sie eine `docker-compose.yml`:
+Create a `docker-compose.yml`:
 
 ```yaml
 services:
@@ -115,26 +115,26 @@ services:
       start_period: 10s
 ```
 
-Dienst starten:
+Start service:
 
 ```bash
 docker-compose up -d
 ```
 
-Logs einsehen:
+View logs:
 
 ```bash
 docker-compose logs -f
 ```
 
-## 🔒 Best Practices für die Produktion
+## 🔒 Production best practices
 
-1.  **Standard-Zugangsdaten ändern:** Setzen Sie immer ein starkes `ADMIN_PASSWORD`.
-2.  **Session Secret:** Setzen Sie ein festes `SESSION_SECRET`, wenn Admin-Sitzungen auch nach einem Container-Neustart gültig bleiben sollen. Ohne diese Variable wird bei jedem Start ein neuer Sicherheitsschlüssel generiert, was alle bestehenden Logins ungültig macht.
-3.  **Reverse Proxy verwenden:** Exponieren Sie Port 5000 nicht direkt ins Internet. Nutzen Sie Nginx, Traefik oder Caddy für SSL-Terminierung (HTTPS) und leiten Sie Anfragen an den Container weiter.
-    *   Setzen Sie den `X-Forwarded-Proto` Header im Proxy, damit die App HTTPS erkennt.
-3.  **Backups:** Sichern Sie regelmäßig das `./data` Verzeichnis auf dem Host-System.
-4.  **Ressourcen-Limits:** Sie können CPU und RAM in der `docker-compose.yml` begrenzen:
+1. **Change default credentials:** Always set a strong `ADMIN_PASSWORD`.
+2. **Session Secret:** Set a fixed `SESSION_SECRET` if you want admin sessions to remain valid even after a container restart. Without this variable, a new security key is generated every time you start, which invalidates all existing logins.
+3. **Use Reverse Proxy:** Do not expose port 5000 directly to the Internet. Use Nginx, Traefik or Caddy for SSL termination (HTTPS) and forward requests to the container.
+    *   Set the `X-Forwarded-Proto` header in the proxy to make the app recognize HTTPS.
+3. **Backups:** Regularly back up the `./data` directory on the host system.
+4. **Resource Limits:** You can limit CPU and RAM in `docker-compose.yml`:
     ```yaml
     deploy:
       resources:

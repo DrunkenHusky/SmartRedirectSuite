@@ -1,15 +1,15 @@
-# 🚀 Schnellstart-Anleitung - SmartRedirect Suite
+# 🚀 Quick Start Guide - SmartRedirect Suite
 
-> **Hinweis**: Diese Schnellstart-Anleitung bietet eine vereinfachte Installation. Für detaillierte Informationen siehe [README.md](../README.md). Für Enterprise-Deployments konsultieren Sie [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
+> **Note**: This quick start guide provides a simplified installation. For detailed information, see [README.md](../README.md). For enterprise deployments, see [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
 
-## 📚 Verwandte Dokumentation
-- **[README.md](../README.md)**: Vollständige Dokumentation mit allen Features
+## 📚 Related documentation
+- **[README.md](../README.md)**: Complete documentation with all features
 - **[DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)**: Docker Deployment Guide
-- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Entwickler
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API reference for developers
 - **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production-Deployment-Anleitung
-- **Dockerfile.demo**: Docker-Setup für Demo-Instanzen mit täglichem Daten-Reset
+- **Dockerfile.demo**: Docker setup for demo instances with daily data reset
 
-## 1. Voraussetzungen prüfen
+## 1. Check requirements
 
 ```bash
 # Node.js Version prüfen (benötigt: v18+)
@@ -30,7 +30,7 @@ cp .env.example .env
 # Bearbeiten Sie .env mit Ihren Werten
 ```
 
-## 3. Anwendung starten
+## 3. Start application
 
 ```bash
 # Entwicklungsmodus (mit Hot-Reload)
@@ -41,41 +41,41 @@ npm run build
 npm start
 ```
 
-## 4. Zugriff
+## 4. Access
 
-- **Hauptanwendung**: http://localhost:5000
-- **Admin-Panel**: http://localhost:5000 → Zahnrad-Symbol klicken oder `?admin=true` an die URL anhängen
-- **Standard Admin-Passwort**: `Password1` (ändern Sie dies in der .env-Datei!)
-- **Brute-Force-Schutz**: Nach `LOGIN_MAX_ATTEMPTS` Fehlversuchen wird die IP für `LOGIN_BLOCK_DURATION_MS` ms gesperrt (Standard: 5 Versuche/24h, anpassbar in `.env`)
+- **Main Application**: http://localhost:5000
+- **Admin Panel**: http://localhost:5000 → Click the gear icon or append `?admin=true` to the URL
+- **Default Admin Password**: `Password1` (change this in the .env file!)
+- **Brute force protection**: After `LOGIN_MAX_ATTEMPTS` failed attempts, the IP is blocked for `LOGIN_BLOCK_DURATION_MS` ms (default: 5 attempts/24h, customizable in `.env`)
 
-## 5. Erste Schritte
+## 5. Getting started
 
-1. **Admin einloggen** mit Standard-Passwort
-   - Automatische Session-Persistenz: Bleiben Sie nach Refresh eingeloggt
-2. **Neue URL-Regel erstellen**:
-   - URL-Matcher: `/alte-seite/`
-   - Ziel-URL: `/neue-seite/`
+1. **Log in as admin** with standard password
+   - Automatic session persistence: Stay logged in after refresh
+2. **Create new URL rule**:
+   - URL matcher: `/old-page/`
+   - Target URL: `/new-page/`
    - Typ: `redirect`
-   - **Hinweis**: Intelligente Validierung verhindert echte URL-Konflikte
-3. **Einstellungen anpassen**: Texte und Farben nach Bedarf
-4. **Tab-Navigation**: Gewählte Admin-Tabs bleiben nach Aktualisierung erhalten
-5. **Testen**: Besuchen Sie http://localhost:5000/alte-seite/
+   - **Note**: Smart validation prevents real URL conflicts
+3. **Customize settings**: Texts and colors as required
+4. **Tab navigation**: Selected admin tabs are retained after updating
+5. **Test**: Visit http://localhost:5000/alte-seite/
 
-## 6. Problemlösung
+## 6. Problem solving
 
-**Port bereits belegt?**
+**Port already occupied?**
 ```bash
 # Anderen Port verwenden
 PORT=3000 npm run dev
 ```
 
-**Admin-Passwort vergessen?**
+**Forgot your admin password?**
 ```bash
 # In .env-Datei ändern oder Standard verwenden
 echo "ADMIN_PASSWORD=Password1" >> .env
 ```
 
-**Daten zurücksetzen?**
+**Reset data?**
 ```bash
 # Lösche alle gespeicherten Daten
 rm -rf data/
@@ -83,22 +83,22 @@ rm -rf data/
 npm run dev
 ```
 
-## 7. Erweiterte Funktionen
+## 7. Advanced features
 
-### Multi-Select-Funktionen (Desktop)
-- **Bulk-Operationen**: Mehrere Regeln gleichzeitig bearbeiten
-- **Checkboxes**: Einzelauswahl oder "Alle auswählen"
-- **Mobile-Hinweis**: Automatische Benachrichtigung für mobile Nutzer
+### Multi-select functions (desktop)
+- **Bulk Operations**: Edit multiple rules at the same time
+- **Checkboxes**: Single selection or "Select all"
+- **Mobile Notice**: Automatic notification for mobile users
 
-### Automatische Weiterleitung
-- **Global**: Alle URLs automatisch weiterleiten
-- **Regel-spezifisch**: Pro Regel konfigurierbar
-- **Admin-Zugang**: `?admin=true` Parameter bei aktiver Auto-Weiterleitung
+### Automatic redirection
+- **Global**: Automatically forward all URLs
+- **Rule-specific**: Configurable per rule
+- **Admin access**: `?admin=true` parameter when auto-forwarding is active
 
-## 8. Nächste Schritte
+## 8. Next steps
 
-- **[README.md](./README.md)**: Detaillierte Feature-Dokumentation lesen
+- **[README.md](./README.md)**: Read detailed feature documentation
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: API-Integration planen
-- **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production-Deployment vorbereiten
-- Eigene URL-Regeln konfigurieren und Multi-Select testen
-- Einstellungen an Corporate Design anpassen
+- **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Prepare production deployment
+- Configure your own URL rules and test multi-select
+- Adapt settings to corporate design

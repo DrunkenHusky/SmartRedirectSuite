@@ -1,16 +1,16 @@
 # SmartRedirect Suite - Architektur-Overview
 
-Die Anwendung ist modular aufgebaut und trennt klar zwischen Frontend, Backend und gemeinsam genutzten Typen.
+The application has a modular structure and clearly separates frontend, backend and shared types.
 
-## Komponenten
-- **client/**: React 18 + TypeScript Frontend, gebündelt mit Vite.
-- **server/**: Express-basiertes Backend mit Dateispeicher und Session-Handling.
-- **shared/**: Gemeinsame TypeScript-Typen und Validierungsschemata.
+## Components
+- **client/**: React 18 + TypeScript frontend, bundled with Vite.
+- **server/**: Express-based backend with file storage and session handling.
+- **shared/**: Shared TypeScript types and validation schemes.
 
-## Ablauf
-1. Anfragen erreichen das `server/`-Modul.
-2. Der Server prüft Regeln gegen einen **In-Memory Cache**, der beim Start aus `data/rules.json` geladen wird, um I/O-Latenz zu vermeiden.
-3. Validierte Daten werden an das `client/`-Frontend ausgeliefert.
-4. `shared/` stellt Typdefinitionen und Zod-Schemas für beide Seiten bereit.
+## Process
+1. Requests reach the `server/` module.
+2. The server checks rules against an **in-memory cache** loaded from `data/rules.json` at startup to avoid I/O latency.
+3. Validated data is delivered to the `client/` frontend.
+4. `shared/` provides type definitions and Zod schemas for both sides.
 
-Die Architektur ermöglicht die hochperformante Verarbeitung von über 100.000 Regeln durch intelligentes Caching und optimierte Datenstrukturen.
+The architecture enables high-performance processing of over 100,000 rules through intelligent caching and optimized data structures.
