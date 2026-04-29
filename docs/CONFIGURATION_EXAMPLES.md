@@ -1,6 +1,6 @@
 # SmartRedirect Suite - Konfigurationsbeispiele
 
-## .env Beispiel
+## .env example
 ```bash
 ADMIN_PASSWORD=MeinSicheresPasswort123
 SESSION_SECRET=super-geheimer-session-schluessel-hier-einfuegen-mindestens-32-zeichen
@@ -10,8 +10,8 @@ PORT=5000
 NODE_ENV=development
 ```
 
-## Beispiel-Regeln
-Die Datei [sample-rules-import.json](../sample-rules-import.json) zeigt den Aufbau einer Regeldatei:
+## Example rules
+The file [sample-rules-import.json](../sample-rules-import.json) shows the structure of a rules file:
 
 ```json
 {
@@ -26,42 +26,42 @@ Die Datei [sample-rules-import.json](../sample-rules-import.json) zeigt den Aufb
 }
 ```
 
-## Parameter beibehalten (Keep Query Params) mit Regex
+## Keep Query Params with Regex
 
-Die Funktion "Parameter beibehalten" erlaubt es, spezifische Query-Parameter aus der alten URL zu übernehmen und optional zu transformieren.
+The "Keep parameters" function allows specific query parameters to be taken over from the old URL and optionally transformed.
 
-### Beispiel 1: Einfaches Beibehalten
-Behält den Parameter `ref` bei.
+### Example 1: Simple Preserve
+Preserves the `ref` parameter.
 
 - **Parameter Key (Regex):** `ref`
-- **Value Matcher:** (leer)
-- **Neuer Name:** (leer)
+- **Value Matcher:** (leather)
+- **New name:** (empty)
 
-**Ergebnis:** `/old?ref=123` -> `/new?ref=123`
+**Result:** `/old?ref=123` -> `/new?ref=123`
 
-### Beispiel 2: Umbenennen
-Benennt den Parameter `utm_source` in `source` um.
+### Example 2: Rename
+Renames the `utm_source` parameter to `source`.
 
 - **Parameter Key (Regex):** `utm_source`
-- **Value Matcher:** (leer)
-- **Neuer Name:** `source`
+- **Value Matcher:** (leather)
+- **New name:** `source`
 
-**Ergebnis:** `/old?utm_source=google` -> `/new?source=google`
+**Result:** `/old?utm_source=google` -> `/new?source=google`
 
-### Beispiel 3: Wert extrahieren mit Regex (Lookbehind)
-Extrahiert einen Teil des Wertes, der nach einem Backslash steht (z.B. Domain-User).
+### Example 3: Extract value with regex (lookbehind)
+Extracts a part of the value that comes after a backslash (e.g. Domain-User).
 
 - **Parameter Key (Regex):** `accountname`
 - **Value Matcher (Regex):** `(?<=\\).*`
-- **Neuer Name:** `user`
+- **New name:** `user`
 
-**Ergebnis:** `/old?accountname=DOMAIN\User123` -> `/new?user=User123`
+**Result:** `/old?accountname=DOMAIN\User123` -> `/new?user=User123`
 
-### Beispiel 4: Wert extrahieren mit Capture Group
-Extrahiert die ID aus einem komplexen String.
+### Example 4: Extract value with Capture Group
+Extracts the ID from a complex string.
 
 - **Parameter Key (Regex):** `id`
 - **Value Matcher (Regex):** `^prefix-(\d+)$`
-- **Neuer Name:** `itemId`
+- **New name:** `itemId`
 
 **Ergebnis:** `/old?id=prefix-555` -> `/new?itemId=555`

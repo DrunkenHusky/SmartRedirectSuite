@@ -1,11 +1,11 @@
 # SmartRedirect Suite
 
-SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain. Typischer Use Case: Migration von SharePoint On-Premises zu SharePoint Online, wenn sich Domain und Pfadstruktur ändern. Die App weist Nutzer auf veraltete Links hin und kann automatisch auf neue Ziele weiterleiten.
+SmartRedirect Suite is a web application for centrally managing URL migrations between old and new domains. Typical use case: Migrating from SharePoint On-Premises to SharePoint Online when the domain and path structure change. The app notifies users of outdated links and can automatically redirect to new destinations.
 
 **Demo-Instanz:** [smartredirectsuite.render.com](https://smartredirectsuite.onrender.com/)
-Diese Version basiert stets auf dem neuesten Dev-Build, wird alle 24 Stunden zurückgesetzt und eignet sich zum Ausprobieren der App.
+This version is always based on the latest dev build, resets every 24 hours and is suitable for trying out the app.
 
-☕️ **Kaffee für den Code?** Wenn dir die SmartRedirect Suite gefällt, spendier mir auf [BuyMeACoffee](https://buymeacoffee.com/drunkenhusky) einen Kaffee und halte die Bits am Koffein!
+☕️ **Coffee for the code?** If you like the SmartRedirect Suite, buy me a coffee on [BuyMeACoffee](https://buymeacoffee.com/drunkenhusky) and keep the bits caffeinated!
 
 ## Table of Contents
 
@@ -19,107 +19,107 @@ Diese Version basiert stets auf dem neuesten Dev-Build, wird alle 24 Stunden zu
 - [Quick Start](#schnellstart)
   - [Prerequisites](#voraussetzungen)
   - [1. Repository klonen](#1-repository-klonen)
-  - [2. Dependencies installieren](#2-dependencies-installieren)
-  - [3. .env-Datei erstellen](#3-env-datei-erstellen)
-  - [4. Anwendung starten](#4-anwendung-starten)
+  - [2. Install Dependencies](#2-dependencies-installieren)
+  - [3. Create .env file](#3-env-datei-erstellen)
+  - [4. Start Application](#4-anwendung-starten)
 - [Administration](#administration)
-  - [Regeln importieren](#regeln-importieren)
-  - [Einstellungen anpassen](#einstellungen-anpassen)
+  - [Import Rules](#regeln-importieren)
+  - [Customize Settings](#einstellungen-anpassen)
   - [Matching Indicator](#matching-indicator)
-  - [Statistiken & Monitoring](#statistiken--monitoring)
-- [Release Prozess](#release-prozess)
-- [Validierung & Qualitätssicherung](#validierung--qualitatssicherung)
-- [Datenverwaltung](#datenverwaltung)
-- [Sicherheit](#sicherheit)
+  - [Statistics & Monitoring](#statistiken--monitoring)
+- [Release Process](#release-prozess)
+- [Validation & Quality Assurance](#validierung--qualitatssicherung)
+- [Data Management](#datenverwaltung)
+- [Security](#sicherheit)
 - [Deployment](#deployment)
-- [Entwicklung](#entwicklung)
+- [Development](#entwicklung)
 - [Support & Beitrag](#support--beitrag)
-- [Änderungshistorie](#anderungshistorie)
+- [Change History](#anderungshistorie)
 
 ## Key Features
 
-- Zentrale Regelverwaltung mit automatischer URL-Erkennung
-- Kontrollierte Migrationen und nachvollziehbare Domainwechsel
-- Produktivität: Multi-Select, Import/Export von Regeln
-- Admin-Panel mit persistenter Session und anpassbarer UI
-- Intelligente Validierung mit Überlappungserkennung
-- Umfangreiche Statistiken und URL-Tracking
-- Skalierbare Architektur: Verarbeitung von über 100'000 Regeln und Logeinträgen ohne Leistungseinbussen
-- Responsives Design für Desktop und Mobilgeräte
+- Central rule management with automatic URL detection
+- Controlled migrations and traceable domain changes
+- Productivity: Multi-select, import/export of rules
+- Admin panel with persistent session and customizable UI
+- Intelligent validation with overlap detection
+- Extensive statistics and URL tracking
+- Scalable architecture: Processing of over 100,000 rules and log entries without sacrificing performance
+- Responsive design for desktop and mobile devices
 
 ## Documentation
 
 - [User Manual](./docs/USER_MANUAL.md)
 - [Admin-Documentation](./docs/ADMIN_DOCUMENTATION.md)
 - [Docker Deployment](./docs/DOCKER_DEPLOYMENT.md)
-- [Architektur-Overview](./docs/ARCHITECTURE_OVERVIEW.md)
+- [Architecture Overview](./docs/ARCHITECTURE_OVERVIEW.md)
 - [Configuration Examples](./docs/CONFIGURATION_EXAMPLES.md)
 - [Release Pipeline](./docs/release-pipeline.md)
 
 ## Impressions
 
-Kurzer Überblick über zentrale Screens der SmartRedirect Suite.
+Brief overview of central screens of the SmartRedirect Suite.
 
-### Website-Besucher
+### Website visitors
 
-1. **Initiale Meldung** – Hinweis, dass der verwendete Link veraltet ist und aktualisiert werden soll.  
-   ![Initiale Meldung – Website Besucher](Impressions/Initiale%20Meldung%20Website%20Besucher.png)
+1. **Initial message** - Notice that the link used is out of date and should be updated.
+![Initial message – website visitor](Impressions/Initiale%20Meldung%20Website%20Besucher.png)
 
-2. **Neue URL mit Hinweisen** – Anzeige der automatisch generierten neuen URL inkl. Hinweise sowie der alten, aufgerufenen URL.  
-   ![Anzeige neuer URL mit Hinweisen – Website Besucher nach Bestätigung Pop-up](Impressions/Anzeige%20neuer%20URL%20mit%20Hinweisen%20Website%20Besucher%20nach%20Best%C3%A4tigung%20Pop%20up.png)
+2. **New URL with notes** – Display of the automatically generated new URL including notes as well as the old, accessed URL.
+![Display new URL with information - website visitors pop-up after confirmation](Impressions/Anzeige%20neuer%20URL%20mit%20Hinweisen%20Website%20Besucher%20nach%20Best%C3%A4tigung%20Pop%20up.png)
 
-### Admin-Bereich
+### Admin area
 
-3. **Generelle Einstellungen** – Overview über globale Optionen und Grundkonfiguration.
-   ![Admin Menü – Generelle Einstellungen](Impressions/Admin%20Menu%20Generelle%20Einstellungen.png)
+3. **General Settings** – Overview of global options and basic configuration.
+![Admin Menu – General Settings](Impressions/Admin%20Menu%20Generelle%20Einstellungen.png)
 
-4. **URL-Transformationsregeln** – Verwaltung von Regeln (Typ, Auto-Redirect, Status, Metadaten).  
-   ![Admin Menu – URL-Transformationsregeln definieren](Impressions/Admin%20Menu%20URL-Transformationsregeln%20definieren.png)
+4. **URL Transformation Rules** – Management of rules (type, auto-redirect, status, metadata).
+![Admin Menu – Define URL transformation rules](Impressions/Admin%20Menu%20URL-Transformationsregeln%20definieren.png)
 
-5. **Statistiken & Tracking** – Liste aller Tracking-Einträge mit Zeitstempel, alter/neuer URL und Pfad.  
-   ![Admin Menu – Statistik](Impressions/Admin%20Menu%20Statistik.png)
+5. **Statistics & Tracking** – List of all tracking entries with timestamp, old/new URL and path.
+![Admin Menu – Statistics](Impressions/Admin%20Menu%20Statistik.png)
 
-6. **Import/Export** – Export von Statistiken (CSV/JSON) sowie Import/Export der URL-Regeln.  
-   ![Admin Menu – Import Export](Impressions/Admin%20Menu%20Import%20Export.png)
+6. **Import/Export** – Export of statistics (CSV/JSON) as well as import/export of URL rules.
+![Admin Menu – Import Export](Impressions/Admin%20Menu%20Import%20Export.png)
 
 ## How it works
 
-Jede Regel definiert:
+Each rule defines:
 
-- einen **URL-Pfad-Matcher**
-- einen **Modus** (_Teilweise_ oder _Vollständig_)
-- Zielwerte (**Base-URL** oder **Ziel-URL**)
+- a **URL path matcher**
+- a **mode** (_partial_ or _complete_)
+- Target values ​​(**Base URL** or **Target URL**)
 
-Der Matcher greift an beliebiger Stelle im Pfad – eine Regel wie `/sites/team`
-matcht sowohl `/sites/team/docs` als auch `/archive/sites/team/docs`.
+The matcher attacks anywhere in the path - a rule like `/sites/team`
+matches both `/sites/team/docs` and `/archive/sites/team/docs`.
 
-**Fallback ohne Regeln:** Bei fehlenden Regeln erfolgt ein Domainersatz gemäß den allgemeinen Einstellungen; Pfad, Parameter und Anker bleiben erhalten.
+**Fallback without rules:** If rules are missing, a domain replacement occurs according to the general settings; Path, parameters and anchors are retained.
 
 ### Rule Modes
 
-| Modus           | Verhalten                                                                                                                                           |
+| Modus           | Behave                                                                                                                                           |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Teilweise**   | Ersetzt Pfadsegmente ab dem Matcher. Base‑URL stammt aus den allgemeinen Einstellungen; zusätzliche Segmente, Parameter und Anker werden angehängt. |
-| **Vollständig** | Leitet komplett auf eine neue Ziel‑URL um. Keine Bestandteile der alten URL werden übernommen.                                                      |
+| **Partially**   | Replaces path segments starting from the matcher. Base URL comes from general settings; additional segments, parameters and anchors are appended. |
+| **Complete** | Completely redirects to a new destination URL. No parts of the old URL are retained.                                                      |
 
-### Gross-/Kleinschreibung
+### Case sensitive
 
-In den allgemeinen Einstellungen kann die Option "Gross/Kleinschreibung beachten" aktiviert werden.
+The “Case sensitive” option can be activated in the general settings.
 
-- **Deaktiviert (Standard):** `/Test` und `/test` werden als gleich behandelt. Das System normalisiert alle Pfade intern zu Kleinbuchstaben.
-- **Aktiviert:** `/Test` und `/test` werden als unterschiedlich betrachtet. Eine Regel für `/Test` greift nicht bei einem Aufruf von `/test`.
+- **Disabled (default):** `/Test` and `/test` are treated as the same. The system internally normalizes all paths to lowercase letters.
+- **Enabled:** `/Test` and `/test` are considered different. A rule for `/Test` does not apply when `/test` is called.
 
-**Best Practice:** Aktivieren Sie diese Option nur, wenn das ursprüngliche System (z. B. ein Linux-Dateisystem oder ein spezifisches CMS) case-sensitive URLs verwendet hat und Sie Kollisionen vermeiden müssen.
+**Best Practice:** Only enable this option if the original system (e.g. a Linux file system or a specific CMS) used case-sensitive URLs and you need to avoid collisions.
 
 ### Examples
 
-**Ausgangs‑URL**
+**Source URL**
 
 ```
 https://intranet.alt.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
-**Teilweise**
+**Partially**
 
 ```
 Matcher: /sites/team
@@ -127,7 +127,7 @@ Neuer Teilpfad: /teams/finance
 Ergebnis: https://neuesintranet.cloud.com/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
-**Vollständig**
+**Complete**
 
 ```
 Matcher: /sites/team
@@ -135,94 +135,94 @@ Ziel-URL: https://andereseite.com/hub
 Ergebnis: https://andereseite.com/hub
 ```
 
-**Ohne Regel (Domainersatz)**
+**Without rule (domain replacement)**
 
 ```
 Ergebnis: https://neuesintranet.cloud.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
-### Regelpriorisierung (Spezifität)
+### Rule prioritization (specificity)
 
-Die spezifischste Regel gewinnt. Der Spezifitäts‑Score \(S\) berechnet sich als:
+The most specific rule wins. The specificity score \(S\) is calculated as:
 
 \[
 S = P*{path} \cdot WEIGHT_PATH_SEGMENT + P*{param} \cdot WEIGHT_QUERY_PAIR + W*{wildcards} \cdot PENALTY_WILDCARD + E*{exact} \cdot BONUS_EXACT_MATCH
 \]
 
-- **P_path** – Anzahl exakt übereinstimmender statischer Pfadsegmente
-- **P_param** – Anzahl übereinstimmender Query‑Key=Value‑Paare
-- **W_wildcards** – Wildcards/Platzhalter (werden negativ gewichtet)
-- **E_exact** – Bonus bei kompletter Pfad- und Query‑Übereinstimmung
+- **P_path** – Number of exactly matching static path segments
+- **P_param** – Number of matching query key=value pairs
+- **W_wildcards** – Wildcards/wildcards (are weighted negatively)
+- **E_exact** – Bonus for complete path and query match
 
-Beispiele:
+Examples:
 
-- Request `/subsite/xyz` → Regel `/subsite/xyz` schlägt `/subsite`
-- Request `/subsite?document.aspx=123` → Regel `/subsite?document.aspx=123` schlägt `/subsite`
+- Request `/subsite/xyz` → rule `/subsite/xyz` beats `/subsite`
+- Request `/subsite?document.aspx=123` → Rule `/subsite?document.aspx=123` beats `/subsite`
 
-Tie‑Breaker: mehr statische Segmente → mehr Query‑Paare → weniger Wildcards → älteres `createdAt`/niedrigere ID.
+Tie-breaker: more static segments → more query pairs → fewer wildcards → older `createdAt`/lower ID.
 
-## Erweiterte Regel-Optionen
+## Advanced rule options
 
 ### Smart Search Redirects
-Wenn die Option "Intelligente Such-Weiterleitung" als Fallback aktiviert ist, versucht das System, aus der alten URL einen Suchbegriff zu extrahieren, falls keine direkte Regel greift.
+If the "Intelligent search redirection" option is activated as a fallback, the system tries to extract a search term from the old URL if no direct rule applies.
 
-*   **Standard:** Das letzte Segment des Pfades wird als Suchbegriff verwendet.
-*   **Regex-Regeln:** Sie können spezifische Regeln definieren (z.B. `[?&]file=([^&]+)`), um IDs oder Dokumentennamen aus Parametern zu extrahieren.
-*   **Reihenfolge:** Die Regeln werden von oben nach unten geprüft.
-*   **URL Encoding:** Sie können global oder pro Regel festlegen, ob der extrahierte Suchbegriff URL-kodiert (z.B. `%20` statt Leerzeichen) werden soll.
+*   **Default:** The last segment of the path is used as the search term.
+*   **Regex Rules:** You can define specific rules (e.g. `[?&]file=([^&]+)`) to extract IDs or document names from parameters.
+*   **Order:** Rules are checked from top to bottom.
+*   **URL Encoding:** You can specify globally or per rule whether the extracted search term should be URL encoded (e.g. `%20` instead of spaces).
 
-### Suchen & Ersetzen
+### Find & Replace
 
-Sie können definieren, dass bestimmte Teile der Ziel-URL (inkl. Pfad und Parameter) ersetzt werden sollen. Dies geschieht **nach** der Generierung der Basis-URL, aber **vor** dem Anhängen von statischen Parametern.
+You can define that certain parts of the target URL (including path and parameters) should be replaced. This happens **after** generating the base URL, but **before** appending static parameters.
 
-*   **Suchen:** Der zu ersetzende Text (String).
-*   **Ersetzen:** Der neue Text. Wenn leer, wird der Suchtext gelöscht.
-*   **Case Sensitivity:** Legt fest, ob Groß-/Kleinschreibung beachtet werden soll.
+*   **Find:** The text (string) to replace.
+*   **Replace:** The new text. If empty, the search text is deleted.
+*   **Case Sensitivity:** Determines whether to be case sensitive.
 
 ### Feedback Survey & Fallback
 
-Die Feedback-Umfrage kann optional mit einer **Smart Search Fallback** Funktion erweitert werden. Wenn ein Nutzer "NOK" (Daumen runter) klickt und die intelligente Such-Weiterleitung aktiv ist, wird ihm ein alternativer Such-Link angeboten.
+The feedback survey can optionally be expanded with a **Smart Search Fallback** function. If a user clicks "NOK" (thumbs down) and intelligent search redirection is active, they will be offered an alternative search link.
 
-*   Dies erzeugt einen separaten Statistik-Eintrag.
-*   Der Nutzer kann auch für diesen Vorschlag Feedback geben.
-*   Klickt der Nutzer erneut "NOK", kann er (falls aktiviert) die korrekte URL vorschlagen.
+*   This creates a separate statistics entry.
+*   The user can also provide feedback for this suggestion.
+*   If the user clicks "NOK" again, he can (if activated) suggest the correct URL.
 
-**Hinweis zu Auto-Redirect:**
-Wenn Auto-Redirect (global oder per Regel) aktiviert ist, wird die Feedback-Umfrage übersprungen. Das System loggt diese Interaktion automatisch als `auto-redirect` in der Feedback-Statistik.
+**Note about auto-redirect:**
+If auto-redirect is enabled (globally or by rule), the feedback survey will be skipped. The system automatically logs this interaction as “auto-redirect” in the feedback statistics.
 
 ### Parameter-Handling
 
-Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie steuern, wie mit URL-Parametern verfahren wird.
+For "Partial" and "Full" (Wildcard) redirects, you can control how URL parameters are handled.
 
-**Für Partial & Domain Regeln:**
-1.  **Parameter verwerfen (Discard):** Aktivieren Sie "Alle Link-Parameter entfernen", um standardmäßig alle Query-Parameter der alten URL zu löschen. Wenn deaktiviert, werden alle Parameter übernommen.
-2.  **Ausnahmen definieren (Keep):** Wenn Discard aktiviert ist, können Sie spezifische Parameter definieren, die trotzdem beibehalten werden sollen.
+**For Partial & Domain Rules:**
+1. **Discard parameters:** Check "Remove all link parameters" to delete all query parameters of the old URL by default. If disabled, all parameters are applied.
+2. **Define Exceptions (Keep):** If Discard is enabled, you can define specific parameters that should still be retained.
 
-**Für Wildcard Regeln:**
-1.  **Parameter behalten (Forward):** Aktivieren Sie "Alle Link-Parameter beibehalten", um alle Parameter 1:1 an die Ziel-URL anzuhängen.
-2.  **Spezifische Parameter:** Wenn Forward deaktiviert ist, werden standardmäßig alle Parameter entfernt. Sie können dann unter "Parameter beibehalten / umbenennen" spezifische Ausnahmen definieren.
+**For Wildcard Rules:**
+1. **Keep parameters (Forward):** Check "Keep all link parameters" to append all parameters 1:1 to the target URL.
+2. **Specific Parameters:** When Forward is disabled, all parameters are removed by default. You can then define specific exceptions under "Keep/rename parameters".
 
-**Allgemein:**
-*   **Regex:** Key und Value können per Regex definiert werden.
-*   **Umbenennen:** Sie können einen "Ziel-Key" angeben. Beispiel: Aus `?file=dokument.pdf` wird `?f=dokument.pdf`.
-*   **Nicht kodieren (Raw):** Für statische und beibehaltene Parameter kann die Option "Nicht kodieren" aktiviert werden. Dies verhindert die standardmäßige URL-Kodierung der Werte (nützlich, wenn `%20` statt `+` benötigt wird oder der Wert bereits kodiert vorliegt).
-*   **Statische Parameter:** Sie können Parameter definieren, die **immer** angehängt werden (z.B. `?source=migration`).
+**Generally:**
+*   **Regex:** Key and Value can be defined via Regex.
+*   **Rename:** You can specify a "Target Key". Example: `?file=document.pdf` becomes `?f=document.pdf`.
+*   **Do Not Encode (Raw):** For static and persisted parameters, the Do Not Encode option can be enabled. This prevents the default URL encoding of the values ​​(useful if `%20` is needed instead of `+` or the value is already encoded).
+*   **Static parameters:** You can define parameters that will **always** be appended (e.g. `?source=migration`).
 
-**Reihenfolge der Parameter in der Ziel-URL:**
-1.  Statische Parameter (in der definierten Reihenfolge)
-2.  Behaltene Parameter (in der definierten Reihenfolge)
+**Order of parameters in the target URL:**
+1. Static parameters (in the defined order)
+2. Retained parameters (in the defined order)
 
-**Beispiel:**
+**Example:**
 *   Alte URL: `.../page?old=123&ignore=me`
-*   Statisch: `new=A`
+*   Static: `new=A`
 *   Keep: `old` -> `id`
-*   Ergebnis: `.../ziel?new=A&id=123`
+*   Result: `.../target?new=A&id=123`
 
 ## Use Cases
 
 - Migrationen (z. B. SharePoint On‑Premises → SharePoint Online)
-- Domain‑Rebrands und Konsolidierungen
-- Umstrukturierungen großer Linklandschaften
+- Domain rebrands and consolidations
+- Restructuring of large link landscapes
 
 ## Quick Start
 
@@ -230,29 +230,29 @@ Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie st
 
 - Node.js >= 22
 
-Überprüfen Sie die Installation:
+Check the installation:
 
 ```bash
 node --version
 npm --version
 ```
 
-### 1. Repository klonen
+### 1. Clone repository
 
 ```bash
 git clone <repository-url>
 cd SmartRedirectSuite
 ```
 
-### 2. Dependencies installieren
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. .env-Datei erstellen
+### 3. Create .env file
 
-Erstellen Sie eine `.env` Datei im Hauptverzeichnis:
+Create a `.env` file in the root directory:
 
 ```bash
 cat > .env <<'EOF'
@@ -280,7 +280,7 @@ NODE_ENV=development
 EOF
 ```
 
-### 4. Anwendung starten
+### 4. Start the application
 
 ```bash
 npm run dev        # Entwicklungsmodus
@@ -289,17 +289,17 @@ npm run build
 npm start          # Produktion
 ```
 
-Die Anwendung läuft anschließend unter `http://localhost:5000`.
+The application then runs at `http://localhost:5000`.
 
-## Öffentliche API
+## Public API
 
-Die SmartRedirect Suite bietet einen öffentlichen API-Endpunkt zur Automatisierung von URL-Transformationen. Dieser Endpunkt erfordert keine Authentifizierung und wendet das konfigurierte Rate-Limiting an.
+The SmartRedirect Suite provides a public API endpoint for automating URL transformations. This endpoint does not require authentication and applies the configured rate limiting.
 
 ### URL-Transformation Endpoint
 
 `POST /api/public/transform`
 
-Mit diesem Endpoint können Sie eine alte URL übergeben und erhalten die entsprechende neue URL gemäß den konfigurierten Weiterleitungsregeln zurück. Die URL kann entweder als JSON-Body oder als Query-Parameter übergeben werden.
+This endpoint allows you to pass an old URL and receive the corresponding new URL back according to the configured redirect rules. The URL can be passed either as a JSON body or as a query parameter.
 
 **Request Body (JSON)**
 
@@ -325,19 +325,19 @@ Mit diesem Endpoint können Sie eine alte URL übergeben und erhalten die entspr
 }
 ```
 
-- `oldUrl`: Die ursprüngliche URL.
-- `newUrl`: Die generierte Ziel-URL.
-- `hasMatch`: `true`, wenn eine spezifische Regel angewendet wurde, ansonsten `false`.
-- `ruleId`: Die UUID der angewendeten Regel (falls vorhanden).
-- `redirectStrategy`: Der angewendete Weiterleitungsmodus (z.B. `rule`, `domain-fallback`, `smart-search`).
+- `oldUrl`: The original URL.
+- `newUrl`: The generated target URL.
+- `hasMatch`: `true` if a specific rule was applied, `false` otherwise.
+- `ruleId`: The UUID of the applied rule (if any).
+- `redirectStrategy`: The redirect mode applied (e.g. `rule`, `domain-fallback`, `smart-search`).
 
 ## Administration
 
-Der Admin-Bereich lässt sich über das Zahnrad-Symbol oben rechts oder direkt über den URL-Parameter `?admin=true` öffnen.
+The admin area can be opened via the gear symbol in the top right or directly via the URL parameter `?admin=true`.
 
-### Regeln importieren
+### Import rules
 
-Beispiel einer JSON-Datei:
+Example of a JSON file:
 
 ```json
 {
@@ -352,140 +352,140 @@ Beispiel einer JSON-Datei:
 }
 ```
 
-Im Admin-Panel hochladen oder über `sample-rules-import.json` einsehen.
+Upload in the admin panel or view via `sample-rules-import.json`.
 
-### Einstellungen anpassen
+### Adjust settings
 
-Im Admin-Panel können Texte, Farben und UI-Elemente angepasst werden, einschließlich:
+In the admin panel, texts, colors and UI elements can be customized, including:
 
 - Header und Icons
 - Popup-Texte
-- Labels im URL-Vergleich
-- Sichtbarkeit der Buttons ("URL kopieren" und "In neuem Tab öffnen")
-- Klickverhalten der angezeigten URL (Kopieren, Öffnen, oder Keine Aktion)
-- Button-Beschriftungen
-- Zusätzliche Info-Bereiche
+- Labels in URL comparison
+- Visibility of the buttons (“Copy URL” and “Open in new tab”)
+- Click behavior of the displayed URL (copy, open, or no action)
+- Button labels
+- Additional info areas
 
 ### Matching Indicator
 
-Der Matching Indicator (Link-Qualitätstacho) visualisiert, wie gut eine aufgerufene URL zu einer neuen URL passt. Er wird auf der Migrationsseite angezeigt.
+The matching indicator (link quality tachometer) visualizes how well a visited URL matches a new URL. It will appear on the migration page.
 
-**Qualitätsstufen:**
+**Quality levels:**
 
-- **Grün (100%):** Exakte Übereinstimmung oder Startseite (Root).
-- **Gelb (60-90%):** URL erkannt, aber mit leichten Abweichungen (z.B. zusätzliche Parameter).
-- **Rot (< 60%):** Nur Teilübereinstimmung (Partial Match) oder keine spezifische Zuordnung möglich.
+- **Green (100%):** Exact match or home page (root).
+- **Yellow (60-90%):** URL recognized, but with slight deviations (e.g. additional parameters).
+- **Red (< 60%):** Only partial match or no specific assignment possible.
 
-Die Erklärungstexte für diese Stufen können im Admin-Bereich unter "Allgemeine Einstellungen" individuell angepasst werden.
+The explanatory texts for these levels can be customized in the admin area under “General Settings”.
 
-### Statistiken & Monitoring
+### Statistics & Monitoring
 
-Das Admin-Panel zeigt:
+The admin panel shows:
 
-- Zugriffszahlen (gesamt, heute, Woche)
+- Access numbers (total, today, week)
 - Top-URLs
-- Zeitbasierte Auswertungen (24h, 7 Tage, alle Daten)
-- Export als CSV/JSON
+- Time-based evaluations (24h, 7 days, all data)
+- Export as CSV/JSON
 
-### Performance & Systemanforderungen
+### Performance & System Requirements
 
-Das System verwendet eine hochoptimierte In-Memory-Verarbeitung für URL-Regeln und Tracking-Daten.
+The system uses highly optimized in-memory processing for URL rules and tracking data.
 
-*   **Tracking-Cache:** Um hohe I/O-Lasten zu vermeiden, können Tracking-Daten im Arbeitsspeicher gehalten werden. Dies ist standardmäßig aktiviert und beschleunigt Dashboard-Zugriffe massiv.
-    *   **Empfehlung:** Für Produktionssysteme mit vielen Zugriffen sollten mindestens **512 MB bis 1 GB RAM** eingeplant werden, insbesondere wenn die Anzahl der Tracking-Einträge 500'000 übersteigt.
-    *   **Konfiguration:** Der Cache kann in den Admin-Einstellungen unter "System & Daten" -> "Systemeinstellungen" deaktiviert werden, falls der Arbeitsspeicher knapp ist (führt zu langsameren Statistiken).
+*   **Tracking cache:** To avoid high I/O loads, tracking data can be kept in memory. This is enabled by default and massively speeds up dashboard access.
+    *   **Recommendation:** For production systems with a lot of access, at least **512 MB to 1 GB RAM** should be planned, especially if the number of tracking entries exceeds 500,000.
+    *   **Configuration:** The cache can be disabled in the admin settings under "System & Data" -> "System Settings" if RAM is low (results in slower statistics).
 
-## Release Prozess
+## Release process
 
-Dieses Projekt verwendet eine automatisierte CI/CD-Pipeline mit **GitHub Actions** und **Semantic Release**.
+This project uses an automated CI/CD pipeline with **GitHub Actions** and **Semantic Release**.
 
-- Commits sollten der [Conventional Commits](https://www.conventionalcommits.org/) Konvention folgen (z.B. `feat:`, `fix:`).
-- Bei einem Push auf `main` wird automatisch getestet, versioniert und veröffentlicht.
-- Docker-Images werden automatisch in die GitHub Container Registry (ghcr.io) gepusht.
+- Commits should follow the [Conventional Commits](https://www.conventionalcommits.org/) convention (e.g. `feat:`, `fix:`).
+- When pushed to `main`, testing, versioning and publishing are carried out automatically.
+- Docker images are automatically pushed to the GitHub Container Registry (ghcr.io).
 
-Weitere Details finden Sie in der [Release-Documentation](./docs/release-pipeline.md).
+Further details can be found in the [Release Documentation](./docs/release-pipeline.md).
 
-## Validierung & Qualitätssicherung
+## Validation & Quality Assurance
 
-Die Anwendung verhindert:
+The application prevents:
 
-- Doppelte URL-Matcher
-- Überlappende Regeln (z. B. `/news/` und `/news/archive/`)
-- Wildcard-Konflikte
-- Ungültige Pfadsegmente
+- Duplicate URL matchers
+- Overlapping rules (e.g. `/news/` and `/news/archive/`)
+- Wildcard conflicts
+- Invalid path segments
 
-Fehler werden detailliert auf Deutsch ausgegeben; bei Validierungsfehlern werden keine Änderungen gespeichert.
+Errors are reported in detail in German; If there are validation errors, no changes are saved.
 
-## Datenverwaltung
+## Data management
 
-Standardmäßig werden JSON-Dateien im `data/` Verzeichnis genutzt:
+By default, JSON files in the `data/` directory are used:
 
 - `data/rules.json`, `data/settings.json`, `data/tracking.json`
-- `data/sessions/` für Admin-Sessions
+- `data/sessions/` for admin sessions
 
-## Sicherheit
+## Security
 
-- Persistente Session-Authentifizierung (7 Tage)
-- Sichere Cookies und dateibasierte Sessions
-- Passwortgeschützter Admin-Bereich
-- Brute-Force-Schutz mit IP-Sperre (konfigurierbar über `LOGIN_MAX_ATTEMPTS` und `LOGIN_BLOCK_DURATION_MS`)
-- XSS-Schutz durch React
-- Input-Validierung mit Zod
-- Konfiguration über Umgebungsvariablen
+- Persistent session authentication (7 days)
+- Secure cookies and file-based sessions
+- Password protected admin area
+- Brute force protection with IP blocking (configurable via `LOGIN_MAX_ATTEMPTS` and `LOGIN_BLOCK_DURATION_MS`)
+- XSS protection through React
+- Input validation with Zod
+- Configuration via environment variables
 
 ## Deployment
 
-Die App verwendet standardmäßig SQLite als Datenbank, kann jedoch auch mit PostgreSQL oder MariaDB/MySQL betrieben werden. Weitere Informationen finden Sie in der [Docker Deployment Documentation](./docs/DOCKER_DEPLOYMENT.md) und in den mitgelieferten docker-compose Beispielen.
+The app uses SQLite as the database by default, but can also be operated with PostgreSQL or MariaDB/MySQL. For more information, see the [Docker Deployment Documentation](./docs/DOCKER_DEPLOYMENT.md) and the included docker-compose examples.
 
 
-Lokale Produktion:
+Local Production:
 
 ```bash
 npm run build
 npm start
 ```
 
-Weitere Plattformen: Vercel, Heroku oder Docker. Details zur Docker-Installation finden Sie im [Docker Deployment Guide](./docs/DOCKER_DEPLOYMENT.md).
+Other platforms: Vercel, Heroku or Docker. For Docker installation details, see the [Docker Deployment Guide](./docs/DOCKER_DEPLOYMENT.md).
 
-Für Demo-Zwecke mit täglichem Reset der Daten kann das `Dockerfile.demo` genutzt werden (setzt Sessions, Uploads und Einstellungen täglich zurück).
+For demo purposes with daily data reset, the `Dockerfile.demo` can be used (resets sessions, uploads and settings daily).
 
-### Automatisches Deployment auf fly.io
+### Automatic deployment on fly.io
 
-Das Repository enthält eine CI/CD-Pipeline (`.github/workflows/deploy.yml`) für das automatische Deployment auf fly.io.
+The repository contains a CI/CD pipeline (`.github/workflows/deploy.yml`) for automatic deployment to fly.io.
 
-*   **Trigger:** Ein Push auf den Branch `NextRelease` löst das Deployment aus.
-*   **Voraussetzungen:**
-    *   Das Secret `FLY_API_TOKEN` muss in den GitHub Repository Settings hinterlegt sein.
-    *   Die Konfiguration erfolgt über die `fly.toml` und das `Dockerfile.demo`.
-*   **Ablauf:** Die GitHub Action authentifiziert sich via Token, baut das Image remote auf fly.io und deployt die neue Version.
+*   **Trigger:** A push to the `NextRelease` branch triggers the deployment.
+*   **Requirements:**
+    *   The secret `FLY_API_TOKEN` must be stored in the GitHub Repository Settings.
+    *   The configuration is done via the `fly.toml` and the `Dockerfile.demo`.
+*   **Process:** The GitHub Action authenticates itself via token, builds the image remotely on fly.io and deploys the new version.
 
-## Entwicklung
+## Development
 
-Technologie-Stack:
+Technology-Stack:
 
 - React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
-- Express.js und Zod im Backend
+- Express.js and Zod in the backend
 - TanStack Query, Wouter, React Hook Form
 
-Richtlinien:
+Guidelines:
 
-1. TypeScript verwenden
-2. Zod-Schemas zur Validierung
-3. Shared Types zwischen Frontend und Backend
-4. UI in deutscher Sprache
+1. Use TypeScript
+2. Zod schemas for validation
+3. Shared Types between Frontend and Backend
+4. UI in German
 5. Responsive, Mobile-First Design
 
-Branding & Versionierung:
+Branding & Versioning:
 
-- App-Name und Version werden zentral über `shared/appMetadata.ts` aus der `package.json` abgeleitet.
-- Änderungen an Name/Version müssen nur dort erfolgen und stehen danach sowohl im Client (Dokumenttitel, Footer) als auch im Server (Response-Header) zur Verfügung.
+- App name and version are derived centrally from the `package.json` via `shared/appMetadata.ts`.
+- Changes to the name/version only have to be made there and are then available both in the client (document title, footer) and in the server (response header).
 
-## Support & Beitrag
+## Support & Contribution
 
-Bei Problemen:
+In case of problems:
 
-1. Konsolen-Logs prüfen
-2. Umgebungsvariablen kontrollieren
-3. Dependencies installieren
-4. `ADMIN_PASSWORD` verifizieren
-5. Upload-Pfad bei Logo-Fehlern prüfen
+1. Check console logs
+2. Control environmental variables
+3. Install dependencies
+4. Verify `ADMIN_PASSWORD`
+5. Check upload path in case of logo errors

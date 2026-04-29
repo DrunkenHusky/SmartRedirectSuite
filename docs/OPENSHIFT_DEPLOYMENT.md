@@ -1,36 +1,36 @@
 # OpenShift Deployment Guide - SmartRedirect Suite
 
-> **Zielgruppe**: OpenShift-Administratoren und DevOps-Engineers. Für Standard-Installation siehe [INSTALLATION.md](./INSTALLATION.md). Für Enterprise-Features konsultieren Sie [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
+> **Audience**: OpenShift administrators and DevOps engineers. For standard installation see [INSTALLATION.md](./INSTALLATION.md). For enterprise features, see [ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md).
 
-## 📚 Verwandte Dokumentation
-- **[README.md](../README.md)**: Vollständige Feature-Übersicht und Anwendungsdokumentation
-- **[INSTALLATION.md](./INSTALLATION.md)**: Lokale Entwicklungsumgebung für Testing
-- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Integration
-- **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Allgemeine Enterprise-Deployment-Strategien
+## 📚 Related documentation
+- **[README.md](../README.md)**: Complete feature overview and application documentation
+- **[INSTALLATION.md](./INSTALLATION.md)**: Local development environment for testing
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API reference for integration
+- **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: General enterprise deployment strategies
 
-## Überblick
+## Overview
 
-Diese Anleitung beschreibt die Bereitstellung der URL Migration Tool Anwendung auf OpenShift mit persistenter Datenspeicherung und produktionstauglicher Konfiguration.
-Die Anwendung speichert alle Daten ausschließlich im Dateisystem; eine Datenbank wird nicht verwendet.
+This guide describes how to deploy the URL Migration Tool application on OpenShift with persistent data storage and production-grade configuration.
+The application stores all data exclusively in the file system; a database is not used.
 
-## Voraussetzungen
+## Requirements
 
-### OpenShift-Umgebung
-- OpenShift 4.10+ (empfohlen 4.12+)
-- `oc` CLI installiert und konfiguriert
-- Cluster-Admin-Berechtigung oder ausreichende Projekt-Berechtigungen
-- Zugriff auf eine Container Registry (z.B. quay.io, Docker Hub)
+### OpenShift environment
+- OpenShift 4.10+ (recommended 4.12+)
+- `oc` CLI installed and configured
+- Cluster admin permission or sufficient project permissions
+- Access to a container registry (e.g. quay.io, Docker Hub)
 
-### Lokale Entwicklungstools
-- Docker oder Podman für Container-Build
-- Node.js 18+ für lokale Tests
-- Git für Source Code Management
+### Local development tools
+- Docker or Podman for container build
+- Node.js 18+ for local testing
+- Git for source code management
 
-> Hinweis: Für Demo-Instanzen steht ein separates `Dockerfile.demo` bereit, das die Anwendung alle 24h zurücksetzt.
+> Note: A separate `Dockerfile.demo` is available for demo instances, which resets the application every 24 hours.
 
-## 1. Projekt-Setup
+## 1. Project-Setup
 
-### OpenShift-Projekt erstellen
+### Create OpenShift project
 ```bash
 # Neues Projekt erstellen
 oc new-project smartredirect-suite
@@ -42,7 +42,7 @@ oc project smartredirect-suite
 oc label namespace smartredirect-suite app=smartredirect-suite
 ```
 
-### Service Account konfigurieren
+### Configure service account
 ```bash
 # Service Account für die Anwendung erstellen
 oc create serviceaccount smartredirect-sa
@@ -51,13 +51,13 @@ oc create serviceaccount smartredirect-sa
 oc adm policy add-scc-to-user anyuid -z smartredirect-sa
 ```
 
-## 2. Persistent Storage konfigurieren
+## 2. Configure persistent storage
 
-Die Anwendung speichert Konfigurationen, Sitzungen und Uploads ausschließlich im Dateisystem. Eine Datenbank wird nicht benötigt.
+The application stores configurations, sessions and uploads exclusively in the file system. A database is not required.
 
-### Persistent Volume Claims erstellen
+### Create persistent volume claims
 
-**Wichtig**: Die Anwendung benötigt nur **ein** persistentes Volume für `/app/data`. Uploads werden standardmäßig in `/app/data/uploads` und Sessions in `/app/data/sessions` gespeichert.
+**Important**: The application only requires **one** persistent volume for `/app/data`. By default, uploads are stored in `/app/data/uploads` and sessions in `/app/data/sessions`.
 
 ```yaml
 # Erstelle pvc-data.yaml
@@ -81,7 +81,7 @@ spec:
 oc apply -f pvc-data.yaml
 ```
 
-### Storage-Klassen prüfen
+### Check storage classes
 ```bash
 # Verfügbare Storage-Klassen anzeigen
 oc get storageclass
@@ -94,7 +94,7 @@ oc get storageclass
 
 ## 3. Secrets und ConfigMaps
 
-### Application Secrets erstellen
+### Create Application Secrets
 ```bash
 # Admin-Passwort und Session-Secret erstellen
 oc create secret generic smartredirect-secrets \
@@ -107,35 +107,35 @@ oc create secret tls smartredirect-tls \
   --key=path/to/tls.key
 ```
 
-### ConfigMap für Anwendungseinstellungen
+### ConfigMap for application settings
 
-**Wichtiger Hinweis**: Die Anwendung unterstützt nur spezifische Umgebungsvariablen. Hier sind die tatsächlich von der Anwendung gelesenen Variablen:
+**Important Note**: The application only supports specific environment variables. Here are the actual variables read by the application:
 
-**Unterstützte Umgebungsvariablen:**
-- `NODE_ENV` - Umgebung (development/production)
+**Supported environment variables:**
+- `NODE_ENV` - environment (development/production)
 - `PORT` - Server-Port (Standard: 5000)
-- `ADMIN_PASSWORD` - Passwort für den Administrationsbereich
-- `SESSION_SECRET` - Geheimer Schlüssel für Sessions
-- `LOCAL_UPLOAD_PATH` - **einziger konfigurierbarer Pfad** für Logo-Uploads (Standard: ./data/uploads – **innerhalb** des `data`-Verzeichnisses!)
-- `COOKIE_DOMAIN` - Domain für Cookies (nur in Production)
-- `LOGIN_MAX_ATTEMPTS` - maximale Fehlversuche bevor eine IP gesperrt wird (Standard: 5)
-- `LOGIN_BLOCK_DURATION_MS` - Sperrdauer in Millisekunden nach Erreichen der Fehlversuche (Standard: 86400000)
+- `ADMIN_PASSWORD` - Password for the administration area
+- `SESSION_SECRET` - Secret key for sessions
+- `LOCAL_UPLOAD_PATH` - **only configurable path** for logo uploads (default: ./data/uploads – **within** the `data` directory!)
+- `COOKIE_DOMAIN` - Domain for cookies (only in production)
+- `LOGIN_MAX_ATTEMPTS` - maximum failed attempts before an IP is blocked (default: 5)
+- `LOGIN_BLOCK_DURATION_MS` - Blocking duration in milliseconds after reaching the failed attempts (default: 86400000)
 
-**Nicht unterstützte Variablen** (fest codiert in der Anwendung):
-- `DATA_PATH` - Daten werden immer in `./data` gespeichert
-- `SESSION_PATH` - Sessions werden immer in `./data/sessions` gespeichert
-- `LOG_LEVEL` - Logging ist fest konfiguriert
-- `ALLOWED_ORIGINS` - CORS wird über andere Mechanismen gesteuert
+**Unsupported variables** (hard-coded in the application):
+- `DATA_PATH` - Data is always stored in `./data`
+- `SESSION_PATH` - Sessions are always stored in `./data/sessions`
+- `LOG_LEVEL` - Logging is permanently configured
+- `ALLOWED_ORIGINS` - CORS is controlled via other mechanisms
 
-### Wie Environment Variables funktionieren
+### How Environment Variables work
 
-Die Anwendung verwendet `dotenv/config` (siehe `server/index.ts` Zeile 1), was bedeutet:
+The application uses `dotenv/config` (see `server/index.ts` line 1), which means:
 
-1. **Lokale Entwicklung**: Die Anwendung liest `.env` Dateien automatisch
-2. **OpenShift Deployment**: Environment Variables aus ConfigMaps und Secrets überschreiben automatisch alle `.env` Werte
-3. **Priorität**: OpenShift Environment Variables > .env Datei > Default-Werte im Code
+1. **Local development**: The application reads `.env` files automatically
+2. **OpenShift Deployment**: Environment Variables from ConfigMaps and Secrets automatically overwrite all `.env` values
+3. **Priority**: OpenShift Environment Variables > .env file > default values ​​in code
 
-**Praktisches Beispiel:**
+**Practical example:**
 ```javascript
 // In der Anwendung:
 process.env.SESSION_SECRET || 'default-value'
@@ -146,7 +146,7 @@ process.env.SESSION_SECRET || 'default-value'
 // - Fallback: 'default-value' wenn nichts gesetzt
 ```
 
-Die Anwendung **erkennt automatisch** die Umgebung und verwendet die korrekten Werte ohne zusätzliche Konfiguration.
+The application **automatically** detects the environment and uses the correct values ​​without additional configuration.
 
 ```yaml
 # Erstelle configmap.yaml
@@ -172,9 +172,9 @@ data:
 oc apply -f configmap.yaml
 ```
 
-## 4. Container Image erstellen
+## 4. Create container image
 
-### Dockerfile für OpenShift optimieren
+### Optimize Dockerfile for OpenShift
 ```dockerfile
 # Erstelle Dockerfile
 FROM registry.access.redhat.com/ubi8/nodejs-18:latest
@@ -211,7 +211,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 CMD ["npm", "start"]
 ```
 
-### Image erstellen und pushen
+### Create and push image
 ```bash
 # Image lokal erstellen
 docker build -t smartredirect-suite:latest .
@@ -226,9 +226,9 @@ docker tag smartredirect-suite:latest quay.io/yourorg/smartredirect-suite:v1.4
 docker push quay.io/yourorg/smartredirect-suite:v1.4
 ```
 
-## 5. Deployment konfigurieren
+## 5. Configure deployment
 
-### DeploymentConfig erstellen
+### Create DeploymentConfig
 ```yaml
 # Erstelle deployment.yaml
 apiVersion: apps/v1
@@ -343,9 +343,9 @@ spec:
 oc apply -f deployment.yaml
 ```
 
-## 6. Service und Route konfigurieren
+## 6. Configure service and route
 
-### Service erstellen
+### Create service
 ```yaml
 # Erstelle service.yaml
 apiVersion: v1
@@ -366,7 +366,7 @@ spec:
   type: ClusterIP
 ```
 
-### Route für externen Zugriff
+### Route for external access
 ```yaml
 # Erstelle route.yaml
 apiVersion: route.openshift.io/v1
@@ -398,7 +398,7 @@ oc apply -f route.yaml
 
 ## 7. Monitoring und Logging
 
-### Monitoring konfigurieren
+### Configure monitoring
 ```yaml
 # Erstelle servicemonitor.yaml (falls Prometheus Operator verfügbar)
 apiVersion: monitoring.coreos.com/v1
@@ -418,7 +418,7 @@ spec:
     interval: 30s
 ```
 
-> Der ServiceMonitor nutzt den Gesundheitsendpunkt `/api/health`, da die Anwendung keinen separaten Metrik-Endpunkt bereitstellt.
+> The ServiceMonitor uses the health endpoint `/api/health` because the application does not provide a separate metrics endpoint.
 
 ### Logging-Konfiguration
 ```bash
@@ -429,9 +429,9 @@ oc label pod -l app=smartredirect-suite logging=enabled
 oc logs -f deployment/smartredirect-suite
 ```
 
-## 8. Backup-Strategie
+## 8. Backup Strategy
 
-### Daten-Backup konfigurieren
+### Configure data backup
 ```bash
 # Backup-Job für persistente Daten erstellen
 cat > backup-job.yaml << 'EOF'
@@ -478,9 +478,9 @@ spec:
 oc apply -f backup-job.yaml
 ```
 
-## 9. Deployment durchführen
+## 9. Perform deployment
 
-### Schritt-für-Schritt Deployment
+### Step-by-step deployment
 ```bash
 # 1. Alle Konfigurationen anwenden
 oc apply -f pvc-data.yaml
@@ -517,7 +517,7 @@ curl -X POST https://$ROUTE_URL/api/admin/auth \
   -H "Content-Type: application/json" \
   -d '{"password":"IhrSicheresPasswort123!"}'
 ```
-Die Weboberfläche des Admin-Menüs erreichen Sie über das Zahnrad-Symbol oder unter `https://$ROUTE_URL/?admin=true`.
+You can access the web interface of the admin menu via the gear symbol or under `https://$ROUTE_URL/?admin=true`.
 
 ## 10. Scaling und Performance
 
@@ -582,9 +582,9 @@ oc patch deployment smartredirect-suite -p='
 
 ## 11. Troubleshooting
 
-### Häufige Probleme
+### Common Problems
 
-**Pod startet nicht:**
+**Pod won't start:**
 ```bash
 # Events prüfen
 oc describe pod -l app=smartredirect-suite
@@ -597,7 +597,7 @@ oc get pvc
 oc describe pvc smartredirect-data-pvc
 ```
 
-**Persistente Daten gehen verloren:**
+**Persistent data will be lost:**
 ```bash
 # PVC-Status prüfen
 oc get pvc -o wide
@@ -618,7 +618,7 @@ oc top pods -l app=smartredirect-suite
 curl https://$ROUTE_URL/api/health
 ```
 
-## 12. Updates und Wartung
+## 12. Updates and Maintenance
 
 ### Rolling Updates
 ```bash
@@ -633,7 +633,7 @@ oc rollout status deployment/smartredirect-suite
 oc rollout undo deployment/smartredirect-suite
 ```
 
-### Wartungs-Fenster
+### Maintenance window
 ```bash
 # Wartungsmodus aktivieren (Replicas auf 0)
 oc scale deployment smartredirect-suite --replicas=0
@@ -644,7 +644,7 @@ oc scale deployment smartredirect-suite --replicas=0
 oc scale deployment smartredirect-suite --replicas=2
 ```
 
-## 13. Sicherheit
+## 13. Security
 
 ### Security Context Constraints
 ```yaml
@@ -700,9 +700,9 @@ spec:
   - {}  # Erlaubt alle ausgehenden Verbindungen
 ```
 
-## Support und Weiterführende Informationen
+## Support and further information
 
-### Hilfreiche OpenShift-Kommandos
+### Helpful OpenShift commands
 ```bash
 # Projekt-Ressourcen anzeigen
 oc get all -l app=smartredirect-suite
@@ -720,19 +720,19 @@ oc exec -it deployment/smartredirect-suite -- /bin/bash
 oc port-forward service/smartredirect-suite-service 8080:80
 ```
 
-### Ressourcen-Übersicht
-Nach erfolgreichem Deployment haben Sie folgende Ressourcen:
-- **1 PersistentVolumeClaim** für Daten, Sessions und Uploads
-- **1 Deployment** mit 2 Replicas (skalierbar)
-- **1 Service** für interne Kommunikation
-- **1 Route** für externen HTTPS-Zugriff
-- **1 ConfigMap** für Anwendungseinstellungen
-- **1 Secret** für sensible Daten
+### Resource overview
+After successful deployment you will have the following resources:
+- **1 PersistentVolumeClaim** for data, sessions and uploads
+- **1 deployment** with 2 replicas (scalable)
+- **1 service** for internal communication
+- **1 route** for external HTTPS access
+- **1 ConfigMap** for application settings
+- **1 Secret** for sensitive data
 - **Optional**: HPA, ServiceMonitor, NetworkPolicy
 
-### Kontakt und Support
-- **OpenShift-spezifische Fragen**: Cluster-Administrator
-- **Anwendungssupport**: Siehe [README.md](../README.md)
-- **API-Integration**: Siehe [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
+### Contact and support
+- **OpenShift specific questions**: Cluster Administrator
+- **Application Support**: See [README.md](../README.md)
+- **API integration**: See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 
-Diese Anleitung stellt eine produktionstaugliche Bereitstellung der SmartRedirect Suite Anwendung auf OpenShift sicher, mit allen notwendigen Sicherheits- und Persistierung-Features.
+These instructions ensure a production-ready deployment of the SmartRedirect Suite application on OpenShift, with all necessary security and persistence features.

@@ -1,11 +1,11 @@
 # SmartRedirect Suite - Enterprise API Documentation
 
-> **Overview**: Diese API-Dokumentation beschreibt alle verfügbaren REST-Endpunkte für die URL-Migration-Anwendung. Für Installation siehe [INSTALLATION.md](./INSTALLATION.md), für vollständige Feature-Informationen [README.md](../README.md).
+> **Overview**: This API documentation describes all available REST endpoints for the URL Migration application. For installation see [INSTALLATION.md](./INSTALLATION.md), for full feature information see [README.md](../README.md).
 
-## 📚 Verwandte Dokumentation
+## 📚 Related documentation
 
-- **[README.md](../README.md)**: Vollständige Anwendungsdokumentation mit allen Features
-- **[INSTALLATION.md](./INSTALLATION.md)**: Schnellstart-Anleitung für Entwicklung
+- **[README.md](../README.md)**: Complete application documentation with all features
+- **[INSTALLATION.md](./INSTALLATION.md)**: Quick start guide for development
 - **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production-Deployment und Monitoring
 
 ## Overview

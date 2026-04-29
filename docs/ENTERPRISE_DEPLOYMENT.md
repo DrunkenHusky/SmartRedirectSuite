@@ -1,12 +1,12 @@
 # SmartRedirect Suite - Enterprise Production Deployment Guide
 
-> **Zielgruppe**: DevOps-Engineers, System-Administratoren und Enterprise-Entwickler. Für Standard-Installation siehe [INSTALLATION.md](./INSTALLATION.md). Für API-Integration konsultieren Sie [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
+> **Target group**: DevOps engineers, system administrators and enterprise developers. For standard installation see [INSTALLATION.md](./INSTALLATION.md). For API integration, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
 
-## 📚 Verwandte Dokumentation
-- **[README.md](../README.md)**: Vollständige Feature-Übersicht und Entwicklungsrichtlinien
+## 📚 Related documentation
+- **[README.md](../README.md)**: Complete feature overview and development guidelines
 - **[DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)**: Docker Deployment Guide
-- **[INSTALLATION.md](./INSTALLATION.md)**: Lokale Entwicklungsumgebung einrichten
-- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API-Referenz für Monitoring-Integration
+- **[INSTALLATION.md](./INSTALLATION.md)**: Set up local development environment
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**: REST API reference for monitoring integration
 
 ## Overview
 
