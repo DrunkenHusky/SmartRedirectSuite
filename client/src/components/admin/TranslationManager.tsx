@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
-import { Plus, Save, Trash2, Globe } from "lucide-react";
+import { Plus, Save, Trash2, Globe, Search } from "lucide-react";
 
 export function TranslationManager() {
   const { t, i18n } = useTranslation();
@@ -23,7 +23,18 @@ export function TranslationManager() {
   // Available languages can be fetched or hardcoded based on i18n
   const supportedLngs = (i18n.options.supportedLngs || []).filter((l: string) => l !== 'cimode');
 
+
+  const { data: baseTranslationData } = useQuery({
+    queryKey: ['/api/translations', 'en'],
+    queryFn: async () => {
+      const res = await fetch(`/api/translations/en`);
+      if (!res.ok) throw new Error("Failed to load base translation");
+      return res.json();
+    }
+  });
+
   const { data: translationData, isLoading } = useQuery({
+
     queryKey: ['/api/translations', selectedLang],
     queryFn: async () => {
       const res = await fetch(`/api/translations/${selectedLang}`);
@@ -32,12 +43,23 @@ export function TranslationManager() {
     }
   });
 
+
   useEffect(() => {
-    if (translationData) {
-      setEditData(translationData);
-      setOriginalData(translationData);
+    if (translationData && baseTranslationData) {
+      // Create a merged set of keys, prioritizing existing translations, then base keys (with empty value)
+      const mergedData = { ...translationData };
+      if (selectedLang !== 'en') {
+        Object.keys(baseTranslationData).forEach(key => {
+          if (!(key in mergedData)) {
+            mergedData[key] = ""; // Auto-add empty string for missing keys
+          }
+        });
+      }
+      setEditData(mergedData);
+      setOriginalData(translationData); // Original only tracks what is actually in the DB
     }
-  }, [translationData, selectedLang]);
+  }, [translationData, baseTranslationData, selectedLang]);
+
 
   const updateMutation = useMutation({
     mutationFn: async (data: Record<string, string>) => {
@@ -151,8 +173,17 @@ export function TranslationManager() {
                 const val = editData[key];
                 const isChanged = originalData[key] !== val;
                 return (
-                <TableRow key={key} className={isChanged ? "bg-muted/50" : ""}>
-                  <TableCell className="font-mono text-sm">{key} {isChanged && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-yellow-500" title="Unsaved changes" />}</TableCell>
+
+                <TableRow key={key} className={`${isChanged ? "bg-muted/50" : ""} ${val === "" ? "border-l-4 border-l-red-500" : ""}`}>
+
+                  <TableCell className="font-mono text-sm">
+                    <div className="flex flex-col">
+                      <span>{key} {isChanged && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-yellow-500" title="Unsaved changes" />}</span>
+                      {selectedLang !== 'en' && baseTranslationData && baseTranslationData[key] && (
+                        <span className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{baseTranslationData[key]}</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Input
                       value={val}
