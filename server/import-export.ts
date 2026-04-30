@@ -317,7 +317,7 @@ export class ImportExportService {
    * @param value The value to sanitize
    * @returns Sanitized value
    */
-  private static sanitizeForCSV(value: any): any {
+  public static sanitizeForCSV(value: any): any {
     if (typeof value === 'string') {
       // Prevent formula injection (CSV Injection)
       // If string starts with =, +, -, or @, prepend a single quote

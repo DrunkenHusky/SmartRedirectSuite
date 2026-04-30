@@ -924,13 +924,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const csvData = trackingData.map(track => {
             // Prepare new fields
             const ruleId = track.ruleId || (track.ruleIds && track.ruleIds.length > 0 ? track.ruleIds.join(';') : '') || '';
-            const feedback = track.feedback || '';
+            const feedback = ImportExportService.sanitizeForCSV(track.feedback || '');
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
-            const userProposedUrl = track.userProposedUrl || '';
+            const userProposedUrl = ImportExportService.sanitizeForCSV(track.userProposedUrl || '');
+
+            const oldUrl = ImportExportService.sanitizeForCSV(track.oldUrl);
+            const newUrl = ImportExportService.sanitizeForCSV((track as any).newUrl || '');
+            const path = ImportExportService.sanitizeForCSV(track.path);
+            const referrer = ImportExportService.sanitizeForCSV(track.referrer || '');
+            const userAgent = ImportExportService.sanitizeForCSV(track.userAgent || '');
+
             if (includeReferrer) {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
+              return `"${track.id}","${oldUrl}","${newUrl}","${path}","${referrer}","${track.timestamp}","${userAgent}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             } else {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
+              return `"${track.id}","${oldUrl}","${newUrl}","${path}","${track.timestamp}","${userAgent}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             }
           }).join('\n');
           
