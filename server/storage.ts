@@ -796,7 +796,25 @@ export class FileStorage implements IStorage {
 
     const filtered = rows.map(r => r.toJSON() as UrlTracking);
 
-    const rulesRows = await UrlRuleModel.findAll();
+    const ruleIdsToFetch = new Set<string>();
+    filtered.forEach(t => {
+      if (t.ruleId) ruleIdsToFetch.add(t.ruleId);
+      if (t.ruleIds && Array.isArray(t.ruleIds)) {
+        t.ruleIds.forEach(id => ruleIdsToFetch.add(id));
+      }
+    });
+
+    let rulesRows: any[] = [];
+    if (ruleIdsToFetch.size > 0) {
+      rulesRows = await UrlRuleModel.findAll({
+        where: {
+          id: {
+            [Op.in]: Array.from(ruleIdsToFetch)
+          }
+        }
+      });
+    }
+
     const rules = rulesRows.map(r => r.toJSON() as UrlRule);
     const ruleMap = new Map<string, UrlRule>();
     rules.forEach(r => ruleMap.set(r.id, r));
