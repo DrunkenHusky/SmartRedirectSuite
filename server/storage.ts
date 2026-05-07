@@ -796,18 +796,32 @@ export class FileStorage implements IStorage {
 
     const filtered = rows.map(r => r.toJSON() as UrlTracking);
 
-    const rulesRows = await UrlRuleModel.findAll();
-    const rules = rulesRows.map(r => r.toJSON() as UrlRule);
-    const ruleMap = new Map<string, UrlRule>();
-    rules.forEach(r => ruleMap.set(r.id, r));
-
     const startIndex = 0;
     const endIndex = Math.min(startIndex + limit, total);
+    const paginatedEntries = filtered.slice(startIndex, endIndex);
 
-    const entriesWithRules = filtered.slice(startIndex, endIndex).map(t => {
+    // Extract unique rule IDs to avoid N+1 query and fetching all rules
+    const uniqueRuleIds = new Set<string>();
+    paginatedEntries.forEach(t => {
+      if (t.ruleId) uniqueRuleIds.add(t.ruleId);
+      if (t.ruleIds && Array.isArray(t.ruleIds)) {
+        t.ruleIds.forEach((id: string) => uniqueRuleIds.add(id));
+      }
+    });
+
+    const ruleMap = new Map<string, UrlRule>();
+    if (uniqueRuleIds.size > 0) {
+      const rulesRows = await UrlRuleModel.findAll({
+        where: { id: { [Op.in]: Array.from(uniqueRuleIds) } }
+      });
+      const rules = rulesRows.map(r => r.toJSON() as UrlRule);
+      rules.forEach(r => ruleMap.set(r.id, r));
+    }
+
+    const entriesWithRules = paginatedEntries.map(t => {
       const enriched: any = { ...t };
       enriched.rule = t.ruleId ? ruleMap.get(t.ruleId) : undefined;
-      enriched.rules = (t.ruleIds || []).map(id => ruleMap.get(id)).filter(Boolean);
+      enriched.rules = (t.ruleIds || []).map((id: string) => ruleMap.get(id)).filter(Boolean);
       return enriched;
     });
 
