@@ -13,6 +13,7 @@ import type {
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
+import { BUILT_IN_LANGUAGES, DEFAULT_LANGUAGE, assertValidLanguageCode, mergeTranslationDictionaries, sanitizeTranslationPayload } from "@shared/i18n";
 import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel, TranslationModel } from "./db";
 import { Op } from "sequelize";
 
@@ -153,6 +154,7 @@ export interface IStorage {
   forceCacheRebuild(): Promise<void>;
   // Translations
   getTranslation(lang: string): Promise<Record<string, string>>;
+  listTranslationLanguages(): Promise<string[]>;
   updateTranslation(lang: string, data: Record<string, string>): Promise<void>;
 
 }
@@ -200,15 +202,39 @@ export class FileStorage implements IStorage {
 
   // Translations
   async getTranslation(lang: string): Promise<Record<string, string>> {
-    const record = await TranslationModel.findByPk(lang);
-    if (!record) {
-      return {};
+    const normalizedLanguageCode = assertValidLanguageCode(lang);
+    const englishRecord = await TranslationModel.findByPk(DEFAULT_LANGUAGE);
+    const baseLanguageCode = normalizedLanguageCode.split('-')[0];
+    const requestedRecord =
+      (await TranslationModel.findByPk(normalizedLanguageCode)) ||
+      (baseLanguageCode !== normalizedLanguageCode ? await TranslationModel.findByPk(baseLanguageCode) : null);
+    const englishTranslations = (englishRecord?.get('data') as Record<string, string> | undefined) || {};
+    const requestedTranslations = (requestedRecord?.get('data') as Record<string, string> | undefined) || {};
+
+    if (normalizedLanguageCode === DEFAULT_LANGUAGE) {
+      return englishTranslations;
     }
-    return record.get('data') as Record<string, string>;
+
+    return mergeTranslationDictionaries(englishTranslations, requestedTranslations);
+  }
+
+  async listTranslationLanguages(): Promise<string[]> {
+    const records = await TranslationModel.findAll({ attributes: ['lang'] });
+    const languageCodes = records
+      .map((record) => record.get('lang') as string)
+      .filter(Boolean);
+
+    return Array.from(new Set([
+      ...BUILT_IN_LANGUAGES.map((language) => language.code),
+      ...languageCodes,
+    ])).sort();
   }
 
   async updateTranslation(lang: string, data: Record<string, string>): Promise<void> {
-    await TranslationModel.upsert({ lang, data });
+    const normalizedLanguageCode = assertValidLanguageCode(lang);
+    const sanitizedTranslationData = sanitizeTranslationPayload(data);
+
+    await TranslationModel.upsert({ lang: normalizedLanguageCode, data: sanitizedTranslationData });
   }
 
   private async initTranslations() {
@@ -3701,9 +3727,19 @@ export class FileStorage implements IStorage {
 };
 
     for (const [lang, data] of Object.entries(defaultTranslations)) {
-      const existing = await TranslationModel.findByPk(lang);
+      const normalizedLanguageCode = assertValidLanguageCode(lang);
+      const existing = await TranslationModel.findByPk(normalizedLanguageCode);
+
       if (!existing) {
-        await TranslationModel.create({ lang, data });
+        await TranslationModel.create({ lang: normalizedLanguageCode, data });
+        continue;
+      }
+
+      const existingData = existing.get('data') as Record<string, string>;
+      const mergedData = mergeTranslationDictionaries(data, existingData);
+
+      if (Object.keys(mergedData).length !== Object.keys(existingData).length) {
+        await existing.update({ data: mergedData });
       }
     }
   }

@@ -6,7 +6,7 @@
 
 - **[README.md](../README.md)**: Complete application documentation with all features
 - **[INSTALLATION.md](./INSTALLATION.md)**: Quick start guide for development
-- **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production-Deployment und Monitoring
+- **[ENTERPRISE_DEPLOYMENT.md](./ENTERPRISE_DEPLOYMENT.md)**: Production deployment and monitoring
 
 ## Overview
 
@@ -62,6 +62,27 @@ GET /api/admin/status
 }
 ```
 
+
+### Update Translation Dictionary
+
+Creates or replaces a translation dictionary for a built-in or custom language. Requires an authenticated admin session.
+
+```http
+PUT /api/admin/translations/{languageCode}
+Content-Type: application/json
+
+{
+  "loading_app": "Loading application...",
+  "translations": "Translations"
+}
+```
+
+**Validation**
+
+- `languageCode` must use a BCP 47 style value.
+- The request body must be a JSON object with string keys and string values.
+- Empty string values are allowed to make missing translations visible in the admin UI.
+
 ### Logout
 
 ```http
@@ -104,6 +125,46 @@ Content-Type: application/json
     "infoText": "This section has been moved to our new articles area.",
     "redirectType": "partial"
   }
+}
+```
+
+
+### Translation Languages
+
+Lists the built-in and manually added UI languages. This endpoint is public so the language switch can render before admin authentication.
+
+```http
+GET /api/translations/languages
+```
+
+**Response**
+
+```json
+{
+  "languages": [
+    { "code": "en", "nativeName": "English", "englishName": "English", "isBuiltIn": true },
+    { "code": "pt-br", "nativeName": "PT-BR", "englishName": "PT-BR", "isBuiltIn": false }
+  ]
+}
+```
+
+### Translation Dictionary
+
+Returns the requested language dictionary. Non-English dictionaries are merged with English fallback keys so the UI always has a complete response.
+
+```http
+GET /api/translations/{languageCode}
+```
+
+**Notes**
+
+- `languageCode` must use a BCP 47 style value such as `en`, `de`, `fr-ca`, or `pt-br`.
+- English (`en`) is the default and fallback language.
+
+```json
+{
+  "loading_app": "Loading application...",
+  "translations": "Translations"
 }
 ```
 
