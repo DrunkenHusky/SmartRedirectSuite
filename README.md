@@ -421,7 +421,7 @@ Fehler werden detailliert auf Deutsch ausgegeben; bei Validierungsfehlern werden
 
 ## Datenverwaltung
 
-Standardmäßig nutzt SmartRedirect Suite eine SQLite-Datenbank unter `data/database.sqlite`. Bestehende JSON-Dateien aus älteren Versionen (`data/rules.json`, `data/settings.json`, `data/tracking.json`) werden beim Start einmalig in die Datenbank migriert und anschließend als `.bak` gesichert. Allgemeine Einstellungen werden dabei normalisiert als einzelne Key/Value-Einträge mit Kategorie gespeichert, statt als monolithische JSON-Zeile. Admin-Sessions werden ebenfalls in der Datenbank gespeichert, aber aus Sicherheitsgründen bei jedem Serverstart vollständig geleert; alte Session-Dateien aus `data/sessions/*.json` werden dabei gelöscht und nicht importiert.
+Standardmäßig nutzt SmartRedirect Suite eine SQLite-Datenbank unter `data/database.sqlite`. Bestehende JSON-Dateien aus älteren Versionen (`data/rules.json`, `data/settings.json`, `data/tracking.json`, `data/login-attempts.json`) werden beim Start einmalig in die Datenbank migriert und anschließend als `.bak` gesichert. Allgemeine Einstellungen werden dabei normalisiert als einzelne Key/Value-Einträge mit Kategorie gespeichert, statt als monolithische JSON-Zeile. Admin-Sessions werden ebenfalls in der Datenbank gespeichert, aber aus Sicherheitsgründen bei jedem Serverstart vollständig geleert; alte Session-Dateien aus `data/sessions/*.json` werden dabei gelöscht und nicht importiert.
 
 Für produktive Setups kann die Datenbank über `DB_DIALECT` auf `postgres`/`postgresql`, `mariadb` oder `mysql` umgestellt werden. Die Variablen `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` und optional `DB_SSL=true` steuern die Verbindung.
 
@@ -430,7 +430,7 @@ Für produktive Setups kann die Datenbank über `DB_DIALECT` auf `postgres`/`pos
 - Session-Authentifizierung mit 7-Tage-Cookie-Laufzeit innerhalb eines Server-Lebenszyklus
 - Sichere Cookies und datenbankgestützte Sessions
 - Passwortgeschützter Admin-Bereich
-- Brute-Force-Schutz mit IP-Sperre (konfigurierbar über `LOGIN_MAX_ATTEMPTS` und `LOGIN_BLOCK_DURATION_MS`)
+- Brute-Force-Schutz mit datenbankgespeicherter IP-Sperre (konfigurierbar über `LOGIN_MAX_ATTEMPTS` und `LOGIN_BLOCK_DURATION_MS`)
 - XSS-Schutz durch React
 - Input-Validierung mit Zod
 - Konfiguration über Umgebungsvariablen
