@@ -39,7 +39,43 @@ function normalizeParameters(parameters: unknown): unknown[] {
     return [];
   }
 
-  return Array.isArray(parameters) ? parameters : [parameters];
+  const mapValue = (p: unknown): unknown => {
+    if (typeof p === "boolean") return p ? 1 : 0;
+    if (p instanceof Date) return p.toISOString();
+    if (p !== null && typeof p === "object" && !Buffer.isBuffer(p)) {
+      return JSON.stringify(p);
+    }
+    if (p === undefined) return null;
+    return p;
+  };
+
+  if (Array.isArray(parameters)) {
+    return parameters.map(mapValue);
+  }
+
+  if (typeof parameters === "object" && parameters !== null) {
+    const newParams: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(parameters)) {
+      const parsedKey = key.startsWith("$") ? key.substring(1) : key;
+      const mappedValue = mapValue(value);
+      newParams[parsedKey] = mappedValue === undefined ? null : mappedValue;
+    }
+    return [newParams];
+  }
+
+  return [parameters];
+}
+
+function parseRow(row: any) {
+  if (!row) return row;
+  for (const key of Object.keys(row)) {
+    if (typeof row[key] === 'string' && (row[key].startsWith('{') || row[key].startsWith('['))) {
+      try {
+        row[key] = JSON.parse(row[key]);
+      } catch (e) {}
+    }
+  }
+  return row;
 }
 
 function extractCallback<T extends (...args: unknown[]) => void>(parameters: unknown[], callback: T | undefined): T | undefined {
@@ -127,7 +163,7 @@ export class BetterSqlite3SequelizeDatabase {
       }
 
       const row = statement.get(...normalizedParameters);
-      invokeCallback(callback, null, row);
+      invokeCallback(callback, null, parseRow(row));
     } catch (error) {
       if (isNonReturningStatementError(error)) {
         try {
@@ -163,7 +199,7 @@ export class BetterSqlite3SequelizeDatabase {
       }
 
       const rows = statement.all(...normalizedParameters);
-      invokeCallback(callback, null, rows);
+      invokeCallback(callback, null, Array.isArray(rows) ? rows.map(parseRow) : parseRow(rows));
     } catch (error) {
       if (isNonReturningStatementError(error)) {
         try {
