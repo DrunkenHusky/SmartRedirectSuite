@@ -418,7 +418,7 @@ Fehler werden detailliert auf Deutsch ausgegeben; bei Validierungsfehlern werden
 
 ## Datenverwaltung
 
-Standardmäßig nutzt SmartRedirect Suite eine SQLite-Datenbank unter `data/database.sqlite`. Bestehende JSON-Dateien aus älteren Versionen (`data/rules.json`, `data/settings.json`, `data/tracking.json`) werden beim Start einmalig in die Datenbank migriert und anschließend als `.bak` gesichert. Admin-Sessions bleiben dateibasiert unter `data/sessions/`.
+Standardmäßig nutzt SmartRedirect Suite eine SQLite-Datenbank unter `data/database.sqlite`. Bestehende JSON-Dateien aus älteren Versionen (`data/rules.json`, `data/settings.json`, `data/tracking.json`) werden beim Start einmalig in die Datenbank migriert und anschließend als `.bak` gesichert. Bereits referenzierte Logo-Dateien aus `data/uploads` werden danach automatisch als Datenbank-Assets übernommen; `headerLogoUrl` verweist anschließend auf `/api/logo/:id`. Admin-Sessions bleiben dateibasiert unter `data/sessions/`.
 
 Für produktive Setups kann die Datenbank über `DB_DIALECT` auf `postgres`/`postgresql`, `mariadb` oder `mysql` umgestellt werden. Die Variablen `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` und optional `DB_SSL=true` steuern die Verbindung.
 

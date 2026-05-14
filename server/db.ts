@@ -264,6 +264,38 @@ export const UrlTrackingModel = sequelize.define('UrlTracking', {
   ],
 });
 
+export const LogoAssetModel = sequelize.define('LogoAsset', {
+  id: {
+    type: DataTypes.TEXT,
+    primaryKey: true,
+  },
+  filename: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  contentType: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  data: {
+    type: DataTypes.BLOB('long'),
+    allowNull: false,
+  },
+  size: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  createdAt: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['createdAt'] },
+  ],
+});
+
 export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
   id: {
     type: DataTypes.TEXT,

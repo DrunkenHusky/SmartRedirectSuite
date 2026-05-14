@@ -239,8 +239,8 @@ export const baseGeneralSettingsSchema = z.object({
     .max(2000, "Logo-URL ist zu lang")
     .optional()
     .nullable()
-    .refine((val) => !val || val.startsWith('/objects/') || val.startsWith('/uploads/') || val.startsWith('http'), {
-      message: "Logo-URL muss eine gültige HTTP-URL, Object-Storage-Pfad oder lokaler Upload-Pfad sein",
+    .refine((val) => !val || val.startsWith('/api/logo/') || val.startsWith('/objects/') || val.startsWith('/uploads/') || val.startsWith('http'), {
+      message: "Logo-URL muss eine gültige HTTP-URL, Object-Storage-Pfad, Datenbank-Logo-URL oder lokaler Upload-Pfad sein",
     }),
   headerBackgroundColor: z.string()
     .regex(/^(#([0-9A-Fa-f]{3}){1,2}|[a-zA-Z]+)$/, "Invalid color format")

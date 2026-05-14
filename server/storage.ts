@@ -13,7 +13,7 @@ import type {
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
-import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel } from "./db";
+import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel, LogoAssetModel } from "./db";
 import { Op } from "sequelize";
 
 // Helper to ensure only relevant flags are stored
@@ -29,6 +29,23 @@ function sanitizeRuleFlags(rule: any): any {
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
+const LEGACY_UPLOAD_URL_PREFIX = "/uploads/";
+const DATABASE_LOGO_URL_PREFIX = "/api/logo/";
+
+export interface LogoAsset {
+  id: string;
+  filename: string;
+  contentType: string;
+  data: Buffer;
+  size: number;
+  createdAt: string;
+}
+
+export interface CreateLogoAssetInput {
+  filename: string;
+  contentType: string;
+  data: Buffer;
+}
 
 const URL_RULE_SORT_COLUMNS = new Set([
   "matcher",
@@ -182,6 +199,9 @@ export interface IStorage {
 
   // General Settings
   getGeneralSettings(): Promise<GeneralSettings>;
+  createLogoAsset(input: CreateLogoAssetInput): Promise<LogoAsset>;
+  getLogoAsset(id: string): Promise<LogoAsset | undefined>;
+  deleteLogoAsset(id: string): Promise<boolean>;
   updateGeneralSettings(
     settings: InsertGeneralSettings,
     replaceMode?: boolean,
@@ -251,6 +271,7 @@ export class FileStorage implements IStorage {
       try {
         await initDb();
         await this.migrateJsonToDb();
+        await this.migrateLegacyLogoReferences();
         this.dbInitialized = true;
         console.log('Database initialized successfully');
       } catch (err) {
@@ -259,6 +280,104 @@ export class FileStorage implements IStorage {
     })();
 
     return this.initPromise;
+  }
+
+  private getLegacyUploadDirectory(): string {
+    const configuredUploadPath = process.env.LOCAL_UPLOAD_PATH || './data/uploads';
+    return path.isAbsolute(configuredUploadPath)
+      ? configuredUploadPath
+      : path.resolve(process.cwd(), configuredUploadPath);
+  }
+
+  private getDatabaseLogoUrl(id: string): string {
+    return `${DATABASE_LOGO_URL_PREFIX}${id}`;
+  }
+
+  private getFilenameFromLegacyLogoUrl(logoUrl: string | null | undefined): string | undefined {
+    if (!logoUrl?.startsWith(LEGACY_UPLOAD_URL_PREFIX)) {
+      return undefined;
+    }
+
+    const filename = logoUrl.slice(LEGACY_UPLOAD_URL_PREFIX.length);
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return undefined;
+    }
+
+    return filename;
+  }
+
+  private getContentTypeFromFilename(filename: string): string {
+    const extension = path.extname(filename).toLowerCase();
+    const contentTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+    };
+
+    return contentTypes[extension] || 'application/octet-stream';
+  }
+
+  private async createLogoAssetFromLegacyUpload(legacyLogoUrl: string): Promise<LogoAsset | undefined> {
+    const filename = this.getFilenameFromLegacyLogoUrl(legacyLogoUrl);
+    if (!filename) {
+      return undefined;
+    }
+
+    const uploadDirectory = this.getLegacyUploadDirectory();
+    const legacyFilePath = path.resolve(uploadDirectory, filename);
+    if (!legacyFilePath.startsWith(uploadDirectory + path.sep)) {
+      return undefined;
+    }
+
+    try {
+      const data = await fs.readFile(legacyFilePath);
+      return this.createLogoAssetRecord({
+        filename,
+        contentType: this.getContentTypeFromFilename(filename),
+        data,
+      });
+    } catch (error) {
+      console.warn(`Could not migrate legacy logo file ${filename} to database:`, error);
+      return undefined;
+    }
+  }
+
+  private async migrateLegacyLogoReferences() {
+    const row = await GeneralSettingsModel.findOne();
+    if (!row) {
+      return;
+    }
+
+    let settings = row.getDataValue('data') as any;
+    if (typeof settings === 'string') {
+      try {
+        settings = JSON.parse(settings);
+      } catch {
+        return;
+      }
+    }
+
+    const legacyLogoUrl = settings?.headerLogoUrl;
+    if (!legacyLogoUrl?.startsWith(LEGACY_UPLOAD_URL_PREFIX)) {
+      return;
+    }
+
+    const migratedLogo = await this.createLogoAssetFromLegacyUpload(legacyLogoUrl);
+    if (!migratedLogo) {
+      return;
+    }
+
+    const migratedSettings = {
+      ...settings,
+      headerLogoUrl: this.getDatabaseLogoUrl(migratedLogo.id),
+      updatedAt: new Date().toISOString(),
+    };
+    await row.update({ data: migratedSettings } as any);
+    this.settingsCache = null;
+    console.log(`Migrated legacy logo ${legacyLogoUrl} into database asset ${migratedLogo.id}`);
   }
 
   private async migrateJsonToDb() {
@@ -1027,6 +1146,50 @@ export class FileStorage implements IStorage {
     return { imported, updated, errors: [] };
   }
 
+  private async createLogoAssetRecord(input: CreateLogoAssetInput): Promise<LogoAsset> {
+    const logoAsset: LogoAsset = {
+      id: randomUUID(),
+      filename: path.basename(input.filename),
+      contentType: input.contentType,
+      data: input.data,
+      size: input.data.length,
+      createdAt: new Date().toISOString(),
+    };
+
+    await LogoAssetModel.create(logoAsset as any);
+    return logoAsset;
+  }
+
+  async createLogoAsset(input: CreateLogoAssetInput): Promise<LogoAsset> {
+    await this.ensureDbReady();
+    return this.createLogoAssetRecord(input);
+  }
+
+  async getLogoAsset(id: string): Promise<LogoAsset | undefined> {
+    await this.ensureDbReady();
+
+    const row = await LogoAssetModel.findByPk(id);
+    if (!row) {
+      return undefined;
+    }
+
+    const json = row.toJSON() as any;
+    return {
+      id: json.id,
+      filename: json.filename,
+      contentType: json.contentType,
+      data: Buffer.isBuffer(json.data) ? json.data : Buffer.from(json.data),
+      size: json.size,
+      createdAt: json.createdAt,
+    };
+  }
+
+  async deleteLogoAsset(id: string): Promise<boolean> {
+    await this.ensureDbReady();
+    const deletedCount = await LogoAssetModel.destroy({ where: { id } });
+    return deletedCount > 0;
+  }
+
   async getGeneralSettings(): Promise<GeneralSettings> {
     await this.ensureDbReady();
     if (this.settingsCache) return this.settingsCache;
@@ -1168,6 +1331,13 @@ export class FileStorage implements IStorage {
           delete (settings as any)[key];
         }
       });
+    }
+
+    if (settings.headerLogoUrl?.startsWith(LEGACY_UPLOAD_URL_PREFIX)) {
+      const migratedLogo = await this.createLogoAssetFromLegacyUpload(settings.headerLogoUrl);
+      if (migratedLogo) {
+        settings.headerLogoUrl = this.getDatabaseLogoUrl(migratedLogo.id);
+      }
     }
 
     const row = await GeneralSettingsModel.findOne();

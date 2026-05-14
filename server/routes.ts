@@ -1158,6 +1158,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/logo/:id", async (req, res) => {
+    try {
+      const logo = await storage.getLogoAsset(req.params.id);
+      if (!logo) {
+        res.status(404).json({ error: "Logo not found" });
+        return;
+      }
+
+      res.setHeader("Content-Type", logo.contentType);
+      res.setHeader("Content-Length", String(logo.size));
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      res.send(logo.data);
+    } catch (error) {
+      console.error("Logo read error:", error);
+      res.status(500).json({ error: "Failed to read logo" });
+    }
+  });
+
   app.post("/api/admin/logo/upload", requireAuth, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
@@ -1165,19 +1183,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Explicitly register file in cache (if optimization enabled)
-      localUploadService.registerFile(req.file.filename);
+      const uploadedFileBuffer = await fs.promises.readFile(req.file.path);
+      const logoAsset = await storage.createLogoAsset({
+        filename: req.file.originalname,
+        contentType: req.file.mimetype,
+        data: uploadedFileBuffer,
+      });
+      await fs.promises.unlink(req.file.path).catch((error) => {
+        console.warn("Temporary logo upload cleanup failed:", error);
+      });
 
-      const fileUrl = localUploadService.getFileUrl(req.file.filename);
-      console.log("File uploaded successfully:", fileUrl);
+      const fileUrl = `/api/logo/${logoAsset.id}`;
+      console.log("Logo uploaded to database successfully:", fileUrl);
 
       res.json({
         uploadURL: fileUrl,
-        filename: req.file.filename,
-        originalName: req.file.originalname
+        filename: logoAsset.filename,
+        originalName: req.file.originalname,
+        fileId: logoAsset.id,
       });
     } catch (error) {
-      console.error("Local file upload error:", error);
+      if (req.file?.path) {
+        await fs.promises.unlink(req.file.path).catch(() => undefined);
+      }
+      console.error("Database logo upload error:", error);
       res.status(500).json({ error: "Failed to upload file", details: error instanceof Error ? error.message : String(error) });
     }
   });
@@ -1198,24 +1227,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentSettings = await storage.getGeneralSettings();
       const oldLogoUrl = currentSettings.headerLogoUrl;
 
-      // If there's an old logo file, delete it before setting the new one
-      if (oldLogoUrl && oldLogoUrl.startsWith('/uploads/') && oldLogoUrl !== logoPath) {
-        const oldFilename = oldLogoUrl.replace('/uploads/', '');
-        const oldFileDeleted = localUploadService.deleteFile(oldFilename);
-        console.log(`Old logo file deletion attempt for ${oldFilename}:`, oldFileDeleted ? 'success' : 'failed');
-      }
-
       console.log("Logo update - current settings has headerLogoUrl:", !!currentSettings.headerLogoUrl);
 
       const updatedSettings = await storage.updateGeneralSettings({
         headerLogoUrl: logoPath,
       } as InsertGeneralSettings);
 
+      // Delete the replaced logo only after settings were updated successfully.
+      if (oldLogoUrl && oldLogoUrl !== updatedSettings.headerLogoUrl) {
+        if (oldLogoUrl.startsWith('/api/logo/')) {
+          const oldLogoId = oldLogoUrl.replace('/api/logo/', '');
+          const oldLogoDeleted = await storage.deleteLogoAsset(oldLogoId);
+          console.log(`Old database logo deletion attempt for ${oldLogoId}:`, oldLogoDeleted ? 'success' : 'not found');
+        } else if (oldLogoUrl.startsWith('/uploads/')) {
+          const oldFilename = oldLogoUrl.replace('/uploads/', '');
+          const oldFileDeleted = localUploadService.deleteFile(oldFilename);
+          console.log(`Old logo file deletion attempt for ${oldFilename}:`, oldFileDeleted ? 'success' : 'failed');
+        }
+      }
+
       console.log("Logo update - updated settings has headerLogoUrl:", !!updatedSettings.headerLogoUrl);
 
       res.json({
         success: true,
-        logoPath: logoPath,
+        logoPath: updatedSettings.headerLogoUrl,
         settings: updatedSettings
       });
     } catch (error) {
@@ -1241,17 +1276,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Only try to delete the physical file if it's a local upload
-      if (logoUrl.startsWith('/uploads/')) {
+      // Remove the stored database asset or, for legacy installations, the old upload file.
+      if (logoUrl.startsWith('/api/logo/')) {
+        const logoId = logoUrl.replace('/api/logo/', '');
+        const logoDeleted = await storage.deleteLogoAsset(logoId);
+        console.log(`Database logo deletion attempt for ${logoId}:`, logoDeleted ? 'success' : 'not found');
+      } else if (logoUrl.startsWith('/uploads/')) {
         const filename = logoUrl.replace('/uploads/', '');
-        console.log(`Attempting to delete logo file: ${filename} from URL: ${logoUrl}`);
-        
-        // Try to delete the file - success or failure doesn't matter for the API response
-        // as the important thing is removing the logo URL from settings
+        console.log(`Attempting to delete legacy logo file: ${filename} from URL: ${logoUrl}`);
         const fileDeleted = localUploadService.deleteFile(filename);
-        console.log(`Logo file deletion attempt for ${filename}:`, fileDeleted ? 'success' : 'file not found (already deleted)');
+        console.log(`Legacy logo file deletion attempt for ${filename}:`, fileDeleted ? 'success' : 'file not found (already deleted)');
       } else {
-        console.log(`Logo URL is not a local file: ${logoUrl}`);
+        console.log(`Logo URL is not a local/database logo: ${logoUrl}`);
       }
 
       // Update settings to explicitly remove the logo URL by setting it to null

@@ -149,7 +149,7 @@ GET /api/admin/settings
   "id": "settings_uuid",
   "headerTitle": "SmartRedirect Suite",
   "headerIcon": "ArrowRightLeft",
-  "headerLogoUrl": "/objects/uploads/logo.png",
+  "headerLogoUrl": "/api/logo/6f018c91-6b99-4d77-9d44-c5ee1a9f5c6a",
   "mainTitle": "Outdated Link Detected",
   "mainDescription": "You are using an outdated link...",
   "alertIcon": "AlertTriangle",
@@ -498,22 +498,29 @@ Content-Type: application/json
 
 ```http
 POST /api/admin/logo/upload
-Content-Type: application/json
-
-{
-  "filename": "company-logo.png",
-  "contentType": "image/png"
-}
+Content-Type: multipart/form-data
 ```
+
+Form field: `file` (JPEG, PNG, GIF, WebP or SVG; max. 5 MB). The server stores the image bytes in the configured database and removes the temporary upload file after the database write succeeds.
 
 **Response**
 
 ```json
 {
-  "uploadURL": "https://storage.googleapis.com/bucket/signed-upload-url",
-  "fileId": "upload_uuid"
+  "uploadURL": "/api/logo/6f018c91-6b99-4d77-9d44-c5ee1a9f5c6a",
+  "filename": "company-logo.png",
+  "originalName": "company-logo.png",
+  "fileId": "6f018c91-6b99-4d77-9d44-c5ee1a9f5c6a"
 }
 ```
+
+#### Read Logo
+
+```http
+GET /api/logo/:id
+```
+
+Public endpoint used by `headerLogoUrl`. Returns the image bytes with the stored content type and long-lived immutable caching headers.
 
 #### Set Logo
 
@@ -522,7 +529,7 @@ PUT /api/admin/logo
 Content-Type: application/json
 
 {
-  "logoUrl": "https://storage.googleapis.com/bucket/uploads/logo.png"
+  "logoUrl": "/api/logo/6f018c91-6b99-4d77-9d44-c5ee1a9f5c6a"
 }
 ```
 
@@ -531,7 +538,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "logoPath": "/objects/uploads/logo.png"
+  "logoPath": "/api/logo/6f018c91-6b99-4d77-9d44-c5ee1a9f5c6a"
 }
 ```
 
