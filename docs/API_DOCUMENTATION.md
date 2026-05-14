@@ -602,6 +602,59 @@ Content-Disposition: attachment; filename="rules.xlsx"
 ]
 ```
 
+## Admin IP Blocklist
+
+Admin sessions can manage the database-backed login-attempt and IP-blocklist store. Legacy `data/login-attempts.json` content is imported at startup and renamed to `data/login-attempts.json.bak`.
+
+### List Blocked IPs
+
+```http
+GET /api/admin/blocked-ips
+```
+
+**Response**
+
+```json
+[
+  {
+    "ip": "203.0.113.10",
+    "attempts": 5,
+    "blockedUntil": 1767225600000
+  }
+]
+```
+
+### Block IP
+
+```http
+POST /api/admin/blocked-ips
+Content-Type: application/json
+
+{
+  "ip": "203.0.113.10"
+}
+```
+
+### Unblock IP
+
+```http
+DELETE /api/admin/blocked-ips/203.0.113.10
+```
+
+### Clear IP Blocklist
+
+```http
+DELETE /api/admin/blocked-ips
+```
+
+### Export IP Blocklist
+
+```http
+GET /api/admin/export/blocked-ips
+```
+
+The export response is an `.xlsx` workbook containing `IP`, `Attempts`, and `BlockedUntil` columns.
+
 ## Error Handling
 
 All API endpoints return structured error responses:

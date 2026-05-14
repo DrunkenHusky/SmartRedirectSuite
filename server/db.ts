@@ -266,6 +266,28 @@ export const UrlTrackingModel = sequelize.define('UrlTracking', {
   ],
 });
 
+
+export const LoginAttemptModel = sequelize.define('LoginAttempt', {
+  ip: {
+    type: DataTypes.TEXT,
+    primaryKey: true,
+  },
+  attempts: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  },
+  blockedUntil: {
+    type: DataTypes.BIGINT,
+    allowNull: true,
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['blockedUntil'] },
+  ],
+});
+
 export const AdminSessionModel = sequelize.define('AdminSession', {
   id: {
     type: DataTypes.TEXT,
