@@ -16,3 +16,12 @@ Die Anwendung ist modular aufgebaut und trennt klar zwischen Frontend, Backend u
 6. `shared/` stellt Typdefinitionen und Zod-Schemas für beide Seiten bereit.
 
 Die Architektur ermöglicht die hochperformante Verarbeitung von über 100.000 Regeln durch intelligentes Caching und optimierte Datenstrukturen.
+
+## Hinweise zur Dependency-Wartung
+
+`npm audit --audit-level=low` ist Teil der CI, damit Advisories in Laufzeit- und Entwicklungsabhängigkeiten Pull Requests vor Tests, Build und Release stoppen. Lokale Installationen sollen den in `package.json` deklarierten npm-Versionsbereich verwenden; damit bleiben die Installationsanforderungen mit dem dokumentierten Node.js-22-Setup synchron.
+
+Der aktuelle Dependency-Graph enthält weiterhin zwei transitive Deprecation-Hinweise, die nicht ohne Migration der Datenbankschicht entfernt werden können:
+
+- `dottie` wird von Sequelize 6.x eingebunden. Sequelize 7 wird weiterhin über den `@sequelize/core`-Alpha-Kanal verteilt und trennt das Adapterverhalten für SQLite/PostgreSQL/MySQL/MariaDB stärker, daher ist ein Ersatz von Sequelize eine Architektur-Migration statt eines sicheren Patch-Updates.
+- `prebuild-install` wird von `sqlite3` eingebunden. Direkte Alternativen für neue Implementierungen sind native SQLite-Treiber wie `better-sqlite3` oder das integrierte SQLite-Modul von Node.js; der SQLite-Dialekt von Sequelize erwartet jedoch die `sqlite3`-Treiber-API. Ein Wechsel erfordert daher einen Austausch der ORM-/Dialektintegration und eine erneute Validierung der vorhandenen Storage-Tests.
