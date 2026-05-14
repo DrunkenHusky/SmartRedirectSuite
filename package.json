@@ -1,6 +1,6 @@
 {
   "name": "smartredirectsuite",
-  "version": "63bbe55",
+  "version": "8a2afca",
   "engines": {
     "node": ">=20",
     "npm": ">=10.9.0"
