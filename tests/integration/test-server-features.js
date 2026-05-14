@@ -23,15 +23,12 @@ for (const databaseFile of ["database.sqlite", "database.sqlite-shm", "database.
     fs.rmSync(databasePath, { force: true });
   }
 }
-// Ensure sessions directory exists for health check
-fs.mkdirSync(path.join(tempDir, "data", "sessions"), { recursive: true });
-
 process.chdir(tempDir);
 
 // Dynamic imports after changing working directory so storage uses temp data path
 // Note: Dynamic import("./...") resolves relative to the current module file
 const { registerRoutes } = await import("../../server/routes.ts");
-const { FileSessionStore } = await import("../../server/fileSessionStore.ts");
+const { DatabaseSessionStore } = await import("../../server/databaseSessionStore.ts");
 const { APPLICATION_METADATA } = await import("../../shared/appMetadata.ts");
 
 // Helper to start server on random port
@@ -40,7 +37,7 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: false, limit: "50mb" }));
   const sessionMiddleware = session({
-    store: new FileSessionStore(),
+    store: new DatabaseSessionStore({ cleanupIntervalMs: 0 }),
     secret: "test-secret",
     resave: false,
     saveUninitialized: false,

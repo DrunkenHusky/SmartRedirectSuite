@@ -78,11 +78,11 @@ Es stehen `docker-compose.mariadb.yml` und `docker-compose.postgresql.yml` im Re
 
 ## 💾 Datenpersistenz
 
-Die SmartRedirect Suite nutzt standardmäßig SQLite für Regeln, Einstellungen und Tracking sowie dateibasierte Admin-Sessions. Um Datenverlust beim Neustart des Containers zu vermeiden, **müssen** Volumes eingebunden werden.
+Die SmartRedirect Suite nutzt standardmäßig SQLite für Regeln, Einstellungen, Tracking und Admin-Sessions. Um Datenverlust beim Neustart des Containers zu vermeiden, **müssen** Volumes eingebunden werden.
 
 | Pfad im Container | Beschreibung |
 |-------------------|-------------|
-| `/app/data` | Speichert `database.sqlite`, migrierte JSON-Backups (`*.bak`) und Admin-Sessions. |
+| `/app/data` | Speichert `database.sqlite`, migrierte JSON-Backups (`*.bak`) und Uploads. Aktive Admin-Sessions liegen in der Datenbank, werden aber bei jedem Serverstart geleert. |
 
 **Hinweis zu Berechtigungen:**
 Stellen Sie sicher, dass die eingebundenen Verzeichnisse auf dem Host beschreibbar sind. Da das Dockerfile standardmäßig als `root` läuft, funktionieren Standardberechtigungen in der Regel problemlos.
@@ -134,7 +134,7 @@ docker-compose logs -f
 ## 🔒 Best Practices für die Produktion
 
 1.  **Standard-Zugangsdaten ändern:** Setzen Sie immer ein starkes `ADMIN_PASSWORD`.
-2.  **Session Secret:** Setzen Sie ein festes `SESSION_SECRET`, wenn Admin-Sitzungen auch nach einem Container-Neustart gültig bleiben sollen. Ohne diese Variable wird bei jedem Start ein neuer Sicherheitsschlüssel generiert, was alle bestehenden Logins ungültig macht.
+2.  **Session Secret:** Setzen Sie trotzdem ein festes `SESSION_SECRET`, damit Session-Cookies während der Laufzeit stabil signiert bleiben. Admin-Sitzungen werden beim Serverstart bewusst geleert; ohne diese Variable werden zusätzlich bei jedem Start neue Cookie-Signaturen erzeugt.
 3.  **Reverse Proxy verwenden:** Exponieren Sie Port 5000 nicht direkt ins Internet. Nutzen Sie Nginx, Traefik oder Caddy für SSL-Terminierung (HTTPS) und leiten Sie Anfragen an den Container weiter.
     *   Setzen Sie den `X-Forwarded-Proto` Header im Proxy, damit die App HTTPS erkennt.
 3.  **Backups:** Sichern Sie regelmäßig das `./data` Verzeichnis auf dem Host-System.
