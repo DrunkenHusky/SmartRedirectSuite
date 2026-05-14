@@ -3,6 +3,7 @@ import type { Dialect, Options } from 'sequelize';
 import path from 'path';
 import fs from 'fs/promises';
 import { z } from 'zod';
+import { BetterSqlite3SequelizeDialect } from './betterSqlite3Dialect';
 
 const dialectAliases = {
   postgresql: 'postgres',
@@ -100,6 +101,7 @@ function createSequelizeOptions(config: DatabaseConfig): Options {
     return {
       ...commonOptions,
       storage: config.storagePath,
+      dialectModule: BetterSqlite3SequelizeDialect,
     };
   }
 
