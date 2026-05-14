@@ -281,6 +281,32 @@ export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
   },
 }, modelOptions);
 
+export const GeneralSettingEntryModel = sequelize.define('GeneralSettingEntry', {
+  key: {
+    type: DataTypes.TEXT,
+    primaryKey: true,
+  },
+  category: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  value: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    get() {
+      return parseJsonField(this.getDataValue('value'), null);
+    },
+    set(value) {
+      this.setDataValue('value', JSON.stringify(value));
+    },
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['category'] },
+  ],
+});
+
 export async function initDb() {
   if (databaseConfig.dialect === 'sqlite') {
     await fs.mkdir(path.dirname(databaseConfig.storagePath), { recursive: true });
