@@ -1079,7 +1079,9 @@ export class FileStorage implements IStorage {
 
       if (entries.length > 0) {
         const settingsId = typeof settingsFromEntries.id === 'string' ? settingsFromEntries.id : randomUUID();
-        this.settingsCache = normalizeGeneralSettings(settingsFromEntries, settingsId);
+        const normalizedSettings = normalizeGeneralSettings(settingsFromEntries, settingsId);
+        await this.persistGeneralSettingsEntries(normalizedSettings, true);
+        this.settingsCache = normalizedSettings;
         return this.settingsCache;
       }
 

@@ -31,6 +31,23 @@ function runGeneralSettingsNormalizationTests() {
     "Invalid cross-field smart-search settings must fall back without dropping unrelated migrated values",
   );
 
+  const corruptedEntrySettings = normalizeGeneralSettings({
+    id: "not-a-uuid",
+    footerCopyright: "© 2026 Existing Footer",
+    headerIcon: "BrokenIcon",
+    headerLogoUrl: "relative-logo.png",
+    enableCopyButton: "true",
+    infoItems: "[]",
+    globalSearchAndReplace: "[]",
+    updatedAt: "not-a-date",
+  } as any, "not-a-uuid");
+
+  assert.match(corruptedEntrySettings.id, /^[0-9a-f-]{36}$/i);
+  assert.equal(corruptedEntrySettings.footerCopyright, "© 2026 Existing Footer");
+  assert.equal(corruptedEntrySettings.headerIcon, "ArrowRightLeft");
+  assert.equal(corruptedEntrySettings.enableCopyButton, true);
+  assert.deepEqual(corruptedEntrySettings.infoItems, ["", "", ""]);
+
   console.log("general settings normalization tests passed");
 }
 

@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
-import type { ZodError } from "zod";
+import { z, type ZodError } from "zod";
 import { generalSettingsSchema, type GeneralSettings } from "./schema";
+
+const generalSettingsIdSchema = z.string().uuid();
 
 export const GENERAL_SETTING_CATEGORIES: Record<string, string> = {
   id: "metadata",
@@ -157,6 +159,12 @@ export function getGeneralSettingCategory(key: string): string {
   return GENERAL_SETTING_CATEGORIES[key] ?? "custom";
 }
 
+function normalizeGeneralSettingsId(id: string): string {
+  const parsedId = generalSettingsIdSchema.safeParse(id);
+
+  return parsedId.success ? parsedId.data : randomUUID();
+}
+
 function buildGeneralSettingsCandidate(
   settings: Partial<GeneralSettings>,
   defaults: GeneralSettings,
@@ -192,10 +200,11 @@ function getInvalidGeneralSettingsKeys(error: ZodError): Set<string> {
 
 export function normalizeGeneralSettings(settings: Partial<GeneralSettings>, id: string): GeneralSettings {
   const defaults = createDefaultGeneralSettings();
+  const settingsId = normalizeGeneralSettingsId(id);
   const knownSettings = Object.fromEntries(
     Object.entries(settings).filter(([key]) => key in GENERAL_SETTING_CATEGORIES),
   ) as Partial<GeneralSettings>;
-  const firstCandidate = buildGeneralSettingsCandidate(knownSettings, defaults, id);
+  const firstCandidate = buildGeneralSettingsCandidate(knownSettings, defaults, settingsId);
   const firstResult = generalSettingsSchema.safeParse(firstCandidate);
 
   if (firstResult.success) {
@@ -206,7 +215,7 @@ export function normalizeGeneralSettings(settings: Partial<GeneralSettings>, id:
   const sanitizedSettings = Object.fromEntries(
     Object.entries(knownSettings).filter(([key]) => !invalidKeys.has(key)),
   ) as Partial<GeneralSettings>;
-  const secondCandidate = buildGeneralSettingsCandidate(sanitizedSettings, defaults, id);
+  const secondCandidate = buildGeneralSettingsCandidate(sanitizedSettings, defaults, settingsId);
 
   return generalSettingsSchema.parse(secondCandidate);
 }
