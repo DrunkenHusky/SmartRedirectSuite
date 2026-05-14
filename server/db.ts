@@ -307,6 +307,31 @@ export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
   },
 }, modelOptions);
 
+export const GeneralSettingEntryModel = sequelize.define('GeneralSettingEntry', {
+  key: {
+    type: DataTypes.TEXT,
+    primaryKey: true,
+  },
+  category: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  value: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    get() {
+      return parseJsonField(this.getDataValue('value'), null);
+    },
+    set(value) {
+      this.setDataValue('value', JSON.stringify(value));
+    },
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['category'] },
+  ],
+});
 let initDbPromise: Promise<void> | null = null;
 
 export async function initDb() {

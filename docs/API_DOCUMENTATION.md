@@ -136,7 +136,7 @@ Content-Type: application/json
 
 ### Get General Settings
 
-Retrieves public configuration settings for the migration interface.
+Retrieves public configuration settings for the migration interface. The API response remains a single settings object for compatibility; internally each setting is persisted as a normalized key/value row with a category.
 
 ```http
 GET /api/admin/settings

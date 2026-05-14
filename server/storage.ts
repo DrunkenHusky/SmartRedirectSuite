@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
+import { createDefaultGeneralSettings, getGeneralSettingCategory, normalizeGeneralSettings } from "@shared/generalSettings";
 import type {
   UrlRule,
   InsertUrlRule,
@@ -13,7 +14,7 @@ import type {
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
-import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel } from "./db";
+import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel, GeneralSettingEntryModel } from "./db";
 import { Op } from "sequelize";
 
 // Helper to ensure only relevant flags are stored
@@ -48,6 +49,7 @@ const URL_TRACKING_SORT_COLUMNS = new Set([
   "feedback",
   "matchQuality",
 ]);
+
 
 function normalizeSortOrder(sortOrder: string | undefined): "ASC" | "DESC" {
   return sortOrder?.toLowerCase() === "asc" ? "ASC" : "DESC";
@@ -286,17 +288,16 @@ export class FileStorage implements IStorage {
 
     try {
       await fs.access(settingsFile);
-      console.log('Migrating settings.json to DB...');
+      console.log('Migrating settings.json to normalized settings entries...');
       const data = await fs.readFile(settingsFile, 'utf8');
       const settings = JSON.parse(data);
-      if (settings && settings.id) {
-         const existing = await GeneralSettingsModel.findOne();
-         if (!existing) {
-             await GeneralSettingsModel.create({
-                id: settings.id,
-                data: settings
-             } as any);
-         }
+      if (settings && typeof settings === 'object') {
+        const defaultSettings = createDefaultGeneralSettings();
+        const normalizedSettings = normalizeGeneralSettings(
+          settings,
+          typeof settings.id === 'string' ? settings.id : defaultSettings.id,
+        );
+        await this.persistGeneralSettingsEntries(normalizedSettings, true);
       }
       await fs.rename(settingsFile, settingsFile + '.bak');
     } catch (e) {
@@ -1027,112 +1028,76 @@ export class FileStorage implements IStorage {
     return { imported, updated, errors: [] };
   }
 
+  private async persistGeneralSettingsEntries(settings: GeneralSettings, replaceMode = false): Promise<void> {
+    const entries = Object.entries(settings).map(([key, value]) => ({
+      key,
+      category: getGeneralSettingCategory(key),
+      value,
+    }));
+
+    await sequelize.transaction(async (transaction) => {
+      if (replaceMode) {
+        await GeneralSettingEntryModel.destroy({
+          where: {
+            key: {
+              [Op.notIn]: entries.map((entry) => entry.key),
+            },
+          },
+          transaction,
+        });
+      }
+
+      for (const entry of entries) {
+        await GeneralSettingEntryModel.upsert(entry as any, { transaction });
+      }
+    });
+  }
+
+  private async readLegacyGeneralSettings(): Promise<Partial<GeneralSettings> | null> {
+    const row = await GeneralSettingsModel.findOne();
+    if (!row) {
+      return null;
+    }
+
+    const data = row.getDataValue('data');
+    if (!data || typeof data !== 'object') {
+      return null;
+    }
+
+    return data as Partial<GeneralSettings>;
+  }
+
   async getGeneralSettings(): Promise<GeneralSettings> {
     await this.ensureDbReady();
     if (this.settingsCache) return this.settingsCache;
 
-    const defaultSettings: GeneralSettings = {
-        id: randomUUID(),
-        headerTitle: "URL Migration Tool",
-        headerIcon: "ArrowRightLeft",
-        headerBackgroundColor: "#ffffff",
-        popupMode: "active",
-        mainTitle: "Veralteter Link erkannt",
-        mainDescription:
-          "Sie verwenden einen veralteten Link unserer Web-App. Bitte aktualisieren Sie Ihre Lesezeichen und verwenden Sie die neue URL unten.",
-        mainBackgroundColor: "#ffffff",
-        alertIcon: "AlertTriangle",
-        alertBackgroundColor: "yellow",
-        urlComparisonTitle: "URL-Vergleich",
-        urlComparisonIcon: "ArrowRightLeft",
-        urlComparisonBackgroundColor: "#ffffff",
-        oldUrlLabel: "Alte URL (veraltet)",
-        newUrlLabel: "Neue URL (verwenden Sie diese)",
-        defaultNewDomain: "https://thisisthenewurl.com/",
-        enableCopyButton: true,
-        enableOpenButton: true,
-        newUrlClickBehavior: "copy",
-        copyButtonText: "URL kopieren",
-        openButtonText: "In neuem Tab öffnen",
-        showUrlButtonText: "Zeige mir die neue URL",
-        popupButtonText: "Zeige mir die neue URL",
-        specialHintsTitle: "Spezielle Hinweise für diese URL",
-        specialHintsDescription:
-          "Hier finden Sie spezifische Informationen und Hinweise für die Migration dieser URL.",
-        specialHintsIcon: "Info",
-        infoTitle: "Zusätzliche Informationen",
-        infoTitleIcon: "Info",
-        infoItems: ["", "", ""],
-        infoIcons: ["Bookmark", "Share2", "Clock"],
-        footerCopyright:
-          "© 2024 URL Migration Service. Alle Rechte vorbehalten.",
-        caseSensitiveLinkDetection: false,
-        enableReferrerTracking: true,
-        updatedAt: new Date().toISOString(),
-        autoRedirect: false,
-
-        // User Feedback Defaults
-        enableFeedbackSurvey: false,
-        feedbackSurveyTitle: "War die neue URL korrekt?",
-        feedbackSurveyQuestion: "Dein Feedback hilft uns, die Weiterleitungen weiter zu verbessern.",
-        feedbackSuccessMessage: "Vielen Dank für deine Rückmeldung.",
-        feedbackButtonYes: "Ja, OK",
-        feedbackButtonNo: "Nein",
-
-        // Feedback Comment Defaults
-        enableFeedbackComment: false,
-        feedbackCommentTitle: "Kennen Sie die korrekte URL?",
-        feedbackCommentDescription: "Bitte geben Sie die korrekte URL hier ein, damit wir sie korrigieren können.",
-        feedbackCommentPlaceholder: "https://...",
-        feedbackCommentButton: "Absenden",
-      };
-
     try {
-      const row = await GeneralSettingsModel.findOne();
-      if (!row) {
-        await GeneralSettingsModel.create({
-          id: defaultSettings.id,
-          data: defaultSettings
-        } as any);
-        this.settingsCache = defaultSettings;
-        return defaultSettings;
+      const entries = await GeneralSettingEntryModel.findAll();
+      const settingsFromEntries = Object.fromEntries(
+        entries.map((entry) => [entry.getDataValue('key'), entry.get('value')]),
+      ) as Partial<GeneralSettings>;
+
+      if (entries.length > 0) {
+        const settingsId = typeof settingsFromEntries.id === 'string' ? settingsFromEntries.id : randomUUID();
+        const normalizedSettings = normalizeGeneralSettings(settingsFromEntries, settingsId);
+        await this.persistGeneralSettingsEntries(normalizedSettings, true);
+        this.settingsCache = normalizedSettings;
+        return this.settingsCache;
       }
 
-      let settings = row.getDataValue('data');
-      if (typeof settings === 'string') {
-        try {
-          settings = JSON.parse(settings);
-        } catch(e) {}
-      }
-      if (!settings.popupMode) {
-        settings.popupMode = "active";
-      }
-      if (typeof settings.enableCopyButton !== "boolean") {
-        settings.enableCopyButton = true;
-      }
-      if (typeof settings.enableOpenButton !== "boolean") {
-        settings.enableOpenButton = true;
-      }
-      if (!settings.newUrlClickBehavior) {
-        settings.newUrlClickBehavior = "copy";
-      }
-      if (typeof settings.caseSensitiveLinkDetection !== "boolean") {
-        settings.caseSensitiveLinkDetection = false;
-      }
-      if (!settings.smartSearchRules && settings.smartSearchRegex) {
-        settings.smartSearchRules = [
-          { pattern: settings.smartSearchRegex, order: 0 }
-        ];
-      }
-      if (!settings.smartSearchRules) {
-        settings.smartSearchRules = [];
-      }
+      const legacySettings = await this.readLegacyGeneralSettings();
+      const defaultSettings = createDefaultGeneralSettings();
+      const settings = normalizeGeneralSettings(
+        legacySettings ?? defaultSettings,
+        typeof legacySettings?.id === 'string' ? legacySettings.id : defaultSettings.id,
+      );
 
-      this.settingsCache = { ...defaultSettings, ...settings, id: row.getDataValue('id') };
-      return this.settingsCache as GeneralSettings;
+      await this.persistGeneralSettingsEntries(settings, true);
+      this.settingsCache = settings;
+      return settings;
     } catch (e) {
       console.error('Error fetching settings, returning defaults', e);
-      return defaultSettings;
+      return createDefaultGeneralSettings();
     }
   }
 
@@ -1143,57 +1108,53 @@ export class FileStorage implements IStorage {
     await this.ensureDbReady();
     const existingSettings = await this.getGeneralSettings();
     const oldSettings = { ...existingSettings };
+    const updatedAt = new Date().toISOString();
 
-    let settings: GeneralSettings;
+    const nextSettings = replaceMode
+      ? normalizeGeneralSettings(
+          { ...insertSettings, updatedAt },
+          existingSettings.id,
+        )
+      : normalizeGeneralSettings(
+          {
+            ...existingSettings,
+            ...insertSettings,
+            updatedAt,
+          },
+          existingSettings.id,
+        );
 
-    if (replaceMode) {
-      settings = {
-        ...insertSettings,
-        id: existingSettings.id,
-        updatedAt: new Date().toISOString(),
-      } as GeneralSettings;
-    } else {
-      settings = {
-        ...existingSettings,
-        ...insertSettings,
-        id: existingSettings.id,
-        updatedAt: new Date().toISOString(),
-      };
+    const keysToDelete = !replaceMode
+      ? Object.entries(insertSettings)
+          .filter(([, value]) => value === null)
+          .map(([key]) => key)
+      : [];
 
-      Object.keys(settings).forEach((key) => {
-        if (
-          insertSettings.hasOwnProperty(key) &&
-          (insertSettings as any)[key] === null
-        ) {
-          delete (settings as any)[key];
-        }
-      });
+    for (const key of keysToDelete) {
+      delete (nextSettings as any)[key];
     }
 
-    const row = await GeneralSettingsModel.findOne();
-    if (row) {
-      await row.update({ data: settings } as any);
-    } else {
-      await GeneralSettingsModel.create({
-        id: settings.id,
-        data: settings
-      } as any);
-    }
+    await sequelize.transaction(async (transaction) => {
+      for (const key of keysToDelete) {
+        await GeneralSettingEntryModel.destroy({ where: { key }, transaction });
+      }
+    });
+    await this.persistGeneralSettingsEntries(nextSettings, replaceMode);
 
-    this.settingsCache = settings;
+    this.settingsCache = nextSettings;
 
-    if (settings.maxStatsEntries && settings.maxStatsEntries > 0) {
-      await this.enforceMaxStatsLimit(settings.maxStatsEntries);
+    if (nextSettings.maxStatsEntries && nextSettings.maxStatsEntries > 0) {
+      await this.enforceMaxStatsLimit(nextSettings.maxStatsEntries);
     }
 
     if (
       oldSettings.caseSensitiveLinkDetection !==
-      settings.caseSensitiveLinkDetection
+      nextSettings.caseSensitiveLinkDetection
     ) {
       this.lastCacheConfig = null;
     }
 
-    return settings;
+    return nextSettings;
   }
 
   async forceCacheRebuild(): Promise<void> {

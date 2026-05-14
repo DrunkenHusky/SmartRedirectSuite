@@ -47,6 +47,24 @@ async function runDatabaseAdapterTests() {
   await storage.clearAllRules();
   await storage.clearAllTracking();
 
+  const defaultSettings = await storage.getGeneralSettings();
+  const settingsEntryCount = await dbModule.GeneralSettingEntryModel.count();
+  const legacySettingsRowCount = await dbModule.GeneralSettingsModel.count();
+  assert.ok(settingsEntryCount > 10, "General settings must be stored as normalized key/value rows");
+  assert.equal(legacySettingsRowCount, 0, "New installations must not use the legacy single-row JSON settings table");
+
+  const updatedSettings = await storage.updateGeneralSettings({
+    ...defaultSettings,
+    mainTitle: "Normalized Settings Title",
+    caseSensitiveLinkDetection: !defaultSettings.caseSensitiveLinkDetection,
+  });
+  const mainTitleEntry = await dbModule.GeneralSettingEntryModel.findByPk("mainTitle");
+  const matchingEntry = await dbModule.GeneralSettingEntryModel.findByPk("caseSensitiveLinkDetection");
+  assert.equal(updatedSettings.mainTitle, "Normalized Settings Title");
+  assert.equal(mainTitleEntry?.get("value"), "Normalized Settings Title");
+  assert.equal(mainTitleEntry?.getDataValue("category"), "main_content");
+  assert.equal(matchingEntry?.get("value"), !defaultSettings.caseSensitiveLinkDetection);
+
   await storage.createUrlRule({
     matcher: "/MixedCase-Rule",
     targetUrl: "https://example.com/target",
