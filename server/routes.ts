@@ -20,6 +20,7 @@ import path from "path";
 import { findMatchingRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
 import { APPLICATION_METADATA } from "@shared/appMetadata";
+import { assertValidLanguageCode, createLanguageOptions, sanitizeTranslationPayload } from "@shared/i18n";
 import { ImportExportService } from "./import-export";
 import multer from 'multer';
 import fs from 'fs';
@@ -424,23 +425,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check admin authentication status
 
   // Translations
-  app.get("/api/translations/:lang", async (req, res) => {
+  app.get("/api/translations/languages", async (_req, res) => {
     try {
-      const data = await storage.getTranslation(req.params.lang);
-      res.json(data);
+      const languageCodes = await storage.listTranslationLanguages();
+      res.json({ languages: createLanguageOptions(languageCodes) });
     } catch (error) {
-      console.error('Error fetching translations:', error);
-      res.status(500).json({ error: 'Failed to fetch translations' });
+      console.error('Error fetching translation languages:', error);
+      res.status(500).json({ error: 'Failed to fetch translation languages' });
     }
   });
 
-  app.put("/api/admin/translations/:lang", requireAuth, express.json(), async (req, res) => {
+  app.get("/api/translations/:lang", async (req, res) => {
     try {
-      await storage.updateTranslation(req.params.lang, req.body);
-      res.json({ message: 'Translations updated successfully' });
+      const languageCode = assertValidLanguageCode(req.params.lang);
+      const data = await storage.getTranslation(languageCode);
+      res.json(data);
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch translations';
+      console.error('Error fetching translations:', error);
+      res.status(message.includes('Language code') ? 400 : 500).json({ error: message });
+    }
+  });
+
+  app.put("/api/admin/translations/:lang", requireAuth, express.json({ limit: '1mb' }), async (req, res) => {
+    try {
+      const languageCode = assertValidLanguageCode(req.params.lang);
+      const translationData = sanitizeTranslationPayload(req.body);
+      await storage.updateTranslation(languageCode, translationData);
+      res.json({ message: 'Translations updated successfully', language: languageCode });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update translations';
       console.error('Error updating translations:', error);
-      res.status(500).json({ error: 'Failed to update translations' });
+      res.status(message.includes('Language code') || message.includes('Translation') ? 400 : 500).json({ error: message });
     }
   });
 

@@ -2,7 +2,7 @@
 
 SmartRedirect Suite is a web application for centrally managing URL migrations between old and new domains. Typical use case: Migrating from SharePoint On-Premises to SharePoint Online when the domain and path structure change. The app notifies users of outdated links and can automatically redirect to new destinations.
 
-**Demo-Instanz:** [smartredirectsuite.render.com](https://smartredirectsuite.onrender.com/)
+**Demo instance:** [smartredirectsuite.render.com](https://smartredirectsuite.onrender.com/)
 This version is always based on the latest dev build, resets every 24 hours and is suitable for trying out the app.
 
 ☕️ **Coffee for the code?** If you like the SmartRedirect Suite, buy me a coffee on [BuyMeACoffee](https://buymeacoffee.com/drunkenhusky) and keep the bits caffeinated!
@@ -10,47 +10,53 @@ This version is always based on the latest dev build, resets every 24 hours and 
 ## Table of Contents
 
 - [Key Features](#key-features)
-- [Documentation](#dokumentation)
+- [Documentation](#documentation)
 - [Impressions](#impressions)
-- [How it works](#funktionsweise)
-  - [Rule Modes](#regelmodi)
-  - [Examples](#beispiele)
-- [Use Cases](#einsatzszenarien)
-- [Quick Start](#schnellstart)
-  - [Prerequisites](#voraussetzungen)
-  - [1. Repository klonen](#1-repository-klonen)
-  - [2. Install Dependencies](#2-dependencies-installieren)
-  - [3. Create .env file](#3-env-datei-erstellen)
-  - [4. Start Application](#4-anwendung-starten)
+- [How it works](#how-it-works)
+  - [Rule Modes](#rule-modes)
+  - [Examples](#examples)
+- [Use Cases](#use-cases)
+- [Quick Start](#quick-start)
+  - [Prerequisites](#prerequisites)
+  - [1. Clone Repository](#1-clone-repository)
+  - [2. Install Dependencies](#2-install-dependencies)
+  - [3. Create .env file](#3-create-env-file)
+  - [4. Start Application](#4-start-application)
 - [Administration](#administration)
-  - [Import Rules](#regeln-importieren)
-  - [Customize Settings](#einstellungen-anpassen)
+  - [Import Rules](#import-rules)
+  - [Customize Settings](#customize-settings)
   - [Matching Indicator](#matching-indicator)
-  - [Statistics & Monitoring](#statistiken--monitoring)
-- [Release Process](#release-prozess)
-- [Validation & Quality Assurance](#validierung--qualitatssicherung)
-- [Data Management](#datenverwaltung)
-- [Security](#sicherheit)
+  - [Statistics & Monitoring](#statistics--monitoring)
+- [Release Process](#release-process)
+- [Validation & Quality Assurance](#validation--quality-assurance)
+- [Data Management](#data-management)
+- [Security](#security)
 - [Deployment](#deployment)
-- [Development](#entwicklung)
-- [Support & Beitrag](#support--beitrag)
-- [Change History](#anderungshistorie)
+- [Development](#development)
+- [Support & Contributions](#support--contributions)
+- [Change History](#change-history)
 
 ## Key Features
 
 - Central rule management with automatic URL detection
 - Controlled migrations and traceable domain changes
 - Productivity: Multi-select, import/export of rules
-- Admin panel with persistent session and customizable UI
+- Admin panel with persistent session, customizable UI, and translation management
 - Intelligent validation with overlap detection
 - Extensive statistics and URL tracking
 - Scalable architecture: Processing of over 100,000 rules and log entries without sacrificing performance
 - Responsive design for desktop and mobile devices
+- Multi-language UI with browser-language detection, cookie-based language preference, and built-in English, German, Italian, Spanish, and French translations
+
+
+### Language support
+
+SmartRedirect Suite uses English as the default and fallback language. The UI detects the browser language on first load, stores explicit language-switch choices in the `i18next` cookie for seven days, and serves translations from the backend. Administrators can open **Admin → Languages** to edit translations for English, German, Italian, Spanish, and French or add additional BCP 47 language codes such as `pt-br`.
 
 ## Documentation
 
 - [User Manual](./docs/USER_MANUAL.md)
-- [Admin-Documentation](./docs/ADMIN_DOCUMENTATION.md)
+- [Admin Documentation](./docs/ADMIN_DOCUMENTATION.md)
 - [Docker Deployment](./docs/DOCKER_DEPLOYMENT.md)
 - [Architecture Overview](./docs/ARCHITECTURE_OVERVIEW.md)
 - [Configuration Examples](./docs/CONFIGURATION_EXAMPLES.md)
@@ -97,9 +103,9 @@ matches both `/sites/team/docs` and `/archive/sites/team/docs`.
 
 ### Rule Modes
 
-| Modus           | Behave                                                                                                                                           |
+| Mode            | Behavior                                                                                                                                           |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Partially**   | Replaces path segments starting from the matcher. Base URL comes from general settings; additional segments, parameters and anchors are appended. |
+| **Partial**   | Replaces path segments starting from the matcher. Base URL comes from general settings; additional segments, parameters and anchors are appended. |
 | **Complete** | Completely redirects to a new destination URL. No parts of the old URL are retained.                                                      |
 
 ### Case sensitive
@@ -123,22 +129,22 @@ https://intranet.alt.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 
 ```
 Matcher: /sites/team
-Neuer Teilpfad: /teams/finance
-Ergebnis: https://neuesintranet.cloud.com/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
+New path segment: /teams/finance
+Result: https://neuesintranet.cloud.com/teams/finance/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
 **Complete**
 
 ```
 Matcher: /sites/team
-Ziel-URL: https://andereseite.com/hub
-Ergebnis: https://andereseite.com/hub
+Target URL: https://andereseite.com/hub
+Result: https://andereseite.com/hub
 ```
 
 **Without rule (domain replacement)**
 
 ```
-Ergebnis: https://neuesintranet.cloud.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
+Result: https://neuesintranet.cloud.com/sites/team/docs/handbuch.pdf?version=3#kapitel-2
 ```
 
 ### Rule prioritization (specificity)
@@ -256,26 +262,26 @@ Create a `.env` file in the root directory:
 
 ```bash
 cat > .env <<'EOF'
-# Admin Panel Authentifizierung
-ADMIN_PASSWORD=MeinSicheresPasswort123
+# Admin panel authentication
+ADMIN_PASSWORD=MySecurePassword123
 
-# Session-Sicherheit
-SESSION_SECRET=super-geheimer-session-schluessel-hier-einfuegen-mindestens-32-zeichen
+# Session security
+SESSION_SECRET=insert-a-super-secret-session-key-here-minimum-32-characters
 
-# Brute-Force-Schutz (optional)
-# Max. Fehlversuche bevor IP gesperrt wird
+# Brute-force protection (optional)
+# Maximum failed attempts before an IP is blocked
 LOGIN_MAX_ATTEMPTS=5
-# Sperrdauer in Millisekunden (24h)
+# Block duration in milliseconds (24h)
 LOGIN_BLOCK_DURATION_MS=86400000
 
-# Limit für Import-Vorschau (Anzahl Regeln)
+# Import preview limit (number of rules)
 IMPORT_PREVIEW_LIMIT=1000
 
-# Server-Konfiguration
+# Server configuration
 PORT=5000
 NODE_ENV=development
 
-# Datei-Upload Pfad (optional)
+# File upload path (optional)
 # LOCAL_UPLOAD_PATH=./data/uploads
 EOF
 ```
@@ -343,10 +349,10 @@ Example of a JSON file:
 {
   "rules": [
     {
-      "matcher": "/alte-seite/",
-      "targetUrl": "/neue-seite/",
+      "matcher": "/old-page/",
+      "targetUrl": "/new-page/",
       "type": "redirect",
-      "infoText": "Diese Seite wurde verschoben"
+      "infoText": "This page has moved"
     }
   ]
 }
@@ -358,8 +364,8 @@ Upload in the admin panel or view via `sample-rules-import.json`.
 
 In the admin panel, texts, colors and UI elements can be customized, including:
 
-- Header und Icons
-- Popup-Texte
+- Header and icons
+- Popup text
 - Labels in URL comparison
 - Visibility of the buttons (“Copy URL” and “Open in new tab”)
 - Click behavior of the displayed URL (copy, open, or no action)

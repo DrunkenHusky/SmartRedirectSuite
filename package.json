@@ -11,7 +11,7 @@
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:../vite.config",
     "start": "cross-env NODE_ENV=production node dist/index.js",
-    "test:unit": "tsx tests/shared/appMetadata.test.ts && tsx tests/client/url-utils.test.ts && tsx tests/shared/url-trace.test.ts",
+    "test:unit": "tsx tests/shared/appMetadata.test.ts && tsx tests/shared/i18n.test.ts && tsx tests/client/url-utils.test.ts && tsx tests/shared/url-trace.test.ts",
     "test": "npm run test:unit && tsx tests/integration/test-url-transformation.js && tsx tests/integration/test-rule-specificity.ts && tsx tests/integration/test-server-features.js && tsx tests/integration/test-vite-config.ts && tsx tests/integration/test-public-api.ts",
     "check": "echo 'Skipping type check'"
   },
@@ -88,7 +88,7 @@
     "tsx": "^4.21.0",
     "uvu": "^0.5.6"
   },
-  "description": "SmartRedirect Suite ist eine Web-Anwendung zur zentralen Verwaltung von URL‑Migrationen zwischen alter und neuer Domain. Typischer Use Case: Migration von SharePoint On-Premises zu SharePoint Online, wenn sich Domain und Pfadstruktur ändern. Die App weist Nutzer auf veraltete Links hin und kann automatisch auf neue Ziele weiterleiten.",
+  "description": "SmartRedirect Suite is a web application for centrally managing URL migrations between legacy and target domains. Typical use case: migrations from SharePoint On-Premises to SharePoint Online where domains and path structures change. The app notifies users about outdated links and can automatically redirect them to new destinations.",
   "main": "index.js",
   "directories": {
     "doc": "docs",
