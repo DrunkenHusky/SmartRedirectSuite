@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import fs from "fs/promises";
 import path from "path";
+import { initDb, LoginAttemptModel } from "../db";
 
 // Configurable settings with defaults
 export const LOGIN_MAX_ATTEMPTS = parseInt(process.env.LOGIN_MAX_ATTEMPTS || "5", 10);
@@ -9,25 +10,103 @@ export const LOGIN_BLOCK_DURATION_MS = parseInt(
   10
 );
 
-const storePath = path.join(process.cwd(), "data", "login-attempts.json");
+const loginAttemptsStorePath = path.join(process.cwd(), "data", "login-attempts.json");
 
-interface AttemptInfo {
+export interface AttemptInfo {
   attempts: number;
   blockedUntil?: number;
 }
 
-async function readStore(): Promise<Record<string, AttemptInfo>> {
+export interface BlockedIpEntry extends AttemptInfo {
+  ip: string;
+}
+
+let migrationPromise: Promise<void> | null = null;
+
+function normalizeAttemptInfo(value: unknown): AttemptInfo | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const rawEntry = value as Record<string, unknown>;
+  const attempts = Number(rawEntry.attempts ?? 0);
+  const blockedUntil = rawEntry.blockedUntil === undefined ? undefined : Number(rawEntry.blockedUntil);
+
+  if (!Number.isFinite(attempts) || attempts < 0) {
+    return null;
+  }
+
+  return {
+    attempts,
+    ...(Number.isFinite(blockedUntil) && blockedUntil > 0 ? { blockedUntil } : {}),
+  };
+}
+
+function toAttemptInfo(row: { getDataValue(key: string): unknown }): AttemptInfo {
+  const blockedUntil = row.getDataValue("blockedUntil") as number | null | undefined;
+
+  return {
+    attempts: Number(row.getDataValue("attempts") ?? 0),
+    ...(blockedUntil ? { blockedUntil: Number(blockedUntil) } : {}),
+  };
+}
+
+async function migrateLoginAttemptsJsonToDb(): Promise<void> {
   try {
-    const data = await fs.readFile(storePath, "utf8");
-    return JSON.parse(data) as Record<string, AttemptInfo>;
-  } catch {
-    return {};
+    const data = await fs.readFile(loginAttemptsStorePath, "utf8");
+    const parsed = JSON.parse(data) as Record<string, unknown>;
+
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      for (const [ip, rawEntry] of Object.entries(parsed)) {
+        const normalizedEntry = normalizeAttemptInfo(rawEntry);
+        if (!ip || !normalizedEntry) {
+          continue;
+        }
+
+        const existing = await LoginAttemptModel.findByPk(ip);
+        if (!existing) {
+          await LoginAttemptModel.create({ ip, ...normalizedEntry });
+        }
+      }
+    }
+
+    await fs.rename(loginAttemptsStorePath, `${loginAttemptsStorePath}.bak`);
+  } catch (error: unknown) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) {
+      console.error("Failed to migrate login-attempts.json to database", error);
+    }
   }
 }
 
-async function writeStore(store: Record<string, AttemptInfo>): Promise<void> {
-  await fs.mkdir(path.dirname(storePath), { recursive: true });
-  await fs.writeFile(storePath, JSON.stringify(store));
+async function ensureLoginAttemptStoreReady(): Promise<void> {
+  if (!migrationPromise) {
+    migrationPromise = (async () => {
+      await initDb();
+      await migrateLoginAttemptsJsonToDb();
+    })();
+  }
+
+  await migrationPromise;
+}
+
+async function findAttempt(ip: string): Promise<AttemptInfo | undefined> {
+  await ensureLoginAttemptStoreReady();
+  const row = await LoginAttemptModel.findByPk(ip);
+  return row ? toAttemptInfo(row) : undefined;
+}
+
+async function upsertAttempt(ip: string, entry: AttemptInfo): Promise<void> {
+  await ensureLoginAttemptStoreReady();
+  await LoginAttemptModel.upsert({
+    ip,
+    attempts: entry.attempts,
+    blockedUntil: entry.blockedUntil ?? null,
+  });
+}
+
+async function deleteAttempt(ip: string): Promise<void> {
+  await ensureLoginAttemptStoreReady();
+  await LoginAttemptModel.destroy({ where: { ip } });
 }
 
 export async function bruteForceProtection(
@@ -36,8 +115,7 @@ export async function bruteForceProtection(
   next: NextFunction
 ): Promise<void> {
   const ip = req.ip || req.connection.remoteAddress || "";
-  const store = await readStore();
-  const entry = store[ip];
+  const entry = await findAttempt(ip);
   const now = Date.now();
 
   if (entry?.blockedUntil && entry.blockedUntil > now) {
@@ -45,56 +123,59 @@ export async function bruteForceProtection(
     return;
   }
 
-  // Cleanup expired blocks
+  // Cleanup expired blocks so successful future logins start from a clean slate.
   if (entry?.blockedUntil && entry.blockedUntil <= now) {
-    delete store[ip];
-    await writeStore(store);
+    await deleteAttempt(ip);
   }
 
   next();
 }
 
 export async function recordLoginFailure(ip: string): Promise<void> {
-  const store = await readStore();
-  const entry = store[ip] || { attempts: 0 };
-  entry.attempts += 1;
+  const entry = (await findAttempt(ip)) || { attempts: 0 };
+  const updatedEntry: AttemptInfo = {
+    ...entry,
+    attempts: entry.attempts + 1,
+  };
 
-  if (entry.attempts >= LOGIN_MAX_ATTEMPTS) {
-    entry.blockedUntil = Date.now() + LOGIN_BLOCK_DURATION_MS;
+  if (updatedEntry.attempts >= LOGIN_MAX_ATTEMPTS) {
+    updatedEntry.blockedUntil = Date.now() + LOGIN_BLOCK_DURATION_MS;
   }
 
-  store[ip] = entry;
-  await writeStore(store);
+  await upsertAttempt(ip, updatedEntry);
 }
 
 export async function resetLoginAttempts(ip: string): Promise<void> {
-  const store = await readStore();
-  if (store[ip]) {
-    delete store[ip];
-    await writeStore(store);
-  }
+  await deleteAttempt(ip);
 }
 
 export async function resetAllLoginAttempts(): Promise<void> {
-  await writeStore({});
+  await ensureLoginAttemptStoreReady();
+  await LoginAttemptModel.destroy({ where: {} });
 }
 
-export async function getBlockedIps(): Promise<Array<{ ip: string; attempts: number; blockedUntil?: number }>> {
-  const store = await readStore();
+export async function getBlockedIps(): Promise<BlockedIpEntry[]> {
+  await ensureLoginAttemptStoreReady();
   const now = Date.now();
-  return Object.entries(store)
-    .filter(([_, entry]) => entry.blockedUntil && entry.blockedUntil > now)
-    .map(([ip, entry]) => ({
-      ip,
-      attempts: entry.attempts,
-      blockedUntil: entry.blockedUntil,
-    }));
+  const rows = await LoginAttemptModel.findAll();
+
+  const blockedIps: BlockedIpEntry[] = [];
+  for (const row of rows) {
+    const ip = row.getDataValue("ip") as string;
+    const entry = toAttemptInfo(row);
+
+    if (entry.blockedUntil && entry.blockedUntil > now) {
+      blockedIps.push({ ip, ...entry });
+    }
+  }
+
+  return blockedIps;
 }
 
 export async function blockIp(ip: string): Promise<void> {
-  const store = await readStore();
-  const entry = store[ip] || { attempts: 0 };
-  entry.blockedUntil = Date.now() + LOGIN_BLOCK_DURATION_MS;
-  store[ip] = entry;
-  await writeStore(store);
+  const entry = (await findAttempt(ip)) || { attempts: 0 };
+  await upsertAttempt(ip, {
+    attempts: entry.attempts,
+    blockedUntil: Date.now() + LOGIN_BLOCK_DURATION_MS,
+  });
 }
