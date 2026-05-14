@@ -356,6 +356,35 @@ export const GeneralSettingEntryModel = sequelize.define('GeneralSettingEntry', 
     { fields: ['category'] },
   ],
 });
+
+export const LogoAssetModel = sequelize.define('LogoAsset', {
+  id: {
+    type: DataTypes.TEXT,
+    primaryKey: true,
+  },
+  filename: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  mimeType: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  data: {
+    type: DataTypes.BLOB('long'),
+    allowNull: false,
+  },
+  size: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['mimeType'] },
+  ],
+});
+
 let initDbPromise: Promise<void> | null = null;
 
 export async function initDb() {

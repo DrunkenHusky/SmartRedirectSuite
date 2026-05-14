@@ -149,7 +149,7 @@ GET /api/admin/settings
   "id": "settings_uuid",
   "headerTitle": "SmartRedirect Suite",
   "headerIcon": "ArrowRightLeft",
-  "headerLogoUrl": "/objects/uploads/logo.png",
+  "headerLogoUrl": "/api/logo/9d3f6f1f-7d7c-4b99-8a37-87b25b2d2c51",
   "mainTitle": "Outdated Link Detected",
   "mainDescription": "You are using an outdated link...",
   "alertIcon": "AlertTriangle",
@@ -494,24 +494,30 @@ Content-Type: application/json
 
 ### Logo Management
 
+#### Fetch Logo Asset
+
+```http
+GET /api/logo/:id
+```
+
+Serves the database-backed image bytes referenced by `headerLogoUrl`. Responses include the persisted content type and long-lived immutable cache headers because logo IDs are content records.
+
 #### Upload Logo
 
 ```http
 POST /api/admin/logo/upload
-Content-Type: application/json
-
-{
-  "filename": "company-logo.png",
-  "contentType": "image/png"
-}
+Content-Type: multipart/form-data
 ```
+
+Field: `file` (image, max. 5 MB). The uploaded logo is persisted in the `LogoAssets` database table and the temporary upload file is removed after the database write succeeds.
 
 **Response**
 
 ```json
 {
-  "uploadURL": "https://storage.googleapis.com/bucket/signed-upload-url",
-  "fileId": "upload_uuid"
+  "uploadURL": "/api/logo/9d3f6f1f-7d7c-4b99-8a37-87b25b2d2c51",
+  "filename": "1700000000000-company-logo.png",
+  "originalName": "company-logo.png"
 }
 ```
 
@@ -522,7 +528,7 @@ PUT /api/admin/logo
 Content-Type: application/json
 
 {
-  "logoUrl": "https://storage.googleapis.com/bucket/uploads/logo.png"
+  "logoUrl": "/api/logo/9d3f6f1f-7d7c-4b99-8a37-87b25b2d2c51"
 }
 ```
 
@@ -531,7 +537,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "logoPath": "/objects/uploads/logo.png"
+  "logoPath": "/api/logo/9d3f6f1f-7d7c-4b99-8a37-87b25b2d2c51"
 }
 ```
 
