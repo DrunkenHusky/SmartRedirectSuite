@@ -1074,7 +1074,7 @@ export class FileStorage implements IStorage {
     try {
       const entries = await GeneralSettingEntryModel.findAll();
       const settingsFromEntries = Object.fromEntries(
-        entries.map((entry) => [entry.getDataValue('key'), entry.getDataValue('value')]),
+        entries.map((entry) => [entry.getDataValue('key'), entry.get('value')]),
       ) as Partial<GeneralSettings>;
 
       if (entries.length > 0) {

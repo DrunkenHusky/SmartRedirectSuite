@@ -46,7 +46,21 @@ function runGeneralSettingsNormalizationTests() {
   assert.equal(corruptedEntrySettings.footerCopyright, "© 2026 Existing Footer");
   assert.equal(corruptedEntrySettings.headerIcon, "ArrowRightLeft");
   assert.equal(corruptedEntrySettings.enableCopyButton, true);
-  assert.deepEqual(corruptedEntrySettings.infoItems, ["", "", ""]);
+  assert.deepEqual(corruptedEntrySettings.infoItems, []);
+
+  const rawEntrySettings = normalizeGeneralSettings({
+    id: '"33333333-3333-4333-8333-333333333333"' as any,
+    footerCopyright: '"© 2026 Raw DB Footer"' as any,
+    enableCopyButton: 'true' as any,
+    maxStatsEntries: '25' as any,
+    infoItems: '["First","Second"]' as any,
+  } as any, "33333333-3333-4333-8333-333333333333");
+
+  assert.equal(rawEntrySettings.id, "33333333-3333-4333-8333-333333333333");
+  assert.equal(rawEntrySettings.footerCopyright, "© 2026 Raw DB Footer");
+  assert.equal(rawEntrySettings.enableCopyButton, true);
+  assert.equal(rawEntrySettings.maxStatsEntries, 0);
+  assert.deepEqual(rawEntrySettings.infoItems, ["First", "Second"]);
 
   console.log("general settings normalization tests passed");
 }

@@ -159,6 +159,43 @@ export function getGeneralSettingCategory(key: string): string {
   return GENERAL_SETTING_CATEGORIES[key] ?? "custom";
 }
 
+function parseSerializedGeneralSettingValue(value: unknown): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return value;
+  }
+
+  const shouldParseSerializedValue =
+    trimmedValue.startsWith('"') ||
+    trimmedValue.startsWith("[") ||
+    trimmedValue.startsWith("{") ||
+    trimmedValue === "true" ||
+    trimmedValue === "false" ||
+    trimmedValue === "null";
+
+  if (!shouldParseSerializedValue) {
+    return value;
+  }
+
+  try {
+    return JSON.parse(trimmedValue);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeKnownGeneralSettingEntries(settings: Partial<GeneralSettings>): Partial<GeneralSettings> {
+  return Object.fromEntries(
+    Object.entries(settings)
+      .filter(([key]) => key in GENERAL_SETTING_CATEGORIES)
+      .map(([key, value]) => [key, parseSerializedGeneralSettingValue(value)]),
+  ) as Partial<GeneralSettings>;
+}
+
 function normalizeGeneralSettingsId(id: string): string {
   const parsedId = generalSettingsIdSchema.safeParse(id);
 
@@ -201,9 +238,7 @@ function getInvalidGeneralSettingsKeys(error: ZodError): Set<string> {
 export function normalizeGeneralSettings(settings: Partial<GeneralSettings>, id: string): GeneralSettings {
   const defaults = createDefaultGeneralSettings();
   const settingsId = normalizeGeneralSettingsId(id);
-  const knownSettings = Object.fromEntries(
-    Object.entries(settings).filter(([key]) => key in GENERAL_SETTING_CATEGORIES),
-  ) as Partial<GeneralSettings>;
+  const knownSettings = normalizeKnownGeneralSettingEntries(settings);
   const firstCandidate = buildGeneralSettingsCandidate(knownSettings, defaults, settingsId);
   const firstResult = generalSettingsSchema.safeParse(firstCandidate);
 

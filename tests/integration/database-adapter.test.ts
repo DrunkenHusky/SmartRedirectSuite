@@ -61,9 +61,9 @@ async function runDatabaseAdapterTests() {
   const mainTitleEntry = await dbModule.GeneralSettingEntryModel.findByPk("mainTitle");
   const matchingEntry = await dbModule.GeneralSettingEntryModel.findByPk("caseSensitiveLinkDetection");
   assert.equal(updatedSettings.mainTitle, "Normalized Settings Title");
-  assert.equal(mainTitleEntry?.getDataValue("value"), "Normalized Settings Title");
+  assert.equal(mainTitleEntry?.get("value"), "Normalized Settings Title");
   assert.equal(mainTitleEntry?.getDataValue("category"), "main_content");
-  assert.equal(matchingEntry?.getDataValue("value"), !defaultSettings.caseSensitiveLinkDetection);
+  assert.equal(matchingEntry?.get("value"), !defaultSettings.caseSensitiveLinkDetection);
 
   await storage.createUrlRule({
     matcher: "/MixedCase-Rule",
