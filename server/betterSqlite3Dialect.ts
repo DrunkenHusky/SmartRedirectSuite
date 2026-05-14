@@ -1,6 +1,7 @@
 import { createRequire } from 'module';
 
 interface BetterSqliteStatement {
+  readonly reader?: boolean;
   all(...parameters: unknown[]): unknown[];
   get(...parameters: unknown[]): unknown;
   run(...parameters: unknown[]): { lastInsertRowid?: number | bigint; changes?: number };
@@ -57,6 +58,14 @@ function invokeCallback(callback: SqliteCallback | undefined, error: Error | nul
   deferCallback(() => callback(error, rows));
 }
 
+function isNonReturningStatementError(error: unknown): boolean {
+  return error instanceof TypeError && error.message.includes('This statement does not return data');
+}
+
+function runNonReturningStatement(statement: BetterSqliteStatement, parameters: unknown[]): void {
+  statement.run(...parameters);
+}
+
 export class BetterSqlite3SequelizeDatabase {
   readonly filename: string;
   readonly uuid?: string;
@@ -109,10 +118,29 @@ export class BetterSqlite3SequelizeDatabase {
     const callback = extractCallback<SqliteCallback>(parameters, undefined);
 
     try {
-      const row = this.database.prepare(sql).get(...normalizeParameters(parameters[0]));
+      const normalizedParameters = normalizeParameters(parameters[0]);
+      const statement = this.database.prepare(sql);
+      if (statement.reader === false) {
+        runNonReturningStatement(statement, normalizedParameters);
+        invokeCallback(callback, null);
+        return this;
+      }
+
+      const row = statement.get(...normalizedParameters);
       invokeCallback(callback, null, row);
     } catch (error) {
-      if (callback) {
+      if (isNonReturningStatementError(error)) {
+        try {
+          runNonReturningStatement(this.database.prepare(sql), normalizeParameters(parameters[0]));
+          invokeCallback(callback, null);
+        } catch (runError) {
+          if (callback) {
+            invokeCallback(callback, runError as Error);
+          } else {
+            throw runError;
+          }
+        }
+      } else if (callback) {
         invokeCallback(callback, error as Error);
       } else {
         throw error;
@@ -126,10 +154,29 @@ export class BetterSqlite3SequelizeDatabase {
     const callback = extractCallback<SqliteCallback>(parameters, undefined);
 
     try {
-      const rows = this.database.prepare(sql).all(...normalizeParameters(parameters[0]));
+      const normalizedParameters = normalizeParameters(parameters[0]);
+      const statement = this.database.prepare(sql);
+      if (statement.reader === false) {
+        runNonReturningStatement(statement, normalizedParameters);
+        invokeCallback(callback, null, []);
+        return this;
+      }
+
+      const rows = statement.all(...normalizedParameters);
       invokeCallback(callback, null, rows);
     } catch (error) {
-      if (callback) {
+      if (isNonReturningStatementError(error)) {
+        try {
+          runNonReturningStatement(this.database.prepare(sql), normalizeParameters(parameters[0]));
+          invokeCallback(callback, null, []);
+        } catch (runError) {
+          if (callback) {
+            invokeCallback(callback, runError as Error);
+          } else {
+            throw runError;
+          }
+        }
+      } else if (callback) {
         invokeCallback(callback, error as Error);
       } else {
         throw error;

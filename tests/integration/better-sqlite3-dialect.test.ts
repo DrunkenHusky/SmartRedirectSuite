@@ -6,7 +6,11 @@ const originalLoad = loadModule._load;
 const openedDatabases: FakeBetterSqliteDatabase[] = [];
 
 class FakeBetterSqliteStatement {
-  constructor(private readonly database: FakeBetterSqliteDatabase, private readonly sql: string) {}
+  readonly reader: boolean;
+
+  constructor(private readonly database: FakeBetterSqliteDatabase, private readonly sql: string) {
+    this.reader = /^\s*(?:SELECT|PRAGMA)\b/i.test(sql);
+  }
 
   run(...parameters: unknown[]) {
     this.database.operations.push({ method: "run", sql: this.sql, parameters });
@@ -14,11 +18,19 @@ class FakeBetterSqliteStatement {
   }
 
   get(...parameters: unknown[]) {
+    if (!this.reader) {
+      throw new TypeError("This statement does not return data. Use run() instead");
+    }
+
     this.database.operations.push({ method: "get", sql: this.sql, parameters });
     return { id: 1, name: "single-row" };
   }
 
   all(...parameters: unknown[]) {
+    if (!this.reader) {
+      throw new TypeError("This statement does not return data. Use run() instead");
+    }
+
     this.database.operations.push({ method: "all", sql: this.sql, parameters });
     return [{ id: 1 }, { id: 2 }];
   }
@@ -105,9 +117,22 @@ async function runBetterSqlite3DialectTests() {
     });
 
     assert.deepEqual(selectedRows, [{ id: 1 }, { id: 2 }]);
-    assert.deepEqual(openedDatabases[0].operations.slice(0, 2), [
+
+    const createTableRows = await new Promise<unknown>((resolve, reject) => {
+      database.all("CREATE TABLE IF NOT EXISTS redirects(id TEXT PRIMARY KEY)", [], (error, rows) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(rows);
+      });
+    });
+
+    assert.deepEqual(createTableRows, []);
+    assert.deepEqual(openedDatabases[0].operations.slice(0, 3), [
       { method: "run", sql: "INSERT INTO redirects(target) VALUES (?)", parameters: ["https://example.com"] },
       { method: "all", sql: "SELECT * FROM redirects WHERE target = ?", parameters: ["https://example.com"] },
+      { method: "run", sql: "CREATE TABLE IF NOT EXISTS redirects(id TEXT PRIMARY KEY)", parameters: [] },
     ]);
 
     let serializeCalled = false;
