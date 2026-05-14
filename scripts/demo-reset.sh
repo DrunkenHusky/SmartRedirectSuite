@@ -1,14 +1,14 @@
 #!/bin/sh
 set -e
 
-# Remove session files
+# Remove legacy session files; active sessions are stored in database.sqlite
 rm -rf /app/data/sessions/* || true
 
 # Remove upload files
 rm -rf /app/data/uploads/* || true
 
-# Remove database
-rm -f /app/data/database.sqlite || true
+# Remove database, including rules, settings, tracking and active admin sessions
+rm -f /app/data/database.sqlite /app/data/database.sqlite-shm /app/data/database.sqlite-wal || true
 
 # Start up will regenerate it
 

@@ -41,7 +41,7 @@ Diese Version basiert stets auf dem neuesten Dev-Build, wird alle 24 Stunden zu
 - Zentrale Regelverwaltung mit automatischer URL-Erkennung
 - Kontrollierte Migrationen und nachvollziehbare Domainwechsel
 - Produktivität: Multi-Select, Import/Export von Regeln
-- Admin-Panel mit persistenter Session und anpassbarer UI
+- Admin-Panel mit sicherer Session und anpassbarer UI
 - Intelligente Validierung mit Überlappungserkennung
 - Umfangreiche Statistiken und URL-Tracking
 - Skalierbare Architektur: Verarbeitung von über 100'000 Regeln und Logeinträgen ohne Leistungseinbussen
@@ -229,6 +229,7 @@ Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie st
 ### Voraussetzungen
 
 - Node.js >= 22
+- npm >= 10.9.0
 
 Überprüfen Sie die Installation:
 
@@ -249,6 +250,8 @@ cd SmartRedirectSuite
 ```bash
 npm install
 ```
+
+> Hinweis: Die CI führt zusätzlich `npm audit --audit-level=low` aus, damit alle installierten Abhängigkeiten vor Build und Release auf bekannte Sicherheitslücken geprüft werden.
 
 ### 3. .env-Datei erstellen
 
@@ -418,14 +421,14 @@ Fehler werden detailliert auf Deutsch ausgegeben; bei Validierungsfehlern werden
 
 ## Datenverwaltung
 
-Standardmäßig nutzt SmartRedirect Suite eine SQLite-Datenbank unter `data/database.sqlite`. Bestehende JSON-Dateien aus älteren Versionen (`data/rules.json`, `data/settings.json`, `data/tracking.json`) werden beim Start einmalig in die Datenbank migriert und anschließend als `.bak` gesichert. Allgemeine Einstellungen werden dabei normalisiert als einzelne Key/Value-Einträge mit Kategorie gespeichert, statt als monolithische JSON-Zeile. Admin-Sessions bleiben dateibasiert unter `data/sessions/`.
+Standardmäßig nutzt SmartRedirect Suite eine SQLite-Datenbank unter `data/database.sqlite`. Bestehende JSON-Dateien aus älteren Versionen (`data/rules.json`, `data/settings.json`, `data/tracking.json`) werden beim Start einmalig in die Datenbank migriert und anschließend als `.bak` gesichert. Allgemeine Einstellungen werden dabei normalisiert als einzelne Key/Value-Einträge mit Kategorie gespeichert, statt als monolithische JSON-Zeile. Admin-Sessions werden ebenfalls in der Datenbank gespeichert, aber aus Sicherheitsgründen bei jedem Serverstart vollständig geleert; alte Session-Dateien aus `data/sessions/*.json` werden dabei gelöscht und nicht importiert.
 
 Für produktive Setups kann die Datenbank über `DB_DIALECT` auf `postgres`/`postgresql`, `mariadb` oder `mysql` umgestellt werden. Die Variablen `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` und optional `DB_SSL=true` steuern die Verbindung.
 
 ## Sicherheit
 
-- Persistente Session-Authentifizierung (7 Tage)
-- Sichere Cookies und dateibasierte Sessions
+- Session-Authentifizierung mit 7-Tage-Cookie-Laufzeit innerhalb eines Server-Lebenszyklus
+- Sichere Cookies und datenbankgestützte Sessions
 - Passwortgeschützter Admin-Bereich
 - Brute-Force-Schutz mit IP-Sperre (konfigurierbar über `LOGIN_MAX_ATTEMPTS` und `LOGIN_BLOCK_DURATION_MS`)
 - XSS-Schutz durch React

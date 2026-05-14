@@ -53,11 +53,11 @@ oc adm policy add-scc-to-user anyuid -z smartredirect-sa
 
 ## 2. Persistent Storage konfigurieren
 
-Die Anwendung speichert Konfigurationen, Sitzungen und Uploads ausschließlich im Dateisystem. Eine Datenbank wird nicht benötigt.
+Die Anwendung speichert Konfigurationen, Tracking und Admin-Sessions in der konfigurierten Datenbank (standardmäßig SQLite unter `/app/data/database.sqlite`); Uploads liegen weiterhin im `/app/data`-Volume. Admin-Sessions werden bei jedem Serverstart geleert.
 
 ### Persistent Volume Claims erstellen
 
-**Wichtig**: Die Anwendung benötigt nur **ein** persistentes Volume für `/app/data`. Uploads werden standardmäßig in `/app/data/uploads` und Sessions in `/app/data/sessions` gespeichert.
+**Wichtig**: Bei SQLite benötigt die Anwendung nur **ein** persistentes Volume für `/app/data`. Uploads werden standardmäßig in `/app/data/uploads` gespeichert; aktive Admin-Sessions liegen in der Datenbank, alte Session-Dateien aus `data/sessions/*.json` werden beim Start gelöscht und nicht importiert.
 
 ```yaml
 # Erstelle pvc-data.yaml
@@ -123,7 +123,7 @@ oc create secret tls smartredirect-tls \
 
 **Nicht unterstützte Variablen** (fest codiert in der Anwendung):
 - `DATA_PATH` - Daten werden immer in `./data` gespeichert
-- `SESSION_PATH` - Sessions werden immer in `./data/sessions` gespeichert
+- `SESSION_PATH` - aktive Sessions werden im Datenbankadapter gespeichert; `./data/sessions` wird nur für das Löschen alter JSON-Session-Dateien geprüft
 - `LOG_LEVEL` - Logging ist fest konfiguriert
 - `ALLOWED_ORIGINS` - CORS wird über andere Mechanismen gesteuert
 
@@ -290,7 +290,7 @@ spec:
               key: COOKIE_DOMAIN
         # Persistente Volume Mounts
         # Wichtig: Die Anwendung verwendet fest codierte Pfade relativ zum Arbeitsverzeichnis
-        # /app/data - für JSON-Dateien (rules.json, tracking.json, settings.json), Sessions (/app/data/sessions)
+        # /app/data - für SQLite (database.sqlite), migrierte JSON-Backups
         #           und standardmäßig auch Uploads (/app/data/uploads)
         # Nur ein Volume nötig, da Uploads standardmäßig in ./data/uploads gespeichert werden
         volumeMounts:
@@ -722,7 +722,7 @@ oc port-forward service/smartredirect-suite-service 8080:80
 
 ### Ressourcen-Übersicht
 Nach erfolgreichem Deployment haben Sie folgende Ressourcen:
-- **1 PersistentVolumeClaim** für Daten, Sessions und Uploads
+- **1 PersistentVolumeClaim** für Datenbank und Uploads
 - **1 Deployment** mit 2 Replicas (skalierbar)
 - **1 Service** für interne Kommunikation
 - **1 Route** für externen HTTPS-Zugriff
