@@ -5,7 +5,7 @@ import helmet from "helmet";
 import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { FileSessionStore } from "./fileSessionStore";
+import { DatabaseSessionStore } from "./databaseSessionStore";
 import { rateLimitMiddleware, adminRateLimitMiddleware, csrfCheck } from "./middleware/security";
 
 const app = express();
@@ -122,9 +122,9 @@ app.use((req, res, next) => {
 });
 
 // Session configuration
-const sessionStore = new FileSessionStore();
+const sessionStore = new DatabaseSessionStore();
 sessionStore.clear(() => {
-  console.log("INFO: Alle existierenden Sitzungen wurden bereinigt.");
+  console.log("INFO: Database-backed admin sessions were cleared on startup.");
 });
 
 const sessionMiddleware = session({

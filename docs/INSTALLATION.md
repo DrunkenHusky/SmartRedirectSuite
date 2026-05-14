@@ -12,18 +12,21 @@
 ## 1. Check requirements
 
 ```bash
-# Node.js Version prüfen (benötigt: v18+)
+# Check Node.js version (required: v22+)
 node --version
 
-# npm Version prüfen
+# Check npm version (required: v10.9+)
 npm --version
 ```
 
 ## 2. Installation
 
 ```bash
-# Dependencies installieren
+# Install dependencies
 npm install
+
+# Check installed dependencies for known vulnerabilities
+npm audit --audit-level=low
 
 # Optionale Umgebungsvariablen konfigurieren
 cp .env.example .env

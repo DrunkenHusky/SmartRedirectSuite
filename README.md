@@ -41,7 +41,7 @@ This version is always based on the latest dev build, resets every 24 hours and 
 - Central rule management with automatic URL detection
 - Controlled migrations and traceable domain changes
 - Productivity: Multi-select, import/export of rules
-- Admin panel with persistent session, customizable UI, and translation management
+- Admin panel with secure session handling, customizable UI, and translation management
 - Intelligent validation with overlap detection
 - Extensive statistics and URL tracking
 - Scalable architecture: Processing of over 100,000 rules and log entries without sacrificing performance
@@ -235,6 +235,7 @@ For "Partial" and "Full" (Wildcard) redirects, you can control how URL parameter
 ### Prerequisites
 
 - Node.js >= 22
+- npm >= 10.9.0
 
 Check the installation:
 
@@ -255,6 +256,8 @@ cd SmartRedirectSuite
 ```bash
 npm install
 ```
+
+> Note: CI also runs `npm audit --audit-level=low` so installed dependencies are checked for known vulnerabilities before tests, build, and release.
 
 ### 3. Create .env file
 
@@ -424,15 +427,14 @@ Errors are reported in detail in German; If there are validation errors, no chan
 
 ## Data management
 
-By default, JSON files in the `data/` directory are used:
+By default, SmartRedirect Suite uses a SQLite database at `data/database.sqlite`. Existing JSON files from older versions (`data/rules.json`, `data/settings.json`, `data/tracking.json`) are migrated once at startup and then backed up as `.bak` files.
 
-- `data/rules.json`, `data/settings.json`, `data/tracking.json`
-- `data/sessions/` for admin sessions
+Admin sessions are stored in the database and deliberately cleared on each server startup; old `data/sessions/*.json` files are deleted and not imported. Production setups can switch the database with `DB_DIALECT` to `postgres`/`postgresql`, `mariadb`, or `mysql`. `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and optional `DB_SSL=true` configure external connections.
 
 ## Security
 
-- Persistent session authentication (7 days)
-- Secure cookies and file-based sessions
+- Session authentication with a 7-day cookie lifetime within a server lifecycle
+- Secure cookies and database-backed sessions
 - Password protected admin area
 - Brute force protection with IP blocking (configurable via `LOGIN_MAX_ATTEMPTS` and `LOGIN_BLOCK_DURATION_MS`)
 - XSS protection through React
