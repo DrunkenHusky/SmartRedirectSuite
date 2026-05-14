@@ -23,7 +23,7 @@ Development: http://localhost:5000/api
 
 ## Authentication
 
-The API uses session-based authentication for admin operations. All admin endpoints require a valid session.
+The API uses database-backed session authentication for admin operations. All admin endpoints require a valid session cookie.
 
 ### Login
 
@@ -197,7 +197,7 @@ Content-Type: application/json
 
 ### Get General Settings
 
-Retrieves public configuration settings for the migration interface.
+Retrieves public configuration settings for the migration interface. The API response remains a single settings object for compatibility.
 
 ```http
 GET /api/admin/settings
@@ -734,7 +734,7 @@ GET /api/health
   },
   "checks": {
     "filesystem": { "status": "ok", "responseTime": 2 },
-    "objectStorage": { "status": "ok", "responseTime": 45 },
+    "storage": { "status": "ok", "responseTime": 45 },
     "sessions": { "status": "ok", "responseTime": 1 }
   }
 }

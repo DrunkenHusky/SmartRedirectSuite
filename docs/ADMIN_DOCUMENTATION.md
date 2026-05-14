@@ -15,8 +15,8 @@ The admin area is accessible via the application's gear icon or by appending `?a
 - **Table resizing**: Column widths can be adjusted individually in the "Rules" view and the "Import preview". To do this, move the mouse to the right edge of a column heading until the cursor changes and drag the column to the desired width.
 
 ## Maintenance
-- Regular backups of the `data/` directories.
-- Clean up expired sessions under `data/sessions/`.
+- Regular backups of `data/database.sqlite` or the external PostgreSQL/MariaDB/MySQL database, plus the `data/` directory for uploads.
+- Admin sessions live in the same database, are cleared on every server start, and are also cleaned up automatically after expiry.
 - Monitor logs and performance metrics according to deployment guides.
 - **Rebuild cache**: The rule cache can be rebuilt manually in the admin area under "System & Data" > "Maintenance". This isn't usually necessary, but can help if you're having redirect issues after large imports or updates.
 

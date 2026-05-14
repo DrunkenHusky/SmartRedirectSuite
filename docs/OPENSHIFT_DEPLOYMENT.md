@@ -11,7 +11,7 @@
 ## Overview
 
 This guide describes how to deploy the URL Migration Tool application on OpenShift with persistent data storage and production-grade configuration.
-The application stores all data exclusively in the file system; a database is not used.
+The application stores configuration, tracking, translations, and admin sessions in the configured database (SQLite by default under `/app/data/database.sqlite`); uploads continue to use the `/app/data` volume. Admin sessions are cleared on every server start.
 
 ## Requirements
 
@@ -53,11 +53,11 @@ oc adm policy add-scc-to-user anyuid -z smartredirect-sa
 
 ## 2. Configure persistent storage
 
-The application stores configurations, sessions and uploads exclusively in the file system. A database is not required.
+The application stores configuration, tracking, translations, and admin sessions in the configured database (SQLite by default under `/app/data/database.sqlite`); uploads continue to use the `/app/data` volume. Admin sessions are cleared on every server start.
 
 ### Create persistent volume claims
 
-**Important**: The application only requires **one** persistent volume for `/app/data`. By default, uploads are stored in `/app/data/uploads` and sessions in `/app/data/sessions`.
+**Important**: With SQLite, the application only requires **one** persistent volume for `/app/data`. Uploads are stored in `/app/data/uploads`; active admin sessions are stored in the database, and old `data/sessions/*.json` files are deleted at startup instead of imported.
 
 ```yaml
 # Erstelle pvc-data.yaml
@@ -123,7 +123,7 @@ oc create secret tls smartredirect-tls \
 
 **Unsupported variables** (hard-coded in the application):
 - `DATA_PATH` - Data is always stored in `./data`
-- `SESSION_PATH` - Sessions are always stored in `./data/sessions`
+- `SESSION_PATH` - active sessions are stored in the database adapter; `./data/sessions` is only checked to delete old JSON session files
 - `LOG_LEVEL` - Logging is permanently configured
 - `ALLOWED_ORIGINS` - CORS is controlled via other mechanisms
 
@@ -290,7 +290,7 @@ spec:
               key: COOKIE_DOMAIN
         # Persistente Volume Mounts
         # Wichtig: Die Anwendung verwendet fest codierte Pfade relativ zum Arbeitsverzeichnis
-        # /app/data - für JSON-Dateien (rules.json, tracking.json, settings.json), Sessions (/app/data/sessions)
+        # /app/data - for SQLite (database.sqlite), migrated JSON backups, and uploads
         #           und standardmäßig auch Uploads (/app/data/uploads)
         # Nur ein Volume nötig, da Uploads standardmäßig in ./data/uploads gespeichert werden
         volumeMounts:
@@ -722,7 +722,7 @@ oc port-forward service/smartredirect-suite-service 8080:80
 
 ### Resource overview
 After successful deployment you will have the following resources:
-- **1 PersistentVolumeClaim** for data, sessions and uploads
+- **1 PersistentVolumeClaim** for database and uploads
 - **1 deployment** with 2 replicas (scalable)
 - **1 service** for internal communication
 - **1 route** for external HTTPS access

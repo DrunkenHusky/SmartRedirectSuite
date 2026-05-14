@@ -63,22 +63,26 @@ By default, SmartRedirect Suite uses an SQLite database (`database.sqlite`) loca
 
 | Variable | Description | Standard |
 |----------|-------------|---------|
-| `DB_DIALECT` | Database type: `sqlite`, `postgres`, `mysql` or `mariadb` | `sqlite` |
+| `DB_DIALECT` | Database type: `sqlite`, `postgres`/`postgresql`, `mysql` or `mariadb` | `sqlite` |
 | `DB_HOST` | Database hostname. | `localhost` |
 | `DB_PORT` | Port of the database (e.g. 5432 for Postgres, 3306 for MariaDB). | `5432` / `3306` |
 | `DB_NAME` | Name of the database. | `smartredirect` |
 | `DB_USER` | Username for the database. | `root` |
 | `DB_PASSWORD` | Password for the database. | |
+| `DB_STORAGE` | SQLite file path when `DB_DIALECT=sqlite` is set. | `/app/data/database.sqlite` |
+| `DB_SSL` | Enables TLS for PostgreSQL/MariaDB/MySQL connections (`true`/`false`). | `false` |
+| `DB_POOL_MAX` | Maximum number of concurrent DB connections in the Sequelize pool. | `5` |
+| `DB_POOL_MIN` | Minimum number of open DB connections in the Sequelize pool. | `0` |
 
 There are `docker-compose.mariadb.yml` and `docker-compose.postgresql.yml` available as templates in the repository.
 
 ## 💾 Data persistence
 
-The SmartRedirect Suite uses file-based storage for rules, settings and sessions. To avoid data loss when restarting the container, volumes **must** be mounted.
+The SmartRedirect Suite uses SQLite by default for rules, settings, tracking, translations, and admin sessions. To avoid data loss when restarting the container, volumes **must** be mounted.
 
 | Path in the container | Description |
 |-------------------|-------------|
-| `/app/data` | Stores `rules.json`, `settings.json` and admin sessions. |
+| `/app/data` | Stores `database.sqlite`, migrated JSON backups (`*.bak`) and uploads. Active admin sessions are stored in the database but cleared on every server start. |
 
 **Note about permissions:**
 Make sure the mounted directories on the host are writable. Since the Dockerfile runs as `root` by default, standard permissions usually work without any problems.
@@ -130,7 +134,7 @@ docker-compose logs -f
 ## 🔒 Production best practices
 
 1. **Change default credentials:** Always set a strong `ADMIN_PASSWORD`.
-2. **Session Secret:** Set a fixed `SESSION_SECRET` if you want admin sessions to remain valid even after a container restart. Without this variable, a new security key is generated every time you start, which invalidates all existing logins.
+2. **Session Secret:** Set a fixed `SESSION_SECRET` so session cookies remain stably signed during runtime. Admin sessions are deliberately cleared at server startup; without this variable, cookie signatures also change at every start.
 3. **Use Reverse Proxy:** Do not expose port 5000 directly to the Internet. Use Nginx, Traefik or Caddy for SSL termination (HTTPS) and forward requests to the container.
     *   Set the `X-Forwarded-Proto` header in the proxy to make the app recognize HTTPS.
 3. **Backups:** Regularly back up the `./data` directory on the host system.
