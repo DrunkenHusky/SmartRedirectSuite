@@ -39,7 +39,22 @@ function normalizeParameters(parameters: unknown): unknown[] {
     return [];
   }
 
-  return Array.isArray(parameters) ? parameters : [parameters];
+  if (Array.isArray(parameters)) {
+    return parameters;
+  }
+
+  if (typeof parameters === 'object') {
+    const normalizedObject: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(parameters)) {
+      // Sequelize sqlite dialect uses $1, $2 or $name for binding
+      // better-sqlite3 expects the parameter name without the $, @ or : prefix
+      const normalizedKey = key.replace(/^[$@:]/, '');
+      normalizedObject[normalizedKey] = typeof value === 'boolean' ? (value ? 1 : 0) : value;
+    }
+    return [normalizedObject];
+  }
+
+  return [parameters];
 }
 
 function extractCallback<T extends (...args: unknown[]) => void>(parameters: unknown[], callback: T | undefined): T | undefined {

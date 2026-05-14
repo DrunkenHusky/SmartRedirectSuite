@@ -80,7 +80,7 @@ export class DatabaseSessionStore extends Store {
         return;
       }
 
-      callback(null, row.getDataValue('data') as SessionData);
+      callback(null, row.get('data') as SessionData);
     })().catch(error => callback(error));
   }
 
@@ -117,7 +117,7 @@ export class DatabaseSessionStore extends Store {
       await this.ensureReady();
       await this.pruneExpiredSessions();
       const rows = await AdminSessionModel.findAll();
-      callback(null, rows.map(row => row.getDataValue('data') as SessionData));
+      callback(null, rows.map(row => row.get('data') as SessionData));
     })().catch(error => callback(error));
   }
 
