@@ -14,8 +14,9 @@ import type {
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
-import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel, GeneralSettingEntryModel } from "./db";
+import { sequelize, initDb, UrlRuleModel, UrlTrackingModel, GeneralSettingsModel, GeneralSettingEntryModel, LogoAssetModel } from "./db";
 import { Op } from "sequelize";
+import { buildDatabaseLogoUrl, detectImageMimeType, extractDatabaseLogoId, extractLocalUploadFilename, resolveLocalUploadFilePath } from "./logoAssets";
 
 // Helper to ensure only relevant flags are stored
 function sanitizeRuleFlags(rule: any): any {
@@ -188,6 +189,9 @@ export interface IStorage {
     settings: InsertGeneralSettings,
     replaceMode?: boolean,
   ): Promise<GeneralSettings>;
+  createLogoAsset(input: { filename: string; mimeType: string; data: Buffer }): Promise<string>;
+  deleteLogoAssetByUrl(logoUrl: string | null | undefined): Promise<boolean>;
+  migrateLegacyUploadedLogoToDatabase(): Promise<GeneralSettings | null>;
 
   // Maintenance
   forceCacheRebuild(): Promise<void>;
@@ -303,6 +307,8 @@ export class FileStorage implements IStorage {
     } catch (e) {
       // Ignore if file doesn't exist
     }
+
+    await this.migrateLegacyUploadedLogoToDatabase();
 
     try {
       await fs.access(trackingFile);
@@ -1051,6 +1057,88 @@ export class FileStorage implements IStorage {
         await GeneralSettingEntryModel.upsert(entry as any, { transaction });
       }
     });
+  }
+
+
+  private async insertLogoAsset(input: { filename: string; mimeType: string; data: Buffer }): Promise<string> {
+    const id = randomUUID();
+    await LogoAssetModel.create({
+      id,
+      filename: input.filename,
+      mimeType: input.mimeType,
+      data: input.data,
+      size: input.data.byteLength,
+    } as any);
+    return buildDatabaseLogoUrl(id);
+  }
+
+  async createLogoAsset(input: { filename: string; mimeType: string; data: Buffer }): Promise<string> {
+    await this.ensureDbReady();
+    return this.insertLogoAsset(input);
+  }
+
+  async deleteLogoAssetByUrl(logoUrl: string | null | undefined): Promise<boolean> {
+    const logoId = extractDatabaseLogoId(logoUrl);
+    if (!logoId) {
+      return false;
+    }
+
+    await this.ensureDbReady();
+    const deletedCount = await LogoAssetModel.destroy({ where: { id: logoId } });
+    return deletedCount > 0;
+  }
+
+  private async readStoredGeneralSettingsForLogoMigration(): Promise<GeneralSettings | null> {
+    const entries = await GeneralSettingEntryModel.findAll();
+    if (entries.length > 0) {
+      const settingsFromEntries = Object.fromEntries(
+        entries.map((entry) => [entry.getDataValue('key'), entry.get('value')]),
+      ) as Partial<GeneralSettings>;
+      const settingsId = typeof settingsFromEntries.id === 'string' ? settingsFromEntries.id : randomUUID();
+      return normalizeGeneralSettings(settingsFromEntries, settingsId);
+    }
+
+    const legacySettings = await this.readLegacyGeneralSettings();
+    if (!legacySettings) {
+      return null;
+    }
+
+    const defaultSettings = createDefaultGeneralSettings();
+    return normalizeGeneralSettings(
+      legacySettings,
+      typeof legacySettings.id === 'string' ? legacySettings.id : defaultSettings.id,
+    );
+  }
+
+  async migrateLegacyUploadedLogoToDatabase(): Promise<GeneralSettings | null> {
+    const settings = await this.readStoredGeneralSettingsForLogoMigration();
+    const filename = extractLocalUploadFilename(settings?.headerLogoUrl);
+    if (!settings || !filename) {
+      return null;
+    }
+
+    const filePath = resolveLocalUploadFilePath(filename);
+    if (!filePath) {
+      console.warn(`Skipping legacy logo migration because the upload path is invalid: ${settings.headerLogoUrl}`);
+      return null;
+    }
+
+    try {
+      const logoBuffer = await fs.readFile(filePath);
+      const logoUrl = await this.insertLogoAsset({
+        filename,
+        mimeType: detectImageMimeType(filename),
+        data: logoBuffer,
+      });
+      const migratedSettings = normalizeGeneralSettings({ ...settings, headerLogoUrl: logoUrl }, settings.id);
+      await this.persistGeneralSettingsEntries(migratedSettings, true);
+      this.settingsCache = migratedSettings;
+      console.log(`Migrated legacy uploaded logo ${settings.headerLogoUrl} to database asset ${logoUrl}`);
+      return migratedSettings;
+    } catch (error) {
+      console.warn(`Skipping legacy logo migration because ${filePath} could not be read`, error);
+      return null;
+    }
   }
 
   private async readLegacyGeneralSettings(): Promise<Partial<GeneralSettings> | null> {
