@@ -229,6 +229,7 @@ Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie st
 ### Voraussetzungen
 
 - Node.js >= 22
+- npm >= 10.9.0
 
 Überprüfen Sie die Installation:
 
@@ -249,6 +250,8 @@ cd SmartRedirectSuite
 ```bash
 npm install
 ```
+
+> Hinweis: Die CI führt zusätzlich `npm audit --audit-level=low` aus, damit alle installierten Abhängigkeiten vor Build und Release auf bekannte Sicherheitslücken geprüft werden.
 
 ### 3. .env-Datei erstellen
 

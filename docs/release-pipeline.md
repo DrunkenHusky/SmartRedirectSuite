@@ -79,4 +79,4 @@ git commit -m "feat: add new user login"
 
 ## Lokale Entwicklung
 
-Die Release-Tools sind als `devDependencies` installiert. Es ist jedoch nicht empfohlen, Releases lokal auszuführen. Der Prozess sollte ausschließlich über die CI/CD-Pipeline laufen.
+Die Release-Tools werden in der GitHub Action isoliert über `cycjimmy/semantic-release-action` bereitgestellt und sind nicht als lokale `devDependencies` installiert. Lokale Releases sind nicht empfohlen; der Prozess sollte ausschließlich über die CI/CD-Pipeline laufen.
