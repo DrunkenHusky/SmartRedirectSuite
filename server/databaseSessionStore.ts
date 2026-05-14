@@ -80,7 +80,8 @@ export class DatabaseSessionStore extends Store {
         return;
       }
 
-      callback(null, row.getDataValue('data') as SessionData);
+      const data = row.getDataValue('data');
+      callback(null, (typeof data === 'string' ? JSON.parse(data) : data) as SessionData);
     })().catch(error => callback(error));
   }
 
@@ -117,7 +118,10 @@ export class DatabaseSessionStore extends Store {
       await this.ensureReady();
       await this.pruneExpiredSessions();
       const rows = await AdminSessionModel.findAll();
-      callback(null, rows.map(row => row.getDataValue('data') as SessionData));
+      callback(null, rows.map(row => {
+        const data = row.getDataValue('data');
+        return (typeof data === 'string' ? JSON.parse(data) : data) as SessionData;
+      }));
     })().catch(error => callback(error));
   }
 
