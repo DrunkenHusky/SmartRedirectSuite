@@ -63,22 +63,26 @@ SmartRedirect Suite verwendet standardmäßig eine SQLite-Datenbank (`database.s
 
 | Variable | Beschreibung | Standard |
 |----------|-------------|---------|
-| `DB_DIALECT` | Datenbanktyp: `sqlite`, `postgres`, `mysql` oder `mariadb` | `sqlite` |
+| `DB_DIALECT` | Datenbanktyp: `sqlite`, `postgres`/`postgresql`, `mysql` oder `mariadb` | `sqlite` |
 | `DB_HOST` | Hostname der Datenbank. | `localhost` |
 | `DB_PORT` | Port der Datenbank (z.B. 5432 für Postgres, 3306 für MariaDB). | `5432` / `3306` |
 | `DB_NAME` | Name der Datenbank. | `smartredirect` |
 | `DB_USER` | Benutzername für die Datenbank. | `root` |
 | `DB_PASSWORD` | Passwort für die Datenbank. | |
+| `DB_STORAGE` | SQLite-Dateipfad, wenn `DB_DIALECT=sqlite` gesetzt ist. | `/app/data/database.sqlite` |
+| `DB_SSL` | Aktiviert TLS für PostgreSQL/MariaDB/MySQL-Verbindungen (`true`/`false`). | `false` |
+| `DB_POOL_MAX` | Maximale Anzahl gleichzeitiger DB-Verbindungen im Sequelize-Pool. | `5` |
+| `DB_POOL_MIN` | Minimale Anzahl offener DB-Verbindungen im Sequelize-Pool. | `0` |
 
 Es stehen `docker-compose.mariadb.yml` und `docker-compose.postgresql.yml` im Repository als Vorlagen zur Verfügung.
 
 ## 💾 Datenpersistenz
 
-Die SmartRedirect Suite nutzt dateibasierten Speicher für Regeln, Einstellungen und Sessions. Um Datenverlust beim Neustart des Containers zu vermeiden, **müssen** Volumes eingebunden werden.
+Die SmartRedirect Suite nutzt standardmäßig SQLite für Regeln, Einstellungen und Tracking sowie dateibasierte Admin-Sessions. Um Datenverlust beim Neustart des Containers zu vermeiden, **müssen** Volumes eingebunden werden.
 
 | Pfad im Container | Beschreibung |
 |-------------------|-------------|
-| `/app/data` | Speichert `rules.json`, `settings.json` und Admin-Sessions. |
+| `/app/data` | Speichert `database.sqlite`, migrierte JSON-Backups (`*.bak`) und Admin-Sessions. |
 
 **Hinweis zu Berechtigungen:**
 Stellen Sie sicher, dass die eingebundenen Verzeichnisse auf dem Host beschreibbar sind. Da das Dockerfile standardmäßig als `root` läuft, funktionieren Standardberechtigungen in der Regel problemlos.
