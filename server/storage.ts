@@ -30,6 +30,44 @@ function sanitizeRuleFlags(rule: any): any {
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
+const URL_RULE_SORT_COLUMNS = new Set([
+  "matcher",
+  "targetUrl",
+  "redirectType",
+  "createdAt",
+  "autoRedirect",
+]);
+
+const URL_TRACKING_SORT_COLUMNS = new Set([
+  "timestamp",
+  "oldUrl",
+  "newUrl",
+  "path",
+  "referrer",
+  "ruleId",
+  "feedback",
+  "matchQuality",
+]);
+
+function normalizeSortOrder(sortOrder: string | undefined): "ASC" | "DESC" {
+  return sortOrder?.toLowerCase() === "asc" ? "ASC" : "DESC";
+}
+
+function normalizeSortColumn(sortBy: string | undefined, allowedColumns: Set<string>, fallback: string): string {
+  if (sortBy && allowedColumns.has(sortBy)) {
+    return sortBy;
+  }
+
+  return fallback;
+}
+
+function buildCaseInsensitiveLike(columnName: string, query: string) {
+  return sequelize.where(
+    sequelize.fn("lower", sequelize.col(columnName)),
+    { [Op.like]: `%${query.toLowerCase()}%` },
+  );
+}
+
 export interface IStorage {
   // URL-Regeln
   getUrlRules(): Promise<UrlRule[]>;
@@ -123,7 +161,7 @@ export interface IStorage {
     ruleFilter?: 'all' | 'with_rule' | 'no_rule',
     minQuality?: number,
     maxQuality?: number,
-    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'API' | 'empty',
+    feedbackFilter?: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty',
   ): Promise<{
     entries: (UrlTracking & { rule?: UrlRule; rules?: UrlRule[] })[];
     total: number;
@@ -352,20 +390,20 @@ export class FileStorage implements IStorage {
     await this.ensureDbReady();
     const offset = (page - 1) * limit;
 
-    let whereClause = {};
-    if (search) {
-      const searchLower = search.toLowerCase();
-      whereClause = {
-        [Op.or]: [
-          { targetUrl: { [Op.like]: `%${searchLower}%` } },
-          { matcher: { [Op.like]: `%${searchLower}%` } }
-        ]
-      };
-    }
+    const whereClause = search
+      ? {
+          [Op.or]: [
+            buildCaseInsensitiveLike("targetUrl", search),
+            buildCaseInsensitiveLike("matcher", search),
+          ],
+        }
+      : {};
+    const safeSortBy = normalizeSortColumn(sortBy, URL_RULE_SORT_COLUMNS, "createdAt");
+    const safeSortOrder = normalizeSortOrder(sortOrder);
 
     const { count, rows } = await UrlRuleModel.findAndCountAll({
       where: whereClause,
-      order: [[sortBy, sortOrder.toUpperCase()]],
+      order: [[safeSortBy, safeSortOrder]],
       limit,
       offset
     });
@@ -503,28 +541,48 @@ export class FileStorage implements IStorage {
     return updatedCount > 0;
   }
 
+  private buildTrackingTimeRangeWhere(timeRange: "24h" | "7d" | "all" = "all") {
+    if (timeRange === "all") {
+      return {};
+    }
+
+    const now = new Date();
+    const timeLimit = new Date(now);
+    if (timeRange === "24h") {
+      timeLimit.setHours(now.getHours() - 24);
+    } else if (timeRange === "7d") {
+      timeLimit.setDate(now.getDate() - 7);
+    }
+
+    return {
+      timestamp: { [Op.gte]: timeLimit.toISOString() },
+    };
+  }
+
   async getTrackingData(
     timeRange: "24h" | "7d" | "all" = "all",
   ): Promise<UrlTracking[]> {
     await this.ensureDbReady();
 
-    let whereClause = {};
-    if (timeRange !== "all") {
-      const now = new Date();
-      const timeLimit = new Date(now);
-      if (timeRange === "24h") {
-        timeLimit.setHours(now.getHours() - 24);
-      } else if (timeRange === "7d") {
-        timeLimit.setDate(now.getDate() - 7);
-      }
-      whereClause = {
-        timestamp: { [Op.gte]: timeLimit.toISOString() }
-      };
-    }
+    const rows = await UrlTrackingModel.findAll({
+      where: this.buildTrackingTimeRangeWhere(timeRange),
+      order: [["timestamp", "DESC"]],
+    });
 
+    return rows.map(r => r.toJSON() as UrlTracking);
+  }
 
-    whereClause.path = {
-      [Op.notIn]: ['/', '/?admin=true', '/?logout=true']
+  async getTopUrls(
+    limit: number = 10,
+    timeRange: "24h" | "7d" | "all" = "all",
+  ): Promise<Array<{ path: string; count: number }>> {
+    await this.ensureDbReady();
+
+    const whereClause: any = {
+      ...this.buildTrackingTimeRangeWhere(timeRange),
+      path: {
+        [Op.notIn]: ['/', '/?admin=true', '/?logout=true']
+      },
     };
 
     const rows = await UrlTrackingModel.findAll({
@@ -537,7 +595,7 @@ export class FileStorage implements IStorage {
 
     return rows.map(r => ({
       path: r.getDataValue('path'),
-      count: parseInt(r.getDataValue('count'), 10)
+      count: Number.parseInt(String(r.getDataValue('count')), 10)
     }));
   }
 
@@ -592,18 +650,19 @@ export class FileStorage implements IStorage {
     sortOrder: "asc" | "desc" = "desc",
   ) {
     await this.ensureDbReady();
-    const queryLower = query.toLowerCase();
+    const safeSortBy = normalizeSortColumn(sortBy, URL_TRACKING_SORT_COLUMNS, "timestamp");
+    const safeSortOrder = normalizeSortOrder(sortOrder);
 
     const rows = await UrlTrackingModel.findAll({
       where: {
         [Op.or]: [
-          { oldUrl: { [Op.like]: `%${queryLower}%` } },
-          { newUrl: { [Op.like]: `%${queryLower}%` } },
-          { path: { [Op.like]: `%${queryLower}%` } },
-          { referrer: { [Op.like]: `%${queryLower}%` } }
+          buildCaseInsensitiveLike("oldUrl", query),
+          buildCaseInsensitiveLike("newUrl", query),
+          buildCaseInsensitiveLike("path", query),
+          buildCaseInsensitiveLike("referrer", query),
         ]
       },
-      order: [[sortBy, sortOrder.toUpperCase()]]
+      order: [[safeSortBy, safeSortOrder]]
     });
 
     return rows.map(r => r.toJSON() as UrlTracking);
@@ -742,54 +801,59 @@ export class FileStorage implements IStorage {
     ruleFilter: 'all' | 'with_rule' | 'no_rule' = 'all',
     minQuality?: number,
     maxQuality?: number,
-    feedbackFilter: 'all' | 'OK' | 'NOK' | 'API' | 'empty' = 'all'
+    feedbackFilter: 'all' | 'OK' | 'NOK' | 'auto-redirect' | 'API' | 'empty' = 'all'
   ) {
     await this.ensureDbReady();
 
-    let whereClause: any = {};
+    const andConditions: any[] = [];
 
     if (search) {
-      const q = search.toLowerCase();
-      whereClause[Op.or] = [
-        sequelize.where(sequelize.fn('lower', sequelize.col('oldUrl')), 'LIKE', `%${q}%`),
-        sequelize.where(sequelize.fn('lower', sequelize.col('newUrl')), 'LIKE', `%${q}%`),
-        sequelize.where(sequelize.fn('lower', sequelize.col('path')), 'LIKE', `%${q}%`),
-        sequelize.where(sequelize.fn('lower', sequelize.col('referrer')), 'LIKE', `%${q}%`)
-      ];
+      andConditions.push({
+        [Op.or]: [
+          buildCaseInsensitiveLike("oldUrl", search),
+          buildCaseInsensitiveLike("newUrl", search),
+          buildCaseInsensitiveLike("path", search),
+          buildCaseInsensitiveLike("referrer", search),
+        ],
+      });
     }
 
     if (ruleFilter === 'with_rule') {
-      whereClause[Op.or] = [
-         { ruleId: { [Op.not]: null } },
-         { ruleIds: { [Op.not]: null, [Op.not]: '[]' } }
-      ];
+      andConditions.push({
+        [Op.or]: [
+          { ruleId: { [Op.not]: null } },
+          { ruleIds: { [Op.not]: null, [Op.ne]: '[]' } },
+        ],
+      });
     } else if (ruleFilter === 'no_rule') {
-      whereClause.ruleId = null;
-      whereClause[Op.or] = [
-         { ruleIds: null },
-         { ruleIds: '[]' }
-      ];
+      andConditions.push({
+        ruleId: null,
+        [Op.or]: [
+          { ruleIds: null },
+          { ruleIds: '[]' },
+        ],
+      });
     }
 
     if (minQuality !== undefined || maxQuality !== undefined) {
-      whereClause.matchQuality = {};
-      if (minQuality !== undefined) whereClause.matchQuality[Op.gte] = minQuality;
-      if (maxQuality !== undefined) whereClause.matchQuality[Op.lte] = maxQuality;
+      const matchQualityFilter: any = {};
+      if (minQuality !== undefined) matchQualityFilter[Op.gte] = minQuality;
+      if (maxQuality !== undefined) matchQualityFilter[Op.lte] = maxQuality;
+      andConditions.push({ matchQuality: matchQualityFilter });
     }
 
     if (feedbackFilter !== 'all') {
-      if (feedbackFilter === 'empty') {
-         whereClause.feedback = null;
-      } else {
-         whereClause.feedback = feedbackFilter;
-      }
+      andConditions.push(feedbackFilter === 'empty' ? { feedback: null } : { feedback: feedbackFilter });
     }
 
+    const whereClause = andConditions.length > 0 ? { [Op.and]: andConditions } : {};
     const offset = (page - 1) * limit;
+    const safeSortBy = normalizeSortColumn(sortBy, URL_TRACKING_SORT_COLUMNS, "timestamp");
+    const safeSortOrder = normalizeSortOrder(sortOrder);
 
     const { count: total, rows } = await UrlTrackingModel.findAndCountAll({
       where: whereClause,
-      order: [[sortBy, sortOrder.toUpperCase()]],
+      order: [[safeSortBy, safeSortOrder]],
       limit,
       offset
     });
@@ -856,13 +920,13 @@ export class FileStorage implements IStorage {
     // or just one by one. For simplicity and robustness, one by one.
 
     for (const importRule of importRules) {
-      const existingById = importRule.id ? await UrlRuleModel.findByPk(importRule.id) : null;
-      const existingByMatcher = await UrlRuleModel.findOne({ where: { matcher: importRule.matcher } });
-
       const isEncoded = /%[0-9A-F]{2}/i.test(importRule.matcher);
       if (isEncoded) {
         importRule.matcher = decodeURI(importRule.matcher);
       }
+
+      const existingById = importRule.id ? await UrlRuleModel.findByPk(importRule.id) : null;
+      const existingByMatcher = await UrlRuleModel.findOne({ where: { matcher: importRule.matcher } });
 
       if (existingById && existingById.getDataValue('matcher') !== importRule.matcher && existingByMatcher) {
         // ID exists but matcher overlaps

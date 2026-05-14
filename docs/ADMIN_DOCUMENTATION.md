@@ -15,7 +15,7 @@ Der Admin-Bereich ist über das Zahnrad-Symbol der Anwendung oder durch Anhänge
 - **Tabellen-Resizing**: In der "Regeln"-Ansicht und der "Import-Vorschau" können Spaltenbreiten individuell angepasst werden. Bewegen Sie dazu die Maus an den rechten Rand einer Spaltenüberschrift, bis der Cursor sich ändert, und ziehen Sie die Spalte auf die gewünschte Breite.
 
 ## Wartung
-- Regelmäßige Backups der `data/`-Verzeichnisse.
+- Regelmäßige Backups der SQLite-Datei `data/database.sqlite` bzw. der externen PostgreSQL/MariaDB/MySQL-Datenbank sowie des `data/`-Verzeichnisses für Sessions und Uploads.
 - Abgelaufene Sessions unter `data/sessions/` bereinigen.
 - Logs und Performance-Metriken gemäß Deployment-Guides überwachen.
 - **Cache neu aufbauen**: Im Admin-Bereich unter "System & Daten" > "Wartung" kann der Regel-Cache manuell neu aufgebaut werden. Dies ist normalerweise nicht erforderlich, kann aber helfen, wenn nach umfangreichen Importen oder Updates Probleme mit Weiterleitungen auftreten.

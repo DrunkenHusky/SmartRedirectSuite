@@ -1,30 +1,161 @@
-import { Sequelize, DataTypes, Model } from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
+import type { Dialect, Options } from 'sequelize';
 import path from 'path';
+import fs from 'fs/promises';
+import { z } from 'zod';
 
-const dialect = process.env.DB_DIALECT || 'sqlite';
-const storagePath = process.env.DB_STORAGE || path.join(process.cwd(), 'data', 'database.sqlite');
+const dialectAliases = {
+  postgresql: 'postgres',
+} as const;
 
-let sequelize: Sequelize;
+const supportedDialects = ['sqlite', 'postgres', 'mysql', 'mariadb'] as const;
+type SupportedDialect = (typeof supportedDialects)[number];
 
-if (dialect === 'sqlite') {
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: storagePath,
-    logging: false,
-  });
-} else {
-  sequelize = new Sequelize(
-    process.env.DB_NAME || 'smartredirect',
-    process.env.DB_USER || 'root',
-    process.env.DB_PASSWORD || '',
-    {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || (dialect === 'postgres' ? '5432' : '3306'), 10),
-      dialect: dialect as any,
-      logging: false,
-    }
-  );
+const databaseEnvSchema = z.object({
+  DB_DIALECT: z.string().optional().default('sqlite'),
+  DB_STORAGE: z.string().optional(),
+  DB_NAME: z.string().optional().default('smartredirect'),
+  DB_USER: z.string().optional().default('root'),
+  DB_PASSWORD: z.string().optional().default(''),
+  DB_HOST: z.string().optional().default('localhost'),
+  DB_PORT: z.string().optional(),
+  DB_SSL: z.string().optional().default('false'),
+  DB_POOL_MAX: z.string().optional().default('5'),
+  DB_POOL_MIN: z.string().optional().default('0'),
+  DB_POOL_ACQUIRE_MS: z.string().optional().default('30000'),
+  DB_POOL_IDLE_MS: z.string().optional().default('10000'),
+});
+
+export interface DatabaseConfig {
+  dialect: SupportedDialect;
+  storagePath: string;
+  database: string;
+  username: string;
+  password: string;
+  host: string;
+  port: number;
+  ssl: boolean;
+  pool: {
+    max: number;
+    min: number;
+    acquire: number;
+    idle: number;
+  };
 }
+
+function parsePositiveInteger(value: string, fallback: number, name: string): number {
+  const parsedValue = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+    throw new Error(`${name} must be a non-negative integer.`);
+  }
+  return parsedValue || fallback;
+}
+
+export function normalizeDatabaseDialect(rawDialect: string | undefined): SupportedDialect {
+  const normalizedDialect = (rawDialect || 'sqlite').trim().toLowerCase();
+  const aliasedDialect = dialectAliases[normalizedDialect as keyof typeof dialectAliases] ?? normalizedDialect;
+
+  if (!supportedDialects.includes(aliasedDialect as SupportedDialect)) {
+    throw new Error(
+      `Unsupported DB_DIALECT "${rawDialect}". Supported values: sqlite, postgres/postgresql, mysql, mariadb.`,
+    );
+  }
+
+  return aliasedDialect as SupportedDialect;
+}
+
+export function loadDatabaseConfig(env: NodeJS.ProcessEnv = process.env): DatabaseConfig {
+  const parsedEnvironment = databaseEnvSchema.parse(env);
+  const dialect = normalizeDatabaseDialect(parsedEnvironment.DB_DIALECT);
+  const defaultPort = dialect === 'postgres' ? 5432 : 3306;
+
+  return {
+    dialect,
+    storagePath: parsedEnvironment.DB_STORAGE || path.join(process.cwd(), 'data', 'database.sqlite'),
+    database: parsedEnvironment.DB_NAME,
+    username: parsedEnvironment.DB_USER,
+    password: parsedEnvironment.DB_PASSWORD,
+    host: parsedEnvironment.DB_HOST,
+    port: dialect === 'sqlite'
+      ? 0
+      : parsePositiveInteger(parsedEnvironment.DB_PORT || String(defaultPort), defaultPort, 'DB_PORT'),
+    ssl: parsedEnvironment.DB_SSL.toLowerCase() === 'true',
+    pool: {
+      max: parsePositiveInteger(parsedEnvironment.DB_POOL_MAX, 5, 'DB_POOL_MAX'),
+      min: parsePositiveInteger(parsedEnvironment.DB_POOL_MIN, 0, 'DB_POOL_MIN'),
+      acquire: parsePositiveInteger(parsedEnvironment.DB_POOL_ACQUIRE_MS, 30000, 'DB_POOL_ACQUIRE_MS'),
+      idle: parsePositiveInteger(parsedEnvironment.DB_POOL_IDLE_MS, 10000, 'DB_POOL_IDLE_MS'),
+    },
+  };
+}
+
+function createSequelizeOptions(config: DatabaseConfig): Options {
+  const commonOptions: Options = {
+    dialect: config.dialect as Dialect,
+    logging: false,
+    pool: config.dialect === 'sqlite' ? undefined : config.pool,
+  };
+
+  if (config.dialect === 'sqlite') {
+    return {
+      ...commonOptions,
+      storage: config.storagePath,
+    };
+  }
+
+  return {
+    ...commonOptions,
+    host: config.host,
+    port: config.port,
+    dialectOptions: config.ssl
+      ? {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+        }
+      : undefined,
+  };
+}
+
+export function createSequelize(config: DatabaseConfig = loadDatabaseConfig()): Sequelize {
+  if (config.dialect === 'sqlite') {
+    return new Sequelize(createSequelizeOptions(config));
+  }
+
+  return new Sequelize(config.database, config.username, config.password, createSequelizeOptions(config));
+}
+
+const databaseConfig = loadDatabaseConfig();
+const sequelize = createSequelize(databaseConfig);
+
+function parseJsonField<T>(value: unknown, fallback: T): T {
+  if (value === null || value === undefined || value === '') {
+    return fallback;
+  }
+
+  if (typeof value !== 'string') {
+    return value as T;
+  }
+
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function serializeJsonField(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return JSON.stringify(value);
+}
+
+// Keep Sequelize timestamp columns enabled for compatibility with databases
+// created by the initial adapter implementation. URL rules still store their
+// domain-level creation timestamp in the explicit createdAt field.
+const modelOptions = {};
 
 // Models
 export const UrlRuleModel = sequelize.define('UrlRule', {
@@ -32,7 +163,10 @@ export const UrlRuleModel = sequelize.define('UrlRule', {
     type: DataTypes.TEXT,
     primaryKey: true,
   },
-  matcher: DataTypes.TEXT,
+  matcher: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
   targetUrl: DataTypes.TEXT,
   redirectType: DataTypes.TEXT,
   infoText: DataTypes.TEXT,
@@ -42,34 +176,37 @@ export const UrlRuleModel = sequelize.define('UrlRule', {
   keptQueryParams: {
     type: DataTypes.TEXT,
     get() {
-      const val = this.getDataValue('keptQueryParams');
-      return val ? JSON.parse(val) : [];
+      return parseJsonField(this.getDataValue('keptQueryParams'), []);
     },
-    set(val) {
-      this.setDataValue('keptQueryParams', JSON.stringify(val));
-    }
+    set(value) {
+      this.setDataValue('keptQueryParams', serializeJsonField(value));
+    },
   },
   forwardQueryParams: DataTypes.BOOLEAN,
   searchAndReplace: {
     type: DataTypes.TEXT,
     get() {
-      const val = this.getDataValue('searchAndReplace');
-      return val ? JSON.parse(val) : [];
+      return parseJsonField(this.getDataValue('searchAndReplace'), []);
     },
-    set(val) {
-      this.setDataValue('searchAndReplace', JSON.stringify(val));
-    }
+    set(value) {
+      this.setDataValue('searchAndReplace', serializeJsonField(value));
+    },
   },
   staticQueryParams: {
     type: DataTypes.TEXT,
     get() {
-      const val = this.getDataValue('staticQueryParams');
-      return val ? JSON.parse(val) : [];
+      return parseJsonField(this.getDataValue('staticQueryParams'), []);
     },
-    set(val) {
-      this.setDataValue('staticQueryParams', JSON.stringify(val));
-    }
-  }
+    set(value) {
+      this.setDataValue('staticQueryParams', serializeJsonField(value));
+    },
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['matcher'] },
+    { fields: ['createdAt'] },
+  ],
 });
 
 export const UrlTrackingModel = sequelize.define('UrlTracking', {
@@ -85,22 +222,20 @@ export const UrlTrackingModel = sequelize.define('UrlTracking', {
   ruleIds: {
     type: DataTypes.TEXT,
     get() {
-      const val = this.getDataValue('ruleIds');
-      return val ? JSON.parse(val) : [];
+      return parseJsonField(this.getDataValue('ruleIds'), []);
     },
-    set(val) {
-      this.setDataValue('ruleIds', val ? JSON.stringify(val) : null);
-    }
+    set(value) {
+      this.setDataValue('ruleIds', serializeJsonField(value));
+    },
   },
   matchedRuleInfo: {
     type: DataTypes.TEXT,
     get() {
-      const val = this.getDataValue('matchedRuleInfo');
-      return val ? JSON.parse(val) : undefined;
+      return parseJsonField(this.getDataValue('matchedRuleInfo'), undefined);
     },
-    set(val) {
-      this.setDataValue('matchedRuleInfo', val ? JSON.stringify(val) : null);
-    }
+    set(value) {
+      this.setDataValue('matchedRuleInfo', serializeJsonField(value));
+    },
   },
   userAgent: DataTypes.TEXT,
   referrer: DataTypes.TEXT,
@@ -112,13 +247,21 @@ export const UrlTrackingModel = sequelize.define('UrlTracking', {
   searchQueryInfo: {
     type: DataTypes.TEXT,
     get() {
-      const val = this.getDataValue('searchQueryInfo');
-      return val ? JSON.parse(val) : undefined;
+      return parseJsonField(this.getDataValue('searchQueryInfo'), undefined);
     },
-    set(val) {
-      this.setDataValue('searchQueryInfo', val ? JSON.stringify(val) : null);
-    }
-  }
+    set(value) {
+      this.setDataValue('searchQueryInfo', serializeJsonField(value));
+    },
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['timestamp'] },
+    { fields: ['path'] },
+    { fields: ['ruleId'] },
+    { fields: ['feedback'] },
+    { fields: ['matchQuality'] },
+  ],
 });
 
 export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
@@ -126,22 +269,25 @@ export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
     type: DataTypes.TEXT,
     primaryKey: true,
   },
-  // just store everything as a single JSON text field for simplicity,
-  // since settings is a single object
   data: {
     type: DataTypes.TEXT,
+    allowNull: false,
     get() {
-      const val = this.getDataValue('data');
-      return val ? JSON.parse(val) : {};
+      return parseJsonField(this.getDataValue('data'), {});
     },
-    set(val) {
-      this.setDataValue('data', JSON.stringify(val));
-    }
-  }
-});
+    set(value) {
+      this.setDataValue('data', JSON.stringify(value ?? {}));
+    },
+  },
+}, modelOptions);
 
 export async function initDb() {
+  if (databaseConfig.dialect === 'sqlite') {
+    await fs.mkdir(path.dirname(databaseConfig.storagePath), { recursive: true });
+  }
+
+  await sequelize.authenticate();
   await sequelize.sync();
 }
 
-export { sequelize };
+export { sequelize, databaseConfig };

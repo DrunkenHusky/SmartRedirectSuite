@@ -16,6 +16,13 @@ if (fs.existsSync(repoDataDir)) {
   // If data dir doesn't exist (e.g. in CI without checkout of data?), create structure
   fs.mkdirSync(path.join(tempDir, "data"), { recursive: true });
 }
+// Ensure database-backed tests start with a clean database even when local data exists.
+for (const databaseFile of ["database.sqlite", "database.sqlite-shm", "database.sqlite-wal"]) {
+  const databasePath = path.join(tempDir, "data", databaseFile);
+  if (fs.existsSync(databasePath)) {
+    fs.rmSync(databasePath, { force: true });
+  }
+}
 // Ensure sessions directory exists for health check
 fs.mkdirSync(path.join(tempDir, "data", "sessions"), { recursive: true });
 
