@@ -3,6 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createHash, timingSafeEqual } from "crypto";
 import { storage } from "./storage";
+import { initDb, AdminSessionModel } from "./db";
 import {
   insertUrlTrackingSchema,
   exportRequestSchema,
@@ -82,18 +83,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
-      // Check sessions by verifying session directory
+      // Check database-backed sessions by querying the AdminSessions table.
       let sessionsCheck = { status: "error", responseTime: 0, error: "" };
       const sessionsStart = Date.now();
       try {
-        const sessionsDir = path.join(dataDir, 'sessions');
-        await fs.access(sessionsDir);
+        await initDb();
+        await AdminSessionModel.count();
         sessionsCheck = { status: "ok" as const, responseTime: Date.now() - sessionsStart, error: "" };
       } catch (error) {
         sessionsCheck = { 
           status: "error" as const, 
           responseTime: Date.now() - sessionsStart, 
-          error: error instanceof Error ? error.message : "Sessions directory not accessible" 
+          error: error instanceof Error ? error.message : "Session database not accessible"
         };
       }
       

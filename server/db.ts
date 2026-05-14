@@ -264,6 +264,32 @@ export const UrlTrackingModel = sequelize.define('UrlTracking', {
   ],
 });
 
+export const AdminSessionModel = sequelize.define('AdminSession', {
+  id: {
+    type: DataTypes.TEXT,
+    primaryKey: true,
+  },
+  data: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    get() {
+      return parseJsonField(this.getDataValue('data'), {});
+    },
+    set(value) {
+      this.setDataValue('data', JSON.stringify(value ?? {}));
+    },
+  },
+  expiresAt: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+}, {
+  ...modelOptions,
+  indexes: [
+    { fields: ['expiresAt'] },
+  ],
+});
+
 export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
   id: {
     type: DataTypes.TEXT,
@@ -281,13 +307,21 @@ export const GeneralSettingsModel = sequelize.define('GeneralSettings', {
   },
 }, modelOptions);
 
+let initDbPromise: Promise<void> | null = null;
+
 export async function initDb() {
-  if (databaseConfig.dialect === 'sqlite') {
-    await fs.mkdir(path.dirname(databaseConfig.storagePath), { recursive: true });
+  if (!initDbPromise) {
+    initDbPromise = (async () => {
+      if (databaseConfig.dialect === 'sqlite') {
+        await fs.mkdir(path.dirname(databaseConfig.storagePath), { recursive: true });
+      }
+
+      await sequelize.authenticate();
+      await sequelize.sync();
+    })();
   }
 
-  await sequelize.authenticate();
-  await sequelize.sync();
+  return initDbPromise;
 }
 
 export { sequelize, databaseConfig };

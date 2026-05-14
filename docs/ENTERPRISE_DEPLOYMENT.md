@@ -17,8 +17,8 @@ This document provides comprehensive deployment instructions for the enterprise-
 ### Technology Stack
 - **Frontend**: React 18 + TypeScript + Vite
 - **Backend**: Node.js + Express + TypeScript
-- **Data Storage**: File-based JSON storage
-- **Session Management**: Express-session with file-based persistence
+- **Data Storage**: Sequelize-backed database storage (SQLite by default; PostgreSQL/MariaDB/MySQL optional)
+- **Session Management**: Express-session with database-backed storage and startup invalidation
 - **Object Storage**: Google Cloud Storage integration
 - **Performance**: Virtual scrolling, memory monitoring, and comprehensive in-memory caching for rules and settings
 
@@ -488,11 +488,12 @@ artillery run load-test.yml
 
 3. **Session Issues**
    ```bash
-   # Check session storage
-   ls -la data/sessions/
+   # Check database connectivity; AdminSessions stores active sessions
+   sqlite3 data/database.sqlite "select count(*) from AdminSessions;"
    
-   # Clear expired sessions
-   find data/sessions/ -name "*.json" -mtime +7 -delete
+   # Expired sessions are removed automatically by the application.
+   # AdminSessions is also cleared automatically on every server start.
+   sqlite3 data/database.sqlite "delete from AdminSessions;"
    ```
 
 4. **Object Storage Issues**
