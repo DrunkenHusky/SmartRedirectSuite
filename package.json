@@ -1,6 +1,6 @@
 {
   "name": "smartredirectsuite",
-  "version": "3e86f16",
+  "version": "aa4088c",
   "engines": {
     "node": ">=20",
     "npm": ">=10.9.0"
@@ -12,7 +12,7 @@
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:../vite.config",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "test:unit": "tsx tests/shared/appMetadata.test.ts && tsx tests/client/url-utils.test.ts && tsx tests/shared/url-trace.test.ts && tsx tests/server/general-settings-normalization.test.ts",
-    "test": "npm run test:unit && tsx tests/integration/database-adapter.test.ts && tsx tests/integration/database-login-attempts.test.ts && tsx tests/integration/database-session-store.test.ts && tsx tests/integration/test-url-transformation.js && tsx tests/integration/test-rule-specificity.ts && tsx tests/integration/test-server-features.js && tsx tests/integration/test-vite-config.ts && tsx tests/integration/test-public-api.ts",
+    "test": "npm run test:unit && tsx tests/integration/better-sqlite3-dialect.test.ts && tsx tests/integration/database-adapter.test.ts && tsx tests/integration/database-login-attempts.test.ts && tsx tests/integration/database-session-store.test.ts && tsx tests/integration/test-url-transformation.js && tsx tests/integration/test-rule-specificity.ts && tsx tests/integration/test-server-features.js && tsx tests/integration/test-vite-config.ts && tsx tests/integration/test-public-api.ts"
     "check": "echo 'Skipping type check'"
   },
   "dependencies": {
@@ -33,6 +33,7 @@
     "@tanstack/react-query": "^5.90.12",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.22",
+    "better-sqlite3": "^12.4.6",
     "class-variance-authority": "^0.7.1",
     "cross-env": "^10.1.0",
     "csv-parse": "^6.1.0",
@@ -53,7 +54,6 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.68.0",
     "sequelize": "^6.37.8",
-    "sqlite3": "^6.0.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",

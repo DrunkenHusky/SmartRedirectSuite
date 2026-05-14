@@ -1,3 +1,10 @@
+# Unreleased
+
+
+### Features
+
+* migrate SQLite runtime from `sqlite3` to `better-sqlite3` via a Sequelize compatibility dialect
+
 # [2.22.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.21.0...v2.22.0) (2026-04-24)
 
 
