@@ -39,7 +39,54 @@ function normalizeParameters(parameters: unknown): unknown[] {
     return [];
   }
 
-  return Array.isArray(parameters) ? parameters : [parameters];
+  if (typeof parameters === 'object' && !Array.isArray(parameters)) {
+    const fixedParams: Record<string, unknown> = {};
+    for (const key of Object.keys(parameters as Record<string, unknown>)) {
+      let val = (parameters as Record<string, unknown>)[key];
+
+      if (typeof val === 'boolean') {
+        val = val ? 1 : 0;
+      } else if (val !== null && typeof val === 'object' && !Buffer.isBuffer(val)) {
+        if (val instanceof Date) {
+          // Serialize to ISO string as Sequelize does for Date
+          val = val.toISOString();
+        } else {
+          // Serialize object to JSON string as expected by SQLite TEXT columns
+          // but better-sqlite3 complains if we send objects directly instead of stringifying
+          val = JSON.stringify(val);
+        }
+      } else if (val === undefined) {
+        val = null;
+      }
+
+      if (key.startsWith('$') || key.startsWith('@') || key.startsWith(':')) {
+        fixedParams[key.slice(1)] = val;
+      } else {
+        fixedParams[key] = val;
+      }
+    }
+    return [fixedParams];
+  }
+
+  // Handle array case
+  if (Array.isArray(parameters)) {
+     return parameters.map(val => {
+      if (typeof val === 'boolean') {
+        return val ? 1 : 0;
+      } else if (val !== null && typeof val === 'object' && !Buffer.isBuffer(val)) {
+        if (val instanceof Date) {
+          return val.toISOString();
+        } else {
+          return JSON.stringify(val);
+        }
+      } else if (val === undefined) {
+        return null;
+      }
+      return val;
+     });
+  }
+
+  return [parameters];
 }
 
 function extractCallback<T extends (...args: unknown[]) => void>(parameters: unknown[], callback: T | undefined): T | undefined {
