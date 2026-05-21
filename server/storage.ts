@@ -914,13 +914,44 @@ export class FileStorage implements IStorage {
     limit: number,
     timeRange: "24h" | "7d" | "all" = "all",
   ) {
-    const urls = await this.getTopUrls(10000, timeRange);
-    const total = urls.length;
-    const startIndex = (page - 1) * limit;
-    const endIndex = Math.min(startIndex + limit, total);
+    await this.ensureDbReady();
+
+    const whereClause: any = {
+      ...this.buildTrackingTimeRangeWhere(timeRange),
+      path: {
+        [Op.notIn]: ['/', '/?admin=true', '/?logout=true']
+      },
+    };
+
+    const offset = (page - 1) * limit;
+
+    // ⚡ Bolt Performance Optimization:
+    // Implemented pagination at the database level rather than fetching
+    // all records into Node.js memory. The distinct count ensures accurate
+    // total calculation for pagination math while drastically reducing DB
+    // load and transferring minimal data over the network.
+    const total = await UrlTrackingModel.count({
+      where: whereClause,
+      distinct: true,
+      col: 'path'
+    });
+
+    const rows = await UrlTrackingModel.findAll({
+      attributes: ['path', [sequelize.fn('COUNT', sequelize.col('path')), 'count']],
+      where: whereClause,
+      group: ['path'],
+      order: [[sequelize.col('count'), 'DESC']],
+      limit,
+      offset
+    });
+
+    const urls = rows.map(r => ({
+      path: r.getDataValue('path'),
+      count: Number.parseInt(String(r.getDataValue('count')), 10)
+    }));
 
     return {
-      urls: urls.slice(startIndex, endIndex),
+      urls,
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,

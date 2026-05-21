@@ -9,3 +9,6 @@
 ## 2024-05-24 - [N+1 Query Resolution]
 **Learning:** In `server/storage.ts`, the `getTrackingEntriesPaginated` function was fetching all 5000+ rules from the database using an unconstrained `findAll()` on every paginated request, just to join the rule objects to the 50 fetched tracking entries. This caused a massive N+1 style bottleneck and high memory usage.
 **Action:** Always verify how related entities are loaded in paginated endpoints. In Sequelize, extract unique related IDs (e.g., using `reduce` or `Set` over the current paginated page) and use `[Op.in]` to fetch only the required entities.
+## 2026-05-21 - [Database-Level Pagination for Grouped Queries]
+**Learning:** In `server/storage.ts`, `getTopUrlsPaginated` was fetching all top URLs using `this.getTopUrls(10000)` and then slicing the array in memory for pagination. This bypassed the database's ability to limit result sets, leading to high CPU and memory usage as the database grew.
+**Action:** Always implement pagination at the database level using `limit` and `offset` within `findAll` (or similar query methods). For aggregated queries (like `GROUP BY path`), compute the total count of distinct groups using a `count({ distinct: true, col: 'path' })` query to correctly calculate the total number of pages.
