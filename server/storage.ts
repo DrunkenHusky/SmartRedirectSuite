@@ -408,14 +408,18 @@ export class FileStorage implements IStorage {
     const safeSortBy = normalizeSortColumn(sortBy, URL_RULE_SORT_COLUMNS, "createdAt");
     const safeSortOrder = normalizeSortOrder(sortOrder);
 
-    const { count, rows } = await UrlRuleModel.findAndCountAll({
-      where: whereClause,
-      order: [[safeSortBy, safeSortOrder]],
-      limit,
-      offset
-    });
-
-    const totalAllRules = await UrlRuleModel.count();
+    const [
+      { count, rows },
+      totalAllRules
+    ] = await Promise.all([
+      UrlRuleModel.findAndCountAll({
+        where: whereClause,
+        order: [[safeSortBy, safeSortOrder]],
+        limit,
+        offset
+      }),
+      UrlRuleModel.count()
+    ]);
 
     return {
       rules: rows.map(r => r.toJSON() as UrlRule),
@@ -683,18 +687,29 @@ export class FileStorage implements IStorage {
     const lastWeek = new Date(today);
     lastWeek.setDate(today.getDate() - 7);
 
-    const total = await UrlTrackingModel.count();
-    const todayCount = await UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: today.toISOString() } } });
-    const weekCount = await UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: lastWeek.toISOString() } } });
-
-    const match100 = await UrlTrackingModel.count({ where: { matchQuality: 100 } });
-    const match75 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 75, [Op.lt]: 100 } } });
-    const match50 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 50, [Op.lt]: 75 } } });
-    const match0 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.lt]: 50 } } });
-
-    const ok = await UrlTrackingModel.count({ where: { feedback: 'OK' } });
-    const nok = await UrlTrackingModel.count({ where: { feedback: 'NOK' } });
-    const autoRedirect = await UrlTrackingModel.count({ where: { feedback: 'auto-redirect' } });
+    const [
+      total,
+      todayCount,
+      weekCount,
+      match100,
+      match75,
+      match50,
+      match0,
+      ok,
+      nok,
+      autoRedirect
+    ] = await Promise.all([
+      UrlTrackingModel.count(),
+      UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: today.toISOString() } } }),
+      UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: lastWeek.toISOString() } } }),
+      UrlTrackingModel.count({ where: { matchQuality: 100 } }),
+      UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 75, [Op.lt]: 100 } } }),
+      UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 50, [Op.lt]: 75 } } }),
+      UrlTrackingModel.count({ where: { matchQuality: { [Op.lt]: 50 } } }),
+      UrlTrackingModel.count({ where: { feedback: 'OK' } }),
+      UrlTrackingModel.count({ where: { feedback: 'NOK' } }),
+      UrlTrackingModel.count({ where: { feedback: 'auto-redirect' } })
+    ]);
 
     // We get missing feedback by taking total and subtracting others.
     // Not perfect but robust without complex IS NULL queries across dialects
@@ -858,12 +873,18 @@ export class FileStorage implements IStorage {
     const safeSortBy = normalizeSortColumn(sortBy, URL_TRACKING_SORT_COLUMNS, "timestamp");
     const safeSortOrder = normalizeSortOrder(sortOrder);
 
-    const { count: total, rows } = await UrlTrackingModel.findAndCountAll({
-      where: whereClause,
-      order: [[safeSortBy, safeSortOrder]],
-      limit,
-      offset
-    });
+    const [
+      { count: total, rows },
+      totalAllEntries
+    ] = await Promise.all([
+      UrlTrackingModel.findAndCountAll({
+        where: whereClause,
+        order: [[safeSortBy, safeSortOrder]],
+        limit,
+        offset
+      }),
+      UrlTrackingModel.count()
+    ]);
 
     const filtered = rows.map(r => r.toJSON() as UrlTracking);
 
@@ -905,7 +926,7 @@ export class FileStorage implements IStorage {
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
-      totalAllEntries: await UrlTrackingModel.count(),
+      totalAllEntries,
     };
   }
 
