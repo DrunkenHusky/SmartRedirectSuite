@@ -742,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ips = await getBlockedIps();
 
       const data = ips.map(entry => ({
-        IP: entry.ip,
+        IP: ImportExportService.sanitizeForCSV(entry.ip),
         Attempts: entry.attempts,
         BlockedUntil: entry.blockedUntil ? new Date(entry.blockedUntil).toISOString() : ''
       }));
@@ -944,6 +944,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? 'ID,Alte URL,Neue URL,Pfad,Referrer,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag,Strategie,Globale Regeln\n'
             : 'ID,Alte URL,Neue URL,Pfad,Zeitstempel,User-Agent,Regel ID,Feedback,Qualität,Benutzervorschlag,Strategie,Globale Regeln\n';
 
+          const escapeCSV = (val: any) => {
+            if (val == null) return '""';
+            const sanitized = ImportExportService.sanitizeForCSV(val);
+            const str = String(sanitized);
+            // Escape double quotes by doubling them
+            return `"${str.replace(/"/g, '""')}"`;
+          };
+
           const csvData = trackingData.map(track => {
             // Prepare new fields
             const ruleId = track.ruleId || (track.ruleIds && track.ruleIds.length > 0 ? track.ruleIds.join(';') : '') || '';
@@ -951,9 +959,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
             const userProposedUrl = track.userProposedUrl || '';
             if (includeReferrer) {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
+              return `${escapeCSV(track.id)},${escapeCSV(track.oldUrl)},${escapeCSV((track as any).newUrl || '')},${escapeCSV(track.path)},${escapeCSV(track.referrer || '')},${escapeCSV(track.timestamp)},${escapeCSV(track.userAgent || '')},${escapeCSV(ruleId)},${escapeCSV(feedback)},${escapeCSV(quality)},${escapeCSV(userProposedUrl)}`;
             } else {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
+              return `${escapeCSV(track.id)},${escapeCSV(track.oldUrl)},${escapeCSV((track as any).newUrl || '')},${escapeCSV(track.path)},${escapeCSV(track.timestamp)},${escapeCSV(track.userAgent || '')},${escapeCSV(ruleId)},${escapeCSV(feedback)},${escapeCSV(quality)},${escapeCSV(userProposedUrl)}`;
             }
           }).join('\n');
           

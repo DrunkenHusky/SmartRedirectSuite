@@ -7,3 +7,8 @@
 **Vulnerability:** A path traversal vulnerability was discovered in `server/fileSessionStore.ts`. The session ID (`sid`) was used directly without any validation to construct the path of session files using `path.join()`. This could allow an attacker to traverse the file system by providing a `sid` containing `../`.
 **Learning:** Even internal mechanisms like session storage require input validation when user-controlled data (like cookies) are used in file paths.
 **Prevention:** Implemented path validation to reject traversal characters (`/`, `\`, `..`), sanitized the input by stripping non-alphanumeric characters, and added a defense-in-depth check using `path.resolve()` and `.startsWith()` to ensure the final path strictly resides inside the expected session directory.
+
+## 2025-06-04 - CSV/Formula Injection in Manual CSV Generation
+**Vulnerability:** The application manually generated CSV exports (e.g., statistics export) using template literals (`return \`"\${track.id}","\${track.oldUrl}"...\``) without properly escaping double quotes (`"`) or sanitizing formulas. This allowed CSV injection and Formula Injection.
+**Learning:** Even if a `sanitizeForCSV` function exists for one module (`ImportExportService`), manual string concatenation in other routes can bypass these protections.
+**Prevention:** Reused `ImportExportService.sanitizeForCSV` globally by making it public and wrapping all user-controlled values during manual CSV generation. Also correctly implemented double-quote escaping (`""`) for manual CSV building.
