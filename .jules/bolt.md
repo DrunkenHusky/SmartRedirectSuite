@@ -9,3 +9,6 @@
 ## 2024-05-24 - [N+1 Query Resolution]
 **Learning:** In `server/storage.ts`, the `getTrackingEntriesPaginated` function was fetching all 5000+ rules from the database using an unconstrained `findAll()` on every paginated request, just to join the rule objects to the 50 fetched tracking entries. This caused a massive N+1 style bottleneck and high memory usage.
 **Action:** Always verify how related entities are loaded in paginated endpoints. In Sequelize, extract unique related IDs (e.g., using `reduce` or `Set` over the current paginated page) and use `[Op.in]` to fetch only the required entities.
+## 2026-06-11 - [Concurrent Count Queries in Sequelize]
+**Learning:** In `server/storage.ts`, the `getTrackingStats` function was sequentially executing 10 independent `UrlTrackingModel.count()` queries. This caused unnecessary sequential blocking and added significant latency equal to the sum of all queries.
+**Action:** Always wrap independent database queries inside `Promise.all()` when computing dashboard statistics to reduce latency to the time of the slowest single query.
