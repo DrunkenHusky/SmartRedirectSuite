@@ -947,13 +947,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const csvData = trackingData.map(track => {
             // Prepare new fields
             const ruleId = track.ruleId || (track.ruleIds && track.ruleIds.length > 0 ? track.ruleIds.join(';') : '') || '';
-            const feedback = track.feedback || '';
+            const feedback = ImportExportService.sanitizeForCSV(track.feedback || '').toString().replace(/"/g, '""');
             const quality = track.matchQuality !== undefined ? track.matchQuality : 0;
-            const userProposedUrl = track.userProposedUrl || '';
+            const userProposedUrl = ImportExportService.sanitizeForCSV(track.userProposedUrl || '').toString().replace(/"/g, '""');
+            const oldUrl = ImportExportService.sanitizeForCSV(track.oldUrl || '').toString().replace(/"/g, '""');
+            const newUrl = ImportExportService.sanitizeForCSV((track as any).newUrl || '').toString().replace(/"/g, '""');
+            const urlPath = ImportExportService.sanitizeForCSV(track.path || '').toString().replace(/"/g, '""');
+            const userAgent = ImportExportService.sanitizeForCSV(track.userAgent || '').toString().replace(/"/g, '""');
+            const referrer = ImportExportService.sanitizeForCSV(track.referrer || '').toString().replace(/"/g, '""');
+
             if (includeReferrer) {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.referrer || ''}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
+              return `"${track.id}","${oldUrl}","${newUrl}","${urlPath}","${referrer}","${track.timestamp}","${userAgent}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             } else {
-              return `"${track.id}","${track.oldUrl}","${(track as any).newUrl || ''}","${track.path}","${track.timestamp}","${track.userAgent || ''}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
+              return `"${track.id}","${oldUrl}","${newUrl}","${urlPath}","${track.timestamp}","${userAgent}","${ruleId}","${feedback}","${quality}","${userProposedUrl}"`;
             }
           }).join('\n');
           
