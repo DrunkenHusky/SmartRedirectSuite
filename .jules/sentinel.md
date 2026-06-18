@@ -7,3 +7,8 @@
 **Vulnerability:** A path traversal vulnerability was discovered in `server/fileSessionStore.ts`. The session ID (`sid`) was used directly without any validation to construct the path of session files using `path.join()`. This could allow an attacker to traverse the file system by providing a `sid` containing `../`.
 **Learning:** Even internal mechanisms like session storage require input validation when user-controlled data (like cookies) are used in file paths.
 **Prevention:** Implemented path validation to reject traversal characters (`/`, `\`, `..`), sanitized the input by stripping non-alphanumeric characters, and added a defense-in-depth check using `path.resolve()` and `.startsWith()` to ensure the final path strictly resides inside the expected session directory.
+
+## 2025-05-25 - [Predictable Math.random() Vulnerability]
+**Vulnerability:** Weak, predictable random number generation (`Math.random()`) was used in security-sensitive areas, specifically for generating random strings (`generateRandomString` in `shared/utils.ts`) and for file names in multer uploads (`server/routes.ts`).
+**Learning:** `Math.random()` is not a cryptographically secure pseudo-random number generator (CSPRNG). Its outputs are predictable, which could allow attackers to guess generated strings or file names, potentially leading to collision attacks or exposure of sensitive data.
+**Prevention:** Always use cryptographically secure methods like `crypto.getRandomValues()` for the browser/Node environment or `crypto.randomUUID()` when generating unique identifiers or sensitive random data.
