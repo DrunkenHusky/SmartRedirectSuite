@@ -1,0 +1,68 @@
+server/index.ts:  res.json = function (bodyJson, ...args) {
+server/middleware/logging.ts:export function requestLogger(req: Request, res: Response, next: NextFunction): void {
+server/middleware/rateLimit.ts:export function rateLimit(config: RateLimitConfig) {
+server/middleware/validation.ts:export function validateContentType(allowedTypes: string[]) {
+server/middleware/validation.ts:export function validateUrlRuleOverlap(existingRules: Array<{ id: string; matcher: string }>) {
+server/middleware/validation.ts:function areMatchersOverlapping(matcher1: string, matcher2: string): boolean {
+server/middleware/validation.ts:export function validateEnvironment(allowedEnvironments: string[]) {
+server/middleware/bruteForce.ts:async function readStore(): Promise<Record<string, AttemptInfo>> {
+server/middleware/bruteForce.ts:async function writeStore(store: Record<string, AttemptInfo>): Promise<void> {
+server/middleware/bruteForce.ts:export async function recordLoginFailure(ip: string): Promise<void> {
+server/middleware/bruteForce.ts:export async function resetLoginAttempts(ip: string): Promise<void> {
+server/middleware/bruteForce.ts:export async function resetAllLoginAttempts(): Promise<void> {
+server/middleware/bruteForce.ts:export async function getBlockedIps(): Promise<Array<{ ip: string; attempts: number; blockedUntil?: number }>> {
+server/middleware/bruteForce.ts:export async function blockIp(ip: string): Promise<void> {
+server/middleware/errorHandler.ts:export function notFoundHandler(req: Request, res: Response): void {
+server/middleware/errorHandler.ts:export function createValidationError(field: string, message: string): ErrorWithCode {
+server/middleware/security.ts:export function rateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
+server/middleware/security.ts:export function csrfCheck(req: Request, res: Response, next: NextFunction): void {
+server/middleware/security.ts:export function adminRateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
+server/routes.ts:export async function registerRoutes(app: Express): Promise<Server> {
+server/routes.ts:  function extractPath(url: string): string {
+server/storage.ts:function sanitizeRuleFlags(rule: any): any {
+server/vite.ts:export function log(message: string, source = "express") {
+server/vite.ts:export async function setupVite(app: Express, server: Server) {
+server/vite.ts:export function serveStatic(app: Express) {
+client/src/components/DocumentHeadUpdater.tsx:export function DocumentHeadUpdater() {
+client/src/components/admin/GlobalRulesSettings.tsx:export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOpenValidation }: GlobalRulesSettingsProps) {
+client/src/components/admin/ValidationModal.tsx:function ResultRow({ result, isExpanded, onToggle, onEditRule }: { result: any, isExpanded: boolean, onToggle: () => void, onEditRule: (id: number) => void }) {
+client/src/components/admin/ValidationModal.tsx:export function ValidationModal({ open, onOpenChange, onEditRule, reloadTrigger, isLoadingRules = false }: ValidationModalProps) {
+client/src/components/ui/badge.tsx:function Badge({ className, variant, ...props }: BadgeProps) {
+client/src/components/ui/toaster.tsx:export function Toaster() {
+client/src/components/ui/toaster.tsx:      {toasts.map(function ({ id, title, description, action, ...props }) {
+client/src/components/ui/quality-gauge.tsx:export function QualityGauge({ score, level, explanation }: QualityGaugeProps) {
+client/src/components/ui/resize-handle.tsx:export function ResizeHandle({ onMouseDown, className }: ResizeHandleProps) {
+client/src/components/ui/password-modal.tsx:export function PasswordModal({ isOpen, onClose, onSuccess }: PasswordModalProps) {
+client/src/hooks/useResizableColumns.ts:export function useResizableColumns({ initialWidths, minWidth = 50 }: UseResizableColumnsOptions) {
+client/src/hooks/usePerformance.ts:export function useRenderPerformance(componentName: string) {
+client/src/hooks/usePerformance.ts:export function useApiPerformance() {
+client/src/hooks/usePerformance.ts:export function useLoadingPerformance() {
+client/src/hooks/usePerformance.ts:export function useMemoryMonitoring() {
+client/src/hooks/usePerformance.ts:export function useDebounce<T>(value: T, delay: number): T {
+client/src/hooks/usePerformance.ts:export function useShallowMemo<T extends object>(obj: T): T {
+client/src/hooks/use-mobile.tsx:export function useIsMobile() {
+client/src/hooks/use-toast.ts:function genId() {
+client/src/hooks/use-toast.ts:function dispatch(action: Action) {
+client/src/hooks/use-toast.ts:function toast({ ...props }: Toast) {
+client/src/hooks/use-toast.ts:function useToast() {
+client/src/App.tsx:function App() {
+client/src/pages/not-found.tsx:export default function NotFound() {
+client/src/pages/migration.tsx:export default function MigrationPage({ onAdminAccess }: MigrationPageProps) {
+client/src/pages/admin.tsx:function AdminAuthForm({ onAuthenticated, onClose }: AdminAuthFormProps) {
+client/src/pages/admin.tsx:export default function AdminPage({ onClose }: AdminPageProps) {
+client/src/lib/queryClient.ts:async function throwIfResNotOk(res: Response) {
+client/src/lib/utils.ts:export function cn(...inputs: ClassNameValue[]) {
+client/src/lib/url-utils.ts:export async function copyToClipboard(text: string): Promise<void> {
+shared/validation.ts:export function validateTargetUrl(targetUrl: string, redirectType: 'wildcard' | 'partial' | 'domain'): boolean {
+shared/url-utils.ts:export function generateNewUrl(oldUrl: string, newDomain?: string): string {
+shared/url-utils.ts:export function applySearchAndReplaceSingle(url: string, item: { search: string; replace: string; caseSensitive: boolean }): string {
+shared/url-utils.ts:export function appendQueryString(url: string, queryString: string): string {
+shared/url-utils.ts:export function extractPath(url: string): string {
+shared/url-utils.ts:export function validateUrl(url: string): boolean {
+shared/url-utils.ts:export function getStaticQueryStringWithLog(staticParams: { key: string; value: string; skipEncoding?: boolean; id?: string }[]): { queryString: string, matchedRules: AppliedGlobalRule[] } {
+shared/url-utils.ts:export function getKeptQueryStringWithLog(oldUrl: string, keptRules: { keyPattern: string; valuePattern?: string; targetKey?: string; skipEncoding?: boolean; id?: string }[]): { queryString: string, matchedRules: AppliedGlobalRule[] } {
+shared/url-utils.ts:function extractLastPathSegment(url: string): string | null {
+shared/url-utils.ts:export function getMatchingSuffix(originalPath: string, matcher: string): string | null {
+shared/ruleMatching.ts:export function normalizePath(path: string, cfg: RuleMatchingConfig): string[] {
+shared/ruleMatching.ts:export function preprocessRule(rule: UrlRule, config: RuleMatchingConfig): ProcessedUrlRule {
+shared/ruleMatching.ts:function isProcessedRule(rule: UrlRule | ProcessedUrlRule): rule is ProcessedUrlRule {
