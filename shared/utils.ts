@@ -142,9 +142,31 @@ export const stringUtils = {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let result = "";
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+
+    // Get crypto API whether in browser or Node.js environment
+    const cryptoObj = typeof window !== 'undefined' ? window.crypto : globalThis.crypto;
+
+    if (cryptoObj && cryptoObj.getRandomValues) {
+      const randomArray = new Uint32Array(length);
+      cryptoObj.getRandomValues(randomArray);
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(randomArray[i] % chars.length);
+      }
+    } else {
+      // Node.js fallback or unlikely browser fallback
+      try {
+        const { randomBytes } = require('crypto');
+        const randomArray = randomBytes(length);
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(randomArray[i] % chars.length);
+        }
+      } catch (e) {
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+      }
     }
+
     return result;
   },
 
