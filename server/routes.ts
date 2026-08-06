@@ -1,7 +1,7 @@
 import { traceUrlGeneration } from "@shared/url-trace";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual, randomUUID } from "crypto";
 import { storage } from "./storage";
 import { initDb, AdminSessionModel, LogoAssetModel } from "./db";
 import {
@@ -1156,7 +1156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const importUpload = multer({
     storage: multer.diskStorage({
       destination: (_req, _file, cb) => cb(null, uploadDir),
-      filename: (_req, file, cb) => cb(null, `${createHash('md5').update(Math.random().toString()).digest('hex')}${path.extname(file.originalname)}`)
+      filename: (_req, file, cb) => cb(null, `${randomUUID()}${path.extname(file.originalname)}`)
     }),
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
     fileFilter: (_req, file, cb) => {

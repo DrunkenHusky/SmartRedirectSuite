@@ -7,3 +7,9 @@
 **Vulnerability:** A path traversal vulnerability was discovered in `server/fileSessionStore.ts`. The session ID (`sid`) was used directly without any validation to construct the path of session files using `path.join()`. This could allow an attacker to traverse the file system by providing a `sid` containing `../`.
 **Learning:** Even internal mechanisms like session storage require input validation when user-controlled data (like cookies) are used in file paths.
 **Prevention:** Implemented path validation to reject traversal characters (`/`, `\`, `..`), sanitized the input by stripping non-alphanumeric characters, and added a defense-in-depth check using `path.resolve()` and `.startsWith()` to ensure the final path strictly resides inside the expected session directory.
+
+## $(date +%Y-%m-%d) - Fix insecure random number generation
+
+**Vulnerability:** Weak, predictable random number generation (`Math.random()`) used for sensitive operations like unique filename generation (in Multer configuration) and random token generation.
+**Learning:** Default random methods are not cryptographically secure and can lead to predictability attacks and filename/token collisions.
+**Prevention:** Always use Node.js `crypto` alternatives (like `crypto.randomUUID()` or `crypto.getRandomValues()`) for identifiers, filenames, and tokens requiring sufficient entropy.
