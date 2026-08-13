@@ -683,18 +683,33 @@ export class FileStorage implements IStorage {
     const lastWeek = new Date(today);
     lastWeek.setDate(today.getDate() - 7);
 
-    const total = await UrlTrackingModel.count();
-    const todayCount = await UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: today.toISOString() } } });
-    const weekCount = await UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: lastWeek.toISOString() } } });
+    // ⚡ Bolt: Execute independent COUNT queries concurrently to avoid sequential N+1 query bottlenecks.
+    // This reduces the response time from O(n) database roundtrips to approximately O(1) concurrent roundtrip.
+    const [
+      total,
+      todayCount,
+      weekCount,
+      match100,
+      match75,
+      match50,
+      match0,
+      ok,
+      nok,
+      autoRedirect
+    ] = await Promise.all([
+      UrlTrackingModel.count(),
+      UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: today.toISOString() } } }),
+      UrlTrackingModel.count({ where: { timestamp: { [Op.gte]: lastWeek.toISOString() } } }),
 
-    const match100 = await UrlTrackingModel.count({ where: { matchQuality: 100 } });
-    const match75 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 75, [Op.lt]: 100 } } });
-    const match50 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 50, [Op.lt]: 75 } } });
-    const match0 = await UrlTrackingModel.count({ where: { matchQuality: { [Op.lt]: 50 } } });
+      UrlTrackingModel.count({ where: { matchQuality: 100 } }),
+      UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 75, [Op.lt]: 100 } } }),
+      UrlTrackingModel.count({ where: { matchQuality: { [Op.gte]: 50, [Op.lt]: 75 } } }),
+      UrlTrackingModel.count({ where: { matchQuality: { [Op.lt]: 50 } } }),
 
-    const ok = await UrlTrackingModel.count({ where: { feedback: 'OK' } });
-    const nok = await UrlTrackingModel.count({ where: { feedback: 'NOK' } });
-    const autoRedirect = await UrlTrackingModel.count({ where: { feedback: 'auto-redirect' } });
+      UrlTrackingModel.count({ where: { feedback: 'OK' } }),
+      UrlTrackingModel.count({ where: { feedback: 'NOK' } }),
+      UrlTrackingModel.count({ where: { feedback: 'auto-redirect' } })
+    ]);
 
     // We get missing feedback by taking total and subtracting others.
     // Not perfect but robust without complex IS NULL queries across dialects
