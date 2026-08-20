@@ -612,7 +612,12 @@ export class FileStorage implements IStorage {
   ) {
     await this.ensureDbReady();
 
-    let whereClause = {};
+    let whereClause: any = {
+      referrer: {
+        [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: '' }]
+      }
+    };
+
     if (timeRange !== "all") {
       const now = new Date();
       const timeLimit = new Date(now);
@@ -621,15 +626,16 @@ export class FileStorage implements IStorage {
       } else if (timeRange === "7d") {
         timeLimit.setDate(now.getDate() - 7);
       }
-      whereClause = {
-        timestamp: { [Op.gte]: timeLimit.toISOString() }
-      };
+      whereClause.timestamp = { [Op.gte]: timeLimit.toISOString() };
     }
 
-    const trackingData = await UrlTrackingModel.findAll({ where: whereClause });
-    const referrers = trackingData
-      .map(r => r.getDataValue('referrer'))
-      .filter((r) => r && r.length > 0);
+    const trackingData = await UrlTrackingModel.findAll({
+      attributes: ['referrer'],
+      where: whereClause,
+      raw: true
+    });
+
+    const referrers = trackingData.map((r: any) => r.referrer);
 
     const domains: Record<string, number> = {};
     for (const ref of referrers) {
