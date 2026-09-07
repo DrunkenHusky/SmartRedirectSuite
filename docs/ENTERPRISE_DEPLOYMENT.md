@@ -17,8 +17,8 @@ This document provides comprehensive deployment instructions for the enterprise-
 ### Technology Stack
 - **Frontend**: React 18 + TypeScript + Vite
 - **Backend**: Node.js + Express + TypeScript
-- **Data Storage**: File-based JSON storage
-- **Session Management**: Express-session with file-based persistence
+- **Data Storage**: PostgreSQL (Regeln, Einstellungen und Tracking)
+- **Session Management**: Express-session mit PostgreSQL-Persistenz
 - **Object Storage**: Google Cloud Storage integration
 - **Performance**: Virtual scrolling, memory monitoring, and comprehensive in-memory caching for rules and settings
 

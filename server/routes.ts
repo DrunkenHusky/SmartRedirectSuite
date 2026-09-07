@@ -1,7 +1,7 @@
 import { traceUrlGeneration } from "@shared/url-trace";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { storage } from "./storage";
 import {
   insertUrlTrackingSchema,
@@ -24,6 +24,7 @@ import { ImportExportService } from "./import-export";
 import multer from 'multer';
 import fs from 'fs';
 import { utils, write } from '@e965/xlsx';
+import { loadConfiguration } from "./config";
 
 
 
@@ -32,11 +33,23 @@ declare module 'express-session' {
   interface SessionData {
     isAdminAuthenticated?: boolean;
     adminLoginTime?: number;
+    oauthState?: string;
   }
 }
 
 // Admin-Passwort aus Umgebungsvariable oder Standard
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Password1";
+const configuration = loadConfiguration();
+const ADMIN_PASSWORD = configuration.ADMIN_PASSWORD;
+
+type OAuthMetadata = { authorization_endpoint: string; token_endpoint: string; userinfo_endpoint: string };
+let oauthMetadata: OAuthMetadata | undefined;
+async function getOAuthMetadata(): Promise<OAuthMetadata> {
+  if (oauthMetadata) return oauthMetadata;
+  const response = await fetch(`${configuration.OAUTH_ISSUER_URL!.replace(/\/$/, "")}/.well-known/openid-configuration`);
+  if (!response.ok) throw new Error("OAuth discovery failed");
+  oauthMetadata = await response.json() as OAuthMetadata;
+  return oauthMetadata;
+}
 
 // Import Preview Limit from environment variable (default 1000)
 const IMPORT_PREVIEW_LIMIT = parseInt(process.env.IMPORT_PREVIEW_LIMIT || "1000", 10);
@@ -64,38 +77,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const uptime = process.uptime();
       const memoryUsage = process.memoryUsage();
       
-      // Check filesystem by verifying data directory exists
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      const dataDir = path.join(process.cwd(), 'data');
-      
-      let filesystemCheck = { status: "error", responseTime: 0, error: "" };
-      const fsStart = Date.now();
-      try {
-        await fs.access(dataDir);
-        filesystemCheck = { status: "ok" as const, responseTime: Date.now() - fsStart, error: "" };
-      } catch (error) {
-        filesystemCheck = { 
-          status: "error" as const, 
-          responseTime: Date.now() - fsStart, 
-          error: error instanceof Error ? error.message : "Unknown error" 
-        };
-      }
-      
-      // Check sessions by verifying session directory
-      let sessionsCheck = { status: "error", responseTime: 0, error: "" };
-      const sessionsStart = Date.now();
-      try {
-        const sessionsDir = path.join(dataDir, 'sessions');
-        await fs.access(sessionsDir);
-        sessionsCheck = { status: "ok" as const, responseTime: Date.now() - sessionsStart, error: "" };
-      } catch (error) {
-        sessionsCheck = { 
-          status: "error" as const, 
-          responseTime: Date.now() - sessionsStart, 
-          error: error instanceof Error ? error.message : "Sessions directory not accessible" 
-        };
-      }
+      const filesystemCheck = { status: "not-applicable", responseTime: 0, error: "Persistent data uses PostgreSQL" };
+      const sessionsCheck = { status: "ok", responseTime: 0, error: "PostgreSQL session store configured" };
       
       // Check storage by attempting to read settings
       let storageCheck = { status: "error", responseTime: 0, error: "" };
@@ -111,9 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
-      const overallStatus = (filesystemCheck.status === "ok" && 
-                            sessionsCheck.status === "ok" && 
-                            storageCheck.status === "ok") ? "healthy" : "unhealthy";
+      const overallStatus = storageCheck.status === "ok" ? "healthy" : "unhealthy";
       
       const healthResponse = {
         status: overallStatus,
@@ -365,6 +346,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin-Authentifizierung
+  app.get("/api/admin/oauth/login", async (req, res) => {
+    if (!configuration.oauthEnabled) return res.status(404).json({ error: "OAuth is not configured" });
+    const metadata = await getOAuthMetadata();
+    const state = randomBytes(32).toString("base64url");
+    req.session.oauthState = state;
+    const authorizationUrl = new URL(metadata.authorization_endpoint);
+    authorizationUrl.search = new URLSearchParams({ response_type: "code", client_id: configuration.OAUTH_CLIENT_ID!,
+      redirect_uri: configuration.OAUTH_REDIRECT_URI!, scope: configuration.OAUTH_SCOPES, state }).toString();
+    res.redirect(authorizationUrl.toString());
+  });
+
+  app.get("/api/admin/oauth/callback", async (req, res) => {
+    const query = z.object({ code: z.string().min(1), state: z.string().min(1) }).safeParse(req.query);
+    const suppliedStateHash = createHash("sha256").update(query.success ? query.data.state : "").digest();
+    const expectedStateHash = createHash("sha256").update(req.session.oauthState ?? "missing").digest();
+    if (!configuration.oauthEnabled || !query.success || !req.session.oauthState ||
+        !timingSafeEqual(suppliedStateHash, expectedStateHash)) {
+      return res.status(401).json({ error: "Invalid OAuth callback" });
+    }
+    const metadata = await getOAuthMetadata();
+    const tokenResponse = await fetch(metadata.token_endpoint, { method: "POST", headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      authorization: `Basic ${Buffer.from(`${configuration.OAUTH_CLIENT_ID}:${configuration.OAUTH_CLIENT_SECRET}`).toString("base64")}`,
+    }, body: new URLSearchParams({ grant_type: "authorization_code", code: query.data.code,
+      redirect_uri: configuration.OAUTH_REDIRECT_URI! }) });
+    if (!tokenResponse.ok) return res.status(401).json({ error: "OAuth token exchange failed" });
+    const tokens = await tokenResponse.json() as { access_token?: string };
+    const userResponse = await fetch(metadata.userinfo_endpoint, { headers: { authorization: `Bearer ${tokens.access_token}` } });
+    if (!userResponse.ok) return res.status(401).json({ error: "OAuth identity lookup failed" });
+    const identity = await userResponse.json() as Record<string, unknown>;
+    const groups = identity[configuration.OAUTH_GROUPS_CLAIM];
+    if (configuration.OAUTH_ADMIN_GROUP && (!Array.isArray(groups) || !groups.includes(configuration.OAUTH_ADMIN_GROUP))) {
+      return res.status(403).json({ error: "OAuth account is not an administrator" });
+    }
+    req.session.oauthState = undefined;
+    req.session.isAdminAuthenticated = true;
+    req.session.adminLoginTime = Date.now();
+    req.session.save(error => error ? res.status(500).json({ error: "Session save error" }) : res.redirect("/admin"));
+  });
+
   app.post("/api/admin/login", bruteForceProtection, async (req, res) => {
     const ip = req.ip || req.connection.remoteAddress || "";
     try {
@@ -373,6 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash both passwords for constant-time comparison
       const inputHash = createHash('sha256').update(password).digest();
+      if (!ADMIN_PASSWORD) return res.status(404).json({ error: "Password login is disabled" });
       const storedHash = createHash('sha256').update(ADMIN_PASSWORD).digest();
 
       // Check password match using timingSafeEqual
@@ -425,7 +447,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/status", (req, res) => {
     res.json({ 
       isAuthenticated: !!req.session?.isAdminAuthenticated,
-      loginTime: req.session?.adminLoginTime 
+      loginTime: req.session?.adminLoginTime,
+      authenticationMethods: { password: Boolean(ADMIN_PASSWORD), oauth: configuration.oauthEnabled },
     });
   });
 

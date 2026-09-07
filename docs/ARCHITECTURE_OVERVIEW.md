@@ -14,3 +14,7 @@ Die Anwendung ist modular aufgebaut und trennt klar zwischen Frontend, Backend u
 4. `shared/` stellt Typdefinitionen und Zod-Schemas für beide Seiten bereit.
 
 Die Architektur ermöglicht die hochperformante Verarbeitung von über 100.000 Regeln durch intelligentes Caching und optimierte Datenstrukturen.
+
+## Self-Hosting und Persistenz
+
+Der Node.js/Express-Prozess ist zustandslos. Regeln, Tracking, Einstellungen und Admin-Sitzungen liegen in PostgreSQL. Beim Start validiert Zod alle Umgebungsvariablen und die Anwendung führt idempotente `CREATE TABLE IF NOT EXISTS`-Migrationen aus. Dadurch können mehrere Container hinter einem Kubernetes Service betrieben werden. Passwort- oder externer OAuth-2.0/OIDC-Login erzeugen dieselbe serverseitige Sitzung. Der OAuth-Flow nutzt Discovery, State-Prüfung, Authorization Code Exchange und optional eine Admin-Gruppenfreigabe.

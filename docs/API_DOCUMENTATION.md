@@ -826,3 +826,11 @@ artillery quick --count 100 --num 10 http://localhost:5000/api/health
 ```
 
 This comprehensive API documentation provides all the information needed to integrate with and maintain the SmartRedirect Suite in enterprise environments.
+
+## Externe OAuth-Authentifizierung
+
+- `GET /api/admin/oauth/login` startet den Authorization-Code-Flow und leitet zum konfigurierten Identity Provider weiter.
+- `GET /api/admin/oauth/callback` ist die registrierte Redirect URI. Nach State-, Token-, UserInfo- und optionaler Gruppenprüfung wird eine Admin-Sitzung angelegt und zu `/admin` weitergeleitet.
+- `GET /api/admin/status` liefert zusätzlich `authenticationMethods.password` und `authenticationMethods.oauth`.
+
+OAuth-Endpunkte sind nur verfügbar, wenn alle erforderlichen `OAUTH_*`-Variablen gesetzt sind. Fehlerhafte Callback-States liefern HTTP 401, fehlende Gruppenberechtigung HTTP 403.

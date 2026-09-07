@@ -13,6 +13,7 @@ import type {
 import { urlUtils } from "@shared/utils";
 import { ProcessedUrlRule, RuleMatchingConfig, preprocessRule } from "@shared/ruleMatching";
 import { RULE_MATCHING_CONFIG } from "@shared/constants";
+import type pg from "pg";
 
 // Helper to ensure only relevant flags are stored
 function sanitizeRuleFlags(rule: any): any {
@@ -155,6 +156,9 @@ export interface IStorage {
 }
 
 export class FileStorage implements IStorage {
+  constructor(private readonly databasePool?: pg.Pool) {
+    if (!databasePool) this.ensureDataDirectory();
+  }
   private async enforceMaxStatsLimit(limit: number): Promise<void> {
     if (limit <= 0) return;
 
@@ -177,10 +181,6 @@ export class FileStorage implements IStorage {
   private settingsCache: GeneralSettings | null = null;
   private trackingCache: UrlTracking[] | null = null;
 
-  constructor() {
-    this.ensureDataDirectory();
-  }
-
   private async ensureDataDirectory() {
     try {
       await fs.access(DATA_DIR);
@@ -193,6 +193,11 @@ export class FileStorage implements IStorage {
     filePath: string,
     defaultValue: T[],
   ): Promise<T[]> {
+    if (this.databasePool) {
+      const key = path.basename(filePath, ".json");
+      const result = await this.databasePool.query("SELECT value FROM application_documents WHERE document_key=$1", [key]);
+      return result.rows[0]?.value ?? defaultValue;
+    }
     try {
       const stats = await fs.stat(filePath);
 
@@ -229,11 +234,19 @@ export class FileStorage implements IStorage {
   }
 
   private async writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
+    if (this.databasePool) {
+      const key = path.basename(filePath, ".json");
+      await this.databasePool.query(`INSERT INTO application_documents(document_key,value) VALUES($1,$2)
+        ON CONFLICT(document_key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`, [key, data]);
+      return;
+    }
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
   }
 
   // Helper to ensure rules are loaded and processed
   private async ensureRulesLoaded(config?: RuleMatchingConfig): Promise<ProcessedUrlRule[]> {
+    // Database deployments may have multiple replicas; never serve another pod's stale writes.
+    if (this.databasePool) this.rulesCache = null;
     // If we have a cache
     if (this.rulesCache) {
       // Check if we need to reprocess based on config mismatch or invalidation (lastCacheConfig === null)
@@ -306,6 +319,7 @@ export class FileStorage implements IStorage {
 
   // Helper to ensure tracking data is loaded
   private async ensureTrackingLoaded(): Promise<UrlTracking[]> {
+    if (this.databasePool) this.trackingCache = null;
     const settings = await this.getGeneralSettings();
     const useCache = settings.enableTrackingCache ?? true;
 
@@ -1422,6 +1436,13 @@ export class FileStorage implements IStorage {
   // Helper method to check if two URL matchers are overlapping
   // General Settings implementierung
   async getGeneralSettings(): Promise<GeneralSettings> {
+    if (this.databasePool) {
+      const result = await this.databasePool.query("SELECT value FROM application_documents WHERE document_key='settings'");
+      if (result.rows[0]?.value) {
+        this.settingsCache = result.rows[0].value;
+        return this.settingsCache!;
+      }
+    }
     if (this.settingsCache) return this.settingsCache;
 
     try {
@@ -1513,10 +1534,11 @@ export class FileStorage implements IStorage {
       };
 
       // Save default settings directly to avoid infinite loop
-      await fs.writeFile(
-        SETTINGS_FILE,
-        JSON.stringify(defaultSettings, null, 2),
-      );
+      if (this.databasePool) {
+        await this.databasePool.query("INSERT INTO application_documents(document_key,value) VALUES('settings',$1) ON CONFLICT(document_key) DO NOTHING", [defaultSettings]);
+      } else {
+        await fs.writeFile(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
+      }
       this.settingsCache = defaultSettings;
       return defaultSettings;
     }
@@ -1559,7 +1581,12 @@ export class FileStorage implements IStorage {
       });
     }
 
-    await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    if (this.databasePool) {
+      await this.databasePool.query(`INSERT INTO application_documents(document_key,value) VALUES('settings',$1)
+        ON CONFLICT(document_key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`, [settings]);
+    } else {
+      await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    }
     this.settingsCache = settings;
 
     // Check if maxStatsEntries changed and needs enforcement
@@ -1589,4 +1616,11 @@ export class FileStorage implements IStorage {
   }
 }
 
-export const storage = new FileStorage();
+let storageInstance: IStorage = new FileStorage();
+export const storage: IStorage & Record<string, any> = new Proxy({} as IStorage & Record<string, any>, {
+  get: (_target, property) => (storageInstance as any)[property].bind(storageInstance),
+});
+
+export function configureStorage(databasePool: pg.Pool): void {
+  storageInstance = new FileStorage(databasePool);
+}

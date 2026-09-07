@@ -19,7 +19,7 @@ RUN apt-get update -qq && \
 
 # Install node modules
 COPY package-lock.json package.json ./
-RUN npm ci --include=dev
+RUN npm install --include=dev
 
 # Copy application code
 COPY . .
@@ -37,6 +37,10 @@ FROM base
 # Copy built application
 COPY --from=build /app /app
 
+USER node
+
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:5000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 CMD [ "npm", "run", "start" ]

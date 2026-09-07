@@ -2,25 +2,23 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import helmet from "helmet";
-import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { FileSessionStore } from "./fileSessionStore";
 import { rateLimitMiddleware, adminRateLimitMiddleware, csrfCheck } from "./middleware/security";
+import { loadConfiguration } from "./config";
+import { createDatabasePool, migrateDatabase } from "./database";
+import { PostgresSessionStore } from "./postgresSessionStore";
+import { configureStorage } from "./storage";
+
+export const configuration = loadConfiguration();
+const databasePool = createDatabasePool(configuration);
+await migrateDatabase(databasePool);
+configureStorage(databasePool);
 
 const app = express();
 
 // Security Warnings
-if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === "Password1") {
-  console.warn("WARNUNG: Sie verwenden das Standard-Passwort 'Password1'. Bitte setzen Sie die Umgebungsvariable ADMIN_PASSWORD.");
-}
-
-// Session Secret Configuration
-const sessionSecret = process.env.SESSION_SECRET || randomBytes(64).toString('hex');
-
-if (!process.env.SESSION_SECRET) {
-  console.warn("WARNUNG: Keine SESSION_SECRET Umgebungsvariable gesetzt. Ein zufälliger Schlüssel wurde generiert.");
-}
+const sessionSecret = configuration.SESSION_SECRET;
 
 // Helmet Configuration
 const isProduction = process.env.NODE_ENV === "production";
@@ -50,7 +48,7 @@ app.use('/api', (_req, res, next) => {
 });
 
 // Trust proxy settings for production
-app.set('trust proxy', true);
+app.set('trust proxy', configuration.TRUST_PROXY);
 
 // Logger middleware - MUST be before rate limiters to log blocked requests
 app.use((req, res, next) => {
@@ -122,10 +120,7 @@ app.use((req, res, next) => {
 });
 
 // Session configuration
-const sessionStore = new FileSessionStore();
-sessionStore.clear(() => {
-  console.log("INFO: Alle existierenden Sitzungen wurden bereinigt.");
-});
+const sessionStore = new PostgresSessionStore(databasePool);
 
 const sessionMiddleware = session({
   store: sessionStore,
@@ -134,13 +129,13 @@ const sessionMiddleware = session({
   saveUninitialized: false,
   name: 'admin_session',
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: configuration.COOKIE_SECURE ?? configuration.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     sameSite: 'lax',
     path: '/',
-    ...(process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN && {
-      domain: process.env.COOKIE_DOMAIN,
+    ...(configuration.NODE_ENV === 'production' && configuration.COOKIE_DOMAIN && {
+      domain: configuration.COOKIE_DOMAIN,
       sameSite: 'none'
     })
   },
@@ -185,7 +180,7 @@ app.use('/api/admin', csrfCheck);
     serveStatic(app);
   }
 
-  const port = parseInt(process.env.PORT || '5000', 10);
+  const port = configuration.PORT;
   server.listen({
     port,
     host: "0.0.0.0",

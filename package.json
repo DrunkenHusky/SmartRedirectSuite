@@ -11,9 +11,9 @@
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:../vite.config",
     "start": "cross-env NODE_ENV=production node dist/index.js",
-    "test:unit": "tsx tests/shared/appMetadata.test.ts && tsx tests/client/url-utils.test.ts && tsx tests/shared/url-trace.test.ts",
+    "test:unit": "tsx tests/config.test.ts && tsx tests/shared/appMetadata.test.ts && tsx tests/client/url-utils.test.ts && tsx tests/shared/url-trace.test.ts",
     "test": "npm run test:unit && tsx tests/integration/test-url-transformation.js && tsx tests/integration/test-rule-specificity.ts && tsx tests/integration/test-server-features.js && tsx tests/integration/test-vite-config.ts && tsx tests/integration/test-public-api.ts",
-    "check": "echo 'Skipping type check'"
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
@@ -45,6 +45,7 @@
     "lucide-react": "^0.556.0",
     "multer": "^2.0.2",
     "postcss": "^8.5.6",
+    "pg": "^8.16.3",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.68.0",
@@ -68,6 +69,7 @@
     "@types/express-session": "^1.18.2",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.5",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "semantic-release": "^25.0.2",
