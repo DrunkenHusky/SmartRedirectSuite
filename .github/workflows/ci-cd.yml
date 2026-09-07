@@ -34,6 +34,8 @@ jobs:
             npm install --package-lock-only --ignore-scripts
           fi
       - run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: npm test
       # Verify build works
       - run: npm run build
