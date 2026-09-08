@@ -81,3 +81,54 @@
     transform: translateY(-1px);
   }
 }
+
+@media (max-width: 640px) {
+  .admin-shell {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .admin-shell main,
+  .admin-shell form,
+  .admin-shell [role="tabpanel"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-shell .rounded-lg.border.bg-card > div[class*="p-6"] {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .admin-shell input,
+  .admin-shell textarea,
+  .admin-shell button[role="combobox"] {
+    font-size: 16px;
+    max-width: 100%;
+  }
+
+  .admin-shell .admin-editor-row > *,
+  .admin-shell .admin-rule-editor-row > * {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-rule-form input,
+  .admin-rule-form textarea,
+  .admin-rule-form button[role="combobox"],
+  .admin-editor-row input {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .admin-rule-form textarea {
+    min-height: 96px;
+  }
+
+  .admin-rule-form .admin-add-actions button {
+    min-height: 44px;
+    width: 100%;
+    height: auto;
+    white-space: normal;
+  }
+}
