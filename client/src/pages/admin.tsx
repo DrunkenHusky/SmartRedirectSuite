@@ -4864,7 +4864,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               {editingRule ? "Bearbeiten Sie die existierende Regel hier." : "Erstellen Sie hier eine neue Regel."}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmitRule} className="space-y-4 sm:space-y-6">
+          <form onSubmit={handleSubmitRule} className="admin-rule-form min-w-0 space-y-4 sm:space-y-6">
             <div>
               <label className="block text-sm font-medium mb-2">
                 URL-Pfad Matcher
@@ -4955,7 +4955,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 <div className="space-y-3">
                   {ruleForm.searchAndReplace.map((item, index) => (
                     <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
-                      <div className="flex gap-2 items-end">
+                      <div className="admin-rule-editor-row flex flex-col sm:flex-row gap-2 sm:items-end">
                         <div className="flex-1 space-y-1">
                             <label className="text-xs font-medium block h-8 flex items-end pb-1">Suchen</label>
                             <Input
@@ -5052,7 +5052,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     </div>
                   ))}
 
-                  <div className="flex gap-2 mt-2">
+                  <div className="admin-add-actions flex flex-col sm:flex-row gap-2 mt-2">
                     <Button
                         type="button"
                         variant="outline"
@@ -5086,7 +5086,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     <div className="space-y-3">
                       {ruleForm.staticQueryParams.map((item, index) => (
                         <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
-                          <div className="flex gap-2 items-end">
+                          <div className="admin-rule-editor-row flex flex-col sm:flex-row gap-2 sm:items-end">
                             <div className="flex-1 space-y-1">
                                 <label className="text-xs font-medium block h-8 flex items-end pb-1">Key</label>
                                 <Input
@@ -5184,7 +5184,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       ))}
 
-                      <div className="flex gap-2 mt-2">
+                      <div className="admin-add-actions flex flex-col sm:flex-row gap-2 mt-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -5258,7 +5258,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                     <div className="space-y-3">
                       {ruleForm.keptQueryParams.map((item, index) => (
                         <div key={index} className="flex flex-col gap-2 p-2 bg-muted/30 rounded border">
-                          <div className="flex gap-2 items-end">
+                          <div className="admin-rule-editor-row flex flex-col sm:flex-row gap-2 sm:items-end">
                             <div className="flex-1 space-y-1">
                                 <label className="text-xs font-medium block h-8 flex items-end pb-1">Parameter Key (Regex)</label>
                                 <Input
@@ -5369,7 +5369,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         </div>
                       ))}
 
-                      <div className="flex gap-2 mt-2">
+                      <div className="admin-add-actions flex flex-col sm:flex-row gap-2 mt-2">
                         <Button
                             type="button"
                             variant="outline"
