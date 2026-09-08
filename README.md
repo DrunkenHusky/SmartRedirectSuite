@@ -229,6 +229,7 @@ Bei "Teilweise" (Partial) und "Vollständig" (Wildcard) Redirects können Sie st
 ### Voraussetzungen
 
 - Node.js >= 22
+- npm >= 12
 
 Überprüfen Sie die Installation:
 

@@ -4,6 +4,9 @@
 ARG NODE_VERSION=22.18.0
 FROM node:${NODE_VERSION}-slim AS base
 
+# Keep the package manager aligned with the minimum version declared in package.json.
+RUN npm install --global npm@12
+
 # Node.js app lives here
 WORKDIR /app
 

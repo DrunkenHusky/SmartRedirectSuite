@@ -23,6 +23,8 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+      - name: Setup npm
+        run: npm install --global npm@12
       - name: Ensure Valid Semver
         run: |
           VER=$(jq -r .version package.json)
@@ -59,6 +61,9 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Setup npm
+        run: npm install --global npm@12
 
       - name: Ensure Valid Semver
         run: |

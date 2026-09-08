@@ -10,9 +10,17 @@ interface PackageLock {
   packages: Record<string, LockfilePackage>;
 }
 
+interface PackageManifest {
+  engines?: Record<string, string>;
+  overrides?: Record<string, string>;
+}
+
 const packageLock = JSON.parse(
   readFileSync(new URL("../../package-lock.json", import.meta.url), "utf8"),
 ) as PackageLock;
+const packageManifest = JSON.parse(
+  readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+) as PackageManifest;
 
 const minimumSecureVersions = {
   "@babel/core": "7.29.1",
@@ -22,7 +30,7 @@ const minimumSecureVersions = {
   multer: "2.1.2",
   nanoid: "3.3.18",
   postcss: "8.5.23",
-  qs: "6.15.4",
+  qs: "6.16.0",
   vite: "8.2.2",
 } as const;
 
@@ -50,4 +58,9 @@ test("the lockfile resolves every audited package to a secure version", async (c
       );
     });
   }
+});
+
+test("the supported runtime and qs override match the maintenance baseline", () => {
+  assert.deepEqual(packageManifest.engines, { node: ">=22", npm: ">=12" });
+  assert.equal(packageManifest.overrides?.qs, "6.16.0");
 });
