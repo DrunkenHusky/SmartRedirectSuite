@@ -12,7 +12,7 @@
 ## 1. Voraussetzungen prüfen
 
 ```bash
-# Node.js Version prüfen (benötigt: v18+)
+# Node.js Version prüfen (benötigt: v24+)
 node --version
 
 # npm Version prüfen
