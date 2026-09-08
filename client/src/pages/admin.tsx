@@ -1928,7 +1928,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-shell min-h-screen bg-background">
       {/* Mobile-Friendly Admin Header */}
       <header className="bg-surface shadow-sm border-b border-border">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -1970,12 +1970,12 @@ export default function AdminPage({ onClose }: AdminPageProps) {
       </header>
 
       {/* Mobile-Optimized Admin Content */}
-      <main className="py-4 sm:py-8 px-3 sm:px-4 ">
+      <main className="py-3 sm:py-8 px-2 sm:px-4">
         <div className="max-w-6xl mx-auto w-full">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
             {/* Enhanced Tab Navigation */}
             <div className="w-full overflow-hidden">
-              <TabsList className="grid w-full grid-cols-5 h-auto">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto gap-1">
                 <TabsTrigger value="general" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-3 px-1 sm:px-3 text-xs sm:text-sm min-h-[56px] sm:min-h-[48px]">
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="truncate leading-tight text-center">Allgemein</span>
@@ -3558,7 +3558,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                         Verwalten Sie URL-Transformations-Regeln für die Migration.
                       </p>
                     </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="admin-rule-actions grid grid-cols-1 min-[420px]:grid-cols-2 gap-2 w-full sm:flex sm:w-auto">
                       {/* Bulk Delete Button */}
                       {selectedRuleIds.length > 0 && (
                         <Button 
@@ -3576,7 +3576,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 sm:flex-initial sm:w-auto"
+                        className="min-h-11 h-auto whitespace-normal px-3 flex-1 sm:flex-initial sm:w-auto"
                         onClick={() => setShowValidationModal(true)}
                       >
                          <RefreshCw className="h-4 w-4 mr-2" />
@@ -3591,7 +3591,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                           setIsRuleDialogOpen(true);
                         }}
                         size="sm"
-                        className="flex-1 sm:flex-initial sm:w-auto"
+                        className="min-h-11 h-auto whitespace-normal px-3 flex-1 sm:flex-initial sm:w-auto"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Neue Regel
@@ -4855,7 +4855,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
 
       {/* Rule Editing Dialog - Moved outside TabsContent to be accessible from all tabs */}
       <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[620px] max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
               {editingRule ? "Regel bearbeiten" : "Neue Regel erstellen"}
@@ -5431,11 +5431,11 @@ export default function AdminPage({ onClose }: AdminPageProps) {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+            <div className="admin-dialog-actions sticky bottom-0 z-10 flex flex-col sm:flex-row gap-2 bg-background border-t pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))] -mx-1 px-1">
               <Button
                 type="submit"
                 className="flex-1"
-                size="sm"
+                size="lg"
                 disabled={createRuleMutation.isPending || updateRuleMutation.isPending}
               >
                 {editingRule ? "Aktualisieren" : "Erstellen"}
@@ -5443,7 +5443,7 @@ export default function AdminPage({ onClose }: AdminPageProps) {
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
+                size="lg"
                 className="flex-1"
                 onClick={() => setIsRuleDialogOpen(false)}
               >

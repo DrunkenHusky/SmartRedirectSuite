@@ -117,13 +117,13 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOp
     <div className="space-y-6">
         <Card>
             <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <Globe className="h-5 w-5 text-blue-600" />
                     <CardTitle>Globale Regeln</CardTitle>
                     </div>
                     {onOpenValidation && (
-                        <Button variant="outline" size="sm" onClick={onOpenValidation} className="gap-2">
+                        <Button variant="outline" size="sm" onClick={onOpenValidation} className="gap-2 w-full sm:w-auto min-h-11 h-auto whitespace-normal">
                             <RefreshCw className="h-4 w-4" />
                             Konfigurationsvalidierung
                         </Button>
@@ -149,7 +149,7 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOp
                     <div className="space-y-3">
                         {(settings.globalSearchAndReplace || []).map((item, index) => (
                             <div key={item.id} className="flex flex-col gap-2 p-3 bg-muted/30 rounded border">
-                                <div className="flex gap-2 items-end">
+                                <div className="admin-editor-row flex flex-col sm:flex-row gap-2 sm:items-end">
                                     <div className="flex-1 space-y-1">
                                         <label className="text-xs font-medium block">Suchen</label>
                                         <Input
@@ -195,7 +195,7 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOp
                                 </div>
                             </div>
                         ))}
-                        <Button variant="outline" size="sm" onClick={handleAddSearchReplace} className="gap-2">
+                        <Button variant="outline" size="sm" onClick={handleAddSearchReplace} className="gap-2 w-full sm:w-auto">
                             <Plus className="h-3 w-3" /> Hinzufügen
                         </Button>
                     </div>
@@ -214,7 +214,7 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOp
                      <div className="space-y-3">
                         {(settings.globalStaticQueryParams || []).map((item, index) => (
                             <div key={item.id} className="flex flex-col gap-2 p-3 bg-muted/30 rounded border">
-                                <div className="flex gap-2 items-end">
+                                <div className="admin-editor-row flex flex-col sm:flex-row gap-2 sm:items-end">
                                     <div className="flex-1 space-y-1">
                                         <label className="text-xs font-medium block">Key</label>
                                         <Input
@@ -260,7 +260,7 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOp
                                 </div>
                             </div>
                         ))}
-                        <Button variant="outline" size="sm" onClick={handleAddStaticParam} className="gap-2">
+                        <Button variant="outline" size="sm" onClick={handleAddStaticParam} className="gap-2 w-full sm:w-auto">
                             <Plus className="h-3 w-3" /> Hinzufügen
                         </Button>
                     </div>
@@ -279,7 +279,7 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOp
                     <div className="space-y-3">
                         {(settings.globalKeptQueryParams || []).map((item, index) => (
                             <div key={item.id} className="flex flex-col gap-2 p-3 bg-muted/30 rounded border">
-                                <div className="flex gap-2 items-end">
+                                <div className="admin-editor-row flex flex-col sm:flex-row gap-2 sm:items-end">
                                     <div className="flex-1 space-y-1">
                                         <label className="text-xs font-medium block">Key Pattern (Regex)</label>
                                         <Input
@@ -326,7 +326,7 @@ export function GlobalRulesSettings({ settings, onUpdate, onSave, isSaving, onOp
                                 </div>
                             </div>
                         ))}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <Button variant="outline" size="sm" onClick={handleAddKeptParam} className="gap-2">
                                 <Plus className="h-3 w-3" /> Hinzufügen
                             </Button>

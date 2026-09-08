@@ -81,3 +81,21 @@
     transform: translateY(-1px);
   }
 }
+
+@media (max-width: 640px) {
+  .admin-shell .rounded-lg.border.bg-card > div[class*="p-6"] {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .admin-shell input,
+  .admin-shell textarea,
+  .admin-shell button[role="combobox"] {
+    font-size: 16px;
+  }
+
+  .admin-shell .admin-editor-row > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
