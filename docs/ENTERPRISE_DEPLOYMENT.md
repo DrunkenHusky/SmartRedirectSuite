@@ -38,8 +38,8 @@ Open the administrator menu via the gear icon in the application or by appending
 ## Pre-Deployment Checklist
 
 ### 1. Environment Requirements
-- Node.js 22+ (LTS recommended)
-- npm 8+
+- Node.js 24+ (LTS recommended)
+- npm 11+
 - Minimum 1GB RAM (see Memory Sizing below)
 - 10GB+ disk space for logs and data
 - SSL certificate for HTTPS

@@ -23,6 +23,8 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+      - name: Setup npm
+        run: npm install --global npm@12
       - name: Ensure Valid Semver
         run: |
           VER=$(jq -r .version package.json)
@@ -34,6 +36,8 @@ jobs:
             npm install --package-lock-only --ignore-scripts
           fi
       - run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: npm test
       # Verify build works
       - run: npm run build
@@ -57,6 +61,9 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Setup npm
+        run: npm install --global npm@12
 
       - name: Ensure Valid Semver
         run: |
