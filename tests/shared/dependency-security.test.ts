@@ -12,7 +12,6 @@ interface PackageLock {
 
 interface PackageManifest {
   engines?: Record<string, string>;
-  overrides?: Record<string, string>;
 }
 
 const packageLock = JSON.parse(
@@ -60,7 +59,6 @@ test("the lockfile resolves every audited package to a secure version", async (c
   }
 });
 
-test("the supported runtime and qs override match the maintenance baseline", () => {
-  assert.deepEqual(packageManifest.engines, { node: ">=24.10.0", npm: ">=11" });
-  // assert.equal(packageManifest.overrides?.qs, "6.16.0");
+test("the supported runtime matches the maintenance baseline", () => {
+  assert.deepEqual(packageManifest.engines, { node: ">=24.10.0", npm: ">=11.3" });
 });
