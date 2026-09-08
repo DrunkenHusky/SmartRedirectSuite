@@ -23,7 +23,7 @@ const minimumSecureVersions = {
   nanoid: "3.3.18",
   postcss: "8.5.23",
   qs: "6.15.4",
-  vite: "7.3.4",
+  vite: "8.2.2",
 } as const;
 
 function compareSemanticVersions(leftVersion: string, rightVersion: string): number {
