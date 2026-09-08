@@ -335,6 +335,7 @@ Mit diesem Endpoint können Sie eine alte URL übergeben und erhalten die entspr
 ## Administration
 
 Der Admin-Bereich lässt sich über das Zahnrad-Symbol oben rechts oder direkt über den URL-Parameter `?admin=true` öffnen.
+Die Navigation, Regelverwaltung und Bearbeitungsdialoge sind für Smartphones optimiert; Aktionsschaltflächen bleiben gut lesbar und besitzen ausreichend große Touch-Ziele.
 
 ### Regeln importieren
 
