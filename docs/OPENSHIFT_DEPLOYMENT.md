@@ -23,7 +23,7 @@ Die Anwendung speichert alle Daten ausschließlich im Dateisystem; eine Datenban
 
 ### Lokale Entwicklungstools
 - Docker oder Podman für Container-Build
-- Node.js 18+ für lokale Tests
+- Node.js 24+ für lokale Tests
 - Git für Source Code Management
 
 > Hinweis: Für Demo-Instanzen steht ein separates `Dockerfile.demo` bereit, das die Anwendung alle 24h zurücksetzt.
@@ -177,7 +177,7 @@ oc apply -f configmap.yaml
 ### Dockerfile für OpenShift optimieren
 ```dockerfile
 # Erstelle Dockerfile
-FROM registry.access.redhat.com/ubi8/nodejs-18:latest
+FROM registry.access.redhat.com/ubi8/nodejs-24:latest
 
 # Arbeitsverzeichnis als non-root user
 USER 1001
