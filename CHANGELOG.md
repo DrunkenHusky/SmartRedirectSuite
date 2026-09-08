@@ -1,3 +1,17 @@
+## [2.22.1](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.22.0...v2.22.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **admin:** optimize responsive mobile layouts ([085f524](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/085f524948062cb6df3c6189bf0e1aea0e01c79b))
+* **admin:** prevent mobile editor overflow ([4fd29af](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/4fd29aff328e41064725e956f76ff74ba46b5edb))
+* **ci:** downgrade npm to v11 to avoid EALLOWREMOTE bug ([58aaa1d](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/58aaa1d86544e0d6a700a4aab54ecd2bba4bba9d))
+* **deps:** keep esbuild override in lockfile sync ([8f68b72](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/8f68b72f00a79329c6129ac7c3ea360c28ab9e2d))
+* **deps:** refresh dependencies for maintenance release ([67867a1](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/67867a19371c9f871418c85fadbf0c35cc70c904))
+* **deps:** require qs 6.16 and npm 12 ([3b23500](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/3b235002de02098c594a058ff01b8429fc421224))
+* **deps:** resolve high severity audit findings ([dcca5d8](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/dcca5d89f1aeb35d518b12df904f759b8a60ea95))
+* **deps:** upgrade Vite to 8.2.2 ([1bab7e1](https://github.com/DrunkenHusky/SmartRedirectSuite/commit/1bab7e1230d47eda048e4b66a605044b7988290b))
+
 # [2.22.0](https://github.com/DrunkenHusky/SmartRedirectSuite/compare/v2.21.0...v2.22.0) (2026-04-24)
 
 
