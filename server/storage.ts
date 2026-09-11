@@ -380,13 +380,13 @@ export class FileStorage implements IStorage {
     // Filter rules based on search
     let filteredRules: UrlRule[];
     if (search && search.trim()) {
-      const searchLower = search.toLowerCase();
+      const searchPattern = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(searchPattern, 'i');
       filteredRules = allRules.filter(
         (rule) =>
-          rule.matcher.toLowerCase().includes(searchLower) ||
-          (rule.targetUrl &&
-            rule.targetUrl.toLowerCase().includes(searchLower)) ||
-          (rule.infoText && rule.infoText.toLowerCase().includes(searchLower)),
+          searchRegex.test(rule.matcher) ||
+          (rule.targetUrl && searchRegex.test(rule.targetUrl)) ||
+          (rule.infoText && searchRegex.test(rule.infoText)),
       );
     } else {
       // Create a copy to avoid mutating the cache when sorting
@@ -398,14 +398,18 @@ export class FileStorage implements IStorage {
       let comparison = 0;
 
       switch (sortBy) {
-        case "matcher":
-          comparison = a.matcher.localeCompare(b.matcher);
+        case "matcher": {
+          const tA = a.matcher.toLowerCase();
+          const tB = b.matcher.toLowerCase();
+          if (tA < tB) comparison = -1; else if (tA > tB) comparison = 1;
           break;
-        case "targetUrl":
-          const aTarget = a.targetUrl || "";
-          const bTarget = b.targetUrl || "";
-          comparison = aTarget.localeCompare(bTarget);
+        }
+        case "targetUrl": {
+          const aTarget = (a.targetUrl || "").toLowerCase();
+          const bTarget = (b.targetUrl || "").toLowerCase();
+          if (aTarget < bTarget) comparison = -1; else if (aTarget > bTarget) comparison = 1;
           break;
+        }
         case "createdAt":
         default:
           // Optimized: Use string comparison for ISO dates instead of parsing Date objects
@@ -758,15 +762,15 @@ export class FileStorage implements IStorage {
     let filteredData = trackingData.filter((entry) => entry.path !== "/");
 
     if (query.trim()) {
-      const searchTerm = query.toLowerCase();
+      const searchPattern = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(searchPattern, 'i');
       filteredData = filteredData.filter(
         (entry) =>
-          entry.oldUrl.toLowerCase().includes(searchTerm) ||
-          ((entry as any).newUrl &&
-            (entry as any).newUrl.toLowerCase().includes(searchTerm)) ||
-          entry.path.toLowerCase().includes(searchTerm) ||
-          entry.userAgent?.toLowerCase().includes(searchTerm) ||
-          entry.referrer?.toLowerCase().includes(searchTerm),
+          searchRegex.test(entry.oldUrl) ||
+          ((entry as any).newUrl && searchRegex.test((entry as any).newUrl)) ||
+          searchRegex.test(entry.path) ||
+          (entry.userAgent && searchRegex.test(entry.userAgent)) ||
+          (entry.referrer && searchRegex.test(entry.referrer)),
       );
     }
 
@@ -783,21 +787,36 @@ export class FileStorage implements IStorage {
            if (tA < tB) comparison = -1;
            else if (tA > tB) comparison = 1;
            break;
-        case "oldUrl":
-           comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
+        case "oldUrl": {
+           const oA = a.oldUrl.toLowerCase();
+           const oB = b.oldUrl.toLowerCase();
+           if (oA < oB) comparison = -1; else if (oA > oB) comparison = 1;
            break;
-        case "newUrl":
-           comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
+        }
+        case "newUrl": {
+           const nA = ((a as any).newUrl || "").toLowerCase();
+           const nB = ((b as any).newUrl || "").toLowerCase();
+           if (nA < nB) comparison = -1; else if (nA > nB) comparison = 1;
            break;
-        case "path":
-           comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+        }
+        case "path": {
+           const pA = a.path.toLowerCase();
+           const pB = b.path.toLowerCase();
+           if (pA < pB) comparison = -1; else if (pA > pB) comparison = 1;
            break;
-        case "userAgent":
-           comparison = (a.userAgent || "").toLowerCase().localeCompare((b.userAgent || "").toLowerCase());
+        }
+        case "userAgent": {
+           const uA = (a.userAgent || "").toLowerCase();
+           const uB = (b.userAgent || "").toLowerCase();
+           if (uA < uB) comparison = -1; else if (uA > uB) comparison = 1;
            break;
-        case "referrer":
-           comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
+        }
+        case "referrer": {
+           const rA = (a.referrer || "").toLowerCase();
+           const rB = (b.referrer || "").toLowerCase();
+           if (rA < rB) comparison = -1; else if (rA > rB) comparison = 1;
            break;
+        }
         case "matchQuality":
            comparison = (a.matchQuality || 0) - (b.matchQuality || 0);
            break;
@@ -1160,17 +1179,30 @@ export class FileStorage implements IStorage {
             if (tA < tB) comparison = -1;
             else if (tA > tB) comparison = 1;
             break;
-          case "oldUrl":
-            comparison = a.oldUrl.toLowerCase().localeCompare(b.oldUrl.toLowerCase());
+          case "oldUrl": {
+            const oA = a.oldUrl.toLowerCase();
+            const oB = b.oldUrl.toLowerCase();
+            if (oA < oB) comparison = -1; else if (oA > oB) comparison = 1;
             break;
-          case "newUrl":
-            comparison = ((a as any).newUrl || "").toLowerCase().localeCompare(((b as any).newUrl || "").toLowerCase());
+          }
+          case "newUrl": {
+            const nA = ((a as any).newUrl || "").toLowerCase();
+            const nB = ((b as any).newUrl || "").toLowerCase();
+            if (nA < nB) comparison = -1; else if (nA > nB) comparison = 1;
             break;
-          case "path":
-            comparison = a.path.toLowerCase().localeCompare(b.path.toLowerCase());
+          }
+          case "path": {
+            const pA = a.path.toLowerCase();
+            const pB = b.path.toLowerCase();
+            if (pA < pB) comparison = -1; else if (pA > pB) comparison = 1;
             break;
-          case "referrer":
-            comparison = (a.referrer || "").toLowerCase().localeCompare((b.referrer || "").toLowerCase());
+          }
+          case "referrer": {
+            const rA = (a.referrer || "").toLowerCase();
+            const rB = (b.referrer || "").toLowerCase();
+            if (rA < rB) comparison = -1; else if (rA > rB) comparison = 1;
+            break;
+          }
             break;
         }
 
