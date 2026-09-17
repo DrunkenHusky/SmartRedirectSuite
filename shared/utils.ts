@@ -142,8 +142,14 @@ export const stringUtils = {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let result = "";
+    const randomValues = new Uint32Array(length);
+
+    // Modern environments (Browser and Node >= 19) expose crypto globally
+    const cryptoObj = typeof globalThis !== 'undefined' && globalThis.crypto ? globalThis.crypto : window.crypto;
+
+    cryptoObj.getRandomValues(randomValues);
     for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      result += chars.charAt(randomValues[i] % chars.length);
     }
     return result;
   },
