@@ -47,21 +47,23 @@ export const urlUtils = {
   },
 
   /**
-   * Robustly extracts hostname from URL, handling missing protocol
+   * Robustly extracts hostname from URL, handling missing protocol.
+   * Optimized: Checks for protocol instead of using try-catch for control flow,
+   * avoiding expensive exception handling for schemeless URLs.
    */
   extractHostname(url: string): string | null {
-    if (!url || !url.trim()) return null;
+    if (!url) return null;
     const trimmedUrl = url.trim();
+    if (!trimmedUrl) return null;
+
+    // Check for any valid protocol scheme (e.g., http:, https:, ftp:, wss:)
+    const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmedUrl);
+    const urlToParse = hasProtocol ? trimmedUrl : 'http://' + trimmedUrl;
+
     try {
-      // Try parsing as is (e.g. http://example.com/foo)
-      return new URL(trimmedUrl).hostname;
+      return new URL(urlToParse).hostname;
     } catch {
-      try {
-        // Try adding protocol (e.g. example.com/foo)
-        return new URL('http://' + trimmedUrl).hostname;
-      } catch {
-        return null;
-      }
+      return null;
     }
   },
 
