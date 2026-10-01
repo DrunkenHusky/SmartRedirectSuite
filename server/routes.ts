@@ -41,6 +41,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Password1";
 // Import Preview Limit from environment variable (default 1000)
 const IMPORT_PREVIEW_LIMIT = parseInt(process.env.IMPORT_PREVIEW_LIMIT || "1000", 10);
 
+import express from 'express';
+
 // Middleware to check admin authentication
 const requireAuth = (req: any, res: any, next: any) => {
   if (!req.session?.isAdminAuthenticated) {
@@ -48,6 +50,22 @@ const requireAuth = (req: any, res: any, next: any) => {
   }
   next();
 };
+
+// Middleware for large payload parsing on specific routes after auth
+const importLimit = '500mb';
+const largeJsonMiddleware = express.json({ limit: importLimit });
+const largeUrlEncodedMiddleware = express.urlencoded({ extended: false, limit: importLimit });
+const requireAuthWithLargeBody = [
+  requireAuth,
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.is('json')) {
+      largeJsonMiddleware(req, res, next);
+    } else {
+      largeUrlEncodedMiddleware(req, res, next);
+    }
+  }
+];
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -975,7 +993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import-Funktionalität
-  app.post("/api/admin/import/rules", requireAuth, async (req, res) => {
+  app.post("/api/admin/import/rules", ...requireAuthWithLargeBody, async (req, res) => {
     try {
       const { rules } = req.body;
       if (!Array.isArray(rules)) {
@@ -1000,7 +1018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import general settings
-  app.post("/api/admin/import/settings", requireAuth, async (req, res) => {
+  app.post("/api/admin/import/settings", ...requireAuthWithLargeBody, async (req, res) => {
     try {
       const importRequest = importSettingsRequestSchema.parse(req.body);
       const updatedSettings = await storage.updateGeneralSettings(importRequest.settings);
@@ -1016,7 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import rules (Old route kept for compatibility but it clears all rules)
-  app.post("/api/admin/import", requireAuth, async (req, res) => {
+  app.post("/api/admin/import", ...requireAuthWithLargeBody, async (req, res) => {
     try {
       const { rules } = req.body;
       if (!Array.isArray(rules)) {
@@ -1069,7 +1087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import settings
-  app.post("/api/admin/import-settings", requireAuth, async (req, res) => {
+  app.post("/api/admin/import-settings", ...requireAuthWithLargeBody, async (req, res) => {
     try {
       const settings = req.body;
       await storage.updateGeneralSettings(settings);
@@ -1182,7 +1200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/logo", requireAuth, async (req, res) => {
+  app.put("/api/admin/logo", requireAuth, express.json(), async (req, res) => {
     try {
       if (!req.body.logoUrl) {
         res.status(400).json({ error: "logoUrl is required" });
