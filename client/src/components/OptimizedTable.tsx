@@ -79,11 +79,13 @@ export function OptimizedTable<T extends Record<string, any>>({
 
       // Apply global filter
       if (debouncedGlobalFilter) {
-        const searchTerm = debouncedGlobalFilter.toLowerCase();
+        // Optimized: pre-compile regex to avoid .toLowerCase().includes() overhead in loops
+        const searchPattern = debouncedGlobalFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchRegex = new RegExp(searchPattern, 'i');
         result = result.filter(row =>
           columns.some(col => {
             const value = row[col.key];
-            return String(value).toLowerCase().includes(searchTerm);
+            return searchRegex.test(String(value));
           })
         );
       }
@@ -91,10 +93,12 @@ export function OptimizedTable<T extends Record<string, any>>({
       // Apply column filters
       Object.entries(debouncedFilterConfig).forEach(([key, value]) => {
         if (value) {
-          const searchTerm = value.toLowerCase();
+          // Optimized: pre-compile regex to avoid .toLowerCase().includes() overhead in loops
+          const searchPattern = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const searchRegex = new RegExp(searchPattern, 'i');
           result = result.filter(row => {
             const cellValue = row[key as keyof T];
-            return String(cellValue).toLowerCase().includes(searchTerm);
+            return searchRegex.test(String(cellValue));
           });
         }
       });
