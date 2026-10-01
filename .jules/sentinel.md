@@ -11,3 +11,7 @@
 **Vulnerability:** Found `Math.random()` being used in `server/routes.ts` for file naming and in `shared/utils.ts` for generating random strings. `Math.random()` is not cryptographically secure and can lead to predictability or collisions.
 **Learning:** For security-sensitive contexts like session IDs, file names, or access tokens, a cryptographically secure pseudo-random number generator (CSPRNG) like `crypto.randomBytes` or `crypto.randomUUID` must be used.
 **Prevention:** Use `crypto.randomUUID()` or `crypto.randomBytes()` for generating random tokens, filenames, or unique IDs instead of `Math.random()`.
+## 2024-05-24 - [CRITICAL] Fix Memory Exhaustion DoS in Express Middleware
+**Vulnerability:** Global JSON/URL-Encoded body parser middlewares were configured to accept up to 500MB payloads for all unauthenticated routes that started with `/api/admin/import` or `/api/admin/logo/upload`.
+**Learning:** Placing body parsers that accept massive payloads *before* authentication checks allows unauthenticated attackers to send huge payloads and exhaust server memory, leading to a Denial-of-Service (DoS) condition.
+**Prevention:** Always place large body parsing middlewares *after* authentication and rate-limiting middlewares. This ensures that only authenticated and authorized users can trigger expensive memory allocations.
