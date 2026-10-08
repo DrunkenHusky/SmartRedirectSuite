@@ -96,30 +96,7 @@ app.use((req, res, next) => {
 // Global API Rate Limiting
 app.use('/api', rateLimitMiddleware);
 
-// Configure body parsers
-const defaultLimit = '1mb';
-const importLimit = '500mb';
 
-const jsonMiddleware = express.json({ limit: defaultLimit });
-const largeJsonMiddleware = express.json({ limit: importLimit });
-const urlEncodedMiddleware = express.urlencoded({ extended: false, limit: defaultLimit });
-const largeUrlEncodedMiddleware = express.urlencoded({ extended: false, limit: importLimit });
-
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/admin/import') || req.path.startsWith('/api/admin/logo/upload')) {
-    if (req.is('json')) {
-      largeJsonMiddleware(req, res, next);
-    } else {
-      largeUrlEncodedMiddleware(req, res, next);
-    }
-  } else {
-    if (req.is('json')) {
-      jsonMiddleware(req, res, next);
-    } else {
-      urlEncodedMiddleware(req, res, next);
-    }
-  }
-});
 
 // Session configuration
 const sessionStore = new FileSessionStore();
@@ -164,8 +141,39 @@ app.use('/api/admin', sessionMiddleware);
 // Apply extra rate limiting to admin routes (auth + brute force handled separately, this is for general admin actions)
 app.use('/api/admin', adminRateLimitMiddleware);
 
-// Apply CSRF protection to admin routes
+// Configure body parsers - Placed after security middleware to prevent DoS
+// But before CSRF protection just in case CSRF needs to read body eventually
+const defaultLimit = '1mb';
+const importLimit = '500mb';
+
+const jsonMiddleware = express.json({ limit: defaultLimit });
+const largeJsonMiddleware = express.json({ limit: importLimit });
+const urlEncodedMiddleware = express.urlencoded({ extended: false, limit: defaultLimit });
+const largeUrlEncodedMiddleware = express.urlencoded({ extended: false, limit: importLimit });
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/admin/import') || req.path.startsWith('/api/admin/logo/upload')) {
+    // SECURITY: Ensure user is authenticated before accepting large payloads
+    if (!req.session?.isAdminAuthenticated) {
+      res.status(403).json({ error: "Access denied. Please log in to the admin panel." });
+      return;
+    }
+    if (req.is('json')) {
+      largeJsonMiddleware(req, res, next);
+    } else {
+      largeUrlEncodedMiddleware(req, res, next);
+    }
+  } else {
+    if (req.is('json')) {
+      jsonMiddleware(req, res, next);
+    } else {
+      urlEncodedMiddleware(req, res, next);
+    }
+  }
+});
+
 app.use('/api/admin', csrfCheck);
+
 
 (async () => {
   const server = await registerRoutes(app);
