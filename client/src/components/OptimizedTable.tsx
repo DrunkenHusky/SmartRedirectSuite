@@ -77,13 +77,18 @@ export function OptimizedTable<T extends Record<string, any>>({
     return measureRender('data-processing', () => {
       let result = [...data];
 
+      // Helper to escape RegExp special characters
+      const escapeRegExp = (string: string) => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      };
+
       // Apply global filter
       if (debouncedGlobalFilter) {
-        const searchTerm = debouncedGlobalFilter.toLowerCase();
+        const globalSearchRegex = new RegExp(escapeRegExp(debouncedGlobalFilter), 'i');
         result = result.filter(row =>
           columns.some(col => {
             const value = row[col.key];
-            return String(value).toLowerCase().includes(searchTerm);
+            return globalSearchRegex.test(String(value));
           })
         );
       }
@@ -91,10 +96,10 @@ export function OptimizedTable<T extends Record<string, any>>({
       // Apply column filters
       Object.entries(debouncedFilterConfig).forEach(([key, value]) => {
         if (value) {
-          const searchTerm = value.toLowerCase();
+          const columnSearchRegex = new RegExp(escapeRegExp(value as string), 'i');
           result = result.filter(row => {
             const cellValue = row[key as keyof T];
-            return String(cellValue).toLowerCase().includes(searchTerm);
+            return columnSearchRegex.test(String(cellValue));
           });
         }
       });
